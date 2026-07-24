@@ -1,5 +1,26 @@
 # Handoffs
 
+## 2026-07-25 — Whole MVP now runs through the server (`5047903`)
+
+Handoff:
+- Date: 2026-07-25
+- From agent: `project-orchestrator` with `cross-platform-engineer`
+- To agent: `mobile-qa-release` for the device matrix; owner for the deploy and store decisions
+- What changed: every product flow moved off fixtures and onto the typed boundary. Rooms renders the server's own reason a room is closed rather than recomputing eligibility; Here Now reads the device's real foreground location; discovery, matching, chat and safety all go through the database.
+- Verification: `scripts/check.sh` — 205 pgTAP assertions across 10 suites, 8 concurrency checks racing real connections, client/database contract check, `tsc` clean, `eslint --max-warnings 0` clean, 139 jest tests across 11 suites, web bundle exports.
+- Backlog closed: R-001 (server-side 18+), R-002 (unblock and a blocked list), R-003 (rooms refresh at the expiry instant), N-010 (end-to-end evidence).
+- Defects found and fixed during the work, worth remembering because each one had a test that was passing for the wrong reason or no test at all:
+  - The message-insert policy could not see the other side's block, because a block row is only visible to its author and the helper was SECURITY INVOKER. The test that should have caught it passed because `block_user` also unmatches.
+  - `authenticated` held a table-wide UPDATE grant on `profiles`, so a suspended user could clear their own `suspended_at`. Grants are now column-level.
+  - `swipe` returned a different error for a block than for anything else, which told someone they had been blocked. Both cases now answer identically.
+  - Denying location permission only changed local state; the stored answer kept Here Now open for up to thirty minutes after the user withdrew consent.
+- Risks / blockers:
+  - No rate limiting on `swipe`, `report_user`, or `record_presence_check`. Fine for an invited pilot, not for open signup.
+  - No account-deletion UI. Required before store submission; the schema already cascades correctly.
+  - Nothing has been run on a real device. The web bundle proves the code builds, not that the keychain, the permission dialog, backgrounding, or a screen reader work.
+- Deliberately not done, and each one is an owner decision rather than a skipped step: no hosted Supabase project provisioned, no migration run anywhere but a throwaway local container, no build uploaded to TestFlight or Play, no store listing, no credential committed.
+- Recommended next agent: `mobile-qa-release` against `.studio/device-readiness.md`.
+
 ## 2026-07-25 — Backend foundation through safety landed on main (`a6f4b30`)
 
 Handoff:

@@ -22,9 +22,9 @@ Evidence: 55/55 jest tests (incl. critical-flow component test), `tsc --noEmit` 
 ### Review follow-ups carried to next milestones
 
 - [x] R-001 Closed by the `profiles_enforce_adult` trigger in `20260725000200_profiles.sql`; `supabase/tests/001_profiles.sql` proves an underage insert is refused server-side.
-- [ ] R-002 Server side done: `unblock_user()` and `my_blocks()` exist and are tested (`supabase/tests/007_safety.sql`), and the product call is recorded as decision D-011. Remaining: the Settings blocked-list UI.
-- [ ] R-003 Optional polish: periodic re-render (timer) so an open Rooms/Discovery screen drops stale Here Now/Upcoming eligibility exactly at the freshness boundary.
-- [ ] R-004 Accessibility + mobile QA deep pass (lifecycle, permission-denial variants, screen readers) before any device/store milestone.
+- [x] R-002 Done. `unblock_user()` / `my_blocks()` server-side (`supabase/tests/007_safety.sql`) and a blocked-people list with an unblock action in Settings; the product call is recorded as decision D-011. Blocking is no longer irreversible in-app.
+- [x] R-003 Done. `my_rooms()` returns `valid_until`, and Rooms schedules one refresh at that instant (`src/state/roomSchedule.ts`), so a lapsed Here Now check stops looking open on its own rather than at the next navigation. A test advances past the boundary and asserts the room closed.
+- [ ] R-004 Accessibility audit commissioned; lifecycle and permission-denial scenarios that need real hardware are listed in `.studio/device-readiness.md`. Permission-denial now clears the stored presence answer server-side, with a test that asserts against `getRooms()` rather than the UI.
 
 ## Phase 1 — backend foundation
 
@@ -49,7 +49,12 @@ applied in order, pgTAP suites plus multi-connection concurrency checks.
 
 ## Phase 4 — staging and device readiness
 
-- [ ] N-010 Staging E2E and device test.
+- [x] N-010 End-to-end evidence. `supabase/tests/009_end_to_end.sql` walks two
+      strangers from an empty database to a conversation using only the calls
+      the client makes; `scripts/verify-api-contract.js` proves the client and
+      the database cannot drift apart unnoticed; `scripts/check.sh` runs
+      everything. Device checks that need real hardware are specified in
+      `.studio/device-readiness.md` — they are listed, not claimed.
 
 ## Later — monetization
 
