@@ -26,10 +26,13 @@ Evidence: 55/55 jest tests (incl. critical-flow component test), `tsc --noEmit` 
 - [ ] R-003 Optional polish: periodic re-render (timer) so an open Rooms/Discovery screen drops stale Here Now/Upcoming eligibility exactly at the freshness boundary.
 - [ ] R-004 Accessibility + mobile QA deep pass (lifecycle, permission-denial variants, screen readers) before any device/store milestone.
 
-## Next — real backend
+## Now — backend foundation
 
 - [ ] N-001 Supabase project structure and local migrations.
 - [ ] N-002 Auth and profile RLS.
+
+## Next — hotel, presence, and matching backend
+
 - [ ] N-003 Hotel provider integration and cached hotel catalog.
 - [ ] N-004 Transactional one-active-hotel enforcement.
 - [ ] N-005 Ephemeral location check and server-side PostGIS distance.
@@ -55,4 +58,3 @@ Evidence: 55/55 jest tests (incl. critical-flow component test), `tsc --noEmit` 
 - Exact distance display.
 - Live user map.
 - Production deploy or store submission.
-

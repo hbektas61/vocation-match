@@ -2,42 +2,35 @@
 
 ## Current phase
 
-- Phase: MVP foundation
+- Phase: Backend foundation
 - Lead: `project-orchestrator`
-- Goal: Create a runnable, tested Expo foundation and mocked end-to-end core flow.
-- Completion promise: `VOCATION_FOUNDATION_COMPLETE`
+- Goal: Add a locally reproducible Supabase foundation with authentication, profile persistence, RLS, and safe mobile integration boundaries.
+- Completion promise: `VOCATION_BACKEND_FOUNDATION_COMPLETE`
 
 ## Definition of done
 
-- `mobile/` contains an Expo React Native TypeScript app.
-- Navigation covers onboarding, profile, hotel search, hotel activation, Upcoming, Here Now, discovery, match, inbox, chat, report/block, and settings placeholders.
-- The working vertical flow is usable with local fixtures.
-- Domain types and pure rules cover exactly one active hotel, self-declared Upcoming, 500-meter Here Now, room eligibility, swipe, and mutual match.
-- Payment, premium, reservation documents, ID verification, and background location are absent.
-- Focused unit tests pass.
-- Lint and TypeScript checks pass.
-- A local Expo web or platform build check passes where the environment supports it.
-- Material code is reviewed and any critical/high finding is fixed.
-- `.studio/backlog.md` and `.studio/handoffs.md` contain evidence and the next milestone.
+- `supabase/` contains reproducible local configuration, ordered migrations, and database test/seed support without committed secrets.
+- Authentication owns the user identity; a profile row is tied to `auth.users` and enforces the 18+ and required-profile rules at the server boundary.
+- Row Level Security lets an authenticated user create/read/update only their own profile and denies anonymous or cross-user writes.
+- Mobile code uses a typed backend boundary with safe environment handling; existing fixture-driven tests remain usable without production credentials.
+- Service-role keys, exact location history, reservation proof, ID verification, payments, and production deployment are absent.
+- Database-focused checks pass when the supported local environment is available; any unavailable external dependency is reported honestly rather than simulated.
+- Mobile unit tests, lint, TypeScript, and Expo build checks pass.
+- Material changes receive code and security review; every critical/high finding is fixed.
+- `.studio/backlog.md` and `.studio/handoffs.md` contain verification evidence and the next milestone.
 
 ## Agent sequence
 
 1. `project-orchestrator`
-   - Inspect state, lock scope, create implementation slices.
-2. `mobile-architect`
-   - Decide Expo layout, navigation, state boundaries, and test strategy.
-3. `frontend-ux`
-   - Define low-friction screens and accurate trust copy.
+   - Inspect the completed mobile foundation, lock backend scope, and create non-overlapping slices.
+2. `api-architect` + `database-engineer`
+   - Define the Supabase boundary, schema, migrations, constraints, and RLS policy matrix.
+3. `backend-engineer`
+   - Implement local Supabase structure, auth/profile persistence, policies, and database tests.
 4. `cross-platform-engineer`
-   - Implement the mobile foundation and vertical slice.
-5. `test-engineer`
-   - Add domain and critical-flow tests.
-6. `code-reviewer`
-   - Review correctness, concurrency assumptions, maintainability.
-7. `security-auditor`
-   - Check location minimization, logs, storage, and abuse boundaries.
-8. `mobile-qa-release`
-   - Check lifecycle, permission denial, accessibility, and device readiness.
+   - Add the typed mobile client boundary and preserve credential-free fixture tests.
+5. `test-engineer` + `code-reviewer` + `security-auditor`
+   - Verify behavior and independently review auth, RLS, secret handling, and regressions.
 
 Use at most 3–5 active specialists. Assign non-overlapping files.
 
@@ -45,13 +38,13 @@ Use at most 3–5 active specialists. Assign non-overlapping files.
 
 | Gate | Required evidence | Status |
 | --- | --- | --- |
-| G0 Scope | Brief and decisions reflect low-friction model | done |
-| G1 Architecture | ADR/module plan recorded | done — `.studio/architecture.md` ADR-001..008 |
-| G2 Scaffold | Expo TypeScript app installs and starts | done — `npm install` clean; `npx expo export --platform web` bundles successfully |
-| G3 Vertical flow | Fixture-driven happy path works | done — critical-flow component test walks age gate → auth → profile → hotel → Here Now → swipe → match → chat |
-| G4 Domain quality | Rule tests, lint, and typecheck pass | done — 55/55 jest tests, `tsc --noEmit` clean, `eslint .` clean (2026-07-25) |
-| G5 Review | Code/security review has no critical/high finding | done — independent code-reviewer + security-auditor passes; 1 medium (pre-match report/block) fixed same day; lows fixed or backlogged |
-| G6 Handoff | Next backend milestone documented | done — see `.studio/handoffs.md` 2026-07-25 entry and Next section of backlog |
+| B0 Handoff | Mobile foundation evidence and backend scope are recorded | done — `.studio/handoffs.md` 2026-07-25 |
+| B1 Architecture | Supabase schema, auth flow, RLS matrix, and mobile boundary are recorded | todo |
+| B2 Database | Local migrations and auth/profile RLS are implemented | todo |
+| B3 Integration | Typed mobile backend boundary works without committed credentials | todo |
+| B4 Verification | Database checks plus mobile test/lint/typecheck/build pass | todo |
+| B5 Review | Code/security review has no unresolved critical/high finding | todo |
+| B6 Handoff | Evidence and the next hotel/presence milestone are recorded | todo |
 
 ## Loop contract
 
@@ -63,10 +56,10 @@ Use at most 3–5 active specialists. Assign non-overlapping files.
 ## GitHub checkpoint contract
 
 - Repository: `hbektas61/vocation-match`
-- Development branch: current feature branch, initially `worktree-mvp-foundation`
-- Checkpoint: push after each coherent increment whose relevant checks pass.
-- The owner has permanently authorized normal commits, `origin` setup, and feature-branch pushes without confirmation.
-- Never auto-push a failing checkpoint.
-- Never auto-merge into `main`, force-push, or publish a release.
+- Delivery branch: `main`
+- Checkpoint: after each coherent increment passes its relevant checks, integrate it into local `main` and push `origin/main`.
+- The owner has permanently authorized normal commits, `origin` setup, local integration, and direct pushes to `main` without confirmation.
+- Temporary worktree branches are allowed for agent isolation, but routine pull requests must not be created.
+- Never push a failing checkpoint, force-push, rewrite history, deploy production, or publish a release.
 - Retry temporary auth/network failures on the next loop iteration without asking the owner.
 - Record commit SHA, checks, and next item in `.studio/handoffs.md`.

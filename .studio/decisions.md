@@ -12,7 +12,7 @@ These decisions are owner-approved and must not be silently changed.
 | D-006 | 2026-07-24 | Payments and premium access are deferred to the next product phase. | Validate the core loop before monetization. | Core pilot flow is working and measured. |
 | D-007 | 2026-07-24 | Product copy must say “self-declared upcoming” and “near the hotel now,” not “verified reservation/guest.” | Prevent misleading trust claims. | A real hotel or reservation integration exists. |
 | D-008 | 2026-07-24 | MVP is 18+ and includes block/report from the first usable build. | Social matching requires baseline safety. | Never remove. |
-| D-009 | 2026-07-24 | Claude Studio may commit and push verified feature-branch increments to `hbektas61/vocation-match` without asking again. | The owner wants continuous GitHub checkpoints during the loop. | Owner explicitly revokes authorization. |
+| D-009 | 2026-07-25 | Claude Studio may integrate verified increments into `main` and push `origin/main` directly without asking or opening a PR. Temporary local worktree branches are allowed for isolation. | The owner wants continuous delivery without routine pull requests. | Owner explicitly revokes authorization. |
 
 ## Open owner decisions
 

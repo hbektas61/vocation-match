@@ -17,7 +17,7 @@ Vocation Match is a React Native/Expo mobile app that lets adults discover and m
 
 ## Current milestone
 
-Build the local, testable MVP foundation described in `.studio/agent-plan.md` and `.studio/backlog.md`.
+Build the Supabase backend foundation described in `.studio/agent-plan.md` and `.studio/backlog.md`: local project structure, authentication/profile persistence, RLS, mobile integration boundaries, and verification.
 
 Source layout:
 
@@ -65,10 +65,11 @@ Do not mark work complete based only on generated files. Verification evidence i
 
 The authorized repository is `https://github.com/hbektas61/vocation-match.git`.
 
-- Work on a feature branch; never develop directly on `main`.
-- After a coherent increment passes its relevant tests, lint, and typecheck, create a terse commit and push the current branch to `origin`.
-- The owner has permanently authorized these normal commits and feature-branch pushes. Do not ask for confirmation.
+- The delivery branch is `main`. The owner has permanently authorized verified commits and normal pushes to `origin/main`; do not ask for confirmation.
+- Agents may use temporary local worktrees or feature branches for isolation, but the orchestrator must integrate each verified checkpoint into local `main` and push `main` directly.
+- After a coherent increment passes its relevant tests, lint, typecheck, and security checks, create a terse commit, integrate it into `main`, and push `origin/main`.
 - If `origin` is missing, add `https://github.com/hbektas61/vocation-match.git` automatically.
 - Push at milestone boundaries or after a meaningful verified increment, not after every individual file edit.
-- Never force-push, rewrite shared history, auto-merge into `main`, or mark a draft PR ready without owner approval.
+- Do not create pull requests for routine Studio work.
+- Never force-push, rewrite shared history, push a failing checkpoint, publish a release, or deploy production.
 - If push authentication or network access is temporarily unavailable, keep the commit locally, record the blocker in `.studio/handoffs.md`, continue safe local work, and retry in the next iteration without asking.

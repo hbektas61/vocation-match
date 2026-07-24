@@ -9,8 +9,8 @@ if [ -z "$CURRENT_BRANCH" ]; then
   exit 2
 fi
 
-if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; then
-  echo "Autonomous checkpoints must use a feature branch, not $CURRENT_BRANCH." >&2
+if [ "$CURRENT_BRANCH" != "main" ]; then
+  echo "Verified delivery checkpoints must be integrated into main before push; current branch is $CURRENT_BRANCH." >&2
   exit 2
 fi
 
@@ -24,4 +24,4 @@ else
   git remote add origin "$AUTHORIZED_REMOTE"
 fi
 
-git push -u origin "$CURRENT_BRANCH"
+git push -u origin main

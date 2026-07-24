@@ -1,5 +1,17 @@
 # Handoffs
 
+## 2026-07-25 — Direct-main delivery and Opus loop authorized
+
+Handoff:
+- From: Hami / owner
+- To: `project-orchestrator`
+- What changed: routine Studio checkpoints no longer use pull requests; the runner starts with Opus and verified increments are integrated into and pushed directly to `origin/main`.
+- Key decisions: temporary local worktree branches remain allowed for agent isolation; only verified checkpoints may reach `main`; force-push, history rewriting, releases, and production deployment remain forbidden.
+- Files: `CLAUDE.md`, `.studio/agent-plan.md`, `.studio/loop-prompt.md`, `.studio/run-loop.sh`, `.studio/git-checkpoint.sh`, `.studio/decisions.md`
+- Verification: pending commit and direct `origin/main` push.
+- Risks: direct-main delivery removes PR review as a gate, so automated checks and independent code/security review remain mandatory before every push.
+- Recommended next agent: `project-orchestrator` for the Supabase backend foundation milestone.
+
 ## 2026-07-24 — Owner decisions to Studio
 
 Handoff:
