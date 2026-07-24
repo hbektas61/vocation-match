@@ -17,7 +17,6 @@ sh -n "$FOUNDATION_WORKTREE/.studio/run-loop.sh" "$FOUNDATION_WORKTREE/.studio/g
 printf '%s\n' "Recording the Opus/direct-main Studio configuration..."
 git -C "$FOUNDATION_WORKTREE" add \
   .gitignore \
-  .claude/ralph-loop.local.md \
   CLAUDE.md \
   .studio/activate-direct-main.sh \
   .studio/agent-plan.md \
@@ -45,6 +44,7 @@ git -C "$PROJECT_ROOT" merge --ff-only worktree-mvp-foundation
 printf '%s\n' "Pushing the verified checkpoint directly to origin/main..."
 git -C "$PROJECT_ROOT" push -u origin main
 
-printf '%s\n' "Starting the Supabase backend foundation loop with Opus..."
+printf '%s\n' "Starting the continuous four-phase MVP loop with Opus..."
 cd "$PROJECT_ROOT"
+rm -f "$PROJECT_ROOT/.claude/ralph-loop.local.md"
 sh .studio/run-loop.sh
