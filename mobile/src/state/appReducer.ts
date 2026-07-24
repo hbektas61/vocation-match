@@ -1,3 +1,4 @@
+import { isoDateFromMs } from '../clock';
 import { activateHotel, NO_ACTIVE_HOTEL } from '../domain/hotel';
 import { evaluateForegroundCheck, type ForegroundReading } from '../domain/hereNow';
 import { findMutualMatch, recordSwipe, unmatch } from '../domain/matching';
@@ -40,13 +41,7 @@ export type AppAction =
   | { type: 'SIGN_IN' }
   | { type: 'SAVE_PROFILE'; profile: Profile }
   | { type: 'ACTIVATE_HOTEL'; hotelId: string; now: number }
-  | {
-      type: 'DECLARE_UPCOMING';
-      checkInDate: string;
-      checkOutDate: string;
-      todayIsoDate: string;
-      now: number;
-    }
+  | { type: 'DECLARE_UPCOMING'; checkInDate: string; checkOutDate: string; now: number }
   | { type: 'CLEAR_UPCOMING' }
   | { type: 'SET_LOCATION_PERMISSION'; permission: LocationPermission }
   | { type: 'RECORD_PRESENCE_CHECK'; hotel: Hotel; reading: ForegroundReading }
@@ -104,10 +99,12 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case 'DECLARE_UPCOMING': {
       const hotelId = state.activeHotel.activeHotelId;
       if (!hotelId) return state;
+      // Today is derived from the action's own clock so the enforcement
+      // point cannot disagree with a caller-supplied calendar date.
       const validation = validateStayDates(
         action.checkInDate,
         action.checkOutDate,
-        action.todayIsoDate,
+        isoDateFromMs(action.now),
       );
       if (!validation.ok) return state;
       const declaration: UpcomingDeclaration = {
@@ -123,7 +120,13 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, upcoming: null };
 
     case 'SET_LOCATION_PERMISSION':
-      return { ...state, locationPermission: action.permission };
+      // Denying permission also invalidates any existing presence session so
+      // the UI cannot show a stale "you are in" state next to the denial.
+      return {
+        ...state,
+        locationPermission: action.permission,
+        hereNow: action.permission === 'denied' ? null : state.hereNow,
+      };
 
     case 'RECORD_PRESENCE_CHECK': {
       if (state.activeHotel.activeHotelId !== action.hotel.id) return state;

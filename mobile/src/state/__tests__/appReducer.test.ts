@@ -4,7 +4,6 @@ import { HOTELS } from '../../fixtures/hotels';
 
 const NOW = 1_000_000;
 const LARA = HOTELS[0]; // hotel-lara-shore
-const TODAY = '2026-07-25';
 
 function onboardedState(): AppState {
   let state = initialAppState(NOW);
@@ -22,7 +21,6 @@ function declareUpcoming(state: AppState): AppState {
     type: 'DECLARE_UPCOMING',
     checkInDate: '2026-08-01',
     checkOutDate: '2026-08-08',
-    todayIsoDate: TODAY,
     now: NOW,
   });
 }
@@ -50,10 +48,32 @@ describe('appReducer hotel switching (D-003/D-004)', () => {
       type: 'DECLARE_UPCOMING',
       checkInDate: '2026-08-08',
       checkOutDate: '2026-08-01',
-      todayIsoDate: TODAY,
       now: NOW,
     });
     expect(after.upcoming).toBeNull();
+  });
+
+  it('rejects a declaration whose stay ended before the action clock', () => {
+    const state = onboardedState();
+    const after = appReducer(state, {
+      type: 'DECLARE_UPCOMING',
+      checkInDate: '2026-07-01',
+      checkOutDate: '2026-07-10',
+      now: new Date('2026-09-01T12:00:00').getTime(),
+    });
+    expect(after.upcoming).toBeNull();
+  });
+
+  it('denying location permission clears the presence session', () => {
+    let state = appReducer(onboardedState(), {
+      type: 'RECORD_PRESENCE_CHECK',
+      hotel: LARA,
+      reading: { latitude: LARA.latitude, longitude: LARA.longitude, timestamp: NOW },
+    });
+    expect(state.hereNow).not.toBeNull();
+    state = appReducer(state, { type: 'SET_LOCATION_PERMISSION', permission: 'denied' });
+    expect(state.hereNow).toBeNull();
+    expect(state.locationPermission).toBe('denied');
   });
 
   it('ignores a presence check for a hotel that is not active', () => {

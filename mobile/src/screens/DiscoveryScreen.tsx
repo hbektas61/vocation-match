@@ -16,7 +16,7 @@ import {
   Screen,
   Title,
 } from '../components/ui';
-import { nowMs } from '../clock';
+import { nowMs, todayIsoDate } from '../clock';
 import { COPY } from '../copy';
 import { discoveryPool } from '../domain/matching';
 import { eligibleRooms } from '../domain/rooms';
@@ -24,7 +24,7 @@ import type { RoomKey } from '../domain/types';
 import { CANDIDATES, SELF_ID } from '../fixtures/candidates';
 import { getHotelById } from '../fixtures/hotels';
 import type { RootStackParamList } from '../navigation/types';
-import { todayIsoDate, useAppStore } from '../state/AppStore';
+import { useAppStore } from '../state/AppStore';
 
 const ROOM_LABEL: Record<RoomKey, string> = {
   UPCOMING: COPY.upcoming.roomTitle,
@@ -118,6 +118,13 @@ export function DiscoveryScreen() {
           <Gap size="xs" />
           <Button label={`Like ${candidate.displayName}`} onPress={() => swipe('LIKE')} testID="swipe-like" />
           <Button label="Pass" variant="secondary" onPress={() => swipe('PASS')} testID="swipe-pass" />
+          {/* D-008: report/block must be reachable before any match exists. */}
+          <Button
+            label="Report or block"
+            variant="danger"
+            onPress={() => navigation.navigate('ReportBlock', { userId: candidate.id })}
+            testID="discovery-report-block"
+          />
         </Card>
       ) : (
         <EmptyState message={COPY.discovery.emptyDeck} />

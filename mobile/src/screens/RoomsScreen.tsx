@@ -3,12 +3,12 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
 
 import { Badge, Body, Button, Caption, Card, Notice, Screen, Title } from '../components/ui';
-import { nowMs } from '../clock';
+import { nowMs, todayIsoDate } from '../clock';
 import { COPY } from '../copy';
 import { isRoomEligible } from '../domain/rooms';
 import { getHotelById } from '../fixtures/hotels';
 import type { RootStackParamList } from '../navigation/types';
-import { todayIsoDate, useAppStore } from '../state/AppStore';
+import { useAppStore } from '../state/AppStore';
 
 export function RoomsScreen() {
   const { state } = useAppStore();

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 
 import { Body, Button, Field, Gap, Notice, Screen, Title } from '../components/ui';
-import { nowMs } from '../clock';
+import { nowMs, todayIsoDate } from '../clock';
 import { COPY } from '../copy';
 import { validateStayDates } from '../domain/upcoming';
 import type { RootScreenProps } from '../navigation/types';
-import { todayIsoDate, useAppStore } from '../state/AppStore';
+import { useAppStore } from '../state/AppStore';
 
 const VALIDATION_MESSAGES = {
   INVALID_FORMAT: 'Enter both dates as YYYY-MM-DD.',
@@ -31,7 +31,6 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
       type: 'DECLARE_UPCOMING',
       checkInDate: checkIn.trim(),
       checkOutDate: checkOut.trim(),
-      todayIsoDate: today,
       now: nowMs(),
     });
     navigation.goBack();

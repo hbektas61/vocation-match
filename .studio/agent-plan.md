@@ -46,12 +46,12 @@ Use at most 3–5 active specialists. Assign non-overlapping files.
 | Gate | Required evidence | Status |
 | --- | --- | --- |
 | G0 Scope | Brief and decisions reflect low-friction model | done |
-| G1 Architecture | ADR/module plan recorded | todo |
-| G2 Scaffold | Expo TypeScript app installs and starts | todo |
-| G3 Vertical flow | Fixture-driven happy path works | todo |
-| G4 Domain quality | Rule tests, lint, and typecheck pass | todo |
-| G5 Review | Code/security review has no critical/high finding | todo |
-| G6 Handoff | Next backend milestone documented | todo |
+| G1 Architecture | ADR/module plan recorded | done — `.studio/architecture.md` ADR-001..008 |
+| G2 Scaffold | Expo TypeScript app installs and starts | done — `npm install` clean; `npx expo export --platform web` bundles successfully |
+| G3 Vertical flow | Fixture-driven happy path works | done — critical-flow component test walks age gate → auth → profile → hotel → Here Now → swipe → match → chat |
+| G4 Domain quality | Rule tests, lint, and typecheck pass | done — 55/55 jest tests, `tsc --noEmit` clean, `eslint .` clean (2026-07-25) |
+| G5 Review | Code/security review has no critical/high finding | done — independent code-reviewer + security-auditor passes; 1 medium (pre-match report/block) fixed same day; lows fixed or backlogged |
+| G6 Handoff | Next backend milestone documented | done — see `.studio/handoffs.md` 2026-07-25 entry and Next section of backlog |
 
 ## Loop contract
 

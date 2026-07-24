@@ -45,6 +45,25 @@ describe('critical flow', () => {
     expect(await screen.findByText(/Nice to match|pool area|What brings you/)).toBeTruthy();
   });
 
+  it('can report and block from the discovery deck before any match exists', async () => {
+    await onboardAndActivateHotel();
+
+    await fireEvent.press(screen.getByText('Rooms'));
+    await fireEvent.press(await screen.findByTestId('open-here-now'));
+    await fireEvent.press(await screen.findByTestId('simulate-near'));
+    await fireEvent.press(screen.getByTestId('here-now-done'));
+
+    await fireEvent.press(await screen.findByText('Discovery'));
+    expect(await screen.findByTestId('candidate-cand-derya')).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('discovery-report-block'));
+    await fireEvent.press(await screen.findByTestId('block-start'));
+    await fireEvent.press(await screen.findByTestId('block-confirm'));
+
+    // Back on the deck: the blocked person is gone, the next candidate shows.
+    expect(await screen.findByTestId('candidate-cand-mert')).toBeTruthy();
+    expect(screen.queryByTestId('candidate-cand-derya')).toBeNull();
+  });
+
   it('keeps discovery closed until a room is opened', async () => {
     await onboardAndActivateHotel();
 
