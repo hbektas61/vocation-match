@@ -36,6 +36,10 @@ run() { # run <label> <command...>
 
 if [ "$RUN_DB" = "1" ]; then
   run "database — migrations, RLS, pgTAP, concurrency" bash "$ROOT/supabase/scripts/db-test.sh"
+  # Cheap, and it catches the one class of break that every other check misses:
+  # the client and the SQL drifting apart. Needs the container the step above
+  # leaves running.
+  run "client ↔ database contract" node "$ROOT/scripts/verify-api-contract.js"
 fi
 
 if [ "$RUN_MOBILE" = "1" ]; then
