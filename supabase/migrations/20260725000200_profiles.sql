@@ -60,7 +60,12 @@ alter table public.profiles enable row level security;
 alter table public.profiles force row level security;
 
 revoke all on table public.profiles from anon, authenticated;
-grant select, insert, update, delete on table public.profiles to authenticated;
+-- Column-level on purpose. A table-wide UPDATE grant would let a user write
+-- any column of their own row, and moderation columns live on this table.
+grant select                                                on table public.profiles to authenticated;
+grant insert (id, display_name, bio, birthdate, photo_url)  on table public.profiles to authenticated;
+grant update (display_name, bio, birthdate, photo_url)      on table public.profiles to authenticated;
+grant delete                                                on table public.profiles to authenticated;
 
 create policy profiles_select_own on public.profiles
   for select to authenticated

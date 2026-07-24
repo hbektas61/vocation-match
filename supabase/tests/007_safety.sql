@@ -254,6 +254,31 @@ select is(
   'and the decision is written to the moderation trail'
 );
 
+-- --------------------------------------------- suspension cannot be undone
+-- A moderation column lives on a table the user owns a row in, so the write
+-- grant has to be column-level. With a table-wide UPDATE grant this next
+-- statement would succeed and a suspended user could reinstate themselves.
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000c1');
+select throws_ok(
+  $$update public.profiles set suspended_at = null
+     where id = '00000000-0000-0000-0000-0000000000c1'$$,
+  '42501',
+  null,
+  'a suspended user cannot clear their own suspension'
+);
+
+select lives_ok(
+  $$update public.profiles set display_name = 'Cam again'
+     where id = '00000000-0000-0000-0000-0000000000c1'$$,
+  'but can still edit the fields that are actually theirs'
+);
+
+select ok(
+  (select suspended_at is not null from public.profiles
+    where id = '00000000-0000-0000-0000-0000000000c1'),
+  'and the suspension is still in place afterwards'
+);
+
 -- ------------------------------------------------- suspension takes effect
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000d1');
 

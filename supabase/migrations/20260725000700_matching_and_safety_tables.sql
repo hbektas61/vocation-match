@@ -15,6 +15,13 @@ alter table public.profiles
 comment on column public.profiles.suspended_at is
   'Set by moderation. A suspended profile is filtered out of discovery and cannot send messages.';
 
+-- Adding a column re-opens the grant surface, so the client's column list is
+-- restated here: without this a suspended user could clear their own
+-- suspension with a one-line update of their own row.
+revoke insert, update on table public.profiles from anon, authenticated;
+grant insert (id, display_name, bio, birthdate, photo_url) on table public.profiles to authenticated;
+grant update (display_name, bio, birthdate, photo_url)     on table public.profiles to authenticated;
+
 -- --------------------------------------------------------------- swipes
 create table public.swipes (
   actor_id   uuid not null references public.profiles (id) on delete cascade,

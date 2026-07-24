@@ -91,6 +91,30 @@ select throws_ok(
   'an over-long message is refused'
 );
 
+-- A sender who could choose created_at could reorder someone else's history.
+select throws_ok(
+  format($$insert into public.messages (match_id, sender_id, body, created_at)
+           values (%L, '00000000-0000-0000-0000-0000000000b1', 'backdated', now() - interval '1 year')$$,
+         (select id from m)),
+  '42501',
+  null,
+  'a sender cannot choose when their message was sent'
+);
+
+select throws_ok(
+  $$update public.messages set body = 'edited'$$,
+  '42501',
+  null,
+  'and cannot rewrite a message after sending it'
+);
+
+select throws_ok(
+  $$delete from public.messages$$,
+  '42501',
+  null,
+  'or delete one'
+);
+
 -- --------------------------------------------------------------- outsiders
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000c1');
 

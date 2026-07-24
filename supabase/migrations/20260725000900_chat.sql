@@ -70,7 +70,10 @@ grant execute on function app.can_send_message(uuid, uuid) to authenticated, ser
 alter table public.messages enable row level security;
 alter table public.messages force row level security;
 revoke all on table public.messages from anon, authenticated;
-grant select, insert on table public.messages to authenticated;
+grant select on table public.messages to authenticated;
+-- `created_at` is not in the list: a sender who could choose it could reorder
+-- someone else's conversation.
+grant insert (match_id, sender_id, body) on table public.messages to authenticated;
 
 create policy messages_select_participants on public.messages
   for select to authenticated
