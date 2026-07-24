@@ -60,3 +60,13 @@ Use at most 3–5 active specialists. Assign non-overlapping files.
 - Success: every Definition of Done item is true and verified.
 - Stop: maximum 20 iterations; or two consecutive iterations produce no new evidence because of an external dependency. Record the blocker instead of claiming success.
 
+## GitHub checkpoint contract
+
+- Repository: `hbektas61/vocation-match`
+- Development branch: current feature branch, initially `worktree-mvp-foundation`
+- Checkpoint: push after each coherent increment whose relevant checks pass.
+- The owner has permanently authorized normal commits, `origin` setup, and feature-branch pushes without confirmation.
+- Never auto-push a failing checkpoint.
+- Never auto-merge into `main`, force-push, or publish a release.
+- Retry temporary auth/network failures on the next loop iteration without asking the owner.
+- Record commit SHA, checks, and next item in `.studio/handoffs.md`.

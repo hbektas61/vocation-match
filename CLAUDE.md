@@ -61,3 +61,14 @@ For every increment:
 
 Do not mark work complete based only on generated files. Verification evidence is required.
 
+## GitHub sync
+
+The authorized repository is `https://github.com/hbektas61/vocation-match.git`.
+
+- Work on a feature branch; never develop directly on `main`.
+- After a coherent increment passes its relevant tests, lint, and typecheck, create a terse commit and push the current branch to `origin`.
+- The owner has permanently authorized these normal commits and feature-branch pushes. Do not ask for confirmation.
+- If `origin` is missing, add `https://github.com/hbektas61/vocation-match.git` automatically.
+- Push at milestone boundaries or after a meaningful verified increment, not after every individual file edit.
+- Never force-push, rewrite shared history, auto-merge into `main`, or mark a draft PR ready without owner approval.
+- If push authentication or network access is temporarily unavailable, keep the commit locally, record the blocker in `.studio/handoffs.md`, continue safe local work, and retry in the next iteration without asking.

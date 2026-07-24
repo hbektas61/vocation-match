@@ -31,3 +31,14 @@ Handoff:
 - Recommended next agent:
 ```
 
+## 2026-07-24 — GitHub checkpoint setup
+
+Handoff:
+- From: Codex
+- To: `project-orchestrator`
+- What I did: Authorized `hbektas61/vocation-match` as the project remote and added the verified-increment push contract.
+- Key decisions: Push feature branches after checks; never force-push or auto-merge `main`.
+- Files touched: `CLAUDE.md`, `.studio/agent-plan.md`, `.studio/handoffs.md`
+- Verification: `npm exec tsc -- --noEmit` passed in `mobile/`.
+- Risks / blockers: Codex sandbox cannot write `.git/config` or access the macOS Keychain; the owner must run the initial remote/commit/push commands in Terminal.
+- Recommended next agent: `cross-platform-engineer`
