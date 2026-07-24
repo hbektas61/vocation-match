@@ -85,7 +85,7 @@ select is(
 select throws_ok(
   $$select public.swipe('00000000-0000-0000-0000-0000000000b1', 'UPCOMING', 'LIKE')$$,
   '42501',
-  'That person is not available.',
+  'That person is not in this room.',
   'the blocker cannot swipe on the blocked person'
 );
 
@@ -104,11 +104,13 @@ select is(
   'and the conversation leaves their inbox too'
 );
 
+-- The same message a stranger would get. A different one here would tell the
+-- blocked person exactly what happened.
 select throws_ok(
   $$select public.swipe('00000000-0000-0000-0000-0000000000a1', 'UPCOMING', 'LIKE')$$,
   '42501',
-  'That person is not available.',
-  'the blocked person cannot swipe back'
+  'That person is not in this room.',
+  'the blocked person cannot swipe back, and is not told why'
 );
 
 -- ----------------------------------------------------------------- unblock

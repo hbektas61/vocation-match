@@ -66,21 +66,23 @@ begin
   if not app.room_eligible(v_user, v_hotel, p_room) then
     raise exception 'You do not have access to this room yet.' using errcode = '42501';
   end if;
-  if app.blocked_between(v_user, p_target_id) then
-    raise exception 'That person is not available.' using errcode = '42501';
-  end if;
-
   -- The target has to actually be in the same room of the same hotel, so the
   -- endpoint cannot be used to like arbitrary users by id.
-  if not exists (
-    select 1
-      from public.user_active_hotel other
-      join public.profiles p on p.id = other.user_id
-     where other.user_id = p_target_id
-       and other.hotel_id = v_hotel
-       and p.suspended_at is null
-       and app.room_eligible(p_target_id, v_hotel, p_room)
-  ) then
+  --
+  -- A block is folded into this same check on purpose. Answering "that person
+  -- is not available" for a block and "not in this room" for everything else
+  -- would tell someone they had been blocked, which is exactly what the
+  -- blocks table is careful never to reveal.
+  if app.blocked_between(v_user, p_target_id)
+     or not exists (
+       select 1
+         from public.user_active_hotel other
+         join public.profiles p on p.id = other.user_id
+        where other.user_id = p_target_id
+          and other.hotel_id = v_hotel
+          and p.suspended_at is null
+          and app.room_eligible(p_target_id, v_hotel, p_room)
+     ) then
     raise exception 'That person is not in this room.' using errcode = '42501';
   end if;
 
