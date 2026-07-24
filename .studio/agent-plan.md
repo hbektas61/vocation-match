@@ -65,11 +65,18 @@ Use at most 3–5 active specialists. Assign non-overlapping files.
 | Gate | Required evidence | Status |
 | --- | --- | --- |
 | P0 Mobile foundation | Fixture-driven Expo foundation and prior reviews pass | done — commit `2fa8bfe` |
-| P1 Backend foundation | N-001–N-002, auth/profile RLS, typed boundary, checks, review | todo |
-| P2 Hotel/presence/discovery | N-003–N-006, server enforcement, checks, review | todo |
-| P3 Matching/chat/safety | N-007–N-009, concurrency and abuse checks, review | todo |
-| P4 Staging/device readiness | N-010, R-002–R-004 disposition, E2E/device evidence, final review | todo |
-| P5 Final handoff | All evidence recorded and production/store work clearly deferred | todo |
+| P1 Backend foundation | N-001–N-002, auth/profile RLS, typed boundary, checks, review | server done and pushed (`a6f4b30`); mobile auth/profile wired; awaiting final review |
+| P2 Hotel/presence/discovery | N-003–N-006, server enforcement, checks, review | server done and pushed; screen wiring in progress |
+| P3 Matching/chat/safety | N-007–N-009, concurrency and abuse checks, review | server done and pushed; screen wiring in progress |
+| P4 Staging/device readiness | N-010, R-002–R-004 disposition, E2E/device evidence, final review | SQL end-to-end journey and `.studio/device-readiness.md` done; R-002 and R-003 server-side done; R-004 pending final UI |
+| P5 Final handoff | All evidence recorded and production/store work clearly deferred | pending |
+
+Evidence for the server side of P1–P3: `bash supabase/scripts/db-test.sh`
+(205 pgTAP assertions across 10 suites plus 8 concurrency checks) and
+`node scripts/verify-api-contract.js`. Two defects were found and fixed during
+the build rather than discovered later: a message-insert policy that could not
+see the other side's block, and a table-wide UPDATE grant that let a suspended
+user clear their own suspension.
 
 ## Loop contract
 
