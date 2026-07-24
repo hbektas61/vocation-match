@@ -1,210 +1,206 @@
 import { appReducer, initialAppState, type AppState } from '../appReducer';
-import { CANDIDATES, SELF_ID } from '../../fixtures/candidates';
-import { HOTELS } from '../../fixtures/hotels';
 
 const NOW = 1_000_000;
-const LARA = HOTELS[0]; // hotel-lara-shore
+const SELF_ID = 'user-1';
 
 function onboardedState(): AppState {
-  let state = initialAppState(NOW);
+  let state = initialAppState();
   state = appReducer(state, { type: 'CONFIRM_AGE' });
-  state = appReducer(state, { type: 'SIGN_IN' });
   state = appReducer(state, {
+    type: 'AUTH_SUCCESS',
+    session: { userId: SELF_ID, expiresAt: NOW + 60_000 },
+    profile: null,
+  });
+  return appReducer(state, {
     type: 'SAVE_PROFILE',
     profile: { id: SELF_ID, displayName: 'Test', age: 30, bio: '', interests: [] },
   });
-  return appReducer(state, { type: 'ACTIVATE_HOTEL', hotelId: LARA.id, now: NOW });
 }
 
-function declareUpcoming(state: AppState): AppState {
-  return appReducer(state, {
-    type: 'DECLARE_UPCOMING',
-    checkInDate: '2026-08-01',
-    checkOutDate: '2026-08-08',
-    now: NOW,
+describe('appReducer auth lifecycle', () => {
+  it('a restored session with no profile still requires profile setup', () => {
+    const state = appReducer(initialAppState(), {
+      type: 'BOOTSTRAP_RESOLVED',
+      session: { userId: SELF_ID, expiresAt: NOW + 60_000 },
+      profile: null,
+    });
+    expect(state.bootstrapStatus).toBe('ready');
+    expect(state.ageConfirmed).toBe(true);
+    expect(state.session).not.toBeNull();
+    expect(state.profile).toBeNull();
   });
-}
 
-describe('appReducer hotel switching (D-003/D-004)', () => {
-  it('activating a new hotel clears upcoming and here-now access', () => {
-    let state = declareUpcoming(onboardedState());
+  it('a restored session with a saved profile is ready for the main tabs', () => {
+    const profile = { id: SELF_ID, displayName: 'Test', age: 30, bio: '', interests: [] };
+    const state = appReducer(initialAppState(), {
+      type: 'BOOTSTRAP_RESOLVED',
+      session: { userId: SELF_ID, expiresAt: NOW + 60_000 },
+      profile,
+    });
+    expect(state.ageConfirmed).toBe(true);
+    expect(state.profile).toEqual(profile);
+  });
+
+  it('no session at bootstrap leaves the age gate in front of onboarding', () => {
+    const state = appReducer(initialAppState(), {
+      type: 'BOOTSTRAP_RESOLVED',
+      session: null,
+      profile: null,
+    });
+    expect(state.bootstrapStatus).toBe('ready');
+    expect(state.ageConfirmed).toBe(false);
+  });
+
+  it('sign-out clears session, profile, and every cached hotel/match/block state', () => {
+    let state = onboardedState();
     state = appReducer(state, {
-      type: 'RECORD_PRESENCE_CHECK',
-      hotel: LARA,
-      reading: { latitude: LARA.latitude, longitude: LARA.longitude, timestamp: NOW },
+      type: 'HOTEL_ACTIVATED',
+      activeHotel: { hotelId: 'hotel-lara-shore', activatedAt: NOW },
     });
-    expect(state.upcoming).not.toBeNull();
-    expect(state.hereNow).not.toBeNull();
-
-    state = appReducer(state, { type: 'ACTIVATE_HOTEL', hotelId: HOTELS[1].id, now: NOW + 1 });
-    expect(state.activeHotel.activeHotelId).toBe(HOTELS[1].id);
-    expect(state.upcoming).toBeNull();
-    expect(state.hereNow).toBeNull();
-  });
-
-  it('rejects invalid upcoming declarations', () => {
-    const state = onboardedState();
-    const after = appReducer(state, {
-      type: 'DECLARE_UPCOMING',
-      checkInDate: '2026-08-08',
-      checkOutDate: '2026-08-01',
-      now: NOW,
-    });
-    expect(after.upcoming).toBeNull();
-  });
-
-  it('rejects a declaration whose stay ended before the action clock', () => {
-    const state = onboardedState();
-    const after = appReducer(state, {
-      type: 'DECLARE_UPCOMING',
-      checkInDate: '2026-07-01',
-      checkOutDate: '2026-07-10',
-      now: new Date('2026-09-01T12:00:00').getTime(),
-    });
-    expect(after.upcoming).toBeNull();
-  });
-
-  it('denying location permission clears the presence session', () => {
-    let state = appReducer(onboardedState(), {
-      type: 'RECORD_PRESENCE_CHECK',
-      hotel: LARA,
-      reading: { latitude: LARA.latitude, longitude: LARA.longitude, timestamp: NOW },
-    });
-    expect(state.hereNow).not.toBeNull();
-    state = appReducer(state, { type: 'SET_LOCATION_PERMISSION', permission: 'denied' });
-    expect(state.hereNow).toBeNull();
-    expect(state.locationPermission).toBe('denied');
-  });
-
-  it('ignores a presence check for a hotel that is not active', () => {
-    const state = onboardedState();
-    const after = appReducer(state, {
-      type: 'RECORD_PRESENCE_CHECK',
-      hotel: HOTELS[1],
-      reading: { latitude: HOTELS[1].latitude, longitude: HOTELS[1].longitude, timestamp: NOW },
-    });
-    expect(after.hereNow).toBeNull();
-  });
-
-  it('stores no coordinates from a presence check (D-005)', () => {
-    const state = appReducer(onboardedState(), {
-      type: 'RECORD_PRESENCE_CHECK',
-      hotel: LARA,
-      reading: { latitude: LARA.latitude, longitude: LARA.longitude, timestamp: NOW },
-    });
-    expect(JSON.stringify(state)).not.toContain(String(LARA.latitude));
-  });
-});
-
-describe('appReducer swipe and match', () => {
-  it('a like on a seeded liker creates a mutual match', () => {
-    // cand-derya likes the tester in the fixtures.
-    const state = appReducer(onboardedState(), {
-      type: 'SWIPE',
-      toUserId: 'cand-derya',
-      room: 'HERE_NOW',
-      direction: 'LIKE',
-      now: NOW,
+    state = appReducer(state, {
+      type: 'MATCH_UPSERTED',
+      match: {
+        matchId: 'match-1',
+        otherUserId: 'cand-derya',
+        displayName: 'Derya',
+        age: 29,
+        photoUrl: null,
+        room: 'HERE_NOW',
+        createdAt: NOW,
+        unmatchedAt: null,
+        lastMessageAt: null,
+        lastMessageBody: null,
+      },
     });
     expect(state.matches).toHaveLength(1);
-    expect(state.lastMatchId).toBe(state.matches[0].id);
-  });
 
-  it('a pass never creates a match and repeat swipes are ignored', () => {
-    let state = appReducer(onboardedState(), {
-      type: 'SWIPE',
-      toUserId: 'cand-derya',
-      room: 'HERE_NOW',
-      direction: 'PASS',
-      now: NOW,
-    });
+    state = appReducer(state, { type: 'SIGN_OUT' });
+    expect(state.session).toBeNull();
+    expect(state.profile).toBeNull();
     expect(state.matches).toHaveLength(0);
-    const swipeCount = state.swipes.length;
-    state = appReducer(state, {
-      type: 'SWIPE',
-      toUserId: 'cand-derya',
-      room: 'HERE_NOW',
-      direction: 'LIKE',
-      now: NOW + 1,
-    });
-    expect(state.swipes).toHaveLength(swipeCount);
-    expect(state.matches).toHaveLength(0);
+    expect(state.activeHotel).toBeNull();
+    expect(state.bootstrapStatus).toBe('ready');
   });
 });
 
-describe('appReducer chat and safety', () => {
-  function matchedState(): AppState {
-    return appReducer(onboardedState(), {
-      type: 'SWIPE',
-      toUserId: 'cand-derya',
-      room: 'HERE_NOW',
-      direction: 'LIKE',
-      now: NOW,
+describe('appReducer hotel and rooms', () => {
+  it('activating a hotel clears the cached room eligibility and location permission (D-004)', () => {
+    let state = onboardedState();
+    state = appReducer(state, {
+      type: 'ROOMS_LOADED',
+      rooms: [
+        { room: 'UPCOMING', eligible: true, reason: 'ELIGIBLE' },
+        { room: 'HERE_NOW', eligible: true, reason: 'ELIGIBLE' },
+      ],
     });
-  }
+    state = appReducer(state, { type: 'SET_LOCATION_PERMISSION', permission: 'granted' });
 
-  it('sending the first message produces one canned reply', () => {
-    let state = matchedState();
-    const matchId = state.matches[0].id;
-    state = appReducer(state, { type: 'SEND_MESSAGE', matchId, text: 'Hi!', now: NOW + 10 });
-    expect(state.messages).toHaveLength(2);
-    expect(state.messages[0].senderId).toBe(SELF_ID);
-    expect(state.messages[1].senderId).toBe('cand-derya');
-
-    state = appReducer(state, { type: 'SEND_MESSAGE', matchId, text: 'Again', now: NOW + 20 });
-    expect(state.messages).toHaveLength(3);
-  });
-
-  it('ignores empty messages and messages to unknown matches', () => {
-    let state = matchedState();
-    const matchId = state.matches[0].id;
-    expect(appReducer(state, { type: 'SEND_MESSAGE', matchId, text: '   ', now: NOW }).messages)
-      .toHaveLength(0);
-    expect(
-      appReducer(state, { type: 'SEND_MESSAGE', matchId: 'nope', text: 'x', now: NOW }).messages,
-    ).toHaveLength(0);
-  });
-
-  it('unmatch removes the match and its messages', () => {
-    let state = matchedState();
-    const matchId = state.matches[0].id;
-    state = appReducer(state, { type: 'SEND_MESSAGE', matchId, text: 'Hi!', now: NOW + 10 });
-    state = appReducer(state, { type: 'UNMATCH', matchId });
-    expect(state.matches).toHaveLength(0);
-    expect(state.messages).toHaveLength(0);
-  });
-
-  it('blocking removes matches, messages, and hides the user from discovery', () => {
-    let state = matchedState();
-    const matchId = state.matches[0].id;
-    state = appReducer(state, { type: 'SEND_MESSAGE', matchId, text: 'Hi!', now: NOW + 10 });
-    state = appReducer(state, { type: 'BLOCK_USER', userId: 'cand-derya' });
-    expect(state.blockedUserIds).toContain('cand-derya');
-    expect(state.matches).toHaveLength(0);
-    expect(state.messages).toHaveLength(0);
-    expect(state.lastMatchId).toBeNull();
-  });
-
-  it('reports are recorded', () => {
-    const state = appReducer(matchedState(), {
-      type: 'REPORT_USER',
-      userId: 'cand-derya',
-      reason: 'Inappropriate messages',
-      now: NOW,
+    state = appReducer(state, {
+      type: 'HOTEL_ACTIVATED',
+      activeHotel: { hotelId: 'hotel-bosphorus-garden', activatedAt: NOW },
     });
-    expect(state.reports).toEqual([
-      { reportedUserId: 'cand-derya', reason: 'Inappropriate messages', at: NOW },
+    expect(state.activeHotel).toEqual({ hotelId: 'hotel-bosphorus-garden', activatedAt: NOW });
+    expect(state.rooms).toEqual([]);
+    expect(state.locationPermission).toBe('unknown');
+  });
+
+  it('denying location permission clears any cached Here Now eligibility', () => {
+    let state = appReducer(onboardedState(), {
+      type: 'ROOMS_LOADED',
+      rooms: [
+        { room: 'UPCOMING', eligible: false, reason: 'NO_DECLARATION' },
+        { room: 'HERE_NOW', eligible: true, reason: 'ELIGIBLE' },
+      ],
+    });
+    state = appReducer(state, { type: 'SET_LOCATION_PERMISSION', permission: 'denied' });
+    expect(state.locationPermission).toBe('denied');
+    expect(state.rooms).toEqual([
+      { room: 'UPCOMING', eligible: false, reason: 'NO_DECLARATION' },
+      { room: 'HERE_NOW', eligible: false, reason: 'NO_RECENT_CHECK' },
     ]);
   });
+});
 
-  it('reset returns to the initial state', () => {
-    const state = appReducer(matchedState(), { type: 'RESET', now: NOW + 100 });
-    expect(state).toEqual(initialAppState(NOW + 100));
+describe('appReducer matches', () => {
+  const match = {
+    matchId: 'match-1',
+    otherUserId: 'cand-derya',
+    displayName: 'Derya',
+    age: 29,
+    photoUrl: null,
+    room: 'HERE_NOW' as const,
+    createdAt: NOW,
+    unmatchedAt: null,
+    lastMessageAt: null,
+    lastMessageBody: null,
+  };
+
+  it('upserting a new match adds it and sets it as the last match', () => {
+    const state = appReducer(onboardedState(), { type: 'MATCH_UPSERTED', match });
+    expect(state.matches).toEqual([match]);
+    expect(state.lastMatchId).toBe('match-1');
+  });
+
+  it('upserting an existing match id replaces it instead of duplicating', () => {
+    let state = appReducer(onboardedState(), { type: 'MATCH_UPSERTED', match });
+    const updated = { ...match, lastMessageBody: 'hi' };
+    state = appReducer(state, { type: 'MATCH_UPSERTED', match: updated });
+    expect(state.matches).toEqual([updated]);
+  });
+
+  it('clearing the last match id leaves the match list untouched', () => {
+    let state = appReducer(onboardedState(), { type: 'MATCH_UPSERTED', match });
+    state = appReducer(state, { type: 'CLEAR_LAST_MATCH' });
+    expect(state.lastMatchId).toBeNull();
+    expect(state.matches).toEqual([match]);
+  });
+
+  it('unmatching keeps the match but marks it closed', () => {
+    let state = appReducer(onboardedState(), { type: 'MATCH_UPSERTED', match });
+    state = appReducer(state, { type: 'MATCH_UNMATCHED', matchId: 'match-1', unmatchedAt: NOW + 1 });
+    expect(state.matches[0].unmatchedAt).toBe(NOW + 1);
   });
 });
 
-describe('fixture sanity', () => {
-  it('all fixture candidates are adults', () => {
-    expect(CANDIDATES.every((c) => c.age >= 18)).toBe(true);
+describe('appReducer blocking', () => {
+  const blockedUser = { userId: 'cand-derya', displayName: 'Derya', blockedAt: NOW };
+
+  it('blocking someone with an open match closes that match (D-008)', () => {
+    let state = appReducer(onboardedState(), {
+      type: 'MATCH_UPSERTED',
+      match: {
+        matchId: 'match-1',
+        otherUserId: 'cand-derya',
+        displayName: 'Derya',
+        age: 29,
+        photoUrl: null,
+        room: 'HERE_NOW',
+        createdAt: NOW,
+        unmatchedAt: null,
+        lastMessageAt: null,
+        lastMessageBody: null,
+      },
+    });
+    state = appReducer(state, { type: 'USER_BLOCKED', blockedUser });
+    expect(state.blockedUsers).toEqual([blockedUser]);
+    expect(state.matches[0].unmatchedAt).toBe(NOW);
+  });
+
+  it('blocking the same person twice does not duplicate the blocked list', () => {
+    let state = appReducer(onboardedState(), { type: 'USER_BLOCKED', blockedUser });
+    state = appReducer(state, { type: 'USER_BLOCKED', blockedUser });
+    expect(state.blockedUsers).toHaveLength(1);
+  });
+
+  it('unblocking removes the person from the blocked list', () => {
+    let state = appReducer(onboardedState(), { type: 'USER_BLOCKED', blockedUser });
+    state = appReducer(state, { type: 'USER_UNBLOCKED', userId: 'cand-derya' });
+    expect(state.blockedUsers).toEqual([]);
+  });
+
+  it('BLOCKED_USERS_LOADED replaces the whole cached list', () => {
+    let state = appReducer(onboardedState(), { type: 'USER_BLOCKED', blockedUser });
+    state = appReducer(state, { type: 'BLOCKED_USERS_LOADED', blockedUsers: [] });
+    expect(state.blockedUsers).toEqual([]);
   });
 });

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 
 import { Body, Button, Field, Gap, Notice, Screen, Title } from '../components/ui';
-import { nowMs, todayIsoDate } from '../clock';
-import { COPY } from '../copy';
+import { todayIsoDate } from '../clock';
+import { apiErrorMessage, COPY } from '../copy';
+import { ApiError, getApi } from '../data';
 import { validateStayDates } from '../domain/upcoming';
 import type { RootScreenProps } from '../navigation/types';
-import { useAppStore } from '../state/AppStore';
 
 const VALIDATION_MESSAGES = {
   INVALID_FORMAT: 'Enter both dates as YYYY-MM-DD.',
@@ -14,26 +14,30 @@ const VALIDATION_MESSAGES = {
 } as const;
 
 export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
-  const { state, dispatch } = useAppStore();
-  const [checkIn, setCheckIn] = useState(state.upcoming?.checkInDate ?? '');
-  const [checkOut, setCheckOut] = useState(state.upcoming?.checkOutDate ?? '');
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const save = () => {
-    const today = todayIsoDate();
-    const validation = validateStayDates(checkIn.trim(), checkOut.trim(), today);
+  const save = async () => {
+    if (submitting) return;
+    // Fast client-side feedback only — the server re-validates the same
+    // coherence rules and its rejection wins if the two ever disagree.
+    const validation = validateStayDates(checkIn.trim(), checkOut.trim(), todayIsoDate());
     if (!validation.ok) {
       setError(VALIDATION_MESSAGES[validation.reason]);
       return;
     }
     setError(null);
-    dispatch({
-      type: 'DECLARE_UPCOMING',
-      checkInDate: checkIn.trim(),
-      checkOutDate: checkOut.trim(),
-      now: nowMs(),
-    });
-    navigation.goBack();
+    setSubmitting(true);
+    try {
+      await getApi().declareUpcomingStay(checkIn.trim(), checkOut.trim());
+      navigation.goBack();
+    } catch (err) {
+      setError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -43,35 +47,33 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
       <Gap size="sm" />
       <Body>{COPY.upcoming.formTitle}</Body>
       <Field
-        label="Check-in date (YYYY-MM-DD)"
+        label={COPY.upcoming.checkInLabel}
+        hint={COPY.upcoming.dateHint}
         value={checkIn}
         onChangeText={setCheckIn}
-        placeholder="2026-08-01"
+        placeholder={COPY.upcoming.checkInPlaceholder}
         autoCapitalize="none"
+        editable={!submitting}
         testID="upcoming-check-in"
       />
       <Field
-        label="Check-out date (YYYY-MM-DD)"
+        label={COPY.upcoming.checkOutLabel}
+        hint={COPY.upcoming.dateHint}
         value={checkOut}
         onChangeText={setCheckOut}
-        placeholder="2026-08-08"
+        placeholder={COPY.upcoming.checkOutPlaceholder}
         autoCapitalize="none"
+        editable={!submitting}
         testID="upcoming-check-out"
       />
-      {error ? <Notice message={error} tone="error" /> : null}
+      {error ? <Notice message={error} tone="error" testID="upcoming-error" /> : null}
       <Gap size="sm" />
-      <Button label="Save stay dates" onPress={save} testID="save-upcoming" />
-      {state.upcoming ? (
-        <Button
-          label="Remove declaration"
-          variant="secondary"
-          onPress={() => {
-            dispatch({ type: 'CLEAR_UPCOMING' });
-            navigation.goBack();
-          }}
-          testID="clear-upcoming"
-        />
-      ) : null}
+      <Button
+        label={submitting ? COPY.upcoming.saving : COPY.upcoming.saveButton}
+        onPress={save}
+        disabled={submitting}
+        testID="save-upcoming"
+      />
     </Screen>
   );
 }

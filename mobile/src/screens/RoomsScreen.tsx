@@ -1,73 +1,110 @@
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React from 'react';
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator } from 'react-native';
 
 import { Badge, Body, Button, Caption, Card, Notice, Screen, Title } from '../components/ui';
-import { nowMs, todayIsoDate } from '../clock';
-import { COPY } from '../copy';
-import { isRoomEligible } from '../domain/rooms';
-import { getHotelById } from '../fixtures/hotels';
+import { nowMs } from '../clock';
+import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation } from '../copy';
+import { ApiError, getApi, type RoomStatus } from '../data';
 import type { RootStackParamList } from '../navigation/types';
+import { earliestRoomExpiry } from '../state/roomSchedule';
 import { useAppStore } from '../state/AppStore';
 
 export function RoomsScreen() {
-  const { state } = useAppStore();
+  const { state, dispatch } = useAppStore();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const hotel = getHotelById(state.activeHotel.activeHotelId);
-  const now = nowMs();
-  const eligibilityInput = {
-    activeHotelId: state.activeHotel.activeHotelId,
-    upcoming: state.upcoming,
-    hereNow: state.hereNow,
-    now,
-    todayIsoDate: todayIsoDate(),
-  };
-  const upcomingOpen = isRoomEligible('UPCOMING', eligibilityInput);
-  const hereNowOpen = isRoomEligible('HERE_NOW', eligibilityInput);
-  // A check that was in range but is no longer fresh means the session expired.
-  const hereNowExpired =
-    !hereNowOpen &&
-    state.hereNow !== null &&
-    state.hereNow.withinRange &&
-    state.hereNow.hotelId === state.activeHotel.activeHotelId;
+  const [rooms, setRooms] = useState<RoomStatus[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!hotel) {
+  const hotel = state.hotels.find((h) => h.id === state.activeHotel?.hotelId) ?? null;
+
+  // Refresh on focus (coming back from Upcoming or Here Now), and again once
+  // more at the soonest room expiry (R-003) so a lapsed Here Now check stops
+  // looking open on its own rather than waiting for the next navigation.
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+
+      const load = async () => {
+        setError(null);
+        try {
+          const fetched = await getApi().getRooms();
+          if (cancelled) return;
+          setRooms(fetched);
+          dispatch({ type: 'ROOMS_LOADED', rooms: fetched });
+          const soonest = earliestRoomExpiry(fetched, nowMs());
+          if (soonest !== null) {
+            timer = setTimeout(load, soonest - nowMs());
+          }
+        } catch (err) {
+          if (!cancelled) {
+            setError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
+          }
+        }
+      };
+
+      load();
+      return () => {
+        cancelled = true;
+        if (timer) clearTimeout(timer);
+      };
+    }, [dispatch]),
+  );
+
+  const upcomingStatus = rooms?.find((r) => r.room === 'UPCOMING') ?? null;
+  const hereNowStatus = rooms?.find((r) => r.room === 'HERE_NOW') ?? null;
+  const noActiveHotel =
+    upcomingStatus?.reason === 'NO_ACTIVE_HOTEL' || hereNowStatus?.reason === 'NO_ACTIVE_HOTEL';
+
+  if (error) {
     return (
       <Screen testID="screen-rooms">
         <Title>Rooms</Title>
-        <Notice message={`Activate a hotel first. ${COPY.trust.oneHotel}`} />
+        <Notice message={error} tone="error" testID="rooms-error" />
+      </Screen>
+    );
+  }
+
+  if (rooms === null) {
+    return (
+      <Screen testID="screen-rooms">
+        <Title>Rooms</Title>
+        <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="rooms-loading" />
+      </Screen>
+    );
+  }
+
+  if (noActiveHotel || !hotel) {
+    return (
+      <Screen testID="screen-rooms">
+        <Title>Rooms</Title>
+        <Notice message={`${COPY.roomReason.NO_ACTIVE_HOTEL} ${COPY.trust.oneHotel}`} />
       </Screen>
     );
   }
 
   return (
     <Screen testID="screen-rooms">
-      <Title>Rooms at {hotel.name}</Title>
-      <Card>
+      <Title>{COPY_FOR.roomsTitle(hotel.name)}</Title>
+      <Card testID="room-upcoming">
         <Badge label={COPY.upcoming.statusBadge} tone="upcoming" />
         <Body>{COPY.upcoming.explainer}</Body>
-        {upcomingOpen && state.upcoming ? (
-          <Caption>
-            Open — your declared stay is {state.upcoming.checkInDate} to{' '}
-            {state.upcoming.checkOutDate}.
-          </Caption>
-        ) : (
-          <Caption>Closed — declare your stay dates to enter.</Caption>
-        )}
+        {upcomingStatus ? <Caption>{roomStatusExplanation('UPCOMING', upcomingStatus)}</Caption> : null}
         <Button
-          label={upcomingOpen ? 'Update stay dates' : 'Declare stay dates'}
+          label={upcomingStatus?.eligible ? 'Update stay dates' : 'Declare stay dates'}
           onPress={() => navigation.navigate('Upcoming')}
           testID="open-upcoming"
         />
       </Card>
-      <Card>
+      <Card testID="room-here-now">
         <Badge label={COPY.hereNow.statusBadge} tone="hereNow" />
         <Body>{COPY.hereNow.explainer}</Body>
-        {hereNowOpen ? (
-          <Caption>Open — a recent check placed you within 500 m.</Caption>
-        ) : (
-          <Caption>{hereNowExpired ? COPY.hereNow.expired : 'Closed — run a presence check to enter.'}</Caption>
-        )}
+        {hereNowStatus ? <Caption>{roomStatusExplanation('HERE_NOW', hereNowStatus)}</Caption> : null}
+        {state.locationPermission === 'denied' ? (
+          <Notice message={COPY.hereNow.permissionDenied} tone="error" />
+        ) : null}
         <Button
           label={COPY.hereNow.checkButton}
           onPress={() => navigation.navigate('HereNow')}

@@ -1,8 +1,9 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import { Text } from 'react-native';
+import { ActivityIndicator, Text } from 'react-native';
 
+import { Body, Screen } from '../components/ui';
 import { COPY } from '../copy';
 import { AgeGateScreen } from '../screens/AgeGateScreen';
 import { AuthScreen } from '../screens/AuthScreen';
@@ -42,6 +43,18 @@ function tabIcon(routeName: keyof TabParamList) {
   };
 }
 
+function BootstrapScreen() {
+  return (
+    <Screen testID="screen-bootstrap">
+      <ActivityIndicator
+        accessibilityLabel={COPY.bootstrap.loading}
+        testID="bootstrap-spinner"
+      />
+      <Body>{COPY.bootstrap.loading}</Body>
+    </Screen>
+  );
+}
+
 function MainTabs() {
   return (
     <Tabs.Navigator
@@ -63,12 +76,20 @@ function MainTabs() {
 
 /**
  * Onboarding is enforced by conditional screen registration: the main app
- * screens do not exist in the navigator until the age gate, the placeholder
- * sign-in, and the profile are complete.
+ * screens do not exist in the navigator until the age gate, real sign-in,
+ * and the profile are complete. A restored session with a saved profile
+ * (see `AppStoreProvider`'s bootstrap effect) skips straight to the tabs.
  */
 export function RootNavigator() {
   const { state } = useAppStore();
 
+  if (state.bootstrapStatus === 'loading') {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Bootstrap" component={BootstrapScreen} />
+      </Stack.Navigator>
+    );
+  }
   if (!state.ageConfirmed) {
     return (
       <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -76,7 +97,7 @@ export function RootNavigator() {
       </Stack.Navigator>
     );
   }
-  if (!state.signedIn) {
+  if (!state.session) {
     return (
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Auth" component={AuthScreen} />

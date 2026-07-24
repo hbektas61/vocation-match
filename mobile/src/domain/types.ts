@@ -25,6 +25,12 @@ export interface Profile {
   age: number;
   bio: string;
   interests: string[];
+  /**
+   * ISO date, YYYY-MM-DD. Only ever populated for the signed-in user's own
+   * profile — the server never returns another user's birthdate, so
+   * `Candidate` (which extends `Profile`) leaves this undefined.
+   */
+  birthdate?: string;
 }
 
 /** A candidate shown in discovery. Fixture-only in this milestone. */

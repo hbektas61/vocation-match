@@ -1,13 +1,12 @@
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 
 import {
   Badge,
   Body,
   Button,
-  Caption,
   Card,
   EmptyState,
   Gap,
@@ -16,14 +15,11 @@ import {
   Screen,
   Title,
 } from '../components/ui';
-import { nowMs, todayIsoDate } from '../clock';
-import { COPY } from '../copy';
-import { discoveryPool } from '../domain/matching';
-import { eligibleRooms } from '../domain/rooms';
-import type { RoomKey } from '../domain/types';
-import { CANDIDATES, SELF_ID } from '../fixtures/candidates';
-import { getHotelById } from '../fixtures/hotels';
+import { nowMs } from '../clock';
+import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
+import { ApiError, getApi, type CandidateCard, type RoomKey, type RoomStatus } from '../data';
 import type { RootStackParamList } from '../navigation/types';
+import { earliestRoomExpiry } from '../state/roomSchedule';
 import { useAppStore } from '../state/AppStore';
 
 const ROOM_LABEL: Record<RoomKey, string> = {
@@ -34,16 +30,69 @@ const ROOM_LABEL: Record<RoomKey, string> = {
 export function DiscoveryScreen() {
   const { state, dispatch } = useAppStore();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const hotel = getHotelById(state.activeHotel.activeHotelId);
-  const rooms = eligibleRooms({
-    activeHotelId: state.activeHotel.activeHotelId,
-    upcoming: state.upcoming,
-    hereNow: state.hereNow,
-    now: nowMs(),
-    todayIsoDate: todayIsoDate(),
-  });
+  const [rooms, setRooms] = useState<RoomStatus[] | null>(null);
   const [room, setRoom] = useState<RoomKey | null>(null);
-  const activeRoom = room && rooms.includes(room) ? room : rooms[0] ?? null;
+  const [deck, setDeck] = useState<CandidateCard[] | null>(null);
+  const [deckError, setDeckError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const hotel = state.hotels.find((h) => h.id === state.activeHotel?.hotelId) ?? null;
+
+  // Room eligibility can change from another tab, so refresh it on focus,
+  // and again at the soonest expiry (R-003) so an open deck closes itself
+  // the moment the server would refuse it rather than at the next visit.
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+
+      const load = async () => {
+        try {
+          const fetched = await getApi().getRooms();
+          if (cancelled) return;
+          setRooms(fetched);
+          const eligible = fetched.filter((r) => r.eligible).map((r) => r.room);
+          setRoom((current) => (current && eligible.includes(current) ? current : eligible[0] ?? null));
+          const soonest = earliestRoomExpiry(fetched, nowMs());
+          if (soonest !== null) {
+            timer = setTimeout(load, soonest - nowMs());
+          }
+        } catch {
+          if (!cancelled) setRooms([]);
+        }
+      };
+
+      load();
+      return () => {
+        cancelled = true;
+        if (timer) clearTimeout(timer);
+      };
+    }, []),
+  );
+
+  // The deck belongs to one room at a time and is refetched when it changes.
+  // (When there is no eligible room, the render below returns before the
+  // deck is ever shown, so there is nothing to fetch or reset here.)
+  useEffect(() => {
+    if (!room) return;
+    let cancelled = false;
+    (async () => {
+      setDeck(null);
+      setDeckError(null);
+      try {
+        const feed = await getApi().getDiscoveryFeed(room);
+        if (!cancelled) setDeck(feed);
+      } catch (err) {
+        if (!cancelled) {
+          setDeckError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [room]);
 
   // A mutual match interrupts the deck with the celebration screen.
   useEffect(() => {
@@ -54,16 +103,33 @@ export function DiscoveryScreen() {
     }
   }, [state.lastMatchId, dispatch, navigation]);
 
+  const blockedIds = useMemo(() => new Set(state.blockedUsers.map((b) => b.userId)), [state.blockedUsers]);
+  const visibleDeck = useMemo(
+    () => (deck ?? []).filter((c) => !blockedIds.has(c.userId)),
+    [deck, blockedIds],
+  );
+  const eligibleRooms = rooms?.filter((r) => r.eligible).map((r) => r.room) ?? [];
+  const candidate = visibleDeck[0] ?? null;
+
   if (!hotel) {
     return (
       <Screen testID="screen-discovery">
         <Title>Discovery</Title>
-        <Notice message={`Activate a hotel first. ${COPY.trust.oneHotel}`} />
+        <Notice message={`${COPY.roomReason.NO_ACTIVE_HOTEL} ${COPY.trust.oneHotel}`} />
       </Screen>
     );
   }
 
-  if (!activeRoom) {
+  if (rooms === null) {
+    return (
+      <Screen testID="screen-discovery">
+        <Title>Discovery</Title>
+        <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="discovery-loading" />
+      </Screen>
+    );
+  }
+
+  if (!room) {
     return (
       <Screen testID="screen-discovery">
         <Title>Discovery</Title>
@@ -72,30 +138,47 @@ export function DiscoveryScreen() {
     );
   }
 
-  const deck = discoveryPool(CANDIDATES, {
-    selfId: SELF_ID,
-    hotelId: hotel.id,
-    room: activeRoom,
-    swipes: state.swipes,
-    blockedUserIds: state.blockedUserIds,
-  });
-  const candidate = deck[0] ?? null;
-
-  const swipe = (direction: 'LIKE' | 'PASS') => {
-    if (!candidate) return;
-    dispatch({ type: 'SWIPE', toUserId: candidate.id, room: activeRoom, direction, now: nowMs() });
+  const swipe = async (direction: 'LIKE' | 'PASS') => {
+    if (!candidate || busy) return;
+    setBusy(true);
+    setActionError(null);
+    try {
+      const result = await getApi().swipe(candidate.userId, room, direction);
+      if (result.matched && result.matchId) {
+        dispatch({
+          type: 'MATCH_UPSERTED',
+          match: {
+            matchId: result.matchId,
+            otherUserId: candidate.userId,
+            displayName: candidate.displayName,
+            age: candidate.age,
+            photoUrl: candidate.photoUrl,
+            room,
+            createdAt: nowMs(),
+            unmatchedAt: null,
+            lastMessageAt: null,
+            lastMessageBody: null,
+          },
+        });
+      }
+      setDeck((prev) => (prev ?? []).filter((c) => c.userId !== candidate.userId));
+    } catch (err) {
+      setActionError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
     <Screen testID="screen-discovery">
-      <Title>Discovery at {hotel.name}</Title>
-      {rooms.length > 1 ? (
+      <Title>{COPY_FOR.discoveryTitle(hotel.name)}</Title>
+      {eligibleRooms.length > 1 ? (
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          {rooms.map((r) => (
+          {eligibleRooms.map((r) => (
             <View key={r} style={{ flex: 1 }}>
               <Button
                 label={ROOM_LABEL[r]}
-                variant={r === activeRoom ? 'primary' : 'secondary'}
+                variant={r === room ? 'primary' : 'secondary'}
                 onPress={() => setRoom(r)}
                 testID={`room-${r}`}
               />
@@ -104,25 +187,45 @@ export function DiscoveryScreen() {
         </View>
       ) : (
         <Badge
-          label={activeRoom === 'UPCOMING' ? COPY.upcoming.statusBadge : COPY.hereNow.statusBadge}
-          tone={activeRoom === 'UPCOMING' ? 'upcoming' : 'hereNow'}
+          label={room === 'UPCOMING' ? COPY.upcoming.statusBadge : COPY.hereNow.statusBadge}
+          tone={room === 'UPCOMING' ? 'upcoming' : 'hereNow'}
         />
       )}
-      {candidate ? (
-        <Card testID={`candidate-${candidate.id}`}>
+      {deckError ? <Notice message={deckError} tone="error" testID="discovery-error" /> : null}
+      {actionError ? <Notice message={actionError} tone="error" testID="discovery-action-error" /> : null}
+      {deck === null ? (
+        <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="deck-loading" />
+      ) : candidate ? (
+        <Card testID={`candidate-${candidate.userId}`}>
           <Heading>
             {candidate.displayName}, {candidate.age}
           </Heading>
-          <Body>{candidate.bio}</Body>
-          <Caption>{candidate.interests.join(' · ')}</Caption>
+          {candidate.bio ? <Body>{candidate.bio}</Body> : null}
           <Gap size="xs" />
-          <Button label={`Like ${candidate.displayName}`} onPress={() => swipe('LIKE')} testID="swipe-like" />
-          <Button label="Pass" variant="secondary" onPress={() => swipe('PASS')} testID="swipe-pass" />
+          <Button
+            label={`Like ${candidate.displayName}`}
+            onPress={() => swipe('LIKE')}
+            disabled={busy}
+            testID="swipe-like"
+          />
+          <Button
+            label={COPY.discovery.passButton}
+            variant="secondary"
+            onPress={() => swipe('PASS')}
+            disabled={busy}
+            testID="swipe-pass"
+          />
           {/* D-008: report/block must be reachable before any match exists. */}
           <Button
-            label="Report or block"
+            label={COPY.discovery.reportBlockButton}
             variant="danger"
-            onPress={() => navigation.navigate('ReportBlock', { userId: candidate.id })}
+            onPress={() =>
+              navigation.navigate('ReportBlock', {
+                userId: candidate.userId,
+                displayName: candidate.displayName,
+              })
+            }
+            disabled={busy}
             testID="discovery-report-block"
           />
         </Card>

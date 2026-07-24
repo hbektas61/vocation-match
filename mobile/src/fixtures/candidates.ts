@@ -97,10 +97,3 @@ export function seedCandidateSwipes(now: number): SwipeDecision[] {
 export function getCandidateById(candidateId: string): Candidate | null {
   return CANDIDATES.find((c) => c.id === candidateId) ?? null;
 }
-
-/** Canned first replies so a tester can see a two-way conversation. */
-export const AUTO_REPLIES: string[] = [
-  'Hey! Nice to match with you 👋',
-  'Hi! Are you around the pool area later?',
-  'Hello! What brings you to this hotel?',
-];

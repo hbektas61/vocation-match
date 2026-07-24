@@ -1,71 +1,94 @@
 import React, { useState } from 'react';
 
+import { todayIsoDate } from '../clock';
 import { Body, Button, Field, Gap, Notice, Screen, Title } from '../components/ui';
-import { SELF_ID } from '../fixtures/candidates';
+import { apiErrorMessage, COPY } from '../copy';
+import { ApiError, getApi } from '../data';
+import { isAdult, parseIsoDate } from '../domain/age';
+import { toDomainProfile } from '../state/appReducer';
 import { useAppStore } from '../state/AppStore';
 
 export function ProfileSetupScreen() {
   const { dispatch } = useAppStore();
   const [displayName, setDisplayName] = useState('');
-  const [age, setAge] = useState('');
+  const [birthdate, setBirthdate] = useState('');
   const [bio, setBio] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const save = () => {
+  const save = async () => {
+    if (submitting) return;
     const trimmedName = displayName.trim();
-    const parsedAge = Number(age);
-    if (!trimmedName) {
-      setError('Please enter a display name.');
+    if (trimmedName.length < 2) {
+      setError(COPY.profileSetup.nameError);
       return;
     }
-    if (!Number.isInteger(parsedAge) || parsedAge < 18 || parsedAge > 120) {
-      setError('Age must be a whole number of 18 or more.');
+    if (!parseIsoDate(birthdate)) {
+      setError(COPY.profileSetup.invalidBirthdate);
+      return;
+    }
+    // Fast client-side feedback only — the database trigger
+    // `app.enforce_adult_profile` is the real enforcement point, and a
+    // rejected save below shows this same message.
+    if (!isAdult(birthdate, todayIsoDate())) {
+      setError(COPY.profileSetup.underAge);
       return;
     }
     setError(null);
-    dispatch({
-      type: 'SAVE_PROFILE',
-      profile: {
-        id: SELF_ID,
+    setSubmitting(true);
+    try {
+      const saved = await getApi().saveOwnProfile({
         displayName: trimmedName,
-        age: parsedAge,
-        bio: bio.trim(),
-        interests: [],
-      },
-    });
+        birthdate,
+        bio: bio.trim() || null,
+      });
+      dispatch({ type: 'SAVE_PROFILE', profile: toDomainProfile(saved) });
+    } catch (err) {
+      setError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <Screen testID="screen-profile-setup">
-      <Title>Your profile</Title>
-      <Body>Only your display name, age, and bio are shown to others.</Body>
+      <Title>{COPY.profileSetup.title}</Title>
+      <Body>{COPY.profileSetup.intro}</Body>
       <Gap size="sm" />
       <Field
-        label="Display name"
+        label={COPY.profileSetup.nameLabel}
         value={displayName}
         onChangeText={setDisplayName}
-        placeholder="How should we show you?"
+        placeholder={COPY.profileSetup.namePlaceholder}
+        editable={!submitting}
         testID="profile-name"
       />
       <Field
-        label="Age"
-        value={age}
-        onChangeText={setAge}
-        placeholder="18+"
-        keyboardType="number-pad"
-        testID="profile-age"
+        label={COPY.profileSetup.birthdateLabel}
+        value={birthdate}
+        onChangeText={setBirthdate}
+        placeholder={COPY.profileSetup.birthdatePlaceholder}
+        keyboardType="numbers-and-punctuation"
+        editable={!submitting}
+        testID="profile-birthdate"
       />
       <Field
-        label="Bio"
+        label={COPY.profileSetup.bioLabel}
         value={bio}
         onChangeText={setBio}
-        placeholder="A sentence about you"
+        placeholder={COPY.profileSetup.bioPlaceholder}
         multiline
+        editable={!submitting}
         testID="profile-bio"
       />
-      {error ? <Notice message={error} tone="error" /> : null}
+      {error ? <Notice message={error} tone="error" testID="profile-error" /> : null}
       <Gap size="sm" />
-      <Button label="Save profile" onPress={save} testID="save-profile" />
+      <Button
+        label={submitting ? COPY.profileSetup.saving : COPY.profileSetup.saveButton}
+        onPress={save}
+        disabled={submitting}
+        testID="save-profile"
+      />
     </Screen>
   );
 }

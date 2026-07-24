@@ -106,17 +106,25 @@ export function Button({
   );
 }
 
-export function Field(props: TextInputProps & { label: string }) {
-  const { label, ...inputProps } = props;
+/**
+ * A labelled text input. `hint` is for a format requirement or similar: it is
+ * rendered under the field AND passed as an accessibility hint, because a
+ * placeholder disappears the moment someone types and is not reliably read out
+ * — leaving a screen-reader user to guess the expected format.
+ */
+export function Field(props: TextInputProps & { label: string; hint?: string }) {
+  const { label, hint, ...inputProps } = props;
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
       <TextInput
         accessibilityLabel={label}
+        accessibilityHint={hint}
         placeholderTextColor={color.textSecondary}
         style={styles.input}
         {...inputProps}
       />
+      {hint ? <Text style={styles.fieldHint}>{hint}</Text> : null}
     </View>
   );
 }
@@ -162,9 +170,22 @@ export function EmptyState({ message }: { message: string }) {
   );
 }
 
-export function Notice({ message, tone = 'info' }: { message: string; tone?: 'info' | 'error' }) {
+export function Notice({
+  message,
+  tone = 'info',
+  testID,
+}: {
+  message: string;
+  tone?: 'info' | 'error';
+  testID?: string;
+}) {
   return (
-    <View style={[styles.notice, tone === 'error' && styles.noticeError]}>
+    <View
+      style={[styles.notice, tone === 'error' && styles.noticeError]}
+      testID={testID}
+      accessibilityRole={tone === 'error' ? 'alert' : 'text'}
+      accessibilityLiveRegion={tone === 'error' ? 'polite' : 'none'}
+    >
       <Text style={[styles.body, tone === 'error' && styles.noticeErrorText]}>{message}</Text>
     </View>
   );
@@ -203,6 +224,11 @@ const styles = StyleSheet.create({
   buttonLabelOnColor: { color: color.onAccent },
   buttonLabelSecondary: { color: color.textPrimary },
   field: { gap: spacing.xs },
+  fieldHint: {
+    color: color.textSecondary,
+    fontSize: 13,
+    marginTop: spacing.xs,
+  },
   fieldLabel: { fontSize: font.caption, fontWeight: '600', color: color.textPrimary },
   input: {
     minHeight: MIN_TOUCH,

@@ -1,13 +1,65 @@
-import React, { useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator } from 'react-native';
 
-import { Body, Button, Caption, Card, Heading, Screen, Title } from '../components/ui';
-import { nowMs } from '../clock';
-import { COPY } from '../copy';
+import { Body, Button, Caption, Card, EmptyState, Heading, Notice, Screen, Title } from '../components/ui';
+import { apiErrorMessage, COPY } from '../copy';
+import { ApiError, getApi, type BlockedUser } from '../data';
 import { useAppStore } from '../state/AppStore';
 
 export function SettingsScreen() {
   const { state, dispatch } = useAppStore();
-  const [confirmingReset, setConfirmingReset] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [blocked, setBlocked] = useState<BlockedUser[] | null>(null);
+  const [blockedError, setBlockedError] = useState<string | null>(null);
+  const [unblockingId, setUnblockingId] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      setBlockedError(null);
+      (async () => {
+        try {
+          const fetched = await getApi().getBlockedUsers();
+          if (!cancelled) {
+            setBlocked(fetched);
+            dispatch({ type: 'BLOCKED_USERS_LOADED', blockedUsers: fetched });
+          }
+        } catch (err) {
+          if (!cancelled) {
+            setBlockedError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
+          }
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [dispatch]),
+  );
+
+  const signOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await getApi().signOut();
+    } finally {
+      dispatch({ type: 'SIGN_OUT' });
+    }
+  };
+
+  const unblock = async (userId: string) => {
+    if (unblockingId) return;
+    setUnblockingId(userId);
+    try {
+      await getApi().unblockUser(userId);
+      dispatch({ type: 'USER_UNBLOCKED', userId });
+      setBlocked((prev) => (prev ? prev.filter((b) => b.userId !== userId) : prev));
+    } catch (err) {
+      setBlockedError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
+    } finally {
+      setUnblockingId(null);
+    }
+  };
 
   return (
     <Screen testID="screen-settings">
@@ -20,36 +72,41 @@ export function SettingsScreen() {
         </Card>
       ) : null}
       <Card>
-        <Heading>Location and privacy</Heading>
+        <Heading>{COPY.settings.accountTitle}</Heading>
+        <Button
+          label={COPY.settings.signOutButton}
+          variant="secondary"
+          onPress={signOut}
+          disabled={signingOut}
+          testID="sign-out"
+        />
+      </Card>
+      <Card>
+        <Heading>{COPY.settings.locationTitle}</Heading>
         <Body>{COPY.settings.locationNote}</Body>
         <Body>{COPY.trust.noExactLocation}</Body>
         <Body>{COPY.trust.oneHotel}</Body>
       </Card>
-      <Card>
-        <Heading>Preview data</Heading>
-        <Body>Resetting clears your profile, hotel, rooms, matches, and chats on this device.</Body>
-        {confirmingReset ? (
-          <>
-            <Button
-              label="Yes, reset everything"
-              variant="danger"
-              onPress={() => dispatch({ type: 'RESET', now: nowMs() })}
-              testID="reset-confirm"
-            />
-            <Button
-              label="Cancel"
-              variant="secondary"
-              onPress={() => setConfirmingReset(false)}
-              testID="reset-cancel"
-            />
-          </>
+      <Card testID="settings-blocked">
+        <Heading>{COPY.settings.blockedTitle}</Heading>
+        {blockedError ? <Notice message={blockedError} tone="error" testID="blocked-error" /> : null}
+        {blocked === null ? (
+          <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="blocked-loading" />
+        ) : blocked.length === 0 ? (
+          <EmptyState message={COPY.settings.blockedEmpty} />
         ) : (
-          <Button
-            label={COPY.settings.resetButton}
-            variant="secondary"
-            onPress={() => setConfirmingReset(true)}
-            testID="reset-start"
-          />
+          blocked.map((entry) => (
+            <Card key={entry.userId}>
+              <Body>{entry.displayName}</Body>
+              <Button
+                label={COPY.settings.unblockButton}
+                variant="secondary"
+                onPress={() => unblock(entry.userId)}
+                disabled={unblockingId === entry.userId}
+                testID={`unblock-${entry.userId}`}
+              />
+            </Card>
+          ))
         )}
       </Card>
     </Screen>
