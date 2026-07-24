@@ -21,28 +21,31 @@ Evidence: 55/55 jest tests (incl. critical-flow component test), `tsc --noEmit` 
 
 ### Review follow-ups carried to next milestones
 
-- [ ] R-001 Server-side re-check of the 18+ rule when the backend exists (client-only today; goes with N-002 RLS work).
-- [ ] R-002 Product call: unblock UI (blocked-users list in Settings) — blocking is currently irreversible in-app.
+- [x] R-001 Closed by the `profiles_enforce_adult` trigger in `20260725000200_profiles.sql`; `supabase/tests/001_profiles.sql` proves an underage insert is refused server-side.
+- [ ] R-002 Server side done: `unblock_user()` and `my_blocks()` exist and are tested (`supabase/tests/007_safety.sql`), and the product call is recorded as decision D-011. Remaining: the Settings blocked-list UI.
 - [ ] R-003 Optional polish: periodic re-render (timer) so an open Rooms/Discovery screen drops stale Here Now/Upcoming eligibility exactly at the freshness boundary.
 - [ ] R-004 Accessibility + mobile QA deep pass (lifecycle, permission-denial variants, screen readers) before any device/store milestone.
 
 ## Phase 1 — backend foundation
 
-- [ ] N-001 Supabase project structure and local migrations.
-- [ ] N-002 Auth and profile RLS.
+Evidence command: `bash supabase/scripts/db-test.sh` — fresh container, migrations
+applied in order, pgTAP suites plus multi-connection concurrency checks.
+
+- [x] N-001 Supabase project structure and local migrations. (`supabase/migrations/`, `supabase/config.toml`, `supabase/scripts/db-test.sh`; harness verified in both directions — a deliberately failing assertion exits non-zero.)
+- [x] N-002 Auth and profile RLS. (`20260725000200_profiles.sql`; 18+ enforced by trigger, not by the client — closes R-001. Typed mobile boundary in `mobile/src/data/` with a credential-free in-memory implementation.)
 
 ## Phase 2 — hotel, presence, and discovery
 
-- [ ] N-003 Hotel provider integration and cached hotel catalog.
-- [ ] N-004 Transactional one-active-hotel enforcement.
-- [ ] N-005 Ephemeral location check and server-side PostGIS distance.
-- [ ] N-006 Discovery eligibility endpoint.
+- [x] N-003 Hotel provider integration and cached hotel catalog. (`20260725000300_hotels.sql`; single `upsert_hotel_from_provider` write boundary restricted to service_role; `location` not granted to any client role.)
+- [x] N-004 Transactional one-active-hotel enforcement. (`20260725000500_hotel_state_functions.sql`; primary key + row lock, raced by `supabase/tests/concurrency.sh`.)
+- [x] N-005 Ephemeral location check and server-side PostGIS distance. (`record_presence_check`; coordinates are arguments only, one boolean answer per user, 30-minute freshness, no distance ever returned.)
+- [x] N-006 Discovery eligibility endpoint. (`20260725000600_discovery.sql`; `my_rooms()` and `discovery_feed()`, both rooms independent.)
 
 ## Phase 3 — matching, chat, and safety
 
-- [ ] N-007 Idempotent swipe/match.
-- [ ] N-008 Realtime persistent chat.
-- [ ] N-009 Block/report/moderation pipeline.
+- [x] N-007 Idempotent swipe/match. (`swipe()`; primary key on the pair absorbs retries, advisory pair lock makes simultaneous likes produce exactly one match — raced in `concurrency.sh`.)
+- [x] N-008 Realtime persistent chat. (`20260725000900_chat.sql`; one insert policy carries every rule and Realtime applies the same select policy.)
+- [x] N-009 Block/report/moderation pipeline. (`block_user`/`unblock_user`/`report_user`, automatic flagging at three distinct reporters, service_role-only `moderation_queue` and `resolve_report`, suspension removes the account from every room.)
 
 ## Phase 4 — staging and device readiness
 

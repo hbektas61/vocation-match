@@ -90,3 +90,82 @@ Files under `mobile/src/domain/`:
 The dependency tree and source must contain none of: payment/RevenueCat,
 reservation/ID capture, background location, analytics SDKs, maps SDKs.
 `security-auditor` verifies this by grep and `package.json` inspection.
+
+# Architecture Decision Record — Backend (N-001 … N-009)
+
+Date: 2026-07-25
+Author: project-orchestrator (with api-architect / database-engineer responsibilities)
+Status: accepted for the MVP systems program
+
+## ADR-009 The database is the enforcement point
+
+Every product rule that matters lives in SQL: row level security decides what a
+row read may return, and each write that carries a rule goes through a
+`SECURITY DEFINER` function that derives the acting user from the JWT rather
+than from an argument. The client is treated as untrusted and hostile.
+
+The client-side rules in `mobile/src/domain/` stay, but only as fast feedback.
+Backlog item R-001 (server-side 18+) is closed by the trigger
+`app.enforce_adult_profile`, not by the age-gate screen.
+
+## ADR-010 Verification without a hosted project
+
+`supabase/scripts/db-test.sh` starts the same Postgres image Supabase runs
+locally, applies `supabase/migrations/` in order, and runs pgTAP suites plus a
+multi-connection concurrency script. No hosted project, API key, or secret is
+involved, so the checks run in CI and on a laptop identically.
+
+Two harness details were forced by reality:
+- The image answers `pg_isready` over the unix socket while it is still running
+  its own init scripts, and DDL issued in that window trips the pg_graphql event
+  trigger. The harness waits for the TCP listener instead.
+- Applied migrations are tracked in `app.schema_migrations`, so `--keep` re-runs
+  only what is new.
+
+## ADR-011 Shapes carry the invariants
+
+Where a constraint can express a rule, it does, because a constraint cannot be
+forgotten by a future code path:
+
+- `user_active_hotel` has a primary key on `user_id` — that *is* the
+  one-active-hotel rule (D-003).
+- `swipes` has a primary key on `(actor_id, target_id)` — one decision per pair,
+  which is what makes the swipe endpoint safe to retry.
+- `matches` stores the pair normalised (`user_a < user_b`) with a unique
+  constraint, so two simultaneous likes cannot produce two matches.
+- `presence_checks` has a primary key on `user_id` — one answer per person is
+  the absence of location history (D-005).
+
+Races that a constraint cannot settle are settled by locks: `set_active_hotel`
+takes a row lock on the user, and `swipe` takes a transaction-scoped advisory
+lock keyed on the ordered pair. `supabase/tests/concurrency.sh` races both.
+
+## ADR-012 Coordinates never reach a client
+
+`hotels.location` is not granted to `anon` or `authenticated` at the column
+level, so the app cannot read venue geometry even with a valid token. The
+proximity check takes a reading as a function argument, computes
+`ST_DWithin(..., 500)` on the server, stores the boolean, and returns
+`{within_range, expires_at}`. There is no code path that returns meters, which
+means there is no distance oracle to build.
+
+`supabase/tests/000_security_baseline.sql` fails the build if any public
+function's result type ever mentions a location, coordinate, or distance, and if
+any table outside `hotels` grows a geometry or latitude/longitude column.
+
+## ADR-013 The typed boundary has two implementations
+
+`mobile/src/data/contracts.ts` declares the whole API surface. `SupabaseApi`
+talks to a real project; `FakeApi` is an in-memory implementation that mirrors
+the same rules. Without `EXPO_PUBLIC_SUPABASE_URL` / `..._ANON_KEY` the app
+runs on the fake, so the build stays usable and testable with no credentials
+present and nothing secret is ever committed.
+
+## ADR-014 Moderation is a pipeline, not a table
+
+`report_user` files a report and blocks by default. Three distinct reporters
+raise a `FLAGGED` row automatically. A moderator (service_role only) reads
+`moderation_queue` and calls `resolve_report`; actioning it sets
+`profiles.suspended_at`, which removes the account from every room and stops it
+sending messages. Reports survive account deletion (`on delete set null`) so the
+history cannot be erased by deleting the account.
