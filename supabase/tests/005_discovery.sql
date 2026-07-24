@@ -120,6 +120,20 @@ select bag_eq(
   'Here Now shows the guest who is nearby, not the one who only declared a stay'
 );
 
+-- Backlog R-003: the client needs to know when this stops being true, so it
+-- can refresh at the boundary instead of showing a room the server refuses.
+select ok(
+  (select valid_until from public.my_rooms() where room = 'HERE_NOW')
+    between now() and now() + interval '31 minutes',
+  'Here Now reports when its answer lapses'
+);
+
+select is(
+  (select valid_until from public.my_rooms() where room = 'UPCOMING'),
+  null,
+  'a declared stay lapses on a date, so it reports no clock expiry'
+);
+
 -- --------------------------------------------------------- far away reading
 select ok(
   not (select within_range from public.record_presence_check(41.0469, 28.9850)),
