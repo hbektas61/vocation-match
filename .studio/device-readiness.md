@@ -93,6 +93,13 @@ The handoff for them is recorded in `.studio/handoffs.md`.
   Acceptable for an invited pilot, not for open signup.
 - GPS spoofing is possible — a client can send any coordinate. What it buys is
   bounded: one boolean, for one hotel, expiring in 30 minutes.
+- Withholding `hotels.location` from client roles is defence in depth, not a
+  secret. A caller who repeats `record_presence_check` with different
+  coordinates can binary-search their own active hotel's position to within
+  500 m. That is a public venue they chose themselves, so nothing about
+  another person leaks — but it is worth knowing that the column grant is not
+  a hard boundary. The boundary that matters is that no endpoint ever returns
+  a distance or a position for a *user*.
 - `discovery_feed` evaluates eligibility per candidate row. Fine at pilot
   density; revisit before a large hotel.
 - No account-deletion flow yet. Required before store submission; the schema

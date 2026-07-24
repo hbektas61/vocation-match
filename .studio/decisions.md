@@ -20,6 +20,15 @@ These decisions are owner-approved and must not be silently changed.
 
 ## Open owner decisions
 
+- **Should the Upcoming room require overlapping stay dates?** Today it does
+  not: anyone with a stay at that hotel that has not ended yet is in the room,
+  so two people staying six months apart can match. Filtering by overlap is
+  what most people would expect, but it shrinks an already thin pilot pool,
+  and pool density is the thing most likely to make the first hotel feel dead.
+  Left broad on purpose; one `where` clause in `app.room_eligible` changes it.
+- **Suspension is per account, not per person.** A suspended user can sign up
+  again with another email. Closing that needs device or phone signals, which
+  is a bigger privacy decision than the MVP should make on its own.
 - Final brand: Vocation Match or Vacation Match.
 - First pilot city and hotels.
 - Whether existing chats expire after the trip.
