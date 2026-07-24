@@ -13,6 +13,7 @@ These decisions are owner-approved and must not be silently changed.
 | D-007 | 2026-07-24 | Product copy must say “self-declared upcoming” and “near the hotel now,” not “verified reservation/guest.” | Prevent misleading trust claims. | A real hotel or reservation integration exists. |
 | D-008 | 2026-07-24 | MVP is 18+ and includes block/report from the first usable build. | Social matching requires baseline safety. | Never remove. |
 | D-009 | 2026-07-25 | Claude Studio may integrate verified increments into `main` and push `origin/main` directly without asking or opening a PR. Temporary local worktree branches are allowed for isolation. | The owner wants continuous delivery without routine pull requests. | Owner explicitly revokes authorization. |
+| D-010 | 2026-07-25 | The autonomous build runs four consecutive phases and pauses only after the complete MVP systems program, not after an intermediate milestone. | The owner wants three to four phases of uninterrupted implementation. | Owner explicitly changes the program boundary. |
 
 ## Open owner decisions
 

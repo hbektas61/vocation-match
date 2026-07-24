@@ -17,7 +17,7 @@ Vocation Match is a React Native/Expo mobile app that lets adults discover and m
 
 ## Current milestone
 
-Build the Supabase backend foundation described in `.studio/agent-plan.md` and `.studio/backlog.md`: local project structure, authentication/profile persistence, RLS, mobile integration boundaries, and verification.
+Run the four-phase autonomous MVP systems program described in `.studio/agent-plan.md` and `.studio/backlog.md`: backend foundation; hotel/presence/discovery; matching/chat/safety; and staging/device-readiness QA. Intermediate phase completion is a checkpoint, not a stopping condition.
 
 Source layout:
 

@@ -16,6 +16,8 @@ sh -n "$FOUNDATION_WORKTREE/.studio/run-loop.sh" "$FOUNDATION_WORKTREE/.studio/g
 
 printf '%s\n' "Recording the Opus/direct-main Studio configuration..."
 git -C "$FOUNDATION_WORKTREE" add \
+  .gitignore \
+  .claude/ralph-loop.local.md \
   CLAUDE.md \
   .studio/activate-direct-main.sh \
   .studio/agent-plan.md \
@@ -27,7 +29,7 @@ git -C "$FOUNDATION_WORKTREE" add \
   .studio/run-loop.sh
 
 if ! git -C "$FOUNDATION_WORKTREE" diff --cached --quiet; then
-  git -C "$FOUNDATION_WORKTREE" commit -m "chore(studio): use Opus and deliver verified work to main"
+  git -C "$FOUNDATION_WORKTREE" commit -m "chore(studio): run continuous four-phase MVP build"
 fi
 
 if [ -n "$(git -C "$PROJECT_ROOT" status --porcelain)" ]; then

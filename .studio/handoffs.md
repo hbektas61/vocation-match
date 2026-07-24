@@ -1,5 +1,17 @@
 # Handoffs
 
+## 2026-07-25 — Four-phase continuous loop authorized
+
+Handoff:
+- From: Hami / owner
+- To: `project-orchestrator`
+- What changed: the backend-only stopping point was replaced with one four-phase MVP systems program.
+- Phase order: backend foundation → hotel/presence/discovery → matching/chat/safety → staging/device readiness.
+- Execution rule: intermediate phase completion triggers verification, review, a direct-main checkpoint, and immediate transition to the next phase; it must not trigger an owner prompt or completion promise.
+- Completion promise: `VOCATION_MVP_SYSTEM_COMPLETE`, only after N-001–N-010 and P0–P5 are verified.
+- Files: `CLAUDE.md`, `.studio/agent-plan.md`, `.studio/backlog.md`, `.studio/decisions.md`, `.studio/loop-prompt.md`
+- Recommended next agent: `project-orchestrator`, starting at Phase 1.
+
 ## 2026-07-25 — Direct-main delivery and Opus loop authorized
 
 Handoff:
