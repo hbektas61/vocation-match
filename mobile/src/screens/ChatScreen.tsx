@@ -128,8 +128,13 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
               styles.bubble,
               message.senderId === selfId ? styles.bubbleMine : styles.bubbleTheirs,
             ]}
+            // Without `accessible`, a View is not a stop in the accessibility
+            // tree: the reader drills into the Text and reads the body alone,
+            // so a screen-reader user cannot tell who said what.
+            accessible
+            accessibilityRole="text"
             accessibilityLabel={`${
-              message.senderId === selfId ? 'You' : match?.displayName ?? 'Match'
+              message.senderId === selfId ? COPY.chat.senderYou : match?.displayName ?? COPY.chat.senderMatch
             }: ${message.body}`}
           >
             <Text style={message.senderId === selfId ? styles.bubbleTextMine : styles.bubbleTextTheirs}>
@@ -154,6 +159,7 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
           />
           <Button
             label={sending ? COPY.chat.sendingButton : COPY.chat.sendButton}
+            busy={sending}
             onPress={send}
             disabled={!draft.trim() || sending}
             testID="chat-send"

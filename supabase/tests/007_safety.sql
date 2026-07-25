@@ -281,6 +281,73 @@ select ok(
   'and the suspension is still in place afterwards'
 );
 
+-- ------------------------------------ what a suspended account can still do
+-- Suspension limits reaching other people. It must not strip away the tools
+-- that protect the suspended person, or take away what they already have.
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000c1');
+
+select throws_ok(
+  $$select * from public.discovery_feed('UPCOMING')$$,
+  '42501',
+  'Your account is suspended.',
+  'a suspended account cannot browse a room'
+);
+
+select throws_ok(
+  $$select public.swipe('00000000-0000-0000-0000-0000000000d1', 'UPCOMING', 'LIKE')$$,
+  '42501',
+  'Your account is suspended.',
+  'and cannot swipe'
+);
+
+select throws_ok(
+  $$select public.my_rooms()$$,
+  '42501',
+  'Your account is suspended.',
+  'and cannot open a room'
+);
+
+select throws_ok(
+  $$select public.declare_upcoming_stay(current_date + 1, current_date + 4)$$,
+  '42501',
+  'Your account is suspended.',
+  'and cannot declare a new stay'
+);
+
+select throws_ok(
+  $$select public.record_presence_check(41.0369, 28.9850)$$,
+  '42501',
+  'Your account is suspended.',
+  'and cannot run a presence check'
+);
+
+select throws_ok(
+  format($$select public.set_active_hotel(%L)$$, (select one from h)),
+  '42501',
+  'Your account is suspended.',
+  'and cannot move to another hotel'
+);
+
+select lives_ok(
+  $$select public.block_user('00000000-0000-0000-0000-0000000000d1')$$,
+  'but can still block someone'
+);
+
+select lives_ok(
+  $$select public.report_user('00000000-0000-0000-0000-0000000000d1', 'HARASSMENT', null, false)$$,
+  'and can still report someone'
+);
+
+select lives_ok(
+  $$select count(*) from public.my_matches()$$,
+  'and can still see the conversations they already have'
+);
+
+select lives_ok(
+  $$select public.unblock_user('00000000-0000-0000-0000-0000000000d1')$$,
+  'and can still undo a block'
+);
+
 -- ------------------------------------------------- suspension takes effect
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000d1');
 

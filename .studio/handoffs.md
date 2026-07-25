@@ -1,5 +1,66 @@
 # Handoffs
 
+## 2026-07-25 — Independent review findings applied; program complete
+
+Handoff:
+- Date: 2026-07-25
+- From agent: `project-orchestrator` with `code-reviewer`, `security-auditor`, `accessibility-auditor`, `cross-platform-engineer`
+- To agent: `mobile-qa-release` for the device matrix; owner for the deploy, store, and photo-storage decisions
+- What changed: three independent audits reported, and their findings are fixed.
+
+The one that mattered most: **a suspended account could still browse and swipe.**
+Moderation stopped a suspended person being *seen* — the target's suspension was
+filtered everywhere — but never stopped them *acting*, because `app.require_user`
+did not look at `suspended_at`. The reviewer verified it live by suspending a
+profile and recording a new LIKE as that user. The gate is now suspension-aware
+by default; an endpoint has to opt out to stay reachable, and the ones that do
+opt out are the safety tools — a suspended person can still block, report,
+unmatch, and read what they already have. Suspension limits reaching other
+people; it must not take away the tools that protect you.
+
+Also fixed from the review:
+- `set_active_hotel` was not race-safe on a user's *first* activation: `select
+  ... for update` locks nothing when there is no row yet, so two concurrent
+  first activations both reached the activation-event insert and one died on a
+  raw duplicate-key error. Now serialised by an advisory lock. The existing
+  concurrency test raced exactly this path but only asserted final-state
+  consistency, so it could pass on timing luck — there is now a dedicated
+  section that requires *every* racer to commit.
+- `profiles.photo_url` accepted any https URL with no length bound. A card is
+  shown in discovery without any interaction, so a self-hosted image is a
+  passive beacon: the profile owner learns the IP and timing of everyone who
+  merely saw them. Capped as a stop-gap; the real fix is our own storage bucket
+  (decision D-014, backlog S-001).
+- "Sign in to continue." raised 42501, which the client read as FORBIDDEN. It
+  now raises 28000 and maps to UNAUTHENTICATED, so the app can tell "log in"
+  apart from "you are not allowed".
+- Another vacuous assertion, in the new end-to-end walkthrough: reporting also
+  unmatches, so the "he cannot send anything more" step would have passed even
+  with the block check broken. The reviewer proved it by reverting the fix and
+  watching the test still pass. Now the match is reopened first.
+
+Accessibility (R-004) found two blockers of the same character — things that
+looked right and did nothing:
+- Error banners were never announced on iOS. `accessibilityLiveRegion` is
+  Android-only, and nothing called `announceForAccessibility`, so a failed
+  sign-in or a denied location check was a completely silent failure for a
+  VoiceOver user.
+- Chat bubbles were plain `View`s, which default to `accessible={false}` in
+  React Native, so the label naming the sender was never read and a
+  conversation could not be followed.
+Both fixed in the shared component rather than at each call site.
+
+- Verification: `scripts/check.sh` — 216 pgTAP assertions, 11 concurrency
+  checks, contract check, `tsc`, `eslint --max-warnings 0`, 141 jest tests,
+  web bundle. All pass.
+- Open, and deliberately so: S-001 photo storage, S-002 rate limiting, S-003
+  email confirmation on the hosted project, S-004 the match room label, account
+  deletion UI, and every device-only scenario in `.studio/device-readiness.md`.
+- Not done because they are owner decisions, not engineering steps: no hosted
+  project provisioned, no migration run outside a throwaway container, no build
+  uploaded anywhere, no store listing, no credential committed.
+- Recommended next agent: `mobile-qa-release` against `.studio/device-readiness.md`.
+
 ## 2026-07-25 — Whole MVP now runs through the server (`5047903`)
 
 Handoff:

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import {ActivityIndicator } from 'react-native';
 
 import {
   Body,
@@ -157,9 +157,7 @@ export function HotelScreen() {
       />
       {searchError ? <Notice message={searchError} tone="error" testID="hotel-search-error" /> : null}
       {results === null ? (
-        <View accessibilityLabel={COPY.common.loading}>
-          <ActivityIndicator />
-        </View>
+        <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="hotel-loading" />
       ) : results.length === 0 ? (
         <EmptyState message={COPY.hotel.noResults} />
       ) : (

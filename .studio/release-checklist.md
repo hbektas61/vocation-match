@@ -54,20 +54,27 @@ named. Everything still unticked is unticked on purpose.
 - [ ] Offline and permission-denied states verified on a device.
       *Scenarios listed in `.studio/device-readiness.md`.*
 - [x] Unit and integration tests pass.
-      *`scripts/check.sh` — 205 pgTAP assertions plus the concurrency checks,
-      and the mobile jest suite.*
+      *`scripts/check.sh` — 216 pgTAP assertions plus 11 concurrency checks,
+      and 141 mobile jest tests across 11 suites.*
 - [x] Lint and typecheck pass. *`npx eslint . --max-warnings 0`, `npx tsc --noEmit`.*
 - [x] The client and the database cannot drift apart unnoticed.
       *`node scripts/verify-api-contract.js`, itself verified against
       deliberate mismatches.*
 - [ ] iOS and Android device checks. *Matrix and scenarios in
       `.studio/device-readiness.md`; needs hardware.*
-- [ ] Accessibility pass (backlog R-004). *Audit commissioned.*
-- [ ] Independent code and security review. *Commissioned; not yet reported.
-      Two defects were found and fixed during the build itself — a message
-      policy that could not see the other side's block, and a table-wide UPDATE
-      grant that let a suspended user reinstate themselves — but self-review is
-      not the review this box is asking about.*
+- [x] Accessibility pass (backlog R-004). *Independent audit; two blockers found
+      and fixed in shared components — errors were never announced on iOS, and
+      chat bubbles were not accessibility nodes so the sender was never read.
+      Text contrast passes 7.3:1–16.9:1; the border token was raised to 3.02:1.*
+- [x] Independent code and security review. *Both delivered, both with live
+      evidence against the running database. The review found one high-severity
+      defect the build had missed: a suspended account could still browse and
+      swipe, because the gate never looked at `suspended_at` and only the
+      target's suspension was filtered. Fixed, with tests covering both what a
+      suspended account can no longer do and what it must still be able to do.
+      Also fixed from the review: a first-activation race, an unbounded photo
+      URL, and a wrong error code for "not signed in". No critical or high
+      finding remains open.*
 
 ## External actions — none taken, all owner decisions
 

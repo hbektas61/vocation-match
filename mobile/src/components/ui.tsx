@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
+  AccessibilityInfo,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -69,20 +70,28 @@ export function Button({
   onPress,
   variant = 'primary',
   disabled = false,
+  busy = false,
   testID,
 }: {
   label: string;
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'danger';
   disabled?: boolean;
+  /**
+   * Work is in flight. Changing the label to "Saving…" is not enough on its
+   * own: a screen reader does not re-announce the label of a control that
+   * already has focus, so without `busy` a blind user taps submit and hears
+   * nothing at all until the screen changes.
+   */
+  busy?: boolean;
   testID?: string;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
+      accessibilityState={{ disabled: disabled || busy, busy }}
+      disabled={disabled || busy}
       onPress={onPress}
       testID={testID}
       style={({ pressed }) => [
@@ -90,8 +99,8 @@ export function Button({
         variant === 'primary' && styles.buttonPrimary,
         variant === 'secondary' && styles.buttonSecondary,
         variant === 'danger' && styles.buttonDanger,
-        disabled && styles.buttonDisabled,
-        pressed && !disabled && styles.buttonPressed,
+        (disabled || busy) && styles.buttonDisabled,
+        pressed && !disabled && !busy && styles.buttonPressed,
       ]}
     >
       <Text
@@ -170,6 +179,15 @@ export function EmptyState({ message }: { message: string }) {
   );
 }
 
+/**
+ * An inline status or error banner.
+ *
+ * `accessibilityLiveRegion` is Android-only, so on iOS the banner appears and
+ * nothing is spoken — a failed sign-in, a refused swipe, or a denied location
+ * check would be a completely silent failure for a VoiceOver user. The explicit
+ * announcement below is what makes errors audible on both platforms, and it
+ * lives here rather than at each call site so no screen can forget it.
+ */
 export function Notice({
   message,
   tone = 'info',
@@ -179,6 +197,12 @@ export function Notice({
   tone?: 'info' | 'error';
   testID?: string;
 }) {
+  useEffect(() => {
+    if (tone === 'error' && message) {
+      AccessibilityInfo.announceForAccessibility(message);
+    }
+  }, [tone, message]);
+
   return (
     <View
       style={[styles.notice, tone === 'error' && styles.noticeError]}

@@ -18,6 +18,18 @@ describe('toApiError', () => {
     ).toBe('INVALID_INPUT');
   });
 
+  it('tells a suspension apart from any other refusal', () => {
+    expect(toApiError({ code: '42501', message: 'Your account is suspended.' }, 'x').code).toBe(
+      'SUSPENDED',
+    );
+  });
+
+  it('maps "not signed in" to UNAUTHENTICATED rather than FORBIDDEN', () => {
+    expect(toApiError({ code: '28000', message: 'Sign in to continue.' }, 'x').code).toBe(
+      'UNAUTHENTICATED',
+    );
+  });
+
   it('maps an RLS refusal to FORBIDDEN', () => {
     expect(toApiError({ code: '42501', message: 'new row violates policy' }, 'x').code).toBe(
       'FORBIDDEN',

@@ -17,11 +17,24 @@ grant select on h to anon, authenticated;
 
 -- --------------------------------------------------------------- signed out
 select tests.authenticate_as_anon();
+-- The logged-out role cannot even reach the function: EXECUTE is revoked, so
+-- the refusal happens before any application code runs.
 select throws_ok(
   format($$select public.set_active_hotel(%L)$$, (select one from h)),
   '42501',
   null,
   'a logged-out caller cannot activate a hotel'
+);
+
+-- A request that carries a token with no subject does reach the function, and
+-- is told to sign in (28000) rather than that it is forbidden (42501) — the
+-- client has to tell those two apart to know whether to show a login screen.
+select tests.authenticate_without_claims();
+select throws_ok(
+  format($$select public.set_active_hotel(%L)$$, (select one from h)),
+  '28000',
+  'Sign in to continue.',
+  'a claimless caller is told to sign in, not that they are forbidden'
 );
 
 -- ------------------------------------------------------- signed in, no profile

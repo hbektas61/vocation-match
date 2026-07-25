@@ -51,6 +51,7 @@ export const COPY = {
     namePlaceholder: 'How should we show you?',
     nameError: 'Your name needs at least 2 characters.',
     birthdateLabel: 'Date of birth',
+    birthdateHint: 'Use the format YYYY-MM-DD, for example 1994-03-01.',
     birthdatePlaceholder: 'YYYY-MM-DD',
     invalidBirthdate: 'Enter your date of birth as YYYY-MM-DD.',
     underAge: 'Vocation Match is 18+ only.',
@@ -188,6 +189,8 @@ export const COPY = {
     loadError: 'Could not load this conversation. Try again.',
     sendError: 'Could not send that message. Try again.',
     notAvailable: 'This conversation is no longer available.',
+    senderYou: 'You',
+    senderMatch: 'Your match',
   },
 
   settings: {
@@ -215,6 +218,7 @@ export const COPY = {
     notFound: 'We could not find that.',
     conflict: 'That email is already registered.',
     network: 'No connection. Try again.',
+    suspended: 'Your account is suspended. You can still block, report, and read your conversations.',
     unknown: 'Something went wrong. Try again.',
   },
 } as const;
@@ -235,6 +239,8 @@ export function apiErrorMessage(code: ApiErrorCode): string {
   switch (code) {
     case 'UNAUTHENTICATED':
       return COPY.errors.unauthenticated;
+    case 'SUSPENDED':
+      return COPY.errors.suspended;
     case 'FORBIDDEN':
       return COPY.errors.forbidden;
     case 'UNDER_AGE':

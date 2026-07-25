@@ -51,6 +51,19 @@ begin
 end;
 $$;
 
+-- The `authenticated` role with no JWT claims: what a request carrying a token
+-- the gateway accepted but that has no subject looks like.
+create or replace function tests.authenticate_without_claims()
+returns void
+language plpgsql
+as $$
+begin
+  execute 'reset role';
+  execute 'set local request.jwt.claims = ''''';
+  execute 'set local role authenticated';
+end;
+$$;
+
 -- Switches to the trusted server role a moderation job would run as.
 create or replace function tests.authenticate_as_service()
 returns void

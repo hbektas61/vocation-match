@@ -65,6 +65,7 @@ export function ProfileSetupScreen() {
       />
       <Field
         label={COPY.profileSetup.birthdateLabel}
+        hint={COPY.profileSetup.birthdateHint}
         value={birthdate}
         onChangeText={setBirthdate}
         placeholder={COPY.profileSetup.birthdatePlaceholder}
@@ -85,6 +86,7 @@ export function ProfileSetupScreen() {
       <Gap size="sm" />
       <Button
         label={submitting ? COPY.profileSetup.saving : COPY.profileSetup.saveButton}
+        busy={submitting}
         onPress={save}
         disabled={submitting}
         testID="save-profile"

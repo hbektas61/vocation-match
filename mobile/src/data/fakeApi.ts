@@ -2,9 +2,14 @@
  * In-memory implementation of `VocationApi`.
  *
  * It exists so the app runs and the flows stay testable with no backend, no
- * URL, and no key. It mirrors the server rules (18+, ownership, field limits)
- * so a test that passes here describes behaviour the database also enforces —
- * `src/data/__tests__/apiContract.test.ts` runs the same suite against it.
+ * URL, and no key. It mirrors the server's rules for a single signed-in
+ * person: 18+, ownership, field limits, room eligibility, one active hotel.
+ *
+ * What it cannot mirror: anything that depends on two live sessions. There is
+ * one session at a time here, so a rule like "the person who blocked you can
+ * still see you but you cannot see them" has no representation. Those rules
+ * are proved against the real database in `supabase/tests/`, and a test
+ * passing here is evidence about this implementation, not about Postgres.
  */
 import { todayIsoDate } from '../clock';
 import { ageYears, isAdult, parseIsoDate } from '../domain/age';

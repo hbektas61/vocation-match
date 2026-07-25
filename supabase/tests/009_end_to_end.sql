@@ -155,6 +155,13 @@ select is(
   'step 8: the conversation leaves her inbox'
 );
 
+-- Reporting also unmatches, so asserting the refusal here as-is would prove
+-- nothing about the block: the insert would fail on `unmatched_at` even if the
+-- block check were broken. Reopen the match so the block is the only thing left
+-- standing in the way.
+select tests.clear_auth();
+update public.matches set unmatched_at = null, unmatched_by = null;
+
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000e2');
 select throws_ok(
   format($$insert into public.messages (match_id, sender_id, body)
@@ -162,7 +169,7 @@ select throws_ok(
          (select id from public.matches limit 1)),
   '42501',
   null,
-  'step 8: and he cannot send anything more'
+  'step 8: and he cannot send anything more, because of the block itself'
 );
 
 -- Step 9 — nothing about this journey was written down that should not be.

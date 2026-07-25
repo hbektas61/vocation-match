@@ -61,14 +61,16 @@ export function HereNowScreen({
     const reading = await source.read();
 
     if (reading.status === 'denied') {
-      // Withdrawing consent has to reach the server. The stored answer is what
-      // keeps Here Now open, and it survives for up to thirty minutes — so
-      // clearing local state alone would leave the room open behind the user's
-      // back after they said stop. A failure here is worth showing, because
-      // until it succeeds sharing has not actually stopped.
-      dispatch({ type: 'SET_LOCATION_PERMISSION', permission: 'denied' });
+      // Withdrawing consent has to reach the server: the stored answer is
+      // what keeps Here Now open, and it survives for up to thirty minutes.
+      // So nothing is assumed here — only once the clear actually succeeds
+      // do we record the denial and re-read rooms from the server, and a
+      // failure is surfaced rather than swallowed, because until it
+      // succeeds sharing has not actually stopped.
       try {
         await getApi().clearPresenceCheck();
+        dispatch({ type: 'SET_LOCATION_PERMISSION', permission: 'denied' });
+        dispatch({ type: 'ROOMS_LOADED', rooms: await getApi().getRooms() });
       } catch {
         setOutcome({ kind: 'error', message: COPY.hereNow.stopSharingError });
       }

@@ -14,6 +14,7 @@
 export type ApiErrorCode =
   | 'UNAUTHENTICATED'
   | 'FORBIDDEN'
+  | 'SUSPENDED'
   | 'UNDER_AGE'
   | 'INVALID_INPUT'
   | 'NOT_FOUND'

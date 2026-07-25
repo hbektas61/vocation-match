@@ -120,6 +120,45 @@ check "each direction stored exactly one swipe" \
 
 cleanup_match
 
+# ------------------------------------------------- first activation, raced
+# The row lock in set_active_hotel locks nothing when the user has no row yet,
+# so before the advisory lock two concurrent *first* activations both reached
+# the activation-event insert and one died on the partial unique index with a
+# raw duplicate-key error. Every racer should now succeed.
+FIRST_USER='00000000-0000-0000-0000-00000000cc04'
+
+cleanup_first() {
+  q -c "delete from auth.users where id = '${FIRST_USER}';
+        delete from public.hotels where provider = 'concurrency';" >/dev/null
+}
+
+cleanup_first
+q -c "select tests.create_member('conc-first@example.test', '${FIRST_USER}');" >/dev/null
+FIRST_HOTEL="$(q -c "select tests.create_hotel('conc-first', 41.0369, 28.9850);")"
+q -c "update public.hotels set provider = 'concurrency' where name = 'conc-first';" >/dev/null
+
+printf '  racing %s simultaneous first activations for one user
+' "$FANOUT"
+first_ok="/tmp/vocation-first.$$"
+: > "$first_ok"
+for _ in $(seq 1 "$FANOUT"); do
+  (
+    q -c "begin;
+          select tests.authenticate_as('${FIRST_USER}');
+          select public.set_active_hotel('${FIRST_HOTEL}');
+          commit;" >/dev/null 2>&1 && echo ok >> "$first_ok"
+  ) &
+done
+wait
+first_count="$(wc -l < "$first_ok" | tr -d ' ')"
+rm -f "$first_ok"
+
+check "every racer committed rather than dying on a duplicate key" "$first_count" "$FANOUT"
+check "the user still has exactly one active hotel"   "$(q -c "select count(*) from public.user_active_hotel where user_id = '${FIRST_USER}';")" "1"
+check "and exactly one activation event was opened"   "$(q -c "select count(*) from public.hotel_activation_events where user_id = '${FIRST_USER}';")" "1"
+
+cleanup_first
+
 if [ "$failures" != "0" ]; then
   printf '  %s concurrency check(s) failed\n' "$failures"
   exit 1

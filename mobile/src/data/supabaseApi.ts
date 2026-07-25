@@ -58,10 +58,18 @@ export function toApiError(error: PostgresLikeError | null | undefined, fallback
   if (code === 'P0002' || code === 'PGRST116') {
     return new ApiError('NOT_FOUND', message);
   }
+  // A suspended account is refused like any other forbidden action, but the
+  // user needs to be told which of the two it is.
+  if (code === '42501' && /suspended/i.test(message)) {
+    return new ApiError('SUSPENDED', message);
+  }
   if (code === '42501' || code === 'PGRST301') {
     return new ApiError('FORBIDDEN', message);
   }
-  if (error?.status === 401 || /invalid login credentials/i.test(message)) {
+  // 28000 is the server saying "not signed in", which is a different thing
+  // from "signed in and not allowed" — the client shows a login screen for one
+  // and an explanation for the other.
+  if (code === '28000' || error?.status === 401 || /invalid login credentials/i.test(message)) {
     return new ApiError('UNAUTHENTICATED', 'Email or password is incorrect.');
   }
   if (error?.status === 422 || /already registered/i.test(message)) {

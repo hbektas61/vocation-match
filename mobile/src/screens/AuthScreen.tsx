@@ -89,6 +89,7 @@ export function AuthScreen() {
         }
         onPress={submit}
         disabled={!canSubmit}
+        busy={submitting}
         testID="auth-submit"
       />
       <Gap size="sm" />

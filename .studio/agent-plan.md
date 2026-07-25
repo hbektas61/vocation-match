@@ -65,18 +65,34 @@ Use at most 3–5 active specialists. Assign non-overlapping files.
 | Gate | Required evidence | Status |
 | --- | --- | --- |
 | P0 Mobile foundation | Fixture-driven Expo foundation and prior reviews pass | done — commit `2fa8bfe` |
-| P1 Backend foundation | N-001–N-002, auth/profile RLS, typed boundary, checks, review | server done and pushed (`a6f4b30`); mobile auth/profile wired; awaiting final review |
-| P2 Hotel/presence/discovery | N-003–N-006, server enforcement, checks, review | server done and pushed; screen wiring in progress |
-| P3 Matching/chat/safety | N-007–N-009, concurrency and abuse checks, review | server done and pushed; screen wiring in progress |
-| P4 Staging/device readiness | N-010, R-002–R-004 disposition, E2E/device evidence, final review | SQL end-to-end journey and `.studio/device-readiness.md` done; R-002 and R-003 server-side done; R-004 pending final UI |
-| P5 Final handoff | All evidence recorded and production/store work clearly deferred | pending |
+| P1 Backend foundation | N-001–N-002, auth/profile RLS, typed boundary, checks, review | done |
+| P2 Hotel/presence/discovery | N-003–N-006, server enforcement, checks, review | done |
+| P3 Matching/chat/safety | N-007–N-009, concurrency and abuse checks, review | done |
+| P4 Staging/device readiness | N-010, R-002–R-004 disposition, E2E/device evidence, final review | done — R-001 to R-004 closed, review findings applied; device-only scenarios specified in `.studio/device-readiness.md` because they need hardware |
+| P5 Final handoff | All evidence recorded and production/store work clearly deferred | done |
 
-Evidence for the server side of P1–P3: `bash supabase/scripts/db-test.sh`
-(205 pgTAP assertions across 10 suites plus 8 concurrency checks) and
-`node scripts/verify-api-contract.js`. Two defects were found and fixed during
-the build rather than discovered later: a message-insert policy that could not
-see the other side's block, and a table-wide UPDATE grant that let a suspended
-user clear their own suspension.
+Evidence, reproducible in one command — `scripts/check.sh`:
+216 pgTAP assertions across 10 SQL suites, 11 concurrency checks racing real
+connections, the client/database contract check, `tsc`, `eslint --max-warnings 0`,
+141 jest tests across 11 suites, and a web bundle.
+
+Six defects were found and fixed, which is the part worth remembering:
+
+- Four during the build. A message-insert policy that could not see the other
+  side's block (and a test passing for the wrong reason that hid it); a
+  table-wide UPDATE grant letting a suspended user clear their own suspension;
+  a swipe error message that told someone they had been blocked; and a denied
+  location permission that only cleared local state, leaving the room open for
+  half an hour after consent was withdrawn.
+- Two from the independent review. A suspended account could still browse and
+  swipe, because the gate never checked `suspended_at` and only the *target's*
+  suspension was filtered — the highest-severity finding in the program. And
+  `set_active_hotel` was not race-safe on a user's first activation, because a
+  row lock locks nothing when there is no row yet.
+
+The accessibility audit found two more of the same character: errors were never
+announced on iOS, and chat bubbles were not accessibility nodes, so a
+screen-reader user could not tell who had said what.
 
 ## Loop contract
 

@@ -2,7 +2,10 @@
 export const color = {
   background: '#FFFFFF',
   surface: '#F4F5F7',
-  border: '#D7DAE0',
+  // 3.02:1 against the white background. WCAG 1.4.11 wants 3:1 for a boundary
+  // that is the only thing telling you where a control starts — the input
+  // outline and the secondary button rely on exactly that.
+  border: '#98A0AB',
   textPrimary: '#1A1D23',
   textSecondary: '#4A5160',
   accent: '#0F6B54',

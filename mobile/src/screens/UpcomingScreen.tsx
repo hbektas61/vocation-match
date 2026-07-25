@@ -52,6 +52,7 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
         value={checkIn}
         onChangeText={setCheckIn}
         placeholder={COPY.upcoming.checkInPlaceholder}
+        keyboardType="numbers-and-punctuation"
         autoCapitalize="none"
         editable={!submitting}
         testID="upcoming-check-in"
@@ -62,6 +63,7 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
         value={checkOut}
         onChangeText={setCheckOut}
         placeholder={COPY.upcoming.checkOutPlaceholder}
+        keyboardType="numbers-and-punctuation"
         autoCapitalize="none"
         editable={!submitting}
         testID="upcoming-check-out"
@@ -70,6 +72,7 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
       <Gap size="sm" />
       <Button
         label={submitting ? COPY.upcoming.saving : COPY.upcoming.saveButton}
+        busy={submitting}
         onPress={save}
         disabled={submitting}
         testID="save-upcoming"
