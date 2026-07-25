@@ -624,3 +624,50 @@ Handoff:
   334 pgTAP assertions across 15 SQL suites, 13 concurrency checks, performance
   smoke, client/database contract, migration replay, `tsc`,
   `eslint --max-warnings 0`, 221 jest tests, web bundle.
+
+## 2026-07-25 — verification pass on D-016, and the hole it found
+
+Handoff:
+- Date: 2026-07-25
+- From agent: `security-auditor` (adversarial verification of the D-016 fix
+  against the running database), applied by studio-autopilot
+- What the pass was asked: not to survey, but to try to break the two fixes.
+- What held, proven against the container rather than argued: a decided pair
+  cannot be re-probed; `may_view_photo` behaves correctly for a stale owner, a
+  suspended viewer and a viewer who switched hotels; the early return gives the
+  right answer after a block, after an unmatch, and when the target's account
+  has been deleted; `app.rate_limit` itself is correct and scoped per user.
+- **What did not hold, and it is the useful kind of finding.** The rate limit
+  added to `swipe()` did nothing on the only path that needed it.
+  `app.rate_limit` writes a counter row; the check that follows raises when the
+  target is not in the room; both are one transaction, so the raise rolls the
+  counter back with everything else. Demonstrated: five refused probes in a row
+  left no `swipe` row in `rate_limits` at all. A failed probe was free, which is
+  precisely what the limit existed to prevent — "has this named person just
+  become reachable" could be asked on a loop at no cost.
+  Fixed in `20260725002300`: that one branch returns `refused` instead of
+  raising, so the statement commits and the counter with it. The client turns it
+  back into the same error with the same words, so nothing changes for anyone
+  using the app. The auditor's own reproduction now records five attempts where
+  it recorded none.
+- **The general lesson, which is worth more than the fix:** a rate limit placed
+  before a `raise` in the same function is not a rate limit. The other three
+  (`report_user`, `record_presence_check`, `discovery_feed`) were checked
+  against this and are counted after the last statement that can raise.
+- One claim in the report was wrong and is recorded so nobody acts on it: it
+  says `app.require_user()` "only checks the profile exists", so a suspended
+  attacker could run the probe. It does check `suspended_at` — migration
+  `20260725001100` added exactly that, and it was the highest-severity finding
+  of the previous program.
+- One residual, accepted and written down rather than fixed:
+  `app.may_view_photo`'s hotel branch does not require the owner to have ever
+  been room-eligible, only to share the viewer's active hotel. Unreachable
+  today, because a photo path is an unguessable token disclosed only by
+  `discovery_feed` and `my_matches`, both of which require the owner to have
+  been genuinely eligible at the moment the card was shown. Tightening it
+  without new state would mean tying visibility back to a presence row that
+  expires — which is the flicker D-016 removed. Left as it is, deliberately.
+- Verification: `bash scripts/check.sh` — auth configuration, dependency gate,
+  335 pgTAP assertions across 15 SQL suites, 13 concurrency checks, performance
+  smoke, client/database contract, migration replay, `tsc`,
+  `eslint --max-warnings 0`, 221 jest tests, web bundle.

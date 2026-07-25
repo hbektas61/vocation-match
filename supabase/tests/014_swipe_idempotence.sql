@@ -102,11 +102,22 @@ select ok(
 select tests.clear_auth();
 select tests.create_member('dee@example.test', '00000000-0000-0000-0000-0000000000d1', 'Dee');
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
-select throws_ok(
-  $$select public.swipe('00000000-0000-0000-0000-0000000000d1', 'HERE_NOW', 'LIKE')$$,
-  '42501',
-  'That person is not in this room.',
+select is(
+  (select refused from public.swipe('00000000-0000-0000-0000-0000000000d1', 'HERE_NOW', 'LIKE')),
+  'NOT_IN_ROOM',
   'a first swipe on somebody who is not in the room is still refused');
+
+-- The reason it is returned rather than raised: a raise rolls back the whole
+-- statement, and the rate-limit row written moments earlier goes with it. Five
+-- refused probes used to cost nothing at all, which made "has this named person
+-- just become reachable" a free question to ask on a loop.
+select tests.clear_auth();
+select is(
+  (select attempts from public.rate_limits
+    where user_id = '00000000-0000-0000-0000-0000000000a1' and bucket = 'swipe'),
+  3,
+  'a refused swipe is counted — the two decisions ada made, plus the one that was turned away');
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
 
 -- ------------------------------------------------------------- the limits
 -- Generous enough that nobody using the app meets them, low enough that a
@@ -128,8 +139,8 @@ select tests.clear_auth();
 select is(
   (select attempts from public.rate_limits
     where user_id = '00000000-0000-0000-0000-0000000000a1' and bucket = 'swipe'),
-  2,
-  'swiping is counted only when there is a new decision to make, so a retry is free');
+  3,
+  'swiping is counted for a new decision and for a refusal, but never for a retry');
 
 select * from finish(true);
 rollback;

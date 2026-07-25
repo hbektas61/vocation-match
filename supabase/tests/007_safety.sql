@@ -98,10 +98,9 @@ select lives_ok(
   $$select public.block_user('00000000-0000-0000-0000-0000000000c1')$$,
   'dana blocks cam without ever having swiped on them'
 );
-select throws_ok(
-  $$select public.swipe('00000000-0000-0000-0000-0000000000c1', 'UPCOMING', 'LIKE')$$,
-  '42501',
-  'That person is not in this room.',
+select is(
+  (select refused from public.swipe('00000000-0000-0000-0000-0000000000c1', 'UPCOMING', 'LIKE')),
+  'NOT_IN_ROOM',
   'and cannot then swipe on them — the same answer a stranger gets, so nothing says a block happened'
 );
 select lives_ok(
@@ -384,10 +383,9 @@ select is(
   'a suspended account disappears from every room'
 );
 
-select throws_ok(
-  $$select public.swipe('00000000-0000-0000-0000-0000000000c1', 'UPCOMING', 'LIKE')$$,
-  '42501',
-  'That person is not in this room.',
+select is(
+  (select refused from public.swipe('00000000-0000-0000-0000-0000000000c1', 'UPCOMING', 'LIKE')),
+  'NOT_IN_ROOM',
   'and cannot be swiped on'
 );
 

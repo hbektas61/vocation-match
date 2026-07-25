@@ -547,6 +547,11 @@ export class SupabaseApi implements VocationApi {
       { p_target_id: targetUserId, p_room: room, p_decision: direction },
       'Could not record that swipe.',
     );
+    if (row.refused) {
+      // Returned rather than raised by the server so its rate-limit counter
+      // survives the statement; the person sees exactly what they always did.
+      throw new ApiError('FORBIDDEN', 'That person is not in this room.');
+    }
     return { matched: row.matched, matchId: row.match_id };
   }
 
@@ -729,6 +734,8 @@ interface CandidateRow {
 interface SwipeRow {
   matched: boolean;
   match_id: string | null;
+  /** Set when the target is not reachable; see `public.swipe`. */
+  refused: string | null;
 }
 
 interface MatchRow {

@@ -133,10 +133,11 @@ select throws_ok(
   'a user cannot swipe on themselves'
 );
 
-select throws_ok(
-  $$select public.swipe('00000000-0000-0000-0000-0000000000d1', 'UPCOMING', 'LIKE')$$,
-  '42501',
-  'That person is not in this room.',
+-- Returned rather than raised, so the rate-limit row the call just wrote
+-- survives the statement. A limit placed before a `raise` is not a limit.
+select is(
+  (select refused from public.swipe('00000000-0000-0000-0000-0000000000d1', 'UPCOMING', 'LIKE')),
+  'NOT_IN_ROOM',
   'a user at another hotel cannot be swiped by id'
 );
 

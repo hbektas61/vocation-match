@@ -118,7 +118,7 @@ applied in order, pgTAP suites plus multi-connection concurrency checks.
 ## Pilot hardening (completed 2026-07-25)
 
 Evidence command: `bash scripts/check.sh` — the auth-configuration check, the
-dependency gate, 334 pgTAP assertions across 15 SQL suites, 13 concurrency
+dependency gate, 335 pgTAP assertions across 15 SQL suites, 13 concurrency
 checks, the performance smoke check, the client/database contract check, the
 migration-replay comparison, `tsc`, `eslint --max-warnings 0`, 221 jest tests,
 and the web bundle. Four of those checks are negative-controlled.
