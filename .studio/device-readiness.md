@@ -144,3 +144,57 @@ These need real hardware and cannot be closed by any check that runs here.
   back to the initial rather than showing a broken image.
 - **Upload on a poor connection.** Interrupt an upload mid-flight; the previous
   photo must still be showing and the error must say so.
+
+## Added by pilot hardening H2–H4
+
+Everything here needs hardware, a hosted project, or a real mailbox. None of it
+can be closed by anything in this repository, and none of it is claimed.
+
+**Account deletion (H2)**
+
+- Delete an account on a device and confirm the keychain entry is really gone:
+  force-quit, cold start, and check the app comes back at the age gate rather
+  than holding a token for a user that no longer exists. The removal is tested
+  against an injected storage adapter, not against SecureStore.
+- Delete an account while the other person has the conversation open. The match
+  and its messages cascade away; confirm their app does not show a ghost row or
+  crash on a match that vanished underneath it.
+
+**Email confirmation (H3)**
+
+- Send and open a real confirmation link, end to end, against a hosted project.
+  Nothing here has ever sent one; the local configuration points at Inbucket.
+- Confirm the hosted project's own settings, which do not travel with the
+  migrations: confirmation on, the mail rate limit bounded, CAPTCHA on sign-up.
+  `docs/hosted-setup.md` lists them.
+- Sign in with an unconfirmed address on a device and confirm the "check your
+  email" state appears rather than "email or password is incorrect".
+
+**Photos (H1)**
+
+- The EXIF check, which is the D-005 guarantee: take a photo with location
+  services on, upload it, pull the stored object out of the bucket, and read its
+  metadata. Expect nothing.
+- A signed URL round trip against a real storage service — owner, room-mate,
+  stranger, logged out.
+
+**Lifecycle and offline (H4–H405, H406)**
+
+- Background the app for longer than the token's lifetime, return, and confirm
+  it signs itself out rather than showing tabs whose every request fails.
+- Turn airplane mode on mid-upload, mid-swipe, mid-deletion. Every one should
+  produce an error within about ten seconds and leave the control usable.
+  The deadline is in the client; whether it behaves on a real radio is not
+  something a laptop can show.
+- Revoke location permission in Settings while the app is backgrounded, return,
+  and confirm Here Now closes.
+
+**Accessibility (H4–H404)**
+
+- VoiceOver and TalkBack over the photo card, the delete-account confirmation,
+  and the confirm-email screen. The announcements are made; whether they are
+  audible, and where the cursor lands after a screen replaces itself, is
+  device behaviour.
+- Largest Dynamic Type sizes on the new Settings cards and the confirm-email
+  screen.
+- Switch Control and an external keyboard: focus order and visible focus.

@@ -398,5 +398,32 @@ select is(
   'PROFILE_DELETED',
   'and records the bytes still to be purged, rather than pretending they are gone');
 
+-- --------------------------------------------------------- draining the queue
+-- The queue is a contract with a worker that does not live in this repository.
+-- What the database owes it: a batch nobody else is holding, and a way to
+-- record that the bytes were reported gone.
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
+select throws_ok(
+  $$select * from public.claim_storage_cleanup(10)$$,
+  '42501',
+  null,
+  'a client cannot claim cleanup work');
+
+select tests.authenticate_as_service();
+select ok(
+  (select count(*) from public.claim_storage_cleanup(10)) > 0,
+  'a service-role worker gets a batch');
+
+select is(
+  public.mark_storage_cleanup_purged(
+    array(select id from public.storage_cleanup_queue where purged_at is null)),
+  (select count(*)::int from public.storage_cleanup_queue where purged_at is null),
+  'and marking them purged updates exactly the rows it was given');
+
+select is(
+  (select count(*)::int from public.claim_storage_cleanup(10)),
+  0,
+  'a purged object is not handed out again');
+
 select * from finish(true);
 rollback;

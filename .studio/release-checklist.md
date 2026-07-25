@@ -45,8 +45,31 @@ named. Everything still unticked is unticked on purpose.
 - [ ] Logs and analytics contain no sensitive location, stay, profile, or
       message content. *No analytics SDK is installed, so there is nothing to
       audit yet. Recheck the moment one is added.*
-- [ ] Account deletion flow exists before store submission.
-      *The schema already cascades correctly; the UI does not exist.*
+- [x] Account deletion flow exists before store submission.
+      *`public.delete_my_account()` takes no arguments — the account comes from
+      the JWT — and deletes the `auth.users` row so every cascade fires. Two
+      taps in Settings, with what disappears and what does not said before the
+      second one. `supabase/tests/012_account_deletion.sql` (24 assertions),
+      `mobile/src/__tests__/deleteAccountUi.test.tsx`. The audit also found and
+      closed a second, unguarded deletion path: a table-wide DELETE grant on
+      `profiles` that wiped the same data with no confirmation and left the auth
+      row behind.*
+- [x] A profile photo is not a beacon.
+      *Private bucket, owner-scoped path, no URL field anywhere, and EXIF
+      dropped by re-encoding before upload.
+      `supabase/tests/011_profile_photos.sql` (43 assertions) — the read policy
+      is negative-controlled, so five of them go red if it is weakened.
+      **Not verified:** that the native encoder really emits metadata-free
+      bytes. That needs a GPS-tagged photo on a device (D-015).*
+- [x] Email addresses are confirmed before an account can be used.
+      *`enable_confirmations = true`, `scripts/verify-auth-config.js` fails the
+      build if it is turned off, and the client handles the unconfirmed states
+      rather than throwing on the happy path. **The hosted project keeps its
+      own copy of this setting and nothing here can check it** —
+      `docs/hosted-setup.md`.*
+- [x] The sign-up form does not reveal who already has an account.
+      *A duplicate sign-up gets the same answer as a fresh one, in both the
+      real client and the fake; `apiContract.test.ts`.*
 
 ## Quality
 
@@ -56,8 +79,23 @@ named. Everything still unticked is unticked on purpose.
       `.studio/device-readiness.md`. Nothing here has been observed on real
       hardware.*
 - [x] Unit and integration tests pass.
-      *`scripts/check.sh` — 228 pgTAP assertions plus 11 concurrency checks,
-      and the mobile jest suite.*
+      *`scripts/check.sh` — 311 pgTAP assertions across 14 SQL suites, 14
+      concurrency checks racing real connections, a performance smoke check, the
+      migration-replay comparison, the auth-configuration check, the dependency
+      gate, and 202 jest tests.*
+- [x] A migration applied in steps reaches the same database as a fresh one.
+      *`scripts/verify-migration-replay.sh` applies every migration one at a
+      time, with rows written in between, and compares the schema, the grants
+      and the policies against the all-at-once run. Verified in both directions.*
+- [x] No request can hang forever.
+      *Every call carries a ten-second deadline, so a connection that is
+      accepted and then goes quiet produces an error someone can act on rather
+      than a button that stays disabled.*
+- [x] A lapsed session does not leave the app looking signed in.
+      *Re-checked whenever the app returns to the foreground; a failed check is
+      not treated as evidence, because a dropped connection looks the same.*
+- [x] Dependency advisories are either fixed or written down with a reason.
+      *`scripts/check-dependencies.js` fails on any unaccepted high or critical.*
 - [x] Lint and typecheck pass. *`npx eslint . --max-warnings 0`, `npx tsc --noEmit`.*
 - [x] The client and the database cannot drift apart unnoticed.
       *`node scripts/verify-api-contract.js`, itself verified against
@@ -66,10 +104,19 @@ named. Everything still unticked is unticked on purpose.
       accepted risk (D-015).** *Matrix and scenarios in
       `.studio/device-readiness.md`. Must be run before any pilot with real
       users.*
-- [x] Accessibility pass (backlog R-004). *Independent audit; two blockers found
-      and fixed in shared components — errors were never announced on iOS, and
-      chat bubbles were not accessibility nodes so the sender was never read.
-      Text contrast passes 7.3:1–16.9:1; the border token was raised to 3.02:1.*
+- [x] Accessibility pass (backlog R-004, then again over everything phases 1–3
+      changed). *Two independent audits. The first found errors that were never
+      announced on iOS and chat bubbles that were not accessibility nodes. The
+      second found the same class of defect in four new places: a screen that
+      replaced itself in place without a word being said, a resend that
+      announced nothing on success, a delete warning where only the last of
+      three sentences was spoken, and inbox rows that collapsed the message
+      preview and the closed-conversation caption into a label naming only the
+      person. All fixed, all with a regression test
+      (`mobile/src/__tests__/announcements.test.tsx`). Contrast on every new
+      pairing is 5.6:1 or better. **What no code can show — whether the
+      announcement is audible, and where the cursor lands afterwards — needs a
+      device (D-015).***
 - [x] Independent code and security review. *Both delivered, both with live
       evidence against the running database. The review found one high-severity
       defect the build had missed: a suspended account could still browse and

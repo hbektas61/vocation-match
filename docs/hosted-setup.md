@@ -72,15 +72,31 @@ The migration `20260725001400_profile_photos.sql` creates it by inserting into
 And in **Storage → Policies**, that the four policies on `storage.objects` are
 present and none of them is granted to `anon`.
 
-## 3. Nothing drains the storage cleanup queue yet
+## 3. Run something that drains the storage cleanup queue
 
 `public.storage_cleanup_queue` records objects whose metadata row has been
 removed — a replaced photo, a deleted account — but whose bytes are still in the
-object store. The database cannot delete those; only the storage API can.
+object store. The database cannot delete those; only the storage API can. So the
+database does its half and hands the rest to a worker:
 
-Until a scheduled `service_role` job exists to drain it, the honest statement is:
-a deleted photo is unreadable immediately and its bytes are still there. Do not
-describe deletion as complete in any user-facing copy beyond what
+```
+-- as service_role, on a schedule
+select * from claim_storage_cleanup(100);       -- a batch nobody else holds
+-- ... delete each object_name from its bucket via the storage API ...
+select mark_storage_cleanup_purged(array[...]); -- record what was reported gone
+```
+
+`claim_storage_cleanup` uses `for update skip locked`, so two workers never hand
+the same object to the storage API at once, and running it twice for the same
+object is harmless anyway.
+
+That worker is not in this repository — it needs the service-role key, which
+does not belong here. A Supabase Edge Function on a cron schedule is the obvious
+home for it.
+
+**Until it is running**, the honest statement is: a deleted photo becomes
+unreadable immediately, and its bytes are still there. Do not describe deletion
+as more complete than that in any user-facing copy beyond what
 `COPY.deleteAccount` already says.
 
 ## 4. Apply the migrations in order
