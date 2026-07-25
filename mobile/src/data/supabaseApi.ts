@@ -102,13 +102,25 @@ interface ProfileRow {
   photo_path: string | null;
 }
 
+/**
+ * Where the session lives in device storage.
+ *
+ * Named explicitly rather than left to supabase-js's `sb-<project ref>-auth-token`
+ * default, so that the one place which has to remove it by hand — after an
+ * account is deleted — does not have to reconstruct that name from the URL.
+ */
+const SESSION_STORAGE_KEY = 'vocation-match-auth-token';
+
 export class SupabaseApi implements VocationApi {
   private readonly client: SupabaseClient;
+  private readonly storage: SessionStorage;
 
   constructor(config: BackendConfig, storage: SessionStorage = createSessionStorage()) {
+    this.storage = storage;
     this.client = createClient(config.url, config.anonKey, {
       auth: {
         storage,
+        storageKey: SESSION_STORAGE_KEY,
         autoRefreshToken: true,
         persistSession: true,
         // React Native has no URL bar to read a session out of.
@@ -143,6 +155,48 @@ export class SupabaseApi implements VocationApi {
   async currentSession(): Promise<AuthSession | null> {
     const { data } = await this.client.auth.getSession();
     return data.session ? toSession(data.session) : null;
+  }
+
+  async deleteAccount(): Promise<void> {
+    const { error } = await this.client.rpc('delete_my_account');
+    if (error) {
+      const mapped = toApiError(error, 'Could not delete your account.');
+      // P0002 means the account is already gone — the usual cause being a
+      // retry after a response that never arrived. The postcondition the caller
+      // asked for is true, so finishing the local half and returning is the
+      // honest answer; reporting a failure here would tell someone their
+      // account still exists when it does not.
+      if (mapped.code !== 'NOT_FOUND') {
+        // Otherwise nothing was removed and the caller is still signed in.
+        throw mapped;
+      }
+    }
+    await this.forgetSession();
+  }
+
+  /**
+   * Removes the session from this device.
+   *
+   * `signOut({ scope: 'local' })` is the supported way, but it can fail for its
+   * own reasons — a locked keychain, most plausibly — and a swallowed failure
+   * there would leave a token for an account that no longer exists. The app
+   * would come back on next launch holding it, which looks to the person like
+   * the deletion did not happen. So the storage key is cleared directly as
+   * well; it is set explicitly in the constructor precisely so this does not
+   * have to guess at supabase-js's default naming.
+   */
+  private async forgetSession(): Promise<void> {
+    try {
+      await this.client.auth.signOut({ scope: 'local' });
+    } catch {
+      // Handled by the direct removal below.
+    }
+    try {
+      await this.storage.removeItem(SESSION_STORAGE_KEY);
+    } catch {
+      // Nothing further this layer can do. The server-side account is gone
+      // either way, and a token for a deleted user opens nothing.
+    }
   }
 
   async getOwnProfile(): Promise<OwnProfile | null> {

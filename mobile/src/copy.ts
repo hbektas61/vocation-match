@@ -223,6 +223,31 @@ export const COPY = {
     unblockButton: 'Unblock',
   },
 
+  deleteAccount: {
+    title: 'Delete your account',
+    intro: 'This removes your account from Vocation Match. It cannot be undone.',
+    startButton: 'Delete my account',
+    // Said before the irreversible tap, not after. Both halves are here on
+    // purpose: what disappears, and the one thing that does not.
+    whatGoes:
+      'Deleted: your profile and photo, your hotel and stay, your likes, your matches, and your conversations. Your conversations disappear from the other person’s inbox too.',
+    whatStays:
+      'Kept: if anyone reported you, or you reported anyone, that report stays in our safety records with your name removed. Deleting your account is not a way to erase it.',
+    noUndo: 'There is no undo, and no way to get the account back.',
+    confirmButton: 'Permanently delete my account',
+    deleting: 'Deleting…',
+    cancelButton: 'Keep my account',
+    // Two messages, because the client genuinely knows two different things.
+    // When the server answered with a refusal, nothing was deleted and saying
+    // so is accurate. When the request never got an answer, the deletion may
+    // have committed and the response been lost — claiming "nothing was
+    // deleted" there would be a confident statement of something we do not
+    // know.
+    refused: 'Could not delete your account. Nothing was deleted and you are still signed in. Try again.',
+    unconfirmed:
+      'We could not confirm whether your account was deleted. You are still signed in. Try again — if it was already deleted, we will tell you.',
+  },
+
   rooms: {
     plainTitle: 'Rooms',
   },

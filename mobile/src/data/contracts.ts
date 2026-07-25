@@ -158,6 +158,15 @@ export interface VocationApi {
   signOut(): Promise<void>;
   /** Session restored from device storage, or null when signed out. */
   currentSession(): Promise<AuthSession | null>;
+  /**
+   * Deletes the signed-in account, irreversibly, and removes the session from
+   * this device. Takes no user id: the account is whichever one the session
+   * belongs to, so there is nothing for a caller to point somewhere else.
+   *
+   * Throws on failure, and leaves the caller signed in when it does. It never
+   * reports a success it did not get.
+   */
+  deleteAccount(): Promise<void>;
 
   /* profile */
   getOwnProfile(): Promise<OwnProfile | null>;

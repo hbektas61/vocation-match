@@ -164,7 +164,7 @@ Use at most 3–5 active specialists. Assign non-overlapping files.
 | Gate | Required evidence | Status |
 | --- | --- | --- |
 | H1 Profile photo storage | H-101–H-106 | **done** — `scripts/check.sh` green: 271 pgTAP assertions (43 new), 12 concurrency checks, contract check incl. storage, tsc, eslint, 173 jest tests, web bundle. Independent code review + security audit run; every finding above low either fixed (`20260725001500_photo_write_path.sql`, signed-URL refresh, orphan sweep) or recorded. |
-| H2 Account deletion | H-201–H-206, pgTAP + mobile tests, review | not started |
+| H2 Account deletion | H-201–H-206 | **done** — `scripts/check.sh` green: 296 pgTAP assertions (24 new), contract check, tsc, eslint, 185 jest tests, web bundle. Review found a second, unguarded deletion path (a table-wide DELETE grant on `profiles`) — closed in `20260725001700` with a structural guard in the baseline suite. |
 | H3 Email confirmation + S-004 | H-301–H-306, config check, concurrency evidence, review | not started |
 | H4 Pilot hardening | H-401–H-411, full `scripts/check.sh`, final review | not started |
 

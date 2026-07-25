@@ -27,6 +27,25 @@ select is(
   'anon holds no privileges on any public table'
 );
 
+-- 2b. Destructive writes go through a function, never a table grant. A DELETE
+-- grant on `profiles` is a second way to delete an account — one that skips the
+-- confirmation, skips the rate limit, and leaves the auth row behind. The
+-- security audit found exactly that, and this is the guard so it cannot come
+-- back with the next migration that restates a grant.
+select is(
+  (select count(*)::int
+     from information_schema.role_table_grants
+    where table_schema = 'public'
+      and grantee = 'authenticated'
+      and privilege_type = 'DELETE'
+      -- The three exceptions are all "take back a thing I said about myself":
+      -- unblocking, withdrawing a presence answer, and cancelling a declared
+      -- stay. None of them remove an account.
+      and table_name not in ('blocks', 'presence_checks', 'upcoming_stays')),
+  0,
+  'authenticated may not DELETE any table beyond the three self-service ones — deleting an account goes through delete_my_account, which also removes the auth row'
+);
+
 -- 3. SECURITY DEFINER functions pin their search_path (no schema hijacking).
 select is(
   (select count(*)::int

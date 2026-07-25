@@ -64,13 +64,14 @@ with attempted as (
 select is((select count(*)::int from attempted), 0,
   'another signed-in user cannot update the profile row');
 
-with attempted as (
-  delete from public.profiles
-   where id = '00000000-0000-0000-0000-0000000000a1'
-  returning 1
-)
-select is((select count(*)::int from attempted), 0,
-  'another signed-in user cannot delete the profile row');
+-- Nobody deletes a profile row directly any more, their own included: the
+-- grant is gone entirely and `delete_my_account()` is the only path, because
+-- a direct delete left the auth row behind (see 20260725001700).
+select throws_ok(
+  $$delete from public.profiles where id = '00000000-0000-0000-0000-0000000000a1'$$,
+  '42501',
+  null,
+  'a signed-in user cannot delete a profile row at all — not another person''s, and not their own');
 
 -- ----------------------------------------------------------------- anon
 select tests.authenticate_as_anon();

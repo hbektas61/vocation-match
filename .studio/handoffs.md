@@ -347,3 +347,76 @@ Handoff:
     not a mechanism.
 - Recommended next agent: `backend-engineer` for H2 — `public.delete_my_account()`,
   the confirmation UX, and local session removal.
+
+## 2026-07-25 — H2 an account can be deleted from inside the app (pilot hardening, phase 2)
+
+Handoff:
+- Date: 2026-07-25
+- From agent: studio-autopilot (`project-orchestrator` + `backend-engineer`/`cross-platform-engineer` implementation, `code-reviewer`, `security-auditor`)
+- To agent: `backend-engineer` (H3, email confirmation readiness and S-004)
+- What I did: added `public.delete_my_account()` and the confirmation flow around it,
+  and — from the audit — removed the second, unguarded way to delete your data that
+  had been there since the first migration.
+- Key decisions:
+  - **The function takes no arguments.** That is the whole security design: there is
+    no id to pass, so the account deleted is whichever one the JWT belongs to. A
+    pgTAP assertion checks the signature, so a future argument would fail the suite.
+  - **It deletes the `auth.users` row, not the profile.** One statement, so a
+    failure anywhere in the cascade rolls the whole thing back — there is no
+    half-deleted state — and the email stops being registered rather than lingering
+    on an account with nothing behind it.
+  - **A suspended account can still delete itself.** Suspension is a limit on
+    reaching other people, not a reason to trap someone in the product. So the
+    function deliberately does not call `app.require_user()`.
+  - **MEDIUM, from the audit: `authenticated` still had a table-wide DELETE grant on
+    `profiles`.** `from('profiles').delete().eq('id', me)` wiped the profile, hotel,
+    stay, swipes, matches and conversations through the cascades — with no
+    confirmation, no rate limit, and the auth row left behind, so the person stayed
+    signed in to an account that looked freshly onboarded. Revoked, with the policy
+    dropped and a structural guard in `000_security_baseline.sql` so no future
+    migration can restate it.
+  - **LOW, from the audit: a swallowed local sign-out could strand a token.** The
+    session key is now named explicitly in `createClient` rather than left to
+    supabase-js's project-ref default, so the deletion path can clear it directly
+    instead of relying on `signOut()` succeeding.
+  - **From the code review: "Nothing was deleted" was a claim the client cannot
+    make.** A dropped connection can hide a deletion that committed. There are now
+    two messages — one for a refusal the server actually sent, one for an answer
+    that never arrived — and a `P0002` on retry is treated as success, because the
+    postcondition the caller asked for is true.
+  - **From the code review: the deletion tests passed for the wrong reason.** Every
+    assertion after `deleteAccount()` failed on the missing session before it ever
+    reached the data, so the purge could have been deleted entirely and the suite
+    would still have been green. `FakeApi.recordsFor()` is a test seam that looks at
+    the stored records instead.
+  - **The irreversibility warning is announced.** It carries the `error` tone, which
+    is the only one `Notice` announces — someone using VoiceOver can reach the
+    delete button without linearly reading the paragraphs above it.
+- Files touched: `supabase/migrations/20260725001600_account_deletion.sql`,
+  `supabase/migrations/20260725001700_deletion_is_the_only_path.sql`,
+  `supabase/tests/{000_security_baseline,001_profiles,012_account_deletion}.sql`,
+  `mobile/src/data/{contracts,supabaseApi,fakeApi}.ts`,
+  `mobile/src/screens/SettingsScreen.tsx`, `mobile/src/copy.ts`,
+  `mobile/src/data/__tests__/deleteAccount.test.ts`,
+  `mobile/src/__tests__/deleteAccountUi.test.tsx`.
+- Verification: `bash scripts/check.sh` — 296 pgTAP assertions across 13 suites
+  (24 of them in `012_account_deletion.sql`), 12 concurrency checks, the
+  client/database contract check, `tsc`, `eslint --max-warnings 0`, 185 jest tests,
+  the web bundle.
+- Risks / blockers:
+  - **Known limitation, carried to H-406.** There is no timeout on any request in the
+    app. If the deletion request stalls, the card stays on "Deleting…" with no way
+    out short of restarting. Systemic rather than specific to this screen, and the
+    right place to fix it is the offline/lifecycle pass.
+  - **Still open: `storage_cleanup_queue` has no drainer.** A deleted account's photo
+    stops being readable immediately, but the bytes stay until a service-role job
+    exists to remove them. Carried to H-403/H-411.
+  - **Deferred, needs a device (D-015).** The keychain path — that the session really
+    is gone from SecureStore after a deletion, and that the app comes back clean on
+    the next cold start — is tested against an injected storage adapter, not against
+    a real keychain.
+  - A deleted account can sign up again with the same email. That is the existing
+    open owner decision about suspension being per account rather than per person;
+    deletion does not make it worse, but it does not close it either.
+- Recommended next agent: `backend-engineer` for H3 — email confirmation
+  configuration and the unconfirmed-email states, then S-004 room attribution.

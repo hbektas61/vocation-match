@@ -93,6 +93,7 @@ export class FakeApi implements VocationApi {
   /** Object path -> local uri. The fake's stand-in for the storage bucket. */
   private readonly objects = new Map<string, string>();
   private uploadFailure: ApiError | null = null;
+  private deleteFailure: ApiError | null = null;
   private session: AuthSession | null = null;
   private nextId = 1;
   private readonly now: () => number;
@@ -137,6 +138,84 @@ export class FakeApi implements VocationApi {
       this.session = null;
     }
     return this.session;
+  }
+
+  async deleteAccount(): Promise<void> {
+    const userId = await this.requireUserId();
+    if (this.deleteFailure) {
+      // One-shot, and nothing is removed: the caller stays signed in with an
+      // account that still exists, which is what the screen has to show.
+      const failure = this.deleteFailure;
+      this.deleteFailure = null;
+      throw failure;
+    }
+
+    for (const [email, user] of this.users) {
+      if (user.id === userId) this.users.delete(email);
+    }
+    this.profiles.delete(userId);
+    this.activeHotels.delete(userId);
+    this.presence.delete(userId);
+    for (const key of [...this.stays.keys()]) {
+      if (key.startsWith(`${userId}|`)) this.stays.delete(key);
+    }
+    // Both ends of the pair, not just the one this user is the actor of. The
+    // real schema cascades on both foreign keys; a fake that only cleaned the
+    // first half would agree with it right up until someone wrote a test with
+    // two real accounts.
+    for (const key of [...this.swipes.keys()]) {
+      if (key.startsWith(`${userId}|`) || key.endsWith(`|${userId}`)) this.swipes.delete(key);
+    }
+    for (const key of [...this.blocks.keys()]) {
+      if (key.startsWith(`${userId}|`) || key.endsWith(`|${userId}`)) this.blocks.delete(key);
+    }
+    for (const path of [...this.objects.keys()]) {
+      if (path.startsWith(`${userId}/`)) this.objects.delete(path);
+    }
+    const ownMatches = this.matches.filter((match) => match.userId === userId);
+    for (const match of ownMatches) {
+      const index = this.matches.indexOf(match);
+      if (index >= 0) this.matches.splice(index, 1);
+      for (let i = this.messages.length - 1; i >= 0; i -= 1) {
+        if (this.messages[i].matchId === match.matchId) this.messages.splice(i, 1);
+      }
+    }
+    // Reports are deliberately kept: deleting an account is not a way to erase
+    // the record that a report was made (see the H-202 note in the migration).
+    this.session = null;
+  }
+
+  /** Test seam: makes the next deletion fail the way a dropped request would. */
+  failNextDeleteWith(error: ApiError | null): void {
+    this.deleteFailure = error;
+  }
+
+  /**
+   * Test seam: how many stored records still mention this user, anywhere.
+   *
+   * Without this, "the account was deleted" can only be asserted through the
+   * public API — and every one of those calls fails for lack of a session
+   * first, so the assertion passes whether or not anything was actually
+   * removed. The review caught exactly that. This looks at the maps.
+   */
+  recordsFor(userId: string): number {
+    const keyed = (keys: Iterable<string>, separator: string) =>
+      [...keys].filter((key) => key.startsWith(`${userId}${separator}`) || key.endsWith(`|${userId}`))
+        .length;
+
+    return (
+      [...this.users.values()].filter((user) => user.id === userId).length +
+      (this.profiles.has(userId) ? 1 : 0) +
+      (this.activeHotels.has(userId) ? 1 : 0) +
+      (this.presence.has(userId) ? 1 : 0) +
+      keyed(this.stays.keys(), '|') +
+      keyed(this.swipes.keys(), '|') +
+      keyed(this.blocks.keys(), '|') +
+      keyed(this.objects.keys(), '/') +
+      this.matches.filter((match) => match.userId === userId || match.otherUserId === userId)
+        .length +
+      this.messages.filter((message) => message.senderId === userId).length
+    );
   }
 
   async getOwnProfile(): Promise<OwnProfile | null> {
