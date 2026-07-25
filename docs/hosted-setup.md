@@ -108,9 +108,30 @@ select mark_storage_cleanup_purged(array[...]); -- record what was reported gone
 the same object to the storage API at once, and running it twice for the same
 object is harmless anyway.
 
-That worker is not in this repository — it needs the service-role key, which
-does not belong here. A Supabase Edge Function on a cron schedule is the obvious
-home for it.
+The worker itself is `scripts/drain-storage-cleanup.js`. It is plain Node with
+no dependencies, so it runs anywhere a schedule can run it — GitHub Actions, a
+cron box, or wrapped in an Edge Function:
+
+```sh
+SUPABASE_URL=https://<ref>.supabase.co \
+SUPABASE_SECRET_KEY=sb_secret_... \
+node scripts/drain-storage-cleanup.js
+```
+
+The key is a service key. It belongs in the scheduler's secret store, never in
+this repository and never on a device. The script refuses to start without it
+rather than silently doing nothing, and exits non-zero if anything was left
+behind, so a schedule that reports green is telling the truth.
+
+**What is verified and what is not.** `scripts/verify-storage-drain.js` runs the
+drain loop against the real database with the object store stubbed, and is part
+of `scripts/check.sh`. It covers the case that matters: a row is marked purged
+only when the storage API actually says it removed that object — a worker that
+marked everything it claimed would turn a queue of real work into a queue of
+lies on the first bad afternoon. What it does not cover is the HTTP transport,
+because there is no object store in the checks. **Run it once by hand against
+staging and confirm a queued object really disappears before trusting a
+schedule with it.**
 
 **Until it is running**, the honest statement is: a deleted photo becomes
 unreadable immediately, and its bytes are still there. Do not describe deletion

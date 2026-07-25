@@ -741,3 +741,43 @@ Handoff:
   335 pgTAP assertions across 15 SQL suites, 13 concurrency checks, performance
   smoke, client/database contract, migration replay, `tsc`,
   `eslint --max-warnings 0`, 226 jest tests, web bundle.
+
+## 2026-07-25 — the storage cleanup worker
+
+Handoff:
+- Date: 2026-07-25
+- From agent: studio-autopilot
+- To: the owner, for one manual run and a schedule.
+- What I did: wrote the worker the queue has been waiting for. Three handoffs
+  in a row have said the same sentence — a deleted photo becomes unreadable
+  immediately and its bytes are still there — because the database can drop the
+  metadata row and nothing else. Now something can.
+- Key decisions:
+  - **Plain Node, not an Edge Function.** No dependencies, so it runs anywhere a
+    schedule can run it: GitHub Actions, a cron box, or wrapped in an Edge
+    Function later. It also means the loop could be tested here, which an Edge
+    Function could not have been — there is no Deno on this machine.
+  - **Marking is a claim, so it is only made on evidence.** The storage API
+    reports what it removed, and only those rows are marked purged. A worker
+    that marked everything it *claimed* would turn a queue of real work into a
+    queue of lies, quietly, on the first afternoon the object store returned
+    503. That is the case the check is built around, and it is negative
+    controlled: reintroducing that bug turns four assertions red.
+  - **A bucket it was not written for is skipped, not guessed at.**
+  - **It exits non-zero if anything is left behind**, so a schedule that reports
+    green is telling the truth.
+  - The service key is read from the environment, never logged, and the script
+    refuses to start without it rather than silently doing nothing.
+- Files: `scripts/drain-storage-cleanup.js`, `scripts/verify-storage-drain.js`,
+  `scripts/check.sh`, `docs/hosted-setup.md`.
+- Verification: `bash scripts/check.sh` — now including the drain check. 335
+  pgTAP assertions, 13 concurrency checks, performance smoke, migration replay,
+  contract check, auth config, dependency gate, `tsc`,
+  `eslint --max-warnings 0`, 226 jest tests, web bundle.
+- **What is still not verified, and it is the transport.** There is no object
+  store in the checks, so the two HTTP calls have never been made. Run it by
+  hand against staging once — queue an object, run the script, confirm the
+  bytes are actually gone — before putting it on a schedule. Everything either
+  side of those two calls is covered.
+- Still external and unchanged: a real device (D-015), CAPTCHA (needs a provider
+  account), a real confirmation-link pass, and a signed-URL round trip.

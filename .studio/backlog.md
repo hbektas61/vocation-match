@@ -138,7 +138,9 @@ and the web bundle. Four of those checks are negative-controlled.
       executable check (`mobile/src/__tests__/trustCopy.test.ts`) rather than a
       rule in a document.
 - [x] H-403 Abuse resistance. `swipe` and `discovery_feed` limited; the storage
-      cleanup queue given a drain contract. Two residual risks sized rather than
+      cleanup queue given a drain contract, and then (2026-07-25) the worker
+      that uses it — `scripts/drain-storage-cleanup.js`, verified against the
+      real database with the object store stubbed. Two residual risks sized rather than
       only noted, in `.studio/decisions.md`: a suspended account can delete
       itself and re-register, and three disposable addresses can force a
       moderation flag — which is queue priority, not a ban.

@@ -106,6 +106,15 @@ named. Everything still unticked is unticked on purpose.
 - [x] A lapsed session does not leave the app looking signed in.
       *Re-checked whenever the app returns to the foreground; a failed check is
       not treated as evidence, because a dropped connection looks the same.*
+- [x] The storage cleanup queue has a worker, not just a contract.
+      *`scripts/drain-storage-cleanup.js` — plain Node, no dependencies, runs
+      anywhere a schedule can run it. `scripts/verify-storage-drain.js` drives
+      it against the real database with the object store stubbed and covers the
+      case that matters: a row is marked purged only when the storage API says
+      it actually removed that object. Verified in both directions — marking
+      everything claimed instead turns four assertions red. **Not verified:**
+      the HTTP transport, because there is no object store in the checks. Run it
+      by hand against staging once before trusting a schedule with it.*
 - [x] Dependency advisories are either fixed or written down with a reason.
       *`scripts/check-dependencies.js` fails on any unaccepted high or critical.*
 - [x] Lint and typecheck pass. *`npx eslint . --max-warnings 0`, `npx tsc --noEmit`.*

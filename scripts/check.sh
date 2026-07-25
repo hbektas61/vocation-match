@@ -47,6 +47,7 @@ if [ "$RUN_DB" = "1" ]; then
   run "client ↔ database contract" node "$ROOT/scripts/verify-api-contract.js"
   # Its own two containers, so it does not disturb the one above.
   run "migration replay — fresh vs stepped" bash "$ROOT/scripts/verify-migration-replay.sh"
+  run "storage cleanup drain" node "$ROOT/scripts/verify-storage-drain.js"
 fi
 
 if [ "$RUN_MOBILE" = "1" ]; then
