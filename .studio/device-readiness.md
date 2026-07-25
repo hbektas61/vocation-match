@@ -3,6 +3,14 @@
 What has to be true before this app goes on a real phone in front of a real
 person, and what is deliberately not being done yet.
 
+**Device-test update, 2026-07-25.** The mobile project is now aligned to Expo
+SDK 54, the SDK supported by the current iOS Expo Go client. A paid Apple
+Developer or Expo plan is not needed for this path. On a Mac and iPhone sharing
+Wi-Fi, run `cd mobile && npx expo start --clear --lan` and scan the QR code in
+Expo Go. The project configuration resolves as `sdkVersion: 54.0.0`; Expo
+Doctor passes 18/18 and the automated suite passes 239/239. These facts unblock
+the checklist below but do not complete any device item by themselves.
+
 ## What runs today, and how it is proved
 
 | Layer | Command | What it proves |

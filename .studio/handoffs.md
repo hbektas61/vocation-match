@@ -1,5 +1,49 @@
 # Handoffs
 
+## 2026-07-25 — Physical Expo Go test unblocked on SDK 54
+
+Handoff:
+- Date: 2026-07-25
+- From agent: `cross-platform-engineer`
+- To: the owner for the physical iPhone walkthrough
+- Status: **ready for Expo Go device testing; device checklist still open**
+
+The verified change is committed on local `main`. Pushing to `origin/main`
+failed because the Mac's HTTPS credential provider returned `Device not
+configured`; no force push or alternate credential path was attempted. The
+local device test does not depend on that push.
+
+The mobile project is intentionally on Expo SDK 54 for the current App Store
+Expo Go client. This is a temporary compatibility choice for physical-device
+testing, not a development build and not a store release; it needs neither an
+Apple Developer membership nor a paid Expo plan. Expo resolves the public
+configuration as `sdkVersion: 54.0.0`.
+
+The SDK-aligned dependency set was rebuilt from a clean install and verified:
+Expo Doctor 18/18, Expo dependency check clean, TypeScript and ESLint clean,
+239/239 Jest tests passing, and a fresh web export. One latent lifecycle-test
+race was made explicit by waiting for the hotel screen before replacing the
+session checker; application behaviour did not change. The SDK 54 React Native
+types also require `StyleSheet.absoluteFillObject` rather than spreading the
+registered `StyleSheet.absoluteFill` style.
+
+SDK 54's supported Metro toolchain pins PostCSS 8.4.x. Two newly published
+PostCSS advisories are recorded as a temporary, reasoned dependency-gate
+exception: this project accepts no user CSS, PostCSS runs only in local
+web/build tooling, and the native Expo Go runtime does not ship that Node path.
+Remove the exception when Expo's supported dependency range reaches the patched
+PostCSS line or when the project returns to a newer SDK.
+
+Start on the Mac with `cd mobile && npx expo start --clear --lan`, keep the
+iPhone and Mac on the same Wi-Fi, then scan the QR code from Expo Go. Tunnel is
+only a fallback and may require `@expo/ngrok`; it is not needed for the LAN
+route.
+
+This does **not** mark any scenario in `.studio/device-readiness.md` complete.
+The next evidence is the actual iPhone walkthrough: launch, keychain/session,
+photo and location permission paths, background/resume, offline handling, and
+VoiceOver.
+
 ## 2026-07-25 — MVP systems program closed; device pass carried forward
 
 Handoff:

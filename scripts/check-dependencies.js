@@ -30,6 +30,26 @@ const MOBILE = join(__dirname, '..', 'mobile');
  */
 const ACCEPTED = [
   {
+    package: 'postcss',
+    url: 'https://github.com/advisories/GHSA-6g55-p6wh-862q',
+    severity: 'high',
+    why:
+      'Expo SDK 54 pins postcss@~8.4.32 through @expo/metro-config, outside the ' +
+      'patched 8.5.x line. It runs only in local web/build tooling; the app ' +
+      'accepts no user-supplied CSS, and native Expo Go does not ship this Node ' +
+      'build path. Remove this exception when Expo updates the supported range.',
+  },
+  {
+    package: 'postcss',
+    url: 'https://github.com/advisories/GHSA-r28c-9q8g-f849',
+    severity: 'high',
+    why:
+      'Expo SDK 54 pins postcss@~8.4.32 through @expo/metro-config, outside the ' +
+      'patched 8.5.x line. It runs only in local web/build tooling; the app ' +
+      'accepts no user-supplied CSS, and native Expo Go does not ship this Node ' +
+      'build path. Remove this exception when Expo updates the supported range.',
+  },
+  {
     package: 'uuid',
     url: 'https://github.com/advisories/GHSA-w5hq-g745-h8pq',
     severity: 'moderate',

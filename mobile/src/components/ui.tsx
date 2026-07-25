@@ -688,7 +688,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.veil,
   },
   photoFill: {
-    ...StyleSheet.absoluteFill,
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
   },
