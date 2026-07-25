@@ -1,0 +1,17 @@
+- generic [ref=f1e50]:
+  - heading "Your profile" [level=1] [ref=f1e51]
+  - generic [ref=f1e52]: Only your display name, age, and bio are shown to others.
+  - generic [ref=f1e54]:
+    - generic [ref=f1e55]: Display name
+    - textbox "Display name" [ref=f1e56]:
+      - /placeholder: How should we show you?
+  - generic [ref=f1e57]:
+    - generic [ref=f1e58]: Date of birth
+    - textbox "Date of birth" [ref=f1e59]:
+      - /placeholder: YYYY-MM-DD
+    - generic [ref=f1e60]: Use the format YYYY-MM-DD, for example 1994-03-01.
+  - generic [ref=f1e61]:
+    - generic [ref=f1e62]: Bio
+    - textbox "Bio" [ref=f1e63]:
+      - /placeholder: A sentence about you
+  - button "Save profile" [ref=f1e65] [cursor=pointer]

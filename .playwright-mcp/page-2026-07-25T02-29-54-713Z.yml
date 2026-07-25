@@ -1,0 +1,7 @@
+- generic [ref=f1e10]:
+  - heading "Vocation Match" [level=1] [ref=f1e11]
+  - generic [ref=f1e12]: Meet people connected to your hotel.
+  - heading "Adults only" [level=1] [ref=f1e14]
+  - generic [ref=f1e15]: Vocation Match is for people 18 or older. By continuing you confirm you are at least 18.
+  - button "I am 18 or older" [ref=f1e17] [cursor=pointer]
+  - generic [ref=f1e20]: Exact locations and live distances are never shown to anyone.

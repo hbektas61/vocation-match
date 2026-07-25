@@ -1,0 +1,13 @@
+- generic [ref=f1e26]:
+  - heading "Sign in" [level=1] [ref=f1e27]
+  - generic [ref=f1e28]: Welcome back. Sign in with your email and password.
+  - generic [ref=f1e30]:
+    - generic [ref=f1e31]: Email
+    - textbox "Email" [ref=f1e32]:
+      - /placeholder: you@example.com
+  - generic [ref=f1e33]:
+    - generic [ref=f1e34]: Password
+    - textbox "Password" [ref=f1e35]:
+      - /placeholder: At least 8 characters
+  - button "Sign in" [disabled]
+  - button "Don't have an account? Create one" [ref=f1e39] [cursor=pointer]

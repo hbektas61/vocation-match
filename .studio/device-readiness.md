@@ -10,8 +10,22 @@ person, and what is deliberately not being done yet.
 | Database | `bash supabase/scripts/db-test.sh` | Migrations apply in order into a clean container; 10 pgTAP suites assert the rules; a concurrency script races 8 live connections at hotel switching and at simultaneous likes. |
 | Client/server contract | `node scripts/verify-api-contract.js` | Every RPC name, argument name, table and column the client uses exists in the database. |
 | Mobile | `cd mobile && npx tsc --noEmit && npx eslint . && npx jest` | Types, lint, domain rules, store behaviour, API contract against the in-memory implementation, and the critical-flow component tests. |
-| Bundle | `cd mobile && npx expo export --platform web` | The app bundles. It is a build proof, not a device proof. |
+| Bundle | `cd mobile && npx expo export --platform web` | The app bundles, and the bundle boots: the onboarding path was walked in a real browser with no console errors. Still not a device proof. |
 | Everything | `scripts/check.sh` | All of the above, with an honest per-step summary. |
+
+## Walked in a real browser
+
+The exported web bundle was served and driven end to end: age gate → create
+account → profile with a birthdate → hotel activation, landing on the active
+hotel with the trust copy in place and **zero console errors**. That is more
+than "it compiles" — the navigation, the store, the typed API boundary, and the
+in-memory implementation all actually run.
+
+One thing that showed up only there: the tab bar's accessible name reads
+"🏨 🏨 Hotel". The icon props that hide it (`accessibilityElementsHidden`,
+`importantForAccessibility`) are iOS/Android-only, so on web the emoji leaks
+into the name twice. Not a defect on the platforms this ships to, but worth
+knowing before anyone treats the web build as a product.
 
 ## What a bundle check cannot tell you
 

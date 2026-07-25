@@ -1,5 +1,52 @@
 # Handoffs
 
+## 2026-07-25 — Program blocked on one thing: no device toolchain
+
+Handoff:
+- Date: 2026-07-25
+- From agent: `project-orchestrator`
+- To: the owner, for one action
+- Status: **the four-phase program is not complete**, and the only thing left
+  is N-010's device test.
+
+Everything else is done and verified in one command, `scripts/check.sh`:
+228 pgTAP assertions across 11 SQL suites, 11 concurrency checks racing real
+connections, the client/database contract check, `tsc`, `eslint --max-warnings 0`,
+the mobile jest suite, and a web bundle. The exported bundle was also driven
+end to end in a real browser — age gate through hotel activation, zero console
+errors — which proves the app boots and the whole typed boundary runs.
+
+**The blocker:** no build has run on a phone or a simulator, and none can on
+this machine. It has Command Line Tools without Xcode, and no Android SDK, so
+there is no simulator or emulator to run and nothing to install one from
+without the owner's involvement. This is an external dependency, not
+unfinished code.
+
+What that leaves untested is exactly what a bundle cannot reach: the keychain,
+the location permission dialog and its denial and revocation paths,
+backgrounding and token refresh, offline behaviour, and VoiceOver/TalkBack.
+The scenarios are written out in `.studio/device-readiness.md` — they are a
+checklist to run, not a claim that they passed.
+
+Owner action to unblock: install Xcode (for an iOS simulator) or the Android
+SDK, or connect a physical device with Expo Go, then run the
+`.studio/device-readiness.md` list.
+
+Also landed since the last handoff:
+- Rate limiting (S-002) on reporting, presence checks, and messages. Reporting
+  is the tightest, because unlimited reporting is both a way to bury the
+  moderation queue and a way to mass-block, and the automatic flag at three
+  distinct reporters makes a pile-on cheap.
+- A latent chat bug the rate-limit trigger exposed: `messages.created_at`
+  defaults to `now()`, the *transaction* timestamp, so two messages written in
+  one transaction tied and "the last message" was a coin flip. Rare in
+  production, which is what would have made it appear once and never
+  reproduce. Messages now carry an identity `seq`.
+
+Still open and deliberately so: S-001 photo storage (D-014), S-003 email
+confirmation on the hosted project, S-004 the match room label, and the
+account-deletion UI required before store submission.
+
 ## 2026-07-25 — Independent review findings applied; program complete
 
 Handoff:

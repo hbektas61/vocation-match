@@ -1,0 +1,15 @@
+- generic [ref=f1e26]:
+  - heading "Create your account" [level=1] [ref=f1e42]
+  - generic [ref=f1e28]: Use an email and password to get started.
+  - generic [ref=f1e30]:
+    - generic [ref=f1e31]: Email
+    - textbox "Email" [ref=f1e32]:
+      - /placeholder: you@example.com
+      - text: walkthrough@example.test
+  - generic [ref=f1e33]:
+    - generic [ref=f1e34]: Password
+    - textbox "Password" [ref=f1e35]:
+      - /placeholder: At least 8 characters
+      - text: correct horse
+  - button "Create account" [ref=f1e43] [cursor=pointer]
+  - button "Already have an account? Sign in" [active] [ref=f1e44] [cursor=pointer]

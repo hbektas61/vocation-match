@@ -1,0 +1,57 @@
+- generic [ref=f1e70]:
+  - generic [ref=f1e76]:
+    - heading "Your hotel" [level=1] [ref=f1e77]
+    - generic [ref=f1e151]:
+      - heading "Lara Shore Resort" [level=1] [ref=f1e152]
+      - generic [ref=f1e153]: Antalya, Türkiye
+      - generic [ref=f1e154]: Active hotel. You can be active in one hotel at a time.
+    - generic [ref=f1e81]:
+      - generic [ref=f1e82]: Search hotels
+      - textbox "Search hotels" [ref=f1e83]:
+        - /placeholder: Hotel name or city
+    - generic [ref=f1e84]:
+      - heading "Lara Shore Resort" [level=1] [ref=f1e85]
+      - generic [ref=f1e86]: Antalya, Türkiye
+      - generic [ref=f1e155]: This is your active hotel.
+    - generic [ref=f1e89]:
+      - heading "Bosphorus Garden Hotel" [level=1] [ref=f1e90]
+      - generic [ref=f1e91]: Istanbul, Türkiye
+      - button "Activate Bosphorus Garden Hotel" [ref=f1e92] [cursor=pointer]
+    - generic [ref=f1e94]:
+      - heading "Çeşme Breeze Club" [level=1] [ref=f1e95]
+      - generic [ref=f1e96]: İzmir, Türkiye
+      - button "Activate Çeşme Breeze Club" [ref=f1e97] [cursor=pointer]
+    - generic [ref=f1e99]:
+      - heading "Kaş Blue Bay Suites" [level=1] [ref=f1e100]
+      - generic [ref=f1e101]: Antalya, Türkiye
+      - button "Activate Kaş Blue Bay Suites" [ref=f1e102] [cursor=pointer]
+    - generic [ref=f1e104]:
+      - heading "Cappadocia Stone House" [level=1] [ref=f1e105]
+      - generic [ref=f1e106]: Nevşehir, Türkiye
+      - button "Activate Cappadocia Stone House" [ref=f1e107] [cursor=pointer]
+  - tablist [ref=f1e110]:
+    - tab "🏨 🏨 Hotel" [selected] [ref=f1e112] [cursor=pointer]:
+      - generic [ref=f1e113]:
+        - generic [ref=f1e114]: 🏨
+        - generic [ref=f1e116]: 🏨
+      - generic [ref=f1e118]: Hotel
+    - tab "🚪 🚪 Rooms" [ref=f1e120] [cursor=pointer]:
+      - generic [ref=f1e121]:
+        - generic [ref=f1e122]: 🚪
+        - generic [ref=f1e124]: 🚪
+      - generic [ref=f1e126]: Rooms
+    - tab "💚 💚 Discovery" [ref=f1e128] [cursor=pointer]:
+      - generic [ref=f1e129]:
+        - generic [ref=f1e130]: 💚
+        - generic [ref=f1e132]: 💚
+      - generic [ref=f1e134]: Discovery
+    - tab "💬 💬 Inbox" [ref=f1e136] [cursor=pointer]:
+      - generic [ref=f1e137]:
+        - generic [ref=f1e138]: 💬
+        - generic [ref=f1e140]: 💬
+      - generic [ref=f1e142]: Inbox
+    - tab "⚙️ ⚙️ Settings" [ref=f1e144] [cursor=pointer]:
+      - generic [ref=f1e145]:
+        - generic [ref=f1e146]: ⚙️
+        - generic [ref=f1e148]: ⚙️
+      - generic [ref=f1e150]: Settings
