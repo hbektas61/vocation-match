@@ -68,6 +68,14 @@ select throws_ok(
   'a blank interest is refused'
 );
 
+select throws_ok(
+  $$update public.profiles set interests = array[null]::text[]
+     where id = '00000000-0000-0000-0000-0000000000a1'$$,
+  '23514',
+  null,
+  'a null interest is refused'
+);
+
 select is(
   (select interests from public.profiles where id = '00000000-0000-0000-0000-0000000000a1'),
   array['Coffee','Long walks'],

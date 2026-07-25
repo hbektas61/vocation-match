@@ -100,7 +100,16 @@ export function OnboardingFlow() {
   const [draft, setDraft] = useState<OnboardingDraft>(EMPTY_DRAFT);
   /** The step somebody has actually walked to, when they have walked anywhere. */
   const [manual, setManual] = useState<OnboardingStep | null>(null);
-  const [profile, setProfile] = useState<OwnProfile | null>(null);
+  const [profile, setProfile] = useState<OwnProfile | null>(() =>
+    state.profile?.birthdate
+      ? {
+          ...state.profile,
+          birthdate: state.profile.birthdate,
+          bio: state.profile.bio || null,
+          photoPath: state.profile.photoPath ?? null,
+        }
+      : null,
+  );
 
   const patch = (next: Partial<OnboardingDraft>) => setDraft((d) => ({ ...d, ...next }));
 
@@ -110,7 +119,12 @@ export function OnboardingFlow() {
     if (!state.ageConfirmed) return 'welcome';
     if (!state.session) return draft.awaitingConfirmation ? 'confirmEmail' : 'email';
     if (!state.profile) return 'name';
-    if (!state.activeHotel) return 'hotel';
+    // Profile creation happens at the required birthdate step. If the app is
+    // interrupted before the optional profile steps finish, the server cannot
+    // distinguish that from somebody who deliberately skipped them. Resuming
+    // at bio is conservative: it may repeat an optional step, but it never
+    // silently drops bio, interests, and photo from the wizard.
+    if (!state.activeHotel) return 'bio';
     return 'teaching';
   }, [state.ageConfirmed, state.session, state.profile, state.activeHotel, draft.awaitingConfirmation]);
 

@@ -6,7 +6,13 @@
  * launch, "Skip" appears only where skipping is genuinely allowed, and the
  * limit on interests is enforced rather than merely printed.
  */
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react-native';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  renderAsync,
+  screen,
+} from '@testing-library/react-native';
 import React from 'react';
 import { BackHandler } from 'react-native';
 
@@ -14,7 +20,7 @@ import App from '../../App';
 import { COPY } from '../copy';
 import { FakeApi, getApi, MAX_INTERESTS, setApi } from '../data';
 import { INTEREST_CHOICES } from '../fixtures/interests';
-import { onboard, signUpAndSignIn } from '../testSupport/onboarding';
+import { onboard, onboardToTeaching, signUpAndSignIn } from '../testSupport/onboarding';
 
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
 
@@ -36,8 +42,10 @@ async function relaunch(): Promise<void> {
   await act(async () => {
     await Promise.resolve();
   });
-  await cleanup();
-  await render(<App />);
+  await act(async () => {
+    cleanup();
+  });
+  await renderAsync(<App />);
 }
 
 describe('moving through the wizard', () => {
@@ -241,18 +249,7 @@ describe('a finished onboarding', () => {
   });
 
   it('shows the three teaching cards once, and only after finishing', async () => {
-    await signUpAndSignIn('teaching@example.test');
-    await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
-    await fireEvent.changeText(await screen.findByTestId('profile-birthdate'), '1994-03-01');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
-    await fireEvent.press(await screen.findByTestId('onboarding-skip'));
-    await fireEvent.press(await screen.findByTestId('onboarding-skip'));
-    await fireEvent.press(await screen.findByTestId('onboarding-skip'));
-
-    await fireEvent.changeText(await screen.findByTestId('hotel-search'), 'lara');
-    await fireEvent.press(await screen.findByTestId('activate-hotel-lara-shore'));
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await onboardToTeaching('Deniz', 'teaching@example.test');
 
     expect(await screen.findByText(COPY.onboarding.teaching.upcoming.title)).toBeTruthy();
     await fireEvent.press(screen.getByTestId('teaching-next'));

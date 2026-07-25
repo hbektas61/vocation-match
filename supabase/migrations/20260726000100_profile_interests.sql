@@ -37,7 +37,8 @@ as $$
       or not exists (
            select 1
              from unnest(p_interests) as i
-            where char_length(btrim(i)) < 1
+            where i is null
+               or char_length(btrim(i)) < 1
                or char_length(i) > 24
          );
 $$;

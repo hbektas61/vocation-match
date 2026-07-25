@@ -72,7 +72,7 @@ describe('coming back to a session that has gone', () => {
 
   it('does not sign anyone out because a check failed', async () => {
     await onboard();
-    expect(await screen.findByTestId('activate-hotel-lara-shore')).toBeTruthy();
+    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
     jest
       .spyOn(getApi(), 'currentSession')
       .mockRejectedValue(new Error('fetch failed'));

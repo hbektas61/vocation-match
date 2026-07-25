@@ -9,7 +9,7 @@
  *
  * Deliberately not under `__tests__`: jest would try to run it as a suite.
  */
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import React from 'react';
 
 import App from '../../App';
@@ -18,11 +18,17 @@ export const ADULT_BIRTHDATE = '1994-03-01';
 export const PILOT_HOTEL = 'hotel-lara-shore';
 
 const press = async (testID: string) => {
-  await fireEvent.press(await screen.findByTestId(testID));
+  const target = await screen.findByTestId(testID);
+  await act(async () => {
+    fireEvent.press(target);
+  });
 };
 
 const type = async (testID: string, value: string) => {
-  await fireEvent.changeText(await screen.findByTestId(testID), value);
+  const target = await screen.findByTestId(testID);
+  await act(async () => {
+    fireEvent.changeText(target, value);
+  });
 };
 
 /** Welcome → the promise → email → password, stopping wherever that lands. */
@@ -55,7 +61,7 @@ export async function signUpAndSignIn(
   email = 'deniz@example.test',
   password = 'correct horse',
 ): Promise<void> {
-  await render(<App />);
+  render(<App />);
   await startSignUp(email, password);
 
   // Stands in for opening the link; there is no mailbox behind the fake.
@@ -111,5 +117,8 @@ export async function onboard(
 /** Onboards, then opens the Settings tab. */
 export async function onboardToSettings(name = 'Deniz'): Promise<void> {
   await onboard(name);
-  await fireEvent.press(await screen.findByText('Settings'));
+  const settings = await screen.findByText('Settings');
+  await act(async () => {
+    fireEvent.press(settings);
+  });
 }

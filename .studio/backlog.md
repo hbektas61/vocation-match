@@ -228,6 +228,14 @@ client work; the server already allowed every one of them.
       repeats twelve times. The announcement is in the scaffold, so no step can
       forget it.
       Evidence: `mobile/src/__tests__/announcements.test.tsx`.
+- [x] O-009 Integrate the onboarding work onto the Expo SDK 54 baseline.
+      React 19-compatible test actions now await asynchronous wizard updates;
+      interrupted profile creation resumes conservatively instead of dropping
+      optional steps; credentials are cleared from component state after each
+      successful auth outcome; and interests reject null elements server-side.
+      Evidence: `scripts/check.sh` — 346 pgTAP assertions, concurrency,
+      migration replay, contract and storage checks, typecheck, zero-warning
+      lint, 251 Jest tests, and the SDK 54 web bundle.
 
 ## Later — monetization
 

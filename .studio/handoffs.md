@@ -966,3 +966,29 @@ any check that was already being run.
   Android back press and a real VoiceOver/TalkBack walk, both listed in
   `.studio/device-readiness.md` — CAPTCHA, one manual run of the cleanup worker
   against staging, a real confirmation link, a signed-URL round trip.
+
+## 2026-07-26 — onboarding integrated onto Expo SDK 54
+
+Handoff:
+- What I did: cherry-picked `a323d7e` onto the SDK 54 checkpoint `d21f2ad`,
+  producing `d3b41f0`, then repaired the React 19 test-driver races and all
+  valid independent review findings.
+- Key decisions: SDK 54 remains authoritative (`expo ~54.0.0`, React 19.1,
+  React Native 0.81.5). A profile without an active hotel resumes at bio so a
+  restart cannot silently skip optional onboarding. Plaintext password state
+  is cleared after successful sign-up/sign-in or confirmation-required output.
+- Files touched after integration: onboarding flow/password step and tests,
+  the shared onboarding test driver, the interests migration/test, and Studio
+  evidence.
+- Verification: `scripts/check.sh` passed end to end — auth/dependency gates;
+  346 pgTAP assertions plus concurrency and performance checks; client/database
+  contract; fresh-vs-stepped migration replay; storage drain; TypeScript;
+  ESLint with zero warnings; 251 Jest tests; Expo SDK 54 web export.
+- Reviews: independent code and security reviews reported no critical/high
+  findings. Their two medium findings (restart skipping optional steps,
+  incoherent active-hotel restoration/plaintext password retention) and the
+  null-interest defense-in-depth finding were fixed before the final gate.
+- Risks / open questions: real-device verification remains deferred under
+  D-015. React 19 emits non-failing `act()` warnings in several older tests;
+  the suite is green, but those tests should migrate to async helpers over time.
+- Recommended next agent: mobile-qa-release for the D-015 device matrix.

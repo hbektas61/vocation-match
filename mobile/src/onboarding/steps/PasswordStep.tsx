@@ -32,6 +32,9 @@ export function PasswordStep({ step, total, draft, patch, go, onBack }: StepProp
       if (draft.returning) {
         const session = await api.signIn(draft.email, password);
         const remote = await api.getOwnProfile();
+        const activeHotel = remote ? await api.getActiveHotel() : null;
+        patch({ password: '' });
+        setPassword('');
         dispatch({
           type: 'AUTH_SUCCESS',
           session,
@@ -39,23 +42,24 @@ export function PasswordStep({ step, total, draft, patch, go, onBack }: StepProp
         });
         // Same reason bootstrap does it: without this, signing back in looks
         // like an account that never chose a hotel and asks for one again.
-        if (remote) {
-          const activeHotel = await api.getActiveHotel();
-          if (activeHotel) dispatch({ type: 'ACTIVE_HOTEL_LOADED', activeHotel });
-        }
+        if (activeHotel) dispatch({ type: 'ACTIVE_HOTEL_LOADED', activeHotel });
         return;
       }
 
       const result = await api.signUp(draft.email, password);
       if (result.status === 'CONFIRMATION_REQUIRED') {
-        patch({ awaitingConfirmation: true, confirmReason: 'signed-up' });
+        patch({ password: '', awaitingConfirmation: true, confirmReason: 'signed-up' });
+        setPassword('');
         go('confirmEmail');
         return;
       }
+      patch({ password: '' });
+      setPassword('');
       dispatch({ type: 'AUTH_SUCCESS', session: result.session, profile: null });
     } catch (err) {
       if (err instanceof ApiError && err.code === 'EMAIL_NOT_CONFIRMED') {
-        patch({ awaitingConfirmation: true, confirmReason: 'not-confirmed' });
+        patch({ password: '', awaitingConfirmation: true, confirmReason: 'not-confirmed' });
+        setPassword('');
         go('confirmEmail');
         return;
       }
