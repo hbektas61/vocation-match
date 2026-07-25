@@ -22,4 +22,5 @@ exec /Users/hamibektas/.local/bin/claude \
   --effort high \
   --permission-mode dontAsk \
   --allowedTools "Bash,Edit,Write,Read,Glob,Grep,Task,Skill,TodoWrite" \
+  -- \
   "$LOOP_PROMPT"
