@@ -623,7 +623,7 @@ Handoff:
 - Verification: `bash scripts/check.sh` — auth configuration, dependency gate,
   334 pgTAP assertions across 15 SQL suites, 13 concurrency checks, performance
   smoke, client/database contract, migration replay, `tsc`,
-  `eslint --max-warnings 0`, 221 jest tests, web bundle.
+  `eslint --max-warnings 0`, 223 jest tests, web bundle.
 
 ## 2026-07-25 — verification pass on D-016, and the hole it found
 
@@ -670,4 +670,4 @@ Handoff:
 - Verification: `bash scripts/check.sh` — auth configuration, dependency gate,
   335 pgTAP assertions across 15 SQL suites, 13 concurrency checks, performance
   smoke, client/database contract, migration replay, `tsc`,
-  `eslint --max-warnings 0`, 221 jest tests, web bundle.
+  `eslint --max-warnings 0`, 223 jest tests, web bundle.

@@ -120,7 +120,7 @@ applied in order, pgTAP suites plus multi-connection concurrency checks.
 Evidence command: `bash scripts/check.sh` — the auth-configuration check, the
 dependency gate, 335 pgTAP assertions across 15 SQL suites, 13 concurrency
 checks, the performance smoke check, the client/database contract check, the
-migration-replay comparison, `tsc`, `eslint --max-warnings 0`, 221 jest tests,
+migration-replay comparison, `tsc`, `eslint --max-warnings 0`, 223 jest tests,
 and the web bundle. Four of those checks are negative-controlled.
 
 - [x] H-101–H-106 Profile photos in a private bucket (closes S-001, D-014).

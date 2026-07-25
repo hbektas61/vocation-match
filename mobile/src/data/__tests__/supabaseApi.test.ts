@@ -1,5 +1,9 @@
 /**
- * H-204, H-205 — what the real client does with the session after a deletion.
+ * The parts of `SupabaseApi` that decide something rather than passing the
+ * server's answer through: what happens to the session after a deletion, and
+ * the one call that turns a returned value back into an error.
+ *
+ * H-204, H-205.
  *
  * This exercises `SupabaseApi`, not the in-memory fake, because the thing under
  * test is specific to it: the token lives in device storage, and after the
@@ -200,5 +204,46 @@ describe('SupabaseApi.deleteAccount — an answer that never arrived', () => {
 
     expect(await storage.getItem(STORAGE_KEY)).toBeNull();
     expect(await api.currentSession()).toBeNull();
+  });
+});
+
+/**
+ * The one piece of `SupabaseApi` that turns a *returned* value back into an
+ * error, rather than passing a server error through.
+ *
+ * `public.swipe` answers "that person is not in this room" by returning
+ * `refused` instead of raising, so that the rate-limit row it wrote a moment
+ * earlier survives the statement — a raise would roll both back together. That
+ * makes the mapping here load-bearing: if it were dropped, the app would show
+ * an empty card as a successful pass.
+ */
+describe('SupabaseApi.swipe', () => {
+  function swipeApi(row: Record<string, unknown>) {
+    const storage = createMemoryStorage();
+    global.fetch = (async (input: RequestInfo | URL) => {
+      if (String(input).includes('/rpc/swipe')) {
+        return jsonResponse([row]);
+      }
+      return jsonResponse({ message: 'unexpected call' }, 500);
+    }) as unknown as typeof fetch;
+    return new SupabaseApi({ url: URL, anonKey: ANON_KEY }, storage);
+  }
+
+  it('turns a refusal into the same error the person has always seen', async () => {
+    const api = swipeApi({ matched: false, match_id: null, refused: 'NOT_IN_ROOM' });
+
+    await expect(api.swipe('someone', 'HERE_NOW', 'LIKE')).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+      message: 'That person is not in this room.',
+    });
+  });
+
+  it('passes an ordinary answer straight through', async () => {
+    const api = swipeApi({ matched: true, match_id: 'match-1', refused: null });
+
+    await expect(api.swipe('someone', 'HERE_NOW', 'LIKE')).resolves.toEqual({
+      matched: true,
+      matchId: 'match-1',
+    });
   });
 });
