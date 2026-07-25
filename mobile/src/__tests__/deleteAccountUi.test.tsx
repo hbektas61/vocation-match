@@ -6,37 +6,22 @@
  * disappears and what does not, and a failure leaves the person signed in with
  * an account that still exists rather than dropping them on a login screen.
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import React from 'react';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import App from '../../App';
 import { COPY } from '../copy';
 import { ApiError, FakeApi, getApi, setApi } from '../data';
+import { onboardToSettings } from '../testSupport/onboarding';
 
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
-const ADULT_BIRTHDATE = '1994-03-01';
 
 beforeEach(() => {
   setApi(new FakeApi({ now: () => FIXED }));
 });
 
-async function onboardToSettings() {
-  await render(<App />);
-  await fireEvent.press(await screen.findByTestId('confirm-age'));
-  await fireEvent.press(await screen.findByTestId('auth-switch-mode'));
-  await fireEvent.changeText(await screen.findByTestId('auth-email'), 'deniz@example.test');
-  await fireEvent.changeText(screen.getByTestId('auth-password'), 'correct horse');
-  await fireEvent.press(screen.getByTestId('auth-submit'));
-  await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
-  await fireEvent.changeText(screen.getByTestId('profile-birthdate'), ADULT_BIRTHDATE);
-  await fireEvent.press(screen.getByTestId('save-profile'));
-  await fireEvent.press(await screen.findByText('Settings'));
-  expect(await screen.findByTestId('settings-delete-account')).toBeTruthy();
-}
-
 describe('deleting an account', () => {
   it('does not delete on the first tap', async () => {
     await onboardToSettings();
+    expect(await screen.findByTestId('settings-delete-account')).toBeTruthy();
 
     await fireEvent.press(screen.getByTestId('delete-account'));
 
@@ -47,6 +32,7 @@ describe('deleting an account', () => {
 
   it('says what goes and what stays before the irreversible tap', async () => {
     await onboardToSettings();
+    expect(await screen.findByTestId('settings-delete-account')).toBeTruthy();
     await fireEvent.press(screen.getByTestId('delete-account'));
 
     expect(screen.getByText(COPY.deleteAccount.whatGoes)).toBeTruthy();
@@ -57,6 +43,7 @@ describe('deleting an account', () => {
 
   it('can be backed out of', async () => {
     await onboardToSettings();
+    expect(await screen.findByTestId('settings-delete-account')).toBeTruthy();
     await fireEvent.press(screen.getByTestId('delete-account'));
     await fireEvent.press(screen.getByTestId('delete-account-cancel'));
 
@@ -66,6 +53,7 @@ describe('deleting an account', () => {
 
   it('deletes on the second tap and leaves no session behind', async () => {
     await onboardToSettings();
+    expect(await screen.findByTestId('settings-delete-account')).toBeTruthy();
     const api = getApi();
 
     await fireEvent.press(screen.getByTestId('delete-account'));
@@ -84,6 +72,7 @@ describe('deleting an account', () => {
 
   it('keeps the person signed in when the deletion fails, and says so', async () => {
     await onboardToSettings();
+    expect(await screen.findByTestId('settings-delete-account')).toBeTruthy();
     const api = getApi() as FakeApi;
     api.failNextDeleteWith(new ApiError('NETWORK', 'No connection. Try again.'));
 

@@ -84,21 +84,30 @@ q -c "select tests.create_member('conc-a@example.test', '${MATCH_A}');
 MATCH_HOTEL="$(q -c "select tests.create_hotel('conc-match', 41.0369, 28.9850);")"
 q -c "update public.hotels set provider = 'concurrency' where name = 'conc-match';" >/dev/null
 
+# Both rooms open for both people, so the racers below can swipe from
+# different rooms and the match still has to pick one label deterministically.
 for member in "$MATCH_A" "$MATCH_B"; do
   q -c "begin;
         select tests.authenticate_as('${member}');
         select public.set_active_hotel('${MATCH_HOTEL}');
         select public.declare_upcoming_stay(current_date + 1, current_date + 4);
+        select public.record_presence_check(41.0369, 28.9850);
         commit;" >/dev/null
 done
 
-printf '  racing %s simultaneous likes in both directions\n' "$FANOUT"
+printf '  racing %s simultaneous likes in both directions, from different rooms\n' "$FANOUT"
 for i in $(seq 1 "$FANOUT"); do
-  if [ $((i % 2)) -eq 0 ]; then actor="$MATCH_A"; target="$MATCH_B"; else actor="$MATCH_B"; target="$MATCH_A"; fi
+  # Each side swipes from its own room, so whichever one lands first decides
+  # the label — and the label must agree with that, not with the other side.
+  if [ $((i % 2)) -eq 0 ]; then
+    actor="$MATCH_A"; target="$MATCH_B"; room='UPCOMING'
+  else
+    actor="$MATCH_B"; target="$MATCH_A"; room='HERE_NOW'
+  fi
   (
     q -c "begin;
           select tests.authenticate_as('${actor}');
-          select public.swipe('${target}', 'UPCOMING', 'LIKE');
+          select public.swipe('${target}', '${room}', 'LIKE');
           commit;" >/dev/null 2>&1
   ) &
 done
@@ -117,6 +126,32 @@ check "each direction stored exactly one swipe" \
   "$(q -c "select count(*) from public.swipes
             where (actor_id = '${MATCH_A}' and target_id = '${MATCH_B}')
                or (actor_id = '${MATCH_B}' and target_id = '${MATCH_A}');")" "2"
+# S-004. The two racers swiped from different rooms, so before the fix the label
+# was whichever one happened to commit second — the same pair, a different
+# answer each run. It now has to equal the room of the first swipe recorded,
+# whichever of the two that turned out to be.
+check "the match is labelled with the room of the pair's first swipe" \
+  "$(q -c "select (m.room = first_swipe.room)::text
+             from public.matches m
+             cross join lateral (
+               select s.room from public.swipes s
+                where (s.actor_id = m.user_a and s.target_id = m.user_b)
+                   or (s.actor_id = m.user_b and s.target_id = m.user_a)
+                order by s.seq limit 1
+             ) as first_swipe
+            where m.user_a = least('${MATCH_A}'::uuid, '${MATCH_B}'::uuid)
+              and m.user_b = greatest('${MATCH_A}'::uuid, '${MATCH_B}'::uuid);")" "true"
+check "and with the hotel from that same row" \
+  "$(q -c "select (m.hotel_id = first_swipe.hotel_id)::text
+             from public.matches m
+             cross join lateral (
+               select s.hotel_id from public.swipes s
+                where (s.actor_id = m.user_a and s.target_id = m.user_b)
+                   or (s.actor_id = m.user_b and s.target_id = m.user_a)
+                order by s.seq limit 1
+             ) as first_swipe
+            where m.user_a = least('${MATCH_A}'::uuid, '${MATCH_B}'::uuid)
+              and m.user_b = greatest('${MATCH_A}'::uuid, '${MATCH_B}'::uuid);")" "true"
 
 cleanup_match
 

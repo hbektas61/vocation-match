@@ -26,6 +26,7 @@ import {
   type ReportInput,
   type RoomKey,
   type RoomStatus,
+  type SignUpResult,
   type SwipeDirection,
   type SwipeResult,
   type UpcomingStay,
@@ -73,6 +74,12 @@ export function toApiError(error: PostgresLikeError | null | undefined, fallback
   }
   if (code === '42501' || code === 'PGRST301') {
     return new ApiError('FORBIDDEN', message);
+  }
+  // An account that exists but has not confirmed its address. Distinct from
+  // wrong credentials, because the answer is completely different: nothing is
+  // wrong with what they typed, and no amount of retrying will help.
+  if (code === 'email_not_confirmed' || /email not confirmed/i.test(message)) {
+    return new ApiError('EMAIL_NOT_CONFIRMED', 'Confirm your email address first.');
   }
   // 28000 is the server saying "not signed in", which is a different thing
   // from "signed in and not allowed" — the client shows a login screen for one
@@ -129,12 +136,30 @@ export class SupabaseApi implements VocationApi {
     });
   }
 
-  async signUp(email: string, password: string): Promise<AuthSession> {
+  async signUp(email: string, password: string): Promise<SignUpResult> {
     const { data, error } = await this.client.auth.signUp({ email, password });
-    if (error || !data.session) {
+    if (error) {
       throw toApiError(error as PostgresLikeError, 'Could not create the account.');
     }
-    return toSession(data.session);
+    if (data.session) {
+      return { status: 'SIGNED_IN', session: toSession(data.session) };
+    }
+    // No session and no error is what a project that confirms addresses answers
+    // on every successful sign-up. Treating it as a failure — which this used
+    // to do — is a hard error on the happy path of a correctly configured
+    // project.
+    //
+    // It is also what GoTrue answers when the address is already registered,
+    // deliberately, so that a stranger cannot use the sign-up form to find out
+    // who has an account here. Saying "check your email" to both is the point.
+    return { status: 'CONFIRMATION_REQUIRED', email: email.trim() };
+  }
+
+  async resendConfirmationEmail(email: string): Promise<void> {
+    const { error } = await this.client.auth.resend({ type: 'signup', email: email.trim() });
+    if (error) {
+      throw toApiError(error as PostgresLikeError, 'Could not send that email again.');
+    }
   }
 
   async signIn(email: string, password: string): Promise<AuthSession> {

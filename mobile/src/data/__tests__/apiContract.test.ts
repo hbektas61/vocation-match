@@ -3,7 +3,7 @@
  * runs it here; the same rules are asserted against the real database by
  * `supabase/tests/001_profiles.sql`.
  */
-import { ApiError, type VocationApi } from '../contracts';
+import { ApiError } from '../contracts';
 import { FakeApi } from '../fakeApi';
 
 const NOW = Date.parse('2026-07-25T10:00:00Z');
@@ -16,19 +16,50 @@ function expectApiError(error: unknown, code: string): void {
 }
 
 describe('VocationApi contract (in-memory implementation)', () => {
-  let api: VocationApi;
+  let api: FakeApi;
 
   beforeEach(() => {
     api = new FakeApi({ now: () => NOW });
   });
+
+  /**
+   * Sign up, follow the confirmation link, sign in — the whole entry path, now
+   * that a sign-up no longer hands back a session. `confirmEmail` stands in for
+   * the link; there is no such call against a real project.
+   */
+  async function register(email = 'ada@example.test', password = 'correct horse') {
+    await api.signUp(email, password);
+    api.confirmEmail(email);
+    return api.signIn(email, password);
+  }
 
   describe('auth', () => {
     it('starts signed out', async () => {
       await expect(api.currentSession()).resolves.toBeNull();
     });
 
-    it('signs a new user up and keeps the session', async () => {
-      const session = await api.signUp('ada@example.test', 'correct horse');
+    it('does not sign anyone in until the address is confirmed', async () => {
+      const result = await api.signUp('ada@example.test', 'correct horse');
+
+      expect(result).toEqual({ status: 'CONFIRMATION_REQUIRED', email: 'ada@example.test' });
+      // The bug this replaced: the client treated a sessionless sign-up as a
+      // failure, which is what a correctly configured project answers every
+      // time.
+      await expect(api.currentSession()).resolves.toBeNull();
+    });
+
+    it('refuses a sign-in until then, with its own error rather than "wrong password"', async () => {
+      await api.signUp('ada@example.test', 'correct horse');
+      await api.signIn('ada@example.test', 'correct horse').then(
+        () => {
+          throw new Error('expected the confirmation gate to refuse this');
+        },
+        (error) => expectApiError(error, 'EMAIL_NOT_CONFIRMED'),
+      );
+    });
+
+    it('signs in once the address is confirmed', async () => {
+      const session = await register();
       expect(session.userId).toBeTruthy();
       await expect(api.currentSession()).resolves.toMatchObject({ userId: session.userId });
     });
@@ -38,19 +69,25 @@ describe('VocationApi contract (in-memory implementation)', () => {
       await expect(api.signUp('bo@example.test', 'short')).rejects.toBeInstanceOf(ApiError);
     });
 
-    it('refuses a duplicate email', async () => {
-      await api.signUp('ada@example.test', 'correct horse');
+    it('will not say whether an email is already registered', async () => {
+      await register();
       await api.signOut();
-      await api.signUp('ada@example.test', 'another one').then(
-        () => {
-          throw new Error('expected a conflict');
-        },
-        (error) => expectApiError(error, 'CONFLICT'),
-      );
+
+      // Identical to a fresh sign-up, and no password is changed. Answering
+      // "that email is taken" would turn this form into a way to find out who
+      // has an account here.
+      await expect(api.signUp('ada@example.test', 'another one')).resolves.toEqual({
+        status: 'CONFIRMATION_REQUIRED',
+        email: 'ada@example.test',
+      });
+      await expect(api.signIn('ada@example.test', 'another one')).rejects.toMatchObject({
+        code: 'UNAUTHENTICATED',
+      });
+      await expect(api.signIn('ada@example.test', 'correct horse')).resolves.toBeTruthy();
     });
 
     it('refuses a wrong password', async () => {
-      await api.signUp('ada@example.test', 'correct horse');
+      await register();
       await api.signOut();
       await api.signIn('ada@example.test', 'wrong').then(
         () => {
@@ -61,7 +98,7 @@ describe('VocationApi contract (in-memory implementation)', () => {
     });
 
     it('clears the session on sign out', async () => {
-      await api.signUp('ada@example.test', 'correct horse');
+      await register();
       await api.signOut();
       await expect(api.currentSession()).resolves.toBeNull();
     });
@@ -69,7 +106,7 @@ describe('VocationApi contract (in-memory implementation)', () => {
 
   describe('profile', () => {
     beforeEach(async () => {
-      await api.signUp('ada@example.test', 'correct horse');
+      await register();
     });
 
     it('has no profile before one is saved', async () => {
@@ -112,7 +149,7 @@ describe('VocationApi contract (in-memory implementation)', () => {
     it('keeps profiles separate per user', async () => {
       await api.saveOwnProfile({ displayName: 'Ada', birthdate: ADULT_BIRTHDATE });
       await api.signOut();
-      await api.signUp('bo@example.test', 'correct horse');
+      await register('bo@example.test');
       await expect(api.getOwnProfile()).resolves.toBeNull();
     });
   });
@@ -125,7 +162,7 @@ describe('VocationApi contract (in-memory implementation)', () => {
     const FAR: [number, number] = [36.8631, 30.7995];
 
     beforeEach(async () => {
-      await api.signUp('ada@example.test', 'correct horse');
+      await register();
       await api.saveOwnProfile({ displayName: 'Ada', birthdate: ADULT_BIRTHDATE });
     });
 
@@ -284,7 +321,7 @@ describe('VocationApi contract (in-memory implementation)', () => {
     const DOES_NOT = 'cand-mert';
 
     beforeEach(async () => {
-      await api.signUp('ada@example.test', 'correct horse');
+      await register();
       await api.saveOwnProfile({ displayName: 'Ada', birthdate: ADULT_BIRTHDATE });
       await api.setActiveHotel(LARA);
       await api.recordPresenceCheck(...NEAR);

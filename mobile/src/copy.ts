@@ -44,6 +44,26 @@ export const COPY = {
     switchToSignIn: 'Already have an account? Sign in',
   },
 
+  confirmEmail: {
+    title: 'Check your email',
+    // Says nothing about whether the address was already registered. That
+    // answer would turn the sign-up form into a way to find out who has an
+    // account here, so the server does not give it and neither does this.
+    body: 'We sent a link to confirm your address. Open it, then come back and sign in.',
+    notConfirmedYet:
+      'This account has not confirmed its email address yet. Open the link we sent, then sign in.',
+    resendButton: 'Send the email again',
+    resending: 'Sending…',
+    resent: 'Sent. It can take a minute to arrive — check your spam folder too.',
+    resendError: 'Could not send that email again. Try again in a moment.',
+    backButton: 'Back to sign in',
+    // Preview build only, and labelled as such — the same honesty as the
+    // simulated location reads on Here Now.
+    simulateIntro:
+      'Preview build: there is no real mailbox here, so this stands in for opening the link.',
+    simulateButton: 'Simulate: I confirmed my email',
+  },
+
   profileSetup: {
     title: 'Your profile',
     intro: 'Only your display name, age, and bio are shown to others.',
@@ -286,6 +306,8 @@ export function apiErrorMessage(code: ApiErrorCode): string {
       return COPY.errors.suspended;
     case 'FORBIDDEN':
       return COPY.errors.forbidden;
+    case 'EMAIL_NOT_CONFIRMED':
+      return COPY.confirmEmail.notConfirmedYet;
     case 'UNDER_AGE':
       return COPY.errors.underAge;
     case 'INVALID_INPUT':

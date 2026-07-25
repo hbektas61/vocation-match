@@ -128,9 +128,10 @@ describe('SupabaseApi.deleteAccount', () => {
 describe('FakeApi.deleteAccount', () => {
   const ADULT_BIRTHDATE = '1994-03-01';
 
-  async function signedIn(): Promise<FakeApi> {
-    const api = new FakeApi();
-    await api.signUp('deniz@example.test', 'correct horse');
+  async function signedIn(api = new FakeApi(), email = 'deniz@example.test'): Promise<FakeApi> {
+    await api.signUp(email, 'correct horse');
+    api.confirmEmail(email);
+    await api.signIn(email, 'correct horse');
     await api.saveOwnProfile({ displayName: 'Deniz', birthdate: ADULT_BIRTHDATE });
     return api;
   }
@@ -165,8 +166,7 @@ describe('FakeApi.deleteAccount', () => {
     await api.setActiveHotel('hotel-lara-shore');
     await api.signOut();
 
-    await api.signUp('other@example.test', 'correct horse');
-    await api.saveOwnProfile({ displayName: 'Other', birthdate: ADULT_BIRTHDATE });
+    await signedIn(api, 'other@example.test');
     await api.setActiveHotel('hotel-lara-shore');
     await api.declareUpcomingStay('2026-08-01', '2026-08-08');
     const survivor = (await api.getOwnProfile())!.id;

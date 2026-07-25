@@ -95,13 +95,25 @@ applied in order, pgTAP suites plus multi-connection concurrency checks.
       checks 30/hour, messages 60/minute. The counters table is readable by
       nobody — how close you are to a limit is itself useful to someone probing
       it. `supabase/tests/010_rate_limits.sql`.
-- [ ] S-003 Confirm email confirmation is enabled on whatever hosted project
-      this ships to. It is off in `supabase/config.toml` for local development
-      only, and that setting does not travel with the migrations.
-- [ ] S-004 Product call: `swipes` has no room in its primary key, so a match's
-      `room` label reflects whichever swipe closed it rather than the room the
-      first person swiped from. Cosmetic today; decide before the label is used
-      for anything.
+- [x] S-003 Done as far as this repository can take it. `enable_confirmations`
+      is on in `supabase/config.toml` — locally too, because "local only" was
+      what let the client be written against a flow no real project has — and
+      `scripts/verify-auth-config.js` fails the build if it is turned back off,
+      along with the new `[auth.rate_limit]` ceilings on the endpoints that send
+      mail. The client now handles the unconfirmed states instead of throwing on
+      the happy path. **The hosted project keeps its own copy of every one of
+      these settings and nothing here can check them**; `docs/hosted-setup.md`
+      lists exactly what to set and why. That part is owner work.
+- [x] S-004 Done. A match's `room` and `hotel_id` come from the pair's *first*
+      swipe, both from the same row so they cannot disagree
+      (`20260725001800_match_room_attribution.sql`). "First" is a new `seq`
+      identity column, not `created_at` — that is the transaction timestamp and
+      ties between swipes written together, the same defect `20260725001300`
+      fixed for messages. Evidence: `supabase/tests/013_match_attribution.sql`
+      runs the same two rooms with the swipe order reversed and asserts the two
+      pairs get different labels, and `concurrency.sh` races both directions from
+      different rooms and asserts the label always agrees with the first recorded
+      swipe.
 
 ## Later — monetization
 

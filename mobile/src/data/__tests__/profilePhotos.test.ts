@@ -14,7 +14,11 @@ const JPEG = { uri: 'file:///tmp/pick.jpg', mimeType: 'image/jpeg' };
 
 async function signedInWithProfile(): Promise<FakeApi> {
   const api = new FakeApi();
+  // Sign-up no longer returns a session: the address has to be confirmed
+  // first, exactly as it does against a project with confirmations on.
   await api.signUp('ada@example.test', 'correct-horse');
+  api.confirmEmail('ada@example.test');
+  await api.signIn('ada@example.test', 'correct-horse');
   await api.saveOwnProfile({ displayName: 'Ada', birthdate: ADULT_BIRTHDATE });
   return api;
 }

@@ -34,6 +34,10 @@ run() { # run <label> <command...>
   fi
 }
 
+# Needs nothing at all, so it runs whichever half was asked for: the settings it
+# checks live in a file no migration and no test would otherwise read.
+run "auth configuration" node "$ROOT/scripts/verify-auth-config.js"
+
 if [ "$RUN_DB" = "1" ]; then
   run "database — migrations, RLS, pgTAP, concurrency" bash "$ROOT/supabase/scripts/db-test.sh"
   # Cheap, and it catches the one class of break that every other check misses:

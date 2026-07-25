@@ -2,11 +2,12 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import React from 'react';
 
 import App from '../../App';
-import { FakeApi, getApi, setApi } from '../data';
+import { COPY } from '../copy';
+import { ApiError, FakeApi, getApi, setApi } from '../data';
+import { onboard, signUpAndSignIn } from '../testSupport/onboarding';
 
 // A fixed clock keeps session lifetimes and age math deterministic across runs.
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
-const ADULT_BIRTHDATE = '1994-03-01';
 
 beforeEach(() => {
   setApi(new FakeApi({ now: () => FIXED }));
@@ -16,24 +17,14 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-/** Fills the auth form and submits it (create-account mode when `signUp`). */
-async function submitAuth(email: string, password: string, { signUp }: { signUp: boolean }) {
-  if (signUp) {
-    await fireEvent.press(await screen.findByTestId('auth-switch-mode'));
-  }
-  await fireEvent.changeText(await screen.findByTestId('auth-email'), email);
-  await fireEvent.changeText(screen.getByTestId('auth-password'), password);
-  await fireEvent.press(screen.getByTestId('auth-submit'));
-}
-
-/** Shared path: age gate → real sign-up → real profile save → hotel activation. */
+/**
+ * Shared path: age gate → sign-up → email confirmation → sign-in → profile →
+ * hotel activation. The confirmation step is not decoration: a project with
+ * `enable_confirmations = true` returns no session from a sign-up, so this is
+ * the real entry path and the one the app has to work on.
+ */
 async function onboardAndActivateHotel() {
-  await render(<App />);
-  await fireEvent.press(await screen.findByTestId('confirm-age'));
-  await submitAuth('deniz@example.test', 'correct horse', { signUp: true });
-  await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
-  await fireEvent.changeText(screen.getByTestId('profile-birthdate'), ADULT_BIRTHDATE);
-  await fireEvent.press(screen.getByTestId('save-profile'));
+  await onboard('Deniz');
   await fireEvent.press(await screen.findByTestId('activate-hotel-lara-shore'));
   expect(await screen.findByText(/Active hotel/)).toBeTruthy();
 }
@@ -199,17 +190,51 @@ describe('authentication and profile', () => {
     await render(<App />);
     await fireEvent.press(await screen.findByTestId('confirm-age'));
 
-    await submitAuth('nobody@example.test', 'whatever1', { signUp: false });
+    await fireEvent.changeText(await screen.findByTestId('auth-email'), 'nobody@example.test');
+    await fireEvent.changeText(screen.getByTestId('auth-password'), 'whatever1');
+    await fireEvent.press(screen.getByTestId('auth-submit'));
 
     expect(await screen.findByText('Email or password is incorrect.')).toBeTruthy();
     // The user stays on the auth screen and can try again.
     expect(screen.getByTestId('screen-auth')).toBeTruthy();
   });
 
-  it('refuses an underage birthdate at profile setup with the 18+ message', async () => {
+  it('waits for a confirmed email rather than signing a new account straight in', async () => {
     await render(<App />);
     await fireEvent.press(await screen.findByTestId('confirm-age'));
-    await submitAuth('young@example.test', 'correct horse', { signUp: true });
+    await fireEvent.press(await screen.findByTestId('auth-switch-mode'));
+    await fireEvent.changeText(await screen.findByTestId('auth-email'), 'new@example.test');
+    await fireEvent.changeText(screen.getByTestId('auth-password'), 'correct horse');
+    await fireEvent.press(screen.getByTestId('auth-submit'));
+
+    // The bug this replaced: a sessionless sign-up was treated as an error, so
+    // a correctly configured project failed on its own happy path.
+    expect(await screen.findByTestId('screen-confirm-email')).toBeTruthy();
+    expect(screen.queryByTestId('auth-error')).toBeNull();
+    expect(await getApi().currentSession()).toBeNull();
+  });
+
+  it('tells someone who has not confirmed yet, instead of blaming their password', async () => {
+    const api = getApi();
+    await api.signUp('waiting@example.test', 'correct horse');
+
+    await render(<App />);
+    await fireEvent.press(await screen.findByTestId('confirm-age'));
+    await fireEvent.changeText(await screen.findByTestId('auth-email'), 'waiting@example.test');
+    await fireEvent.changeText(screen.getByTestId('auth-password'), 'correct horse');
+    await fireEvent.press(screen.getByTestId('auth-submit'));
+
+    expect(await screen.findByTestId('screen-confirm-email')).toBeTruthy();
+    expect(screen.getByTestId('confirm-resend')).toBeTruthy();
+  });
+
+  it('signs in once the address is confirmed', async () => {
+    await signUpAndSignIn('confirmed@example.test');
+    expect(await screen.findByTestId('screen-profile-setup')).toBeTruthy();
+  });
+
+  it('refuses an underage birthdate at profile setup with the 18+ message', async () => {
+    await signUpAndSignIn('young@example.test');
 
     await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Kid');
     const recentYear = new Date().getFullYear() - 5;
@@ -220,15 +245,8 @@ describe('authentication and profile', () => {
     expect(screen.getByTestId('screen-profile-setup')).toBeTruthy();
   });
 
-  it('completes sign-up and profile save, reaching the main tabs', async () => {
-    await render(<App />);
-    await fireEvent.press(await screen.findByTestId('confirm-age'));
-    await submitAuth('brandnew@example.test', 'correct horse', { signUp: true });
-
-    await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
-    await fireEvent.changeText(screen.getByTestId('profile-birthdate'), ADULT_BIRTHDATE);
-    await fireEvent.press(screen.getByTestId('save-profile'));
-
+  it('completes the whole entry path and reaches the main tabs', async () => {
+    await onboard('Deniz', 'brandnew@example.test');
     expect(await screen.findByTestId('activate-hotel-lara-shore')).toBeTruthy();
   });
 
@@ -260,5 +278,71 @@ describe('authentication and profile', () => {
     await fireEvent.press(await screen.findByTestId('sign-out'));
 
     expect(await screen.findByTestId('confirm-age')).toBeTruthy();
+  });
+});
+
+/**
+ * The confirmation screen is the one place a person can be stuck: they have not
+ * confirmed, so they cannot sign in, and if the screen has no way out and no
+ * way to try again they are simply stopped. These are the three exits.
+ */
+describe('waiting for a confirmation email', () => {
+  async function reachConfirmScreen(email = 'waiting@example.test') {
+    await render(<App />);
+    await fireEvent.press(await screen.findByTestId('confirm-age'));
+    await fireEvent.press(await screen.findByTestId('auth-switch-mode'));
+    await fireEvent.changeText(await screen.findByTestId('auth-email'), email);
+    await fireEvent.changeText(screen.getByTestId('auth-password'), 'correct horse');
+    await fireEvent.press(screen.getByTestId('auth-submit'));
+    expect(await screen.findByTestId('screen-confirm-email')).toBeTruthy();
+  }
+
+  it('confirms the email was sent again', async () => {
+    await reachConfirmScreen();
+
+    await fireEvent.press(screen.getByTestId('confirm-resend'));
+
+    expect(await screen.findByTestId('confirm-resent')).toBeTruthy();
+    expect(screen.queryByTestId('confirm-error')).toBeNull();
+  });
+
+  it('says so when the resend fails, rather than looking like it worked', async () => {
+    await reachConfirmScreen();
+    (getApi() as FakeApi).failNextResendWith(
+      new ApiError('RATE_LIMITED', 'You are doing that too often.'),
+    );
+
+    await fireEvent.press(screen.getByTestId('confirm-resend'));
+
+    expect(await screen.findByTestId('confirm-error')).toBeTruthy();
+    expect(screen.queryByTestId('confirm-resent')).toBeNull();
+    // And the button is usable again rather than stuck on "Sending…".
+    expect(screen.getByLabelText(COPY.confirmEmail.resendButton)).toBeTruthy();
+  });
+
+  it('lets someone go back and sign in instead', async () => {
+    // The case that reaches this screen by accident: an existing, already
+    // confirmed account tapping "create one". The server will not say the
+    // address is taken — that would tell a stranger who has an account here —
+    // so the way out has to be a button rather than an error message.
+    await onboard('Already', 'already@example.test');
+    await fireEvent.press(await screen.findByText('Settings'));
+    await fireEvent.press(await screen.findByTestId('sign-out'));
+
+    await fireEvent.press(await screen.findByTestId('confirm-age'));
+    await fireEvent.press(await screen.findByTestId('auth-switch-mode'));
+    await fireEvent.changeText(await screen.findByTestId('auth-email'), 'already@example.test');
+    await fireEvent.changeText(screen.getByTestId('auth-password'), 'correct horse');
+    await fireEvent.press(screen.getByTestId('auth-submit'));
+    expect(await screen.findByTestId('screen-confirm-email')).toBeTruthy();
+
+    await fireEvent.press(screen.getByTestId('confirm-back'));
+    expect(await screen.findByTestId('screen-auth')).toBeTruthy();
+
+    await fireEvent.changeText(screen.getByTestId('auth-email'), 'already@example.test');
+    await fireEvent.changeText(screen.getByTestId('auth-password'), 'correct horse');
+    await fireEvent.press(screen.getByTestId('auth-submit'));
+    // Straight to the app: this account was complete all along.
+    expect(await screen.findByTestId('activate-hotel-lara-shore')).toBeTruthy();
   });
 });

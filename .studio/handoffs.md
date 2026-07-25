@@ -420,3 +420,78 @@ Handoff:
     deletion does not make it worse, but it does not close it either.
 - Recommended next agent: `backend-engineer` for H3 — email confirmation
   configuration and the unconfirmed-email states, then S-004 room attribution.
+
+## 2026-07-25 — H3 email confirmation, and a match label that stops depending on who swiped second
+
+Handoff:
+- Date: 2026-07-25
+- From agent: studio-autopilot (`project-orchestrator` + `backend-engineer`/`cross-platform-engineer` implementation, `code-reviewer`, `security-auditor`)
+- To agent: `project-orchestrator` (H4, the pilot-hardening pass)
+- What I did: turned email confirmation on and made the client survive it, then
+  closed backlog S-004 so a pair's match label is the same whichever of them
+  swiped second.
+- Key decisions:
+  - **`enable_confirmations = true`, locally too.** It was off "for local
+    development only", which meant every local run exercised a sign-up flow no
+    real project has — one that returns a session immediately. The client was
+    written against that and threw on the happy path of a correctly configured
+    project. No test could have caught it, because no test ran against the real
+    configuration. `scripts/verify-auth-config.js` now fails the build if it is
+    turned back off, and it runs even in `--mobile` mode because it needs nothing.
+  - **`signUp()` returns a union, not a session.** `SIGNED_IN` or
+    `CONFIRMATION_REQUIRED`, so a caller cannot forget the second case. The
+    confirmation screen has a resend, a way back, and — only when there is no
+    backend configured — a labelled stand-in for opening the link, the same
+    pattern the simulated location reads already use.
+  - **The sign-up form does not say whether an address is registered.** GoTrue
+    answers a duplicate sign-up exactly like a fresh one, deliberately, and the
+    fake and the copy both match it. On a dating-adjacent product, "that email is
+    taken" is a way to find out who has an account here.
+  - **MEDIUM, from the audit: nothing bounded the mail.** Sign-up and resend both
+    send to an address the caller types in, both are public, and a script could
+    point them at a real person's inbox. `[auth.rate_limit]` in `config.toml`,
+    a ceiling enforced by the config check, and CAPTCHA plus the hosted limits
+    written into `docs/hosted-setup.md`.
+  - **S-004: the label comes from the pair's first swipe** — room and hotel, from
+    the same row, so they cannot disagree. "First" is a new `seq` identity column
+    on `swipes`, not `created_at`: that defaults to `now()`, which is the
+    transaction timestamp and ties, the same defect migration 20260725001300
+    fixed for messages. Found here the same way — by a test that disagreed with
+    itself depending on which row came back first.
+  - **LOW, from the audit: `seq` was readable.** The counter is global, so the gap
+    between two of your own swipes told you how many swipes everyone else made in
+    between. The table-wide SELECT grant became a column list.
+  - **From the code review: the resend and the way back were untested.** Both are
+    the only exits from a screen someone reaches by accident — an existing account
+    tapping "create one" lands there, because the server will not say the address
+    is taken. Three tests now cover resend, a failed resend, and going back to
+    sign in.
+- Files touched: `supabase/config.toml`,
+  `supabase/migrations/20260725001800_match_room_attribution.sql`,
+  `supabase/tests/{013_match_attribution.sql,concurrency.sh}`,
+  `scripts/{verify-auth-config.js,check.sh}`, `docs/hosted-setup.md`,
+  `mobile/src/data/{contracts,supabaseApi,fakeApi}.ts`,
+  `mobile/src/screens/AuthScreen.tsx`, `mobile/src/copy.ts`,
+  `mobile/src/testSupport/onboarding.tsx`, and the six test files whose
+  onboarding path changed.
+- Verification: `bash scripts/check.sh` — the auth-configuration check (negative
+  controlled: turning confirmation off fails it), 311 pgTAP assertions across 14
+  suites, 14 concurrency checks including two new ones that race both swipe
+  orders from different rooms, the client/database contract check, `tsc`,
+  `eslint --max-warnings 0`, 193 jest tests, the web bundle.
+- Risks / blockers:
+  - **Deferred, needs the hosted project.** Confirmation, the rate limits and the
+    CAPTCHA are dashboard settings that do not travel with the migrations.
+    `docs/hosted-setup.md` says what to set; nothing here can check that it was
+    done, or that it stays done. That is backlog S-003, now written down rather
+    than only noted.
+  - **Deferred, needs a real mailbox.** No confirmation email has ever been sent
+    or opened. The local configuration points at Inbucket; the flow is proved
+    against the in-memory implementation only.
+  - `seq` numbers pre-existing rows during the ALTER's table rewrite, in physical
+    order. For an append-only table that is insertion order, but it is an
+    assumption rather than a guarantee, and it only affects matches that already
+    existed. Stated in the migration.
+- Recommended next agent: `project-orchestrator` for H4 — the pilot-hardening pass
+  over security, privacy, abuse resistance, accessibility, lifecycle, offline,
+  migration replay, contract drift, dependencies, performance, and documentation.
