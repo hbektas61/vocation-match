@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { nowMs } from '../clock';
@@ -23,6 +23,18 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
 
   const match = state.matches.find((m) => m.matchId === matchId) ?? null;
   const selfId = state.session?.userId ?? null;
+
+  /** Replaces the cached matches with the server's, whatever it says. */
+  const refreshMatches = useCallback(async () => {
+    try {
+      const fetched = await getApi().getMatches();
+      dispatch({ type: 'MATCHES_LOADED', matches: fetched });
+    } catch {
+      // Leaves the cache alone. A failed refresh is not evidence the match is
+      // gone, and throwing someone out of a conversation on a dropped
+      // connection would be worse than the stale copy.
+    }
+  }, [dispatch]);
 
   // The match may not be cached yet (e.g. a deep link straight into Chat).
   // Nothing to look up once it is already in the cache — `checkedServer`
@@ -96,6 +108,21 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
       await getApi().sendMessage(matchId, text);
       setDraft('');
     } catch (err) {
+      // A match can disappear underneath an open conversation — the other
+      // person deleting their account takes it and its messages with them — and
+      // the cached copy makes the screen look alive either way. So the server
+      // is asked, and whatever it says wins.
+      //
+      // Both codes are refreshed on, and the refresh is what decides, not the
+      // code: an unmatch also answers FORBIDDEN, and `my_matches` still returns
+      // that match, so the screen stays and shows the closed notice. A block
+      // answers the same way and `my_matches` does not return it, so the screen
+      // goes to "no longer available" — the same place a deleted account leads,
+      // which is the point. Nothing the blocked person sees should tell them
+      // which of the two happened.
+      if (err instanceof ApiError && (err.code === 'NOT_FOUND' || err.code === 'FORBIDDEN')) {
+        await refreshMatches();
+      }
       setSendError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
     } finally {
       setSending(false);
@@ -107,6 +134,9 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
       await getApi().unmatch(matchId);
       dispatch({ type: 'MATCH_UNMATCHED', matchId, unmatchedAt: nowMs() });
     } catch (err) {
+      if (err instanceof ApiError && err.code === 'NOT_FOUND') {
+        await refreshMatches();
+      }
       setSendError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
     }
   };

@@ -9,6 +9,7 @@ import { AgeGateScreen } from '../screens/AgeGateScreen';
 import { AuthScreen } from '../screens/AuthScreen';
 import { ChatScreen } from '../screens/ChatScreen';
 import { DiscoveryScreen } from '../screens/DiscoveryScreen';
+import { EditProfileScreen } from '../screens/EditProfileScreen';
 import { HereNowScreen } from '../screens/HereNowScreen';
 import { HotelScreen } from '../screens/HotelScreen';
 import { InboxScreen } from '../screens/InboxScreen';
@@ -130,6 +131,11 @@ export function RootNavigator() {
         options={{ title: COPY.match.title, presentation: 'modal' }}
       />
       <Stack.Screen name="Chat" component={ChatScreen} options={{ title: 'Chat' }} />
+      <Stack.Screen
+        name="EditProfile"
+        component={EditProfileScreen}
+        options={{ title: COPY.editProfile.title }}
+      />
       <Stack.Screen name="ReportBlock" component={ReportBlockScreen} options={{ title: 'Safety' }} />
     </Stack.Navigator>
   );

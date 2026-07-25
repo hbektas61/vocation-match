@@ -160,6 +160,30 @@ and the web bundle. Four of those checks are negative-controlled.
 - [x] H-411 Documentation. README, `docs/hosted-setup.md`, and the Studio
       records, including what was *not* verified.
 
+## Pilot usability (completed 2026-07-25)
+
+Three gaps a pilot with real people would have hit on day one. All three were
+client work; the server already allowed every one of them.
+
+- [x] U-001 Edit your profile after onboarding. There was exactly one screen
+      that wrote a profile and it only rendered when you had none, so a name
+      typed wrong during onboarding was permanent — on a product where the name
+      is most of what a stranger has to go on. The form is now shared between
+      the first save and every edit after it, so the validation, the copy and
+      the 18+ message cannot drift apart.
+- [x] U-002 See, amend and withdraw a declared stay. You could re-declare dates
+      but never see what you had said, which made "update your stay" a guess,
+      and there was no way to take it back at all — while a presence answer
+      could always be withdrawn. The asymmetry is gone.
+      Evidence: `supabase/tests/003_active_hotel.sql` proves the withdrawal
+      closes the room on the server, not only on the screen.
+- [x] U-003 A conversation whose match disappeared underneath it. Since account
+      deletion shipped, the other person leaving takes the match and its
+      messages with them, and the cached copy kept the screen looking alive.
+      Found while fixing it: a vanished match produced a foreign key violation
+      that mapped to UNKNOWN, so the app said "something went wrong" and never
+      worked out the conversation was gone.
+
 ## Later — monetization
 
 - [ ] L-001 Define premium value and price.

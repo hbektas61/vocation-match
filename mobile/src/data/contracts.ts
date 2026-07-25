@@ -216,6 +216,18 @@ export interface VocationApi {
   /* rooms */
   declareUpcomingStay(startDate: string, endDate: string): Promise<UpcomingStay>;
   /**
+   * The stay declared at the active hotel, or null. Without this a person can
+   * change their dates but never see what they said, which makes "update your
+   * stay" a guess.
+   */
+  getUpcomingStay(): Promise<UpcomingStay | null>;
+  /**
+   * Withdraws the declared stay, closing the Upcoming room at the active hotel.
+   * The counterpart of `clearPresenceCheck`: you can already take back a
+   * proximity answer, and taking back a declaration should not be harder.
+   */
+  withdrawUpcomingStay(): Promise<void>;
+  /**
    * Sends one foreground reading for a server-side distance check. The reading
    * is an argument only: the server stores the boolean answer, never the point.
    */

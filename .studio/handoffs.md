@@ -781,3 +781,55 @@ Handoff:
   side of those two calls is covered.
 - Still external and unchanged: a real device (D-015), CAPTCHA (needs a provider
   account), a real confirmation-link pass, and a signed-URL round trip.
+
+## 2026-07-25 — three gaps a pilot would have hit on day one
+
+Handoff:
+- Date: 2026-07-25
+- From agent: studio-autopilot, with an independent `code-reviewer` pass
+- To: the owner, for the manual pass.
+- What I did: ordinary feature work, not hardening. The programme is closed and
+  everything left in it is external, so this is the next thing a developer would
+  actually build: the three places where the product is complete on the server
+  and unreachable from the app.
+- **Editing your profile.** One screen wrote a profile, and it only rendered
+  when you had none. A name typed wrong during onboarding was permanent, on a
+  product where the name is most of what a stranger has to go on. The form is
+  now shared between the first save and every edit, so validation, copy and the
+  18+ message cannot drift apart, and `ProfileSetupScreen` kept its exact
+  testIDs so its behaviour is unchanged. No server work: the grants already
+  allowed it and the 18+ trigger fires on update as well as insert, which
+  `supabase/tests/001_profiles.sql` already proved.
+- **Your declared stay.** You could re-declare dates but never see what you had
+  said — so "update your stay dates" was a guess — and you could not take it
+  back at all, while a presence answer could always be withdrawn. That
+  asymmetry is the part worth naming: both are statements about yourself, and
+  one was harder to retract than the other for no reason. Again no migration:
+  `upcoming_stays` already granted select and delete with own-row policies.
+- **A conversation whose match vanished.** Since deletion shipped, the other
+  person leaving takes the match and its messages with them, and the cached
+  copy kept the screen alive. The screen now asks the server and lets whatever
+  it says win.
+- **The find that made the review worth running** was not in its findings list
+  but in its open question: does a vanished match ever actually produce
+  NOT_FOUND from the real client? It does not. A message insert against a match
+  that is gone is a foreign key violation, 23503, which fell through to UNKNOWN
+  — so on a real project the app would have said "something went wrong" and
+  never reached the code that works out the conversation is gone. Mapped, and
+  covered in `errorMapping.test.ts`.
+- **One finding I did not act on, deliberately.** The reviewer flagged that a
+  block now sends someone to the same terminal screen as a deleted account, and
+  suggested distinguishing them. That is the opposite of what this product
+  wants: `my_matches` already hides a blocked pair, so the screen is simply
+  agreeing with the inbox, and telling the blocked person which of the two
+  happened is exactly what the blocks table is careful never to reveal. Tested
+  in both directions instead — a block ends terminal, an ordinary unmatch keeps
+  the history readable — and written down here so the next reader does not have
+  to re-derive it.
+- Verification: `bash scripts/check.sh` — 340 pgTAP assertions across 15 SQL
+  suites, 13 concurrency checks, performance smoke, migration replay, storage
+  drain, contract check, auth config, dependency gate, `tsc`,
+  `eslint --max-warnings 0`, 239 jest tests, web bundle.
+- Unchanged and still external: a real device (D-015), CAPTCHA, one manual run
+  of the cleanup worker against staging, a real confirmation link, a signed-URL
+  round trip.

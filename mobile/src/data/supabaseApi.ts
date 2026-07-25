@@ -64,7 +64,13 @@ export function toApiError(error: PostgresLikeError | null | undefined, fallback
   }
   // P0002 is what the RPCs raise for "there is nothing here yet" — no active
   // hotel, no profile, unknown hotel.
-  if (code === 'P0002' || code === 'PGRST116') {
+  //
+  // 23503 is a foreign key violation, which from a client write only ever means
+  // the row being referenced has gone: sending into a match whose other side
+  // deleted their account is the case that matters. It used to fall through to
+  // UNKNOWN, so the app said "something went wrong" and never worked out that
+  // the conversation no longer existed.
+  if (code === 'P0002' || code === 'PGRST116' || code === '23503') {
     return new ApiError('NOT_FOUND', message);
   }
   // A suspended account is refused like any other forbidden action, but the
@@ -474,6 +480,43 @@ export class SupabaseApi implements VocationApi {
       'Could not save your stay.',
     );
     return { hotelId: row.hotel_id, startDate: row.start_date, endDate: row.end_date };
+  }
+
+  async getUpcomingStay(): Promise<UpcomingStay | null> {
+    const active = await this.getActiveHotel();
+    if (!active) {
+      return null;
+    }
+    // Row level security limits this to the caller's own rows; the hotel filter
+    // picks the one that matters, since a stay is per (person, hotel) and an
+    // old one at a hotel they have left is not what this screen is about.
+    const { data, error } = await this.client
+      .from('upcoming_stays')
+      .select('hotel_id, start_date, end_date')
+      .eq('hotel_id', active.hotelId)
+      .maybeSingle();
+    if (error) {
+      throw toApiError(error, 'Could not load your stay.');
+    }
+    if (!data) {
+      return null;
+    }
+    const row = data as UpcomingRow;
+    return { hotelId: row.hotel_id, startDate: row.start_date, endDate: row.end_date };
+  }
+
+  async withdrawUpcomingStay(): Promise<void> {
+    const active = await this.getActiveHotel();
+    if (!active) {
+      throw new ApiError('NOT_FOUND', 'Choose a hotel first.');
+    }
+    const { error } = await this.client
+      .from('upcoming_stays')
+      .delete()
+      .eq('hotel_id', active.hotelId);
+    if (error) {
+      throw toApiError(error, 'Could not withdraw your stay.');
+    }
   }
 
   async recordPresenceCheck(latitude: number, longitude: number): Promise<PresenceAnswer> {

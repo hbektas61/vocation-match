@@ -5,6 +5,7 @@ export type RootStackParamList = {
   AgeGate: undefined;
   Auth: undefined;
   ProfileSetup: undefined;
+  EditProfile: undefined;
   Tabs: undefined;
   Upcoming: undefined;
   HereNow: undefined;

@@ -181,5 +181,42 @@ select is(
   'another user cannot read someone else`s hotel history'
 );
 
+-- ------------------------------------------------- taking a declaration back
+-- The client reads and withdraws its own stay directly; there is no function
+-- in between, so the grants and the policies are the whole boundary. The
+-- asymmetry this closes: a presence answer could always be taken back
+-- (`clearPresenceCheck`), and a declaration could not.
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
+select public.declare_upcoming_stay(current_date + 1, current_date + 4);
+
+select is(
+  (select count(*)::int from public.upcoming_stays),
+  1,
+  'a user reads back the stay they declared');
+
+select is(
+  (select count(*)::int from public.upcoming_stays
+    where user_id <> '00000000-0000-0000-0000-0000000000a1'),
+  0,
+  'and never anybody else''s, whatever else is in the table');
+
+with removed as (
+  delete from public.upcoming_stays
+   where user_id = '00000000-0000-0000-0000-0000000000b1'
+  returning 1
+)
+select is((select count(*)::int from removed), 0,
+  'a user cannot delete somebody else''s declaration');
+
+with removed as (
+  delete from public.upcoming_stays returning 1
+)
+select is((select count(*)::int from removed), 1,
+  'but can withdraw their own');
+
+select ok(
+  not (select eligible from public.my_rooms() where room = 'UPCOMING'),
+  'and the room closes when they do — on the server, not only on the screen');
+
 select * from finish(true);
 rollback;

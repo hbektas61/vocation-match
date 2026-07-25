@@ -422,6 +422,24 @@ export class FakeApi implements VocationApi {
     return { hotelId, startDate, endDate };
   }
 
+  async getUpcomingStay(): Promise<UpcomingStay | null> {
+    const userId = await this.requireUserId();
+    const active = this.activeHotels.get(userId);
+    if (!active) {
+      return null;
+    }
+    const stay = this.stays.get(stayKey(userId, active.hotelId));
+    return stay
+      ? { hotelId: stay.hotelId, startDate: stay.checkInDate, endDate: stay.checkOutDate }
+      : null;
+  }
+
+  async withdrawUpcomingStay(): Promise<void> {
+    const userId = await this.requireUserId();
+    const hotelId = await this.requireActiveHotelId(userId);
+    this.stays.delete(stayKey(userId, hotelId));
+  }
+
   async recordPresenceCheck(latitude: number, longitude: number): Promise<PresenceAnswer> {
     const userId = await this.requireUserId();
     const hotelId = await this.requireActiveHotelId(userId);

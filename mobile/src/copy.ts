@@ -77,9 +77,20 @@ export const COPY = {
     underAge: 'Vocation Match is 18+ only.',
     bioLabel: 'Bio',
     bioPlaceholder: 'A sentence about you',
+    birthdateNote:
+      'Your date of birth is only used to check you are 18 or older and to show your age. Nobody else ever sees the date itself.',
     photoLater: 'You can add a photo from Settings once this is saved.',
     saveButton: 'Save profile',
     saving: 'Saving…',
+  },
+
+  editProfile: {
+    title: 'Edit your profile',
+    intro: 'Change what other people see. Your photo is managed separately, in Settings.',
+    openButton: 'Edit profile',
+    saveButton: 'Save changes',
+    saving: 'Saving…',
+    loadError: 'Could not load your profile. Try again.',
   },
 
   photo: {
@@ -124,7 +135,15 @@ export const COPY = {
     checkInPlaceholder: '2026-08-01',
     checkOutPlaceholder: '2026-08-08',
     saveButton: 'Save stay dates',
+    updateButton: 'Update stay dates',
     saving: 'Saving…',
+    currentPrefix: 'You have declared',
+    withdrawButton: 'Withdraw my stay',
+    withdrawing: 'Withdrawing…',
+    withdrawExplainer:
+      'Withdrawing removes your declared dates and closes the Upcoming room at this hotel. Matches and conversations you already have are kept.',
+    withdrawError: 'Could not withdraw your stay. Try again.',
+    loadError: 'Could not load your declared stay.',
   },
 
   roomReason: {

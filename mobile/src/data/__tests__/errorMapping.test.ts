@@ -64,3 +64,16 @@ describe('toApiError', () => {
     });
   });
 });
+
+describe('a row that has gone', () => {
+  it('reads a foreign key violation as "not found"', () => {
+    // From a client write it only ever means the referenced row is gone —
+    // sending into a match whose other side deleted their account is the case
+    // that matters. It used to fall through to UNKNOWN, so the app said
+    // "something went wrong" and never worked out that the conversation no
+    // longer existed, which is what tells the screen to stop offering a text
+    // box.
+    const mapped = toApiError({ code: '23503', message: 'violates foreign key constraint' }, 'x');
+    expect(mapped.code).toBe('NOT_FOUND');
+  });
+});

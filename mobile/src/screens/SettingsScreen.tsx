@@ -1,4 +1,5 @@
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 
@@ -6,6 +7,7 @@ import { ProfilePhotoField } from '../components/ProfilePhoto';
 import { Body, Button, Caption, Card, EmptyState, Heading, Notice, Screen, Title } from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type BlockedUser } from '../data';
+import type { RootStackParamList } from '../navigation/types';
 import { toDomainProfile } from '../state/appReducer';
 import { useAppStore } from '../state/AppStore';
 
@@ -31,6 +33,7 @@ function deletionFailureMessage(error: unknown): string {
 
 export function SettingsScreen() {
   const { state, dispatch } = useAppStore();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [signingOut, setSigningOut] = useState(false);
   const [blocked, setBlocked] = useState<BlockedUser[] | null>(null);
   const [blockedError, setBlockedError] = useState<string | null>(null);
@@ -109,6 +112,15 @@ export function SettingsScreen() {
           <Heading>{state.profile.displayName}</Heading>
           <Caption>Age {state.profile.age}</Caption>
           {state.profile.bio ? <Body>{state.profile.bio}</Body> : null}
+          {/* Until this existed, a name typed wrong during onboarding was
+              permanent — on a product where the name is most of what a
+              stranger has to go on. */}
+          <Button
+            label={COPY.editProfile.openButton}
+            variant="secondary"
+            onPress={() => navigation.navigate('EditProfile')}
+            testID="open-edit-profile"
+          />
         </Card>
       ) : null}
       {state.profile ? (

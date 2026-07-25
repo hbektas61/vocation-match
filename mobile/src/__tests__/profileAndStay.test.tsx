@@ -1,0 +1,261 @@
+/**
+ * Two things a pilot with real people would have hit on the first day.
+ *
+ * Editing your profile: there was exactly one screen that wrote a profile, and
+ * it only ever appeared when you did not have one. A name typed wrong during
+ * onboarding was permanent, on a product where the name is most of what a
+ * stranger has to go on.
+ *
+ * Your declared stay: you could re-declare dates, but never see what you had
+ * declared, and never take it back. That last one was the asymmetry worth
+ * fixing — a presence answer could already be withdrawn, and a declaration is
+ * the same kind of statement about yourself.
+ */
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+
+import { COPY } from '../copy';
+import { ApiError, FakeApi, getApi, setApi } from '../data';
+import { onboard, onboardToSettings } from '../testSupport/onboarding';
+
+const FIXED = Date.parse('2026-07-25T10:00:00Z');
+
+beforeEach(() => {
+  setApi(new FakeApi({ now: () => FIXED }));
+});
+
+describe('editing a profile after onboarding', () => {
+  it('opens prefilled with what is actually stored', async () => {
+    await onboardToSettings('Deniz');
+    await fireEvent.press(await screen.findByTestId('open-edit-profile'));
+
+    const name = await screen.findByTestId('edit-profile-name');
+    expect(name.props.value).toBe('Deniz');
+    // The birthdate has to come from the server: the cached domain profile is
+    // the shape other people see, and a form that prefilled an empty date and
+    // saved it would be worse than no form.
+    expect(screen.getByTestId('edit-profile-birthdate').props.value).toBe('1994-03-01');
+  });
+
+  it('saves a corrected name and shows it everywhere', async () => {
+    await onboardToSettings('Dneiz');
+    await fireEvent.press(await screen.findByTestId('open-edit-profile'));
+
+    await fireEvent.changeText(await screen.findByTestId('edit-profile-name'), 'Deniz');
+    await fireEvent.changeText(screen.getByTestId('edit-profile-bio'), 'Swims at sunrise.');
+    await fireEvent.press(screen.getByTestId('save-edit-profile'));
+
+    await waitFor(async () => {
+      expect((await getApi().getOwnProfile())?.displayName).toBe('Deniz');
+    });
+    // Back on Settings, reading from the store rather than from the form.
+    expect(await screen.findByText('Deniz')).toBeTruthy();
+    expect(screen.getByText('Swims at sunrise.')).toBeTruthy();
+  });
+
+  it('does not let an edit get round the 18+ rule', async () => {
+    await onboardToSettings();
+    await fireEvent.press(await screen.findByTestId('open-edit-profile'));
+
+    const recentYear = new Date(FIXED).getFullYear() - 5;
+    await fireEvent.changeText(
+      await screen.findByTestId('edit-profile-birthdate'),
+      `${recentYear}-01-01`,
+    );
+    await fireEvent.press(screen.getByTestId('save-edit-profile'));
+
+    expect(await screen.findByText(COPY.profileSetup.underAge)).toBeTruthy();
+    // Still on the edit screen, and nothing was written.
+    expect(screen.getByTestId('screen-edit-profile')).toBeTruthy();
+    expect((await getApi().getOwnProfile())?.birthdate).toBe('1994-03-01');
+  });
+
+  it('keeps the photo, which is managed on its own', async () => {
+    await onboardToSettings();
+    const api = getApi() as FakeApi;
+    const withPhoto = await api.uploadProfilePhoto({
+      uri: 'file:///tmp/pick.jpg',
+      mimeType: 'image/jpeg',
+    });
+
+    await fireEvent.press(await screen.findByTestId('open-edit-profile'));
+    await fireEvent.changeText(await screen.findByTestId('edit-profile-name'), 'Renamed');
+    await fireEvent.press(screen.getByTestId('save-edit-profile'));
+
+    await waitFor(async () => {
+      expect((await api.getOwnProfile())?.displayName).toBe('Renamed');
+    });
+    expect((await api.getOwnProfile())?.photoPath).toBe(withPhoto.photoPath);
+  });
+});
+
+describe('the stay you declared', () => {
+  async function openUpcoming() {
+    await onboard();
+    await fireEvent.press(await screen.findByTestId('activate-hotel-lara-shore'));
+    await fireEvent.press(await screen.findByText('Rooms'));
+    await fireEvent.press(await screen.findByTestId('open-upcoming'));
+  }
+
+  it('starts empty, and offers no way to withdraw what does not exist', async () => {
+    await openUpcoming();
+
+    expect(await screen.findByTestId('upcoming-check-in')).toBeTruthy();
+    expect(screen.queryByTestId('upcoming-current')).toBeNull();
+    expect(screen.queryByTestId('upcoming-withdraw')).toBeNull();
+  });
+
+  it('shows what you declared when you come back to it', async () => {
+    await openUpcoming();
+    await fireEvent.changeText(await screen.findByTestId('upcoming-check-in'), '2026-08-01');
+    await fireEvent.changeText(screen.getByTestId('upcoming-check-out'), '2026-08-08');
+    await fireEvent.press(screen.getByTestId('save-upcoming'));
+
+    await fireEvent.press(await screen.findByTestId('open-upcoming'));
+
+    // The dates come back, rather than the form opening blank and leaving
+    // "update your stay" as a guess at what you had said.
+    expect((await screen.findByTestId('upcoming-check-in')).props.value).toBe('2026-08-01');
+    expect(screen.getByTestId('upcoming-check-out').props.value).toBe('2026-08-08');
+    expect(screen.getByTestId('upcoming-current')).toBeTruthy();
+  });
+
+  it('can be withdrawn, and closes the room when it is', async () => {
+    await openUpcoming();
+    await fireEvent.changeText(await screen.findByTestId('upcoming-check-in'), '2026-08-01');
+    await fireEvent.changeText(screen.getByTestId('upcoming-check-out'), '2026-08-08');
+    await fireEvent.press(screen.getByTestId('save-upcoming'));
+
+    const rooms = await getApi().getRooms();
+    expect(rooms.find((r) => r.room === 'UPCOMING')?.eligible).toBe(true);
+
+    await fireEvent.press(await screen.findByTestId('open-upcoming'));
+    await fireEvent.press(await screen.findByTestId('upcoming-withdraw'));
+
+    await waitFor(async () => {
+      expect(await getApi().getUpcomingStay()).toBeNull();
+    });
+    // Asserted against the server, not the screen: a withdrawal that only
+    // changed local state would leave the room open for everyone else.
+    const after = await getApi().getRooms();
+    expect(after.find((r) => r.room === 'UPCOMING')).toMatchObject({
+      eligible: false,
+      reason: 'NO_DECLARATION',
+    });
+  });
+});
+
+/**
+ * A conversation whose match disappeared underneath it.
+ *
+ * Since H2 the other person can delete their account, and the cascade takes the
+ * match and every message with it. The cached copy in the store keeps the
+ * screen looking alive, so without this someone sits retyping into a
+ * conversation that no longer exists and gets a generic failure each time.
+ */
+describe('a match that vanishes mid-conversation', () => {
+  /** Onboard, open a room, match with the fixture who likes back, open chat. */
+  async function reachChat() {
+    await onboard();
+    await fireEvent.press(await screen.findByTestId('activate-hotel-lara-shore'));
+    await fireEvent.press(await screen.findByText('Rooms'));
+    await fireEvent.press(await screen.findByTestId('open-here-now'));
+    await fireEvent.press(await screen.findByTestId('simulate-near'));
+    await fireEvent.press(await screen.findByTestId('here-now-done'));
+    await fireEvent.press(await screen.findByText('Discovery'));
+    await fireEvent.press(await screen.findByTestId('swipe-like'));
+    await fireEvent.press(await screen.findByTestId('match-open-chat'));
+    expect(await screen.findByTestId('chat-input')).toBeTruthy();
+  }
+
+  it('falls back to "no longer available" instead of failing on every send', async () => {
+    await reachChat();
+
+    // The other side deletes their account: the match and its messages are
+    // gone from the server, and only this device still believes in them.
+    const api = getApi();
+    jest.spyOn(api, 'sendMessage').mockRejectedValue(
+      new ApiError('NOT_FOUND', 'That conversation is no longer available.'),
+    );
+    jest.spyOn(api, 'getMatches').mockResolvedValue([]);
+
+    await fireEvent.changeText(screen.getByTestId('chat-input'), 'still there?');
+    await fireEvent.press(screen.getByTestId('chat-send'));
+
+    expect(await screen.findByText(COPY.chat.notAvailable)).toBeTruthy();
+    expect(screen.queryByTestId('chat-input')).toBeNull();
+    jest.restoreAllMocks();
+  });
+
+  it('ends the same way when the other person blocks, saying nothing about which it was', async () => {
+    await reachChat();
+
+    // A block answers FORBIDDEN on send, and `my_matches` stops returning the
+    // match — so the screen lands exactly where a deleted account leads. That
+    // is deliberate: nothing the blocked person sees may tell them which of the
+    // two happened.
+    const api = getApi();
+    jest.spyOn(api, 'sendMessage').mockRejectedValue(
+      new ApiError('FORBIDDEN', 'This conversation is closed.'),
+    );
+    jest.spyOn(api, 'getMatches').mockResolvedValue([]);
+
+    await fireEvent.changeText(screen.getByTestId('chat-input'), 'hello?');
+    await fireEvent.press(screen.getByTestId('chat-send'));
+
+    expect(await screen.findByText(COPY.chat.notAvailable)).toBeTruthy();
+    jest.restoreAllMocks();
+  });
+
+  it('stays put on an ordinary unmatch, where the history is still readable', async () => {
+    await reachChat();
+    const api = getApi();
+    const [existing] = await api.getMatches();
+
+    // The other difference FORBIDDEN can mean. Here the match still exists,
+    // so the refresh keeps it and the closed notice is what shows.
+    jest.spyOn(api, 'sendMessage').mockRejectedValue(
+      new ApiError('FORBIDDEN', 'This conversation is closed.'),
+    );
+    jest
+      .spyOn(api, 'getMatches')
+      .mockResolvedValue([{ ...existing, unmatchedAt: Date.now() }]);
+
+    await fireEvent.changeText(screen.getByTestId('chat-input'), 'hello?');
+    await fireEvent.press(screen.getByTestId('chat-send'));
+
+    expect(await screen.findByTestId('chat-closed')).toBeTruthy();
+    expect(screen.queryByText(COPY.chat.notAvailable)).toBeNull();
+    jest.restoreAllMocks();
+  });
+
+  it('notices a vanished match when unmatching too', async () => {
+    await reachChat();
+    const api = getApi();
+    jest
+      .spyOn(api, 'unmatch')
+      .mockRejectedValue(new ApiError('NOT_FOUND', 'That match is not open.'));
+    jest.spyOn(api, 'getMatches').mockResolvedValue([]);
+
+    await fireEvent.press(screen.getByTestId('chat-unmatch'));
+
+    expect(await screen.findByText(COPY.chat.notAvailable)).toBeTruthy();
+    jest.restoreAllMocks();
+  });
+
+  it('keeps the conversation when the refresh itself fails', async () => {
+    await reachChat();
+
+    const api = getApi();
+    jest.spyOn(api, 'sendMessage').mockRejectedValue(new ApiError('NETWORK', 'No connection.'));
+    jest.spyOn(api, 'getMatches').mockRejectedValue(new Error('fetch failed'));
+
+    await fireEvent.changeText(screen.getByTestId('chat-input'), 'hello?');
+    await fireEvent.press(screen.getByTestId('chat-send'));
+
+    // A dropped connection is not evidence the match is gone. Throwing someone
+    // out of a conversation for one would be worse than the stale copy.
+    expect(await screen.findByTestId('chat-send-error')).toBeTruthy();
+    expect(screen.getByTestId('chat-input')).toBeTruthy();
+    jest.restoreAllMocks();
+  });
+});

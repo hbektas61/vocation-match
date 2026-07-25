@@ -62,8 +62,18 @@ export function Body({ children }: { children: React.ReactNode }) {
   return <Text style={styles.body}>{children}</Text>;
 }
 
-export function Caption({ children }: { children: React.ReactNode }) {
-  return <Text style={styles.caption}>{children}</Text>;
+export function Caption({
+  children,
+  testID,
+}: {
+  children: React.ReactNode;
+  testID?: string;
+}) {
+  return (
+    <Text style={styles.caption} testID={testID}>
+      {children}
+    </Text>
+  );
 }
 
 export function Button({
