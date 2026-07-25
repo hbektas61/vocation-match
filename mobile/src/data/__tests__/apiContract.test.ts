@@ -424,9 +424,25 @@ describe('VocationApi contract (in-memory implementation)', () => {
         });
       });
 
-      it('refuses a swipe on a blocked person', async () => {
+      it('answers a repeat swipe on a blocked person from the stored decision', async () => {
+        // They are already matched here, so this swipe has been made before.
+        // The answer comes from storage and never looks at the other person —
+        // which is what makes a retry safe (D-012) and what stops a repeat
+        // swipe reporting where somebody is (D-016). What the caller learns is
+        // that the match is gone, exactly as an ordinary unmatch would say.
         await api.blockUser(RECIPROCATES);
-        await expect(api.swipe(RECIPROCATES, 'HERE_NOW', 'LIKE')).rejects.toMatchObject({
+        await expect(api.swipe(RECIPROCATES, 'HERE_NOW', 'LIKE')).resolves.toEqual({
+          matched: false,
+          matchId: null,
+        });
+      });
+
+      it('still refuses a first swipe on somebody blocked', async () => {
+        // `DOES_NOT` has never been swiped on in this block, so this is the
+        // path where the target's state is still consulted — and a block gives
+        // the same answer a stranger gets, so nothing reveals it happened.
+        await api.blockUser(DOES_NOT);
+        await expect(api.swipe(DOES_NOT, 'HERE_NOW', 'LIKE')).rejects.toMatchObject({
           code: 'FORBIDDEN',
         });
       });
@@ -461,6 +477,68 @@ describe('VocationApi contract (in-memory implementation)', () => {
       await expect(
         api.reportUser({ userId: session?.userId as string, reason: 'SPAM' }),
       ).rejects.toMatchObject({ code: 'INVALID_INPUT' });
+    });
+  });
+});
+
+/**
+ * The two implementations have to agree about a repeat swipe, because every
+ * component test runs against the fake and the real rule lives in SQL. This is
+ * the shape of the agreement, asserted here so a future change to one has to
+ * notice the other.
+ *
+ * The server's half is `supabase/tests/014_swipe_idempotence.sql`.
+ */
+describe('a decision already made', () => {
+  const LARA = 'hotel-lara-shore';
+  const NEAR: [number, number] = [36.8549, 30.7995];
+  const RECIPROCATES = 'cand-derya';
+  const PASSES = 'cand-mert';
+
+  let api: FakeApi;
+
+  beforeEach(async () => {
+    api = new FakeApi({ now: () => NOW });
+    await api.signUp('ada@example.test', 'correct horse');
+    api.confirmEmail('ada@example.test');
+    await api.signIn('ada@example.test', 'correct horse');
+    await api.saveOwnProfile({ displayName: 'Ada', birthdate: ADULT_BIRTHDATE });
+    await api.setActiveHotel(LARA);
+    await api.recordPresenceCheck(...NEAR);
+  });
+
+  it('is answered without the caller needing a room any more', async () => {
+    await api.swipe(PASSES, 'HERE_NOW', 'PASS');
+    // The room closes under them — a presence answer lapses after 30 minutes,
+    // which is the ordinary case, not an edge one.
+    await api.clearPresenceCheck();
+
+    await expect(api.swipe(PASSES, 'HERE_NOW', 'PASS')).resolves.toEqual({
+      matched: false,
+      matchId: null,
+    });
+  });
+
+  it('does not overwrite the first decision, whatever the retry says', async () => {
+    await api.swipe(PASSES, 'HERE_NOW', 'PASS');
+    await expect(api.swipe(PASSES, 'HERE_NOW', 'LIKE')).resolves.toEqual({
+      matched: false,
+      matchId: null,
+    });
+  });
+
+  it('keeps reporting a match that already exists', async () => {
+    const first = await api.swipe(RECIPROCATES, 'HERE_NOW', 'LIKE');
+    expect(first.matched).toBe(true);
+    await api.clearPresenceCheck();
+
+    await expect(api.swipe(RECIPROCATES, 'HERE_NOW', 'LIKE')).resolves.toEqual(first);
+  });
+
+  it('still checks the room for somebody new', async () => {
+    await api.clearPresenceCheck();
+    await expect(api.swipe(RECIPROCATES, 'HERE_NOW', 'LIKE')).rejects.toMatchObject({
+      code: 'FORBIDDEN',
     });
   });
 });

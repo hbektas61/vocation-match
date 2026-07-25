@@ -57,7 +57,7 @@ named. Everything still unticked is unticked on purpose.
 - [x] A profile photo is not a beacon.
       *Private bucket, owner-scoped path, no URL field anywhere, and EXIF
       dropped by re-encoding before upload.
-      `supabase/tests/011_profile_photos.sql` (43 assertions) — the read policy
+      `supabase/tests/011_profile_photos.sql` (49 assertions) — the read policy
       is negative-controlled, so five of them go red if it is weakened.
       **Not verified:** that the native encoder really emits metadata-free
       bytes. That needs a GPS-tagged photo on a device (D-015).*
@@ -117,6 +117,22 @@ named. Everything still unticked is unticked on purpose.
       pairing is 5.6:1 or better. **What no code can show — whether the
       announcement is audible, and where the cursor lands afterwards — needs a
       device (D-015).***
+- [x] Neither a repeat swipe nor a photo read says where anybody is (D-016).
+      *The highest-severity finding of the whole hardening program, and it was
+      in two places at once. Both endpoints answered from the target's room
+      eligibility **at that moment**, and a user id is public to everyone who
+      has seen a card — so either could be polled to learn when a named person
+      arrived near the hotel and when they left. The swipe version worked on
+      people the deck had deliberately stopped showing you. Closed in
+      `20260725002100` and `20260725002200`; `supabase/tests/014_swipe_idempotence.sql`
+      runs the case the previous idempotency test could not have caught, because
+      that one kept the target eligible throughout. The same fix restored D-012:
+      a retry after a dropped response no longer fails if the other person moved
+      in between.*
+- [x] The endpoints that can be polled are rate-limited.
+      *`swipe` and `discovery_feed` had no limit at all, which is what made the
+      oracle above practical rather than theoretical. Both are counted only when
+      there is new work to do, so a retry over a bad connection stays free.*
 - [x] Independent code and security review. *Both delivered, both with live
       evidence against the running database. The review found one high-severity
       defect the build had missed: a suspended account could still browse and

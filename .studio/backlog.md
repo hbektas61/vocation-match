@@ -115,6 +115,49 @@ applied in order, pgTAP suites plus multi-connection concurrency checks.
       different rooms and asserts the label always agrees with the first recorded
       swipe.
 
+## Pilot hardening (completed 2026-07-25)
+
+Evidence command: `bash scripts/check.sh` — the auth-configuration check, the
+dependency gate, 334 pgTAP assertions across 15 SQL suites, 13 concurrency
+checks, the performance smoke check, the client/database contract check, the
+migration-replay comparison, `tsc`, `eslint --max-warnings 0`, 221 jest tests,
+and the web bundle. Four of those checks are negative-controlled.
+
+- [x] H-101–H-106 Profile photos in a private bucket (closes S-001, D-014).
+- [x] H-201–H-206 In-app account deletion, and the removal of the second,
+      unguarded deletion path the audit found.
+- [x] H-301–H-304 Email confirmation configured, verified by a check, and
+      handled in the UI (closes S-003 as far as this repository can).
+- [x] H-305–H-306 Deterministic match attribution (closes S-004).
+- [x] H-401 Security. No grant drift found anywhere; every `add column` against
+      a table with a narrow grant restates it, and the baseline suite now fails
+      if a table-wide DELETE reappears. One critical finding — a live presence
+      oracle in `swipe()` and in the photo read — closed and recorded as D-016.
+- [x] H-402 Privacy. Nothing crosses the user boundary that should not; the copy
+      promises nothing the system does not deliver, and that is now an
+      executable check (`mobile/src/__tests__/trustCopy.test.ts`) rather than a
+      rule in a document.
+- [x] H-403 Abuse resistance. `swipe` and `discovery_feed` limited; the storage
+      cleanup queue given a drain contract. Two residual risks sized rather than
+      only noted, in `.studio/decisions.md`: a suspended account can delete
+      itself and re-register, and three disposable addresses can force a
+      moderation flag — which is queue priority, not a ban.
+- [x] H-404 Accessibility over every screen phases 1–3 changed. Four defects of
+      the same shape as R-004's, all fixed with regression tests.
+- [x] H-405 Lifecycle. A lapsed session, or an account deleted from another
+      device, no longer leaves the app looking signed in.
+- [x] H-406 Offline. Every request has a deadline; nothing had one before.
+- [x] H-407 Migration replay. Applied both ways and compared — schema, grants,
+      policies.
+- [x] H-408 Contract drift, including storage buckets, their policies, and
+      whether the client's RPCs are executable by `authenticated` at all.
+- [x] H-409 Dependency health. 33 high advisories closed by an override; the
+      one that remains is written down with the reason it cannot reach a phone.
+- [x] H-410 Performance. One index; the deck's dominant scan was bounded by
+      lifetime signups rather than by the room.
+- [x] H-411 Documentation. README, `docs/hosted-setup.md`, and the Studio
+      records, including what was *not* verified.
+
 ## Later — monetization
 
 - [ ] L-001 Define premium value and price.

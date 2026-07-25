@@ -516,11 +516,25 @@ export class FakeApi implements VocationApi {
     direction: SwipeDirection,
   ): Promise<SwipeResult> {
     const userId = await this.requireUserId();
-    const hotelId = await this.requireActiveHotelId(userId);
     if (targetUserId === userId) {
       throw new ApiError('INVALID_INPUT', 'You cannot swipe on yourself.');
     }
 
+    const key = swipeKey(userId, targetUserId);
+    // Already decided: answer from what is stored and look at nobody else.
+    // Mirrors `public.swipe` exactly, and for the same two reasons — a retry
+    // over a dropped connection has to work (D-012), and an answer that
+    // depended on where the other person is right now would be a way to watch
+    // them (D-016).
+    if (this.swipes.has(key)) {
+      const decided = this.matchFor(userId, targetUserId);
+      return {
+        matched: decided?.unmatchedAt === null,
+        matchId: decided && decided.unmatchedAt === null ? decided.matchId : null,
+      };
+    }
+
+    const hotelId = await this.requireActiveHotelId(userId);
     const status = (await this.getRooms()).find((entry) => entry.room === room);
     if (!status?.eligible) {
       throw new ApiError('FORBIDDEN', 'You do not have access to this room yet.');
@@ -537,20 +551,10 @@ export class FakeApi implements VocationApi {
       throw new ApiError('FORBIDDEN', 'That person is not in this room.');
     }
 
-    const key = swipeKey(userId, targetUserId);
-    if (!this.swipes.has(key)) {
-      this.swipes.set(key, direction);
-    }
+    this.swipes.set(key, direction);
 
-    const existing = this.matchFor(userId, targetUserId);
-    if (existing) {
-      return {
-        matched: existing.unmatchedAt === null,
-        matchId: existing.unmatchedAt === null ? existing.matchId : null,
-      };
-    }
     // The fixture flag stands in for the other person's stored LIKE.
-    if (this.swipes.get(key) === 'LIKE' && candidate.likesYou) {
+    if (direction === 'LIKE' && candidate.likesYou) {
       const match: StoredMatch = {
         matchId: `match-${this.nextId++}`,
         userId,

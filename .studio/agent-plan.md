@@ -163,10 +163,10 @@ Use at most 3–5 active specialists. Assign non-overlapping files.
 
 | Gate | Required evidence | Status |
 | --- | --- | --- |
-| H1 Profile photo storage | H-101–H-106 | **done** — `scripts/check.sh` green: 271 pgTAP assertions (43 new), 12 concurrency checks, contract check incl. storage, tsc, eslint, 173 jest tests, web bundle. Independent code review + security audit run; every finding above low either fixed (`20260725001500_photo_write_path.sql`, signed-URL refresh, orphan sweep) or recorded. |
+| H1 Profile photo storage | H-101–H-106 | **done** — `scripts/check.sh` green: 271 pgTAP assertions (43 new), 13 concurrency checks, contract check incl. storage, tsc, eslint, 173 jest tests, web bundle. Independent code review + security audit run; every finding above low either fixed (`20260725001500_photo_write_path.sql`, signed-URL refresh, orphan sweep) or recorded. |
 | H2 Account deletion | H-201–H-206 | **done** — `scripts/check.sh` green: 296 pgTAP assertions (24 new), contract check, tsc, eslint, 185 jest tests, web bundle. Review found a second, unguarded deletion path (a table-wide DELETE grant on `profiles`) — closed in `20260725001700` with a structural guard in the baseline suite. |
-| H3 Email confirmation + S-004 | H-301–H-306 | **done** — `scripts/check.sh` green: auth-config check (negative controlled), 311 pgTAP assertions, 14 concurrency checks incl. two racing both swipe orders from different rooms, contract check, tsc, eslint, 193 jest tests, web bundle. Review found unbounded confirmation mail and a readable global `seq`; both closed. |
-| H4 Pilot hardening | H-401–H-411 | **done** — `scripts/check.sh` green: 334 pgTAP assertions across 15 suites, 14 concurrency checks, performance smoke, migration replay, contract check, auth config, dependency gate, tsc, eslint, 216 jest tests, web bundle. Independent security, accessibility and performance passes; the critical finding (a live presence oracle in `swipe` and in the photo read) closed in `20260725002100`/`20260725002200` and recorded as D-016. |
+| H3 Email confirmation + S-004 | H-301–H-306 | **done** — `scripts/check.sh` green: auth-config check (negative controlled), 311 pgTAP assertions, 13 concurrency checks incl. two racing both swipe orders from different rooms, contract check, tsc, eslint, 193 jest tests, web bundle. Review found unbounded confirmation mail and a readable global `seq`; both closed. |
+| H4 Pilot hardening | H-401–H-411 | **done** — `scripts/check.sh` green: 334 pgTAP assertions across 15 suites, 13 concurrency checks, performance smoke, migration replay, contract check, auth config, dependency gate, tsc, eslint, 221 jest tests, web bundle. Independent security, accessibility and performance passes; the critical finding (a live presence oracle in `swipe` and in the photo read) closed in `20260725002100`/`20260725002200` and recorded as D-016. |
 
 A gate moves to `done` only with a commit SHA and the checks that passed
 written next to it. No gate is marked from generated files alone.
@@ -228,7 +228,7 @@ written next to it. No gate is marked from generated files alone.
 | P5 Final handoff | done |
 
 Evidence, reproducible in one command — `scripts/check.sh`: 228 pgTAP
-assertions across 11 SQL suites, 12 concurrency checks racing real connections,
+assertions across 11 SQL suites, 13 concurrency checks racing real connections,
 the client/database contract check, `tsc`, `eslint --max-warnings 0`, jest, and
 a web bundle.
 

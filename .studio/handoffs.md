@@ -322,7 +322,7 @@ Handoff:
   `mobile/src/{copy.ts,domain/types.ts,state/appReducer.ts}`, `mobile/app.json`,
   `mobile/package.json` (expo-image-picker, expo-image-manipulator, expo-crypto).
 - Verification: `bash scripts/check.sh` — 271 pgTAP assertions across 12 SQL suites
-  (43 of them new, in `011_profile_photos.sql`), 12 concurrency checks, the
+  (43 of them new, in `011_profile_photos.sql`), 13 concurrency checks, the
   client/database contract check (now covering the storage bucket and its policies),
   `tsc --noEmit`, `eslint --max-warnings 0`, 173 jest tests, and the web bundle.
   The read policy was negative-controlled: replacing it with a permissive one turns
@@ -400,7 +400,7 @@ Handoff:
   `mobile/src/data/__tests__/deleteAccount.test.ts`,
   `mobile/src/__tests__/deleteAccountUi.test.tsx`.
 - Verification: `bash scripts/check.sh` — 296 pgTAP assertions across 13 suites
-  (24 of them in `012_account_deletion.sql`), 12 concurrency checks, the
+  (24 of them in `012_account_deletion.sql`), 13 concurrency checks, the
   client/database contract check, `tsc`, `eslint --max-warnings 0`, 185 jest tests,
   the web bundle.
 - Risks / blockers:
@@ -476,7 +476,7 @@ Handoff:
   onboarding path changed.
 - Verification: `bash scripts/check.sh` — the auth-configuration check (negative
   controlled: turning confirmation off fails it), 311 pgTAP assertions across 14
-  suites, 14 concurrency checks including two new ones that race both swipe
+  suites, 13 concurrency checks including two new ones that race both swipe
   orders from different rooms, the client/database contract check, `tsc`,
   `eslint --max-warnings 0`, 193 jest tests, the web bundle.
 - Risks / blockers:
@@ -558,7 +558,7 @@ Handoff:
   is now an executable check rather than a rule in a document
   (`mobile/src/__tests__/trustCopy.test.ts`).
 - Verification: `bash scripts/check.sh` — auth configuration, dependency gate,
-  334 pgTAP assertions across 15 SQL suites, 14 concurrency checks, the
+  334 pgTAP assertions across 15 SQL suites, 13 concurrency checks, the
   performance smoke check, the client/database contract check, the
   migration-replay comparison, `tsc`, `eslint --max-warnings 0`, 216 jest tests,
   the web bundle. Four of the new checks are negative-controlled: breaking the
@@ -583,3 +583,44 @@ Handoff:
     not a ban, because a human still has to action it.
 - Recommended next agent: none. The next useful step is a device and a hosted
   project, both of which are owner actions.
+
+## 2026-07-25 — closing review of the pilot-hardening program
+
+Handoff:
+- Date: 2026-07-25
+- From agent: `code-reviewer` (independent closing pass over `9b93065..HEAD`),
+  findings applied by studio-autopilot
+- What the review was asked: not to re-audit, but to answer whether the Studio
+  records are true and whether anything now works worse than before.
+- Verdict: the central claim reproduces. The reviewer ran `scripts/check.sh`
+  themselves and got the numbers the records cite. They hand-traced the two
+  closing migrations against the specific wrong-answer states — an unmatched
+  pair, a pair where only the other side swiped, a match whose swipe row was
+  gone — and found no regression. They confirmed the new assertions fail if the
+  fixes are reverted, which is the property that matters about a test.
+- Three findings, all valid, all now fixed:
+  - **The fake did not mirror the fix.** `FakeApi.swipe` still consulted the
+    target before checking for a stored decision — the same ordering the server
+    had just stopped doing. Harmless today, because the fixtures never change
+    room, and precisely the sort of divergence that produces a confusing failure
+    six months later. The fake's header documents what it *cannot* mirror; this
+    was not that. Fixed, with parity assertions in `apiContract.test.ts` that
+    name the SQL suite holding the other half.
+  - **Two Studio documents were stale through the program's most important
+    commit.** The release checklist still cited H3-era counts and said nothing
+    at all about D-016 — the highest-severity finding of the program — and the
+    backlog had no record of H-401 to H-411. Both now say what happened.
+  - **The concurrency-check count was wrong.** Written as 14 in two places; the
+    script prints 13. A small number, but the plan says a gate is only done with
+    "the checks that passed written next to it", and a number that does not
+    reproduce is not evidence.
+- One thing the reviewer raised that is recorded rather than fixed: the new fast
+  path in `swipe()` does less work than a first swipe, so a precise enough
+  timing measurement could still distinguish them. That is a much weaker signal
+  than the one D-016 closed — it says whether you have swiped on someone, not
+  where they are — and closing it would mean making every call pay the slow
+  path. Noted against D-016 rather than acted on.
+- Verification: `bash scripts/check.sh` — auth configuration, dependency gate,
+  334 pgTAP assertions across 15 SQL suites, 13 concurrency checks, performance
+  smoke, client/database contract, migration replay, `tsc`,
+  `eslint --max-warnings 0`, 221 jest tests, web bundle.
