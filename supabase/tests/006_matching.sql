@@ -7,18 +7,25 @@ select tests.create_member('ada@example.test', '00000000-0000-0000-0000-00000000
 select tests.create_member('bo@example.test',  '00000000-0000-0000-0000-0000000000b1', 'Bo');
 select tests.create_member('cam@example.test', '00000000-0000-0000-0000-0000000000c1', 'Cam');
 select tests.create_member('dev@example.test', '00000000-0000-0000-0000-0000000000d1', 'Dev');
+-- Eve is at hotel one and never swiped on, so she is the only person left who
+-- can exercise the checks a *first* swipe makes.
+select tests.create_member('eve@example.test', '00000000-0000-0000-0000-0000000000e1', 'Eve');
 
 create temp table h as
 select tests.create_hotel('Bosphorus Grand', 41.0369, 28.9850) as one,
        tests.create_hotel('Galata Rooms',    41.0256, 28.9744) as two;
 grant select on h to anon, authenticated;
 
--- Ada, Bo and Cam all declare a stay at hotel one; Dev is at hotel two.
+-- Ada, Bo, Cam and Eve all declare a stay at hotel one; Dev is at hotel two.
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
 select public.set_active_hotel((select one from h));
 select public.declare_upcoming_stay(current_date + 1, current_date + 4);
 
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
+select public.set_active_hotel((select one from h));
+select public.declare_upcoming_stay(current_date + 1, current_date + 4);
+
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000e1');
 select public.set_active_hotel((select one from h));
 select public.declare_upcoming_stay(current_date + 1, current_date + 4);
 
@@ -133,11 +140,22 @@ select throws_ok(
   'a user at another hotel cannot be swiped by id'
 );
 
+-- A target with no decision stored yet: a repeat swipe deliberately answers
+-- from storage without looking at rooms at all, so this has to be somebody new
+-- or it would pass for the wrong reason.
 select throws_ok(
-  $$select public.swipe('00000000-0000-0000-0000-0000000000b1', 'HERE_NOW', 'LIKE')$$,
+  $$select public.swipe('00000000-0000-0000-0000-0000000000e1', 'HERE_NOW', 'LIKE')$$,
   '42501',
   'You do not have access to this room yet.',
   'a room the caller has not unlocked cannot be swiped in'
+);
+
+-- And a decision already made is answered from storage whatever room the
+-- caller claims, because one pair holds one decision and the room is not part
+-- of it (D-012).
+select lives_ok(
+  $$select public.swipe('00000000-0000-0000-0000-0000000000b1', 'HERE_NOW', 'LIKE')$$,
+  'a repeat swipe is answered from what is stored, not from where either person is now'
 );
 
 select throws_ok(

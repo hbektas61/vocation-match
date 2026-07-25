@@ -82,12 +82,32 @@ select is(
   'and it names them'
 );
 
+-- Ada already swiped on Bo, so this is answered from that stored decision and
+-- never looks at Bo at all — which is the point: a repeat swipe must not be a
+-- way to watch somebody (D-005, D-012).
+select is(
+  (select matched from public.swipe('00000000-0000-0000-0000-0000000000b1', 'UPCOMING', 'LIKE')),
+  false,
+  'a repeat swipe on the blocked person reports the match is gone, exactly as an ordinary unmatch would'
+);
+
+-- The check that matters for a block: somebody the blocker has *not* decided
+-- on yet gets the stranger's answer.
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000d1');
+select lives_ok(
+  $$select public.block_user('00000000-0000-0000-0000-0000000000c1')$$,
+  'dana blocks cam without ever having swiped on them'
+);
 select throws_ok(
-  $$select public.swipe('00000000-0000-0000-0000-0000000000b1', 'UPCOMING', 'LIKE')$$,
+  $$select public.swipe('00000000-0000-0000-0000-0000000000c1', 'UPCOMING', 'LIKE')$$,
   '42501',
   'That person is not in this room.',
-  'the blocker cannot swipe on the blocked person'
+  'and cannot then swipe on them — the same answer a stranger gets, so nothing says a block happened'
 );
+select lives_ok(
+  $$select public.unblock_user('00000000-0000-0000-0000-0000000000c1')$$,
+  'and unblocks them again so the rest of the suite is unaffected');
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
 
 -- --------------------------------------------------------- the other side
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
@@ -104,13 +124,19 @@ select is(
   'and the conversation leaves their inbox too'
 );
 
--- The same message a stranger would get. A different one here would tell the
--- blocked person exactly what happened.
-select throws_ok(
-  $$select public.swipe('00000000-0000-0000-0000-0000000000a1', 'UPCOMING', 'LIKE')$$,
-  '42501',
-  'That person is not in this room.',
-  'the blocked person cannot swipe back, and is not told why'
+-- Bo already swiped on Ada, so this too is answered from storage. What Bo
+-- learns is that the match is gone — which their inbox already showed them —
+-- and not whether Ada blocked them, unmatched them, or left the hotel.
+select is(
+  (select matched from public.swipe('00000000-0000-0000-0000-0000000000a1', 'UPCOMING', 'LIKE')),
+  false,
+  'the blocked person is told the match is gone and nothing about why'
+);
+
+select is(
+  (select match_id from public.swipe('00000000-0000-0000-0000-0000000000a1', 'UPCOMING', 'LIKE')),
+  null,
+  'with no match id to reopen the conversation with'
 );
 
 -- ----------------------------------------------------------------- unblock

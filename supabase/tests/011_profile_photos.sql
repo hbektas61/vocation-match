@@ -342,6 +342,44 @@ select is(
   '00000000-0000-0000-0000-0000000000a1/new4x9wz2m4vb8ntr6ha1cd5.png',
   'and an object that really exists is accepted');
 
+-- ------------------------------------------- the answer does not follow anyone
+-- A signed URL is minted by the storage API, which no rate limit can reach, and
+-- one request can ask about a whole list of people at once. So the answer must
+-- not change as its subject walks in and out of range — otherwise it is a live
+-- feed on them, which is the thing D-005 exists to prevent.
+select tests.clear_auth();
+delete from public.upcoming_stays where user_id = '00000000-0000-0000-0000-0000000000a1';
+delete from public.presence_checks where user_id = '00000000-0000-0000-0000-0000000000a1';
+
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000d1');
+select tests.clear_auth();
+insert into public.upcoming_stays (user_id, hotel_id, start_date, end_date)
+values ('00000000-0000-0000-0000-0000000000d1', tests.hotel_id('Bosphorus Grand'),
+        current_date + 1, current_date + 4);
+
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000d1');
+select is(
+  (select count(*)::int from storage.objects
+    where name = '00000000-0000-0000-0000-0000000000a1/new4x9wz2m4vb8ntr6ha1cd5.png'),
+  1,
+  'ada leaving the room does not change the answer about ada''s photo');
+
+select tests.clear_auth();
+insert into public.upcoming_stays (user_id, hotel_id, start_date, end_date)
+values ('00000000-0000-0000-0000-0000000000a1', tests.hotel_id('Bosphorus Grand'),
+        current_date + 1, current_date + 4);
+
+-- The viewer's own eligibility still gates it, because that is their own state
+-- and says nothing about anybody else.
+select tests.clear_auth();
+delete from public.upcoming_stays where user_id = '00000000-0000-0000-0000-0000000000d1';
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000d1');
+select is(
+  (select count(*)::int from storage.objects
+    where name = '00000000-0000-0000-0000-0000000000a1/new4x9wz2m4vb8ntr6ha1cd5.png'),
+  0,
+  'but the viewer''s own room still has to be open');
+
 -- ------------------------------------------------------------------ cleanup
 select throws_ok(
   $$select count(*) from public.storage_cleanup_queue$$,

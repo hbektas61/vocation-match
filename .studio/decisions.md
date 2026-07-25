@@ -20,6 +20,8 @@ These decisions are owner-approved and must not be silently changed.
 | D-014 | 2026-07-25 | Profile photos will be served from our own storage rather than an arbitrary URL. Until that exists, `photo_url` is capped at 2048 characters and must be https. | A card is shown in discovery without any interaction, so a self-hosted image URL is a passive beacon: the profile owner learns the IP and timing of everyone who merely saw them. On an app whose whole promise is not revealing who is near whom, that is the wrong default. Raised by the security audit. | The storage bucket exists and the client stops accepting arbitrary URLs. |
 | D-013 | 2026-07-25 | Moderation escalates automatically at three distinct reporters (a FLAGGED action), and an actioned report suspends the account, which removes it from every room and stops it messaging. | The MVP needs a safety response that does not depend on someone watching a queue in real time. | Volume makes the threshold noisy in either direction. |
 
+| D-016 | 2026-07-25 | A repeat swipe, and a photo read, never depend on where the other person is at that moment. A decision already made is answered from storage; a photo stays visible to someone who was already shown the card, whether or not its owner is checked in right now. | The pilot-hardening audit found that both endpoints answered from the target's *live* room eligibility, and a user id is public to everyone who has seen a card. Polling either one told you the moment a specific person arrived near the hotel and the moment they left — a live presence feed on someone who, in the swipe case, you had already been removed from the deck of. That is the behaviour D-005 exists to prevent, and it also broke D-012: a retry after a dropped response failed if the other person had moved in between. | Never loosen without a privacy review. |
+
 ## Open owner decisions
 
 - **Should the Upcoming room require overlapping stay dates?** Today it does
@@ -29,8 +31,18 @@ These decisions are owner-approved and must not be silently changed.
   and pool density is the thing most likely to make the first hotel feel dead.
   Left broad on purpose; one `where` clause in `app.room_eligible` changes it.
 - **Suspension is per account, not per person.** A suspended user can sign up
-  again with another email. Closing that needs device or phone signals, which
-  is a bigger privacy decision than the MVP should make on its own.
+  again with another email — and, since H2, can delete the suspended account
+  first, so nothing is even left behind. Closing that needs device or phone
+  signals, which is a bigger privacy decision than the MVP should make on its
+  own. Worth sizing honestly before the pilot: at one hotel with tens of
+  people, the friction to come back is "use a different email", which is close
+  to none.
+- **A coordinated pile-on can force a moderation flag.** Three distinct
+  reporters raise a `FLAGGED` row automatically (D-013), and three disposable
+  addresses are not hard to get. What it cannot do is suspend anyone —
+  `resolve_report` is service_role only, so a human still stands between the
+  flag and any consequence. The flag is queue priority, not a ban. Whoever
+  watches the queue during the pilot should know it is a lever.
 - Final brand: Vocation Match or Vacation Match.
 - First pilot city and hotels.
 - Whether existing chats expire after the trip.

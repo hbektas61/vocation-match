@@ -495,3 +495,91 @@ Handoff:
 - Recommended next agent: `project-orchestrator` for H4 — the pilot-hardening pass
   over security, privacy, abuse resistance, accessibility, lifecycle, offline,
   migration replay, contract drift, dependencies, performance, and documentation.
+
+## 2026-07-25 — H4 the pilot-hardening pass
+
+Handoff:
+- Date: 2026-07-25
+- From agent: studio-autopilot (`project-orchestrator`, with `security-auditor`,
+  `accessibility-auditor` and `performance-profiler` running the three passes
+  that needed an independent reader)
+- To agent: the owner. Everything left needs hardware, a hosted project, or a
+  real mailbox.
+- What I did: one pass per dimension, each producing a fix or a written reason
+  it needed none.
+- The findings worth remembering:
+  - **A live presence oracle on a named person, in two places (CRITICAL).** Both
+    `swipe()` and the photo read answered from the *target's* room eligibility
+    at that moment. A user id is public to everyone who has seen a card, so
+    either one could be polled: it said "not in this room" while somebody's
+    proximity check was stale and stopped saying it the instant they checked in
+    near the hotel. The swipe version worked on people the deck had deliberately
+    stopped showing you — someone you passed over got a feed on your arrivals.
+    The photo version needed no swipe at all, wrote nothing, and
+    `createSignedUrls` takes an array, so one request could watch a list.
+    Fixed in `20260725002100` and `20260725002200`: a decision already made is
+    answered from storage, and a photo read no longer depends on where its owner
+    is. Recorded as D-016.
+  - **The same line also broke D-012.** "A repeat swipe is a no-op that returns
+    the existing outcome" is what makes the endpoint safe to retry over a flaky
+    hotel connection — and it raised 42501 instead if the other person had moved
+    in between. The existing idempotency test could not have caught it: it kept
+    the target eligible throughout, which is the case that works either way.
+  - **`swipe` and `discovery_feed` had no rate limit at all**, which is what made
+    polling practical rather than theoretical. Both have one now, counted only
+    when there is new work to do, so a retry over a bad connection is free.
+  - **The discovery deck's dominant scan was bounded by the wrong thing.**
+    `user_active_hotel` holds one row per user forever, so filtering it by hotel
+    was a sequential scan over lifetime signups across every hotel. Measured at
+    25x cost growth for the same 20 cards. One index, and a smoke check that
+    fails on the plan shape rather than on a laptop's wall clock.
+  - **Four accessibility defects of the same shape as the ones R-004 fixed**: a
+    screen replacing itself in place with nothing announced, a resend silent on
+    success, a delete warning where only the last of three sentences was spoken,
+    and inbox rows collapsing the preview and the closed-conversation caption
+    into a label that named only the person.
+  - **Nothing had a request timeout.** A connection that is accepted and then
+    goes quiet left every busy button disabled forever.
+  - **A lapsed session left the app looking signed in**, with every request
+    failing and the failures reported as "email or password is incorrect".
+  - **33 high dependency advisories**, all one transitive chain, closed by an
+    override. The remaining one is written down with the reason it cannot reach
+    a phone rather than silenced.
+  - **The migrations had only ever been applied one way.** Now applied both ways
+    and compared — schema, grants and policies.
+  - **The storage cleanup queue had no way to be drained.** It has a contract
+    now; the worker that uses it needs the service-role key and so lives outside
+    this repository, with the runbook in `docs/hosted-setup.md`.
+- What needed no change, and why: no grant drift anywhere (every `add column`
+  against a table with a narrow grant restates it, and the baseline suite fails
+  if a table-wide DELETE reappears); no coordinate, distance, birthdate or email
+  crosses the user boundary; no analytics SDK and no logging in `src/`; no
+  secret anywhere; the copy promises nothing the system does not deliver, which
+  is now an executable check rather than a rule in a document
+  (`mobile/src/__tests__/trustCopy.test.ts`).
+- Verification: `bash scripts/check.sh` — auth configuration, dependency gate,
+  334 pgTAP assertions across 15 SQL suites, 14 concurrency checks, the
+  performance smoke check, the client/database contract check, the
+  migration-replay comparison, `tsc`, `eslint --max-warnings 0`, 216 jest tests,
+  the web bundle. Four of the new checks are negative-controlled: breaking the
+  storage read policy, the migration replay, the dependency threshold or the
+  discovery index each turns its check red.
+- Risks / blockers, all external:
+  - **D-015 stands.** Nothing has run on a device or a simulator. The EXIF bytes,
+    the keychain, the permission dialogs, whether an announcement is audible,
+    and whether a ten-second deadline behaves the same on a radio as on a
+    laptop are all unverified. `.studio/device-readiness.md` lists them.
+  - **S-003 stands for the hosted half.** Email confirmation, the mail rate
+    limit and the CAPTCHA are dashboard settings that do not travel with the
+    migrations, and nothing here can confirm they were set or that they stay
+    set. `docs/hosted-setup.md` says what to do.
+  - No confirmation email has ever been sent, and no signed URL has ever been
+    minted by a real storage service.
+  - `storage_cleanup_queue` still has no worker running against it, so a deleted
+    photo is unreadable immediately and its bytes are still there.
+  - Two owner decisions are now sized rather than only noted: a suspended
+    account can delete itself and sign up again with another email, and three
+    disposable addresses can force a moderation flag — which is queue priority,
+    not a ban, because a human still has to action it.
+- Recommended next agent: none. The next useful step is a device and a hosted
+  project, both of which are owner actions.
