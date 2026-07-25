@@ -136,6 +136,11 @@ if ! VOCATION_DB_CONTAINER="$CONTAINER" VOCATION_DB_NAME="$DB" bash "$SUPA_DIR/t
   failed=1
 fi
 
+log "running performance smoke checks"
+if ! VOCATION_DB_CONTAINER="$CONTAINER" VOCATION_DB_NAME="$DB" bash "$SUPA_DIR/tests/perf-smoke.sh"; then
+  failed=1
+fi
+
 if [ "$failed" != "0" ]; then
   log "DATABASE TESTS FAILED"
   exit 1

@@ -37,6 +37,7 @@ run() { # run <label> <command...>
 # Needs nothing at all, so it runs whichever half was asked for: the settings it
 # checks live in a file no migration and no test would otherwise read.
 run "auth configuration" node "$ROOT/scripts/verify-auth-config.js"
+run "dependency health"   node "$ROOT/scripts/check-dependencies.js"
 
 if [ "$RUN_DB" = "1" ]; then
   run "database — migrations, RLS, pgTAP, concurrency" bash "$ROOT/supabase/scripts/db-test.sh"
@@ -44,6 +45,8 @@ if [ "$RUN_DB" = "1" ]; then
   # the client and the SQL drifting apart. Needs the container the step above
   # leaves running.
   run "client ↔ database contract" node "$ROOT/scripts/verify-api-contract.js"
+  # Its own two containers, so it does not disturb the one above.
+  run "migration replay — fresh vs stepped" bash "$ROOT/scripts/verify-migration-replay.sh"
 fi
 
 if [ "$RUN_MOBILE" = "1" ]; then

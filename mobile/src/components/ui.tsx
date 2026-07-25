@@ -181,13 +181,19 @@ export function EmptyState({ message }: { message: string }) {
 }
 
 /**
- * An inline status or error banner.
+ * An inline status banner.
  *
  * `accessibilityLiveRegion` is Android-only, so on iOS the banner appears and
  * nothing is spoken — a failed sign-in, a refused swipe, or a denied location
  * check would be a completely silent failure for a VoiceOver user. The explicit
- * announcement below is what makes errors audible on both platforms, and it
- * lives here rather than at each call site so no screen can forget it.
+ * announcement below is what makes it audible on both platforms, and it lives
+ * here rather than at each call site so no screen can forget it.
+ *
+ * `success` announces for the same reason `error` does, and it exists because
+ * the reverse gap is just as bad: tapping "send the email again", hearing
+ * "Sending…", and then hearing nothing at all is indistinguishable from the
+ * button having done nothing. `info` stays silent — it is for standing text
+ * that was already there when the screen appeared.
  */
 export function Notice({
   message,
@@ -195,25 +201,49 @@ export function Notice({
   testID,
 }: {
   message: string;
-  tone?: 'info' | 'error';
+  tone?: 'info' | 'error' | 'success';
   testID?: string;
 }) {
+  const announced = tone === 'error' || tone === 'success';
+
   useEffect(() => {
-    if (tone === 'error' && message) {
+    if (announced && message) {
       AccessibilityInfo.announceForAccessibility(message);
     }
-  }, [tone, message]);
+  }, [announced, message]);
 
   return (
     <View
-      style={[styles.notice, tone === 'error' && styles.noticeError]}
+      style={[
+        styles.notice,
+        tone === 'error' && styles.noticeError,
+        tone === 'success' && styles.noticeSuccess,
+      ]}
       testID={testID}
       accessibilityRole={tone === 'error' ? 'alert' : 'text'}
-      accessibilityLiveRegion={tone === 'error' ? 'polite' : 'none'}
+      accessibilityLiveRegion={announced ? 'polite' : 'none'}
     >
       <Text style={[styles.body, tone === 'error' && styles.noticeErrorText]}>{message}</Text>
     </View>
   );
+}
+
+/**
+ * Speaks a sentence when a screen replaces its own content in place.
+ *
+ * A navigation push resets the screen-reader cursor; a conditional re-render
+ * does not. So swapping the sign-up form for "check your email" leaves a
+ * VoiceOver user pointing at whatever now occupies that position, with nothing
+ * said — they have to re-explore the screen to find out the tap worked. This is
+ * the same mechanism `Notice` uses for errors, exposed for the case where the
+ * thing that changed is the whole screen rather than a banner.
+ */
+export function useScreenChangeAnnouncement(message: string | null): void {
+  useEffect(() => {
+    if (message) {
+      AccessibilityInfo.announceForAccessibility(message);
+    }
+  }, [message]);
 }
 
 /**
@@ -362,5 +392,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   noticeError: { backgroundColor: '#FBEAE9' },
+  noticeSuccess: { backgroundColor: color.badgeHereNow },
   noticeErrorText: { color: color.danger },
 });

@@ -47,5 +47,8 @@
       "<rootDir>/jest.setup.js"
     ]
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "brace-expansion": "^5.0.8"
+  }
 }

@@ -176,10 +176,11 @@ export function SettingsScreen() {
             <Body>{COPY.deleteAccount.whatStays}</Body>
             {/* `error` tone, not `info`: only that tone is announced by a
                 screen reader (see `Notice`). Someone using VoiceOver can reach
-                the delete button without linearly reading the paragraphs above
-                it, and this is the one sentence they must not miss. */}
+                the delete button without their cursor ever passing over the
+                paragraphs above it, so all three sentences are announced
+                together rather than only the last one. */}
             <Notice
-              message={COPY.deleteAccount.noUndo}
+              message={`${COPY.deleteAccount.noUndo} ${COPY.deleteAccount.whatGoes} ${COPY.deleteAccount.whatStays}`}
               tone="error"
               testID="delete-account-warning"
             />

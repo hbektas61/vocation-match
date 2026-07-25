@@ -95,7 +95,7 @@ export function toApiError(error: PostgresLikeError | null | undefined, fallback
   if (code === '54000' || error?.status === 429) {
     return new ApiError('RATE_LIMITED', message);
   }
-  if (/network|fetch failed|timeout/i.test(message)) {
+  if (/network|fetch failed|timed out|timeout|aborted/i.test(message)) {
     return new ApiError('NETWORK', 'No connection. Try again.');
   }
   return new ApiError('UNKNOWN', message);
@@ -118,6 +118,47 @@ interface ProfileRow {
  */
 const SESSION_STORAGE_KEY = 'vocation-match-auth-token';
 
+/**
+ * How long any single request may take before it is given up on.
+ *
+ * Nothing in this app had a timeout. On a hotel wifi that accepts a connection
+ * and then stops answering — which is most of them, some of the time — a
+ * request hangs until the OS gives up, which can be minutes. Every screen that
+ * disables its button while work is in flight then stays disabled: the
+ * deletion card sits on "Deleting…" with no way out, the photo picker on
+ * "Uploading…", the swipe buttons greyed. A timeout turns all of those into an
+ * error the person can act on.
+ *
+ * Ten seconds is long enough for a slow upload to have started streaming and
+ * short enough that nobody sits looking at a dead screen.
+ */
+const REQUEST_TIMEOUT_MS = 10_000;
+
+/**
+ * `fetch` with a deadline. The abort surfaces as a network error, which
+ * `toApiError` already maps to "No connection. Try again." — the same thing the
+ * person would be told if the request had failed outright, which is the honest
+ * description of what happened.
+ */
+function fetchWithTimeout(timeoutMs: number): typeof fetch {
+  return async (input, init) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    // A caller's own signal still wins: supabase-js passes one for realtime.
+    init?.signal?.addEventListener?.('abort', () => controller.abort());
+    try {
+      return await fetch(input, { ...init, signal: controller.signal });
+    } catch (error) {
+      if (controller.signal.aborted && !init?.signal?.aborted) {
+        throw new Error('Request timed out — no connection.');
+      }
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+}
+
 export class SupabaseApi implements VocationApi {
   private readonly client: SupabaseClient;
   private readonly storage: SessionStorage;
@@ -125,6 +166,7 @@ export class SupabaseApi implements VocationApi {
   constructor(config: BackendConfig, storage: SessionStorage = createSessionStorage()) {
     this.storage = storage;
     this.client = createClient(config.url, config.anonKey, {
+      global: { fetch: fetchWithTimeout(REQUEST_TIMEOUT_MS) },
       auth: {
         storage,
         storageKey: SESSION_STORAGE_KEY,

@@ -20,6 +20,17 @@ import type { RootStackParamList } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
 
+/** Everything a sighted person sees in one row, in the order they see it. */
+function inboxRowLabel(match: MatchSummary): string {
+  const parts = [match.displayName];
+  if (match.unmatchedAt !== null) {
+    parts.push(COPY.inbox.closedLabel);
+  }
+  parts.push(match.lastMessageBody ?? COPY.inbox.sayHelloPreview);
+  parts.push('Open chat');
+  return parts.join('. ');
+}
+
 export function InboxScreen() {
   const { dispatch } = useAppStore();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -65,7 +76,12 @@ export function InboxScreen() {
           <Pressable
             key={match.matchId}
             accessibilityRole="button"
-            accessibilityLabel={`Open chat with ${match.displayName}`}
+            // A Pressable is accessible by default, which collapses everything
+            // inside it into this one label — so the closed-conversation
+            // caption, the message preview and the avatar are all read only if
+            // they are named here. Without that, every row in the inbox sounds
+            // identical apart from the name.
+            accessibilityLabel={inboxRowLabel(match)}
             onPress={() => navigation.navigate('Chat', { matchId: match.matchId })}
             testID={`inbox-${match.matchId}`}
           >

@@ -94,11 +94,26 @@ for (const line of query(`
   catalog.set(name, args);
 }
 
+// A function that exists but is not executable by the client role fails only
+// at runtime, against a real project, as a 42501 nobody sees in a test.
+const executable = new Set(
+  query(`
+    select p.proname
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and has_function_privilege('authenticated', p.oid, 'execute')
+  `).split('\n').filter(Boolean),
+);
+
 for (const call of rpcCalls) {
   const declared = catalog.get(call.name);
   if (!declared) {
     problems.push(`rpc('${call.name}') does not exist in the database`);
     continue;
+  }
+  if (!executable.has(call.name)) {
+    problems.push(`rpc('${call.name}') exists but authenticated may not execute it`);
   }
   const unknown = call.args.filter((a) => !declared.includes(a));
   if (unknown.length) {

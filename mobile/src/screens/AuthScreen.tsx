@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
 
-import { Body, Button, Caption, Field, Gap, Notice, Screen, Title } from '../components/ui';
+import {
+  Body,
+  Button,
+  Caption,
+  Field,
+  Gap,
+  Notice,
+  Screen,
+  Title,
+  useScreenChangeAnnouncement,
+} from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, FakeApi, getApi, hasBackendConfig } from '../data';
 import { toDomainProfile } from '../state/appReducer';
@@ -22,8 +32,24 @@ export function AuthScreen() {
    * a sign-in the server refuses for that reason.
    */
   const [awaitingConfirmation, setAwaitingConfirmation] = useState<string | null>(null);
+  /**
+   * Which way this screen was reached. A sign-up really did send an email; a
+   * refused sign-in did not, and telling someone "we sent a link" when nothing
+   * was sent is the kind of small lie that costs an hour of waiting.
+   */
+  const [confirmReason, setConfirmReason] = useState<'signed-up' | 'not-confirmed'>('signed-up');
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
+
+  // The form is replaced in place rather than pushed, so nothing resets the
+  // screen-reader cursor and nothing would otherwise be said at all.
+  useScreenChangeAnnouncement(
+    awaitingConfirmation
+      ? `${COPY.confirmEmail.title}. ${
+          confirmReason === 'signed-up' ? COPY.confirmEmail.body : COPY.confirmEmail.notConfirmedYet
+        }`
+      : null,
+  );
 
   const canSubmit = !submitting && email.trim().length > 0 && password.length > 0;
 
@@ -38,6 +64,7 @@ export function AuthScreen() {
         if (result.status === 'CONFIRMATION_REQUIRED') {
           // Not a failure. This is what a correctly configured project answers
           // to every successful sign-up.
+          setConfirmReason('signed-up');
           setAwaitingConfirmation(result.email);
           return;
         }
@@ -56,6 +83,9 @@ export function AuthScreen() {
       });
     } catch (err) {
       if (err instanceof ApiError && err.code === 'EMAIL_NOT_CONFIRMED') {
+        // Nothing was sent this time — the account has simply never been
+        // confirmed. The resend button is what sends one.
+        setConfirmReason('not-confirmed');
         setAwaitingConfirmation(email.trim());
         return;
       }
@@ -99,10 +129,16 @@ export function AuthScreen() {
     return (
       <Screen testID="screen-confirm-email">
         <Title>{COPY.confirmEmail.title}</Title>
-        <Body>{COPY.confirmEmail.body}</Body>
+        <Body>
+          {confirmReason === 'signed-up'
+            ? COPY.confirmEmail.body
+            : COPY.confirmEmail.notConfirmedYet}
+        </Body>
         <Body>{awaitingConfirmation}</Body>
         {error ? <Notice message={error} tone="error" testID="confirm-error" /> : null}
-        {resent ? <Notice message={COPY.confirmEmail.resent} testID="confirm-resent" /> : null}
+        {resent ? (
+          <Notice message={COPY.confirmEmail.resent} tone="success" testID="confirm-resent" />
+        ) : null}
         <Gap size="sm" />
         <Button
           label={resending ? COPY.confirmEmail.resending : COPY.confirmEmail.resendButton}

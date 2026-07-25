@@ -68,6 +68,7 @@ describe('critical flow', () => {
     await expect(getApi().getMessages(summary.matchId)).resolves.toEqual([
       expect.objectContaining({ body: 'Merhaba!' }),
     ]);
+
   });
 
   it('can report and block from the discovery deck before any match exists', async () => {
@@ -182,6 +183,31 @@ describe('settings and blocking', () => {
     await fireEvent.press(await screen.findByTestId('unblock-cand-derya'));
 
     expect(await screen.findByText('You have not blocked anyone.')).toBeTruthy();
+  });
+});
+
+/**
+ * A row in the inbox is one `Pressable`, and React Native collapses everything
+ * inside an accessible view into that view's label. So the message preview and
+ * the closed-conversation caption are read only if the label names them —
+ * otherwise every row in the inbox sounds identical apart from the person's
+ * name, while a sighted user sees three different things.
+ */
+describe('the inbox for someone who cannot see it', () => {
+  it('names the person, the preview, and what the row does', async () => {
+    await onboardAndActivateHotel();
+    await checkInAtHotel();
+    await fireEvent.press(await screen.findByText('Discovery'));
+    await fireEvent.press(await screen.findByTestId('swipe-like'));
+    await fireEvent.press(await screen.findByTestId('match-keep-browsing'));
+
+    await fireEvent.press(await screen.findByText('Inbox'));
+    const [summary] = await getApi().getMatches();
+    const row = await screen.findByTestId(`inbox-${summary.matchId}`);
+
+    expect(row.props.accessibilityLabel).toContain('Derya');
+    expect(row.props.accessibilityLabel).toContain(COPY.inbox.sayHelloPreview);
+    expect(row.props.accessibilityLabel).toContain('Open chat');
   });
 });
 

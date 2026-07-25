@@ -8,6 +8,7 @@ import {
   type AppAction,
   type AppState,
 } from './appReducer';
+import { useSessionWatch } from './useSessionWatch';
 
 interface AppStoreValue {
   state: AppState;
@@ -45,6 +46,10 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   }, []);
+
+  // A session can lapse, or its account be deleted from another device, while
+  // the app sits in the background trusting the answer it got at start-up.
+  useSessionWatch(state.session !== null, dispatch);
 
   const value = useMemo(() => ({ state, dispatch }), [state]);
   return <AppStoreContext.Provider value={value}>{children}</AppStoreContext.Provider>;
