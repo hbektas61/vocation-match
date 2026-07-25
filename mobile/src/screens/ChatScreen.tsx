@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { nowMs } from '../clock';
 import { Body, Button, Field, Notice, Screen } from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type ChatMessage } from '../data';
 import type { RootScreenProps } from '../navigation/types';
-import { color, radius, spacing } from '../theme';
+import { color, font, fontFamily, radius, spacing } from '../theme';
 import { useAppStore } from '../state/AppStore';
 
 export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
@@ -142,7 +142,11 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   };
 
   return (
-    <Screen testID="screen-chat">
+    <Screen testID="screen-chat" scroll={false}>
+      {/* The composer stays put and the conversation moves under it. It used
+          to scroll away with the messages, so on a real conversation the box
+          you type into was somewhere down the page. */}
+      <ScrollView contentContainerStyle={styles.thread} keyboardShouldPersistTaps="handled">
       {loadError ? <Notice message={loadError} tone="error" testID="chat-load-error" /> : null}
       {messages === null ? (
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="chat-loading" />
@@ -174,58 +178,88 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
         ))
       )}
 
-      {closed ? <Notice message={COPY.chat.closedNotice} testID="chat-closed" /> : null}
-      {sendError ? <Notice message={sendError} tone="error" testID="chat-send-error" /> : null}
+        {closed ? <Notice message={COPY.chat.closedNotice} testID="chat-closed" /> : null}
+        {sendError ? <Notice message={sendError} tone="error" testID="chat-send-error" /> : null}
+      </ScrollView>
 
-      {!closed ? (
-        <>
-          <Field
-            label={`${COPY.chat.messageLabel} ${match?.displayName ?? 'your match'}`}
-            value={draft}
-            onChangeText={setDraft}
-            placeholder={COPY.chat.messagePlaceholder}
-            editable={!sending}
-            testID="chat-input"
-          />
-          <Button
-            label={sending ? COPY.chat.sendingButton : COPY.chat.sendButton}
-            busy={sending}
-            onPress={send}
-            disabled={!draft.trim() || sending}
-            testID="chat-send"
-          />
-          <Button
-            label={COPY.chat.unmatchButton}
-            variant="secondary"
-            onPress={unmatch}
-            testID="chat-unmatch"
-          />
-        </>
-      ) : null}
-      <Button
-        label={COPY.chat.reportBlockButton}
-        variant="danger"
-        onPress={() =>
-          navigation.navigate('ReportBlock', {
-            userId: match.otherUserId,
-            displayName: match.displayName,
-            matchId: match.matchId,
-          })
-        }
-        testID="chat-report-block"
-      />
+      <View style={styles.footer}>
+        {!closed ? (
+          <View style={styles.composer}>
+            <View style={styles.composerField}>
+              <Field
+                label={`${COPY.chat.messageLabel} ${match.displayName}`}
+                hideLabel
+                value={draft}
+                onChangeText={setDraft}
+                placeholder={COPY.chat.messagePlaceholder}
+                editable={!sending}
+                testID="chat-input"
+              />
+            </View>
+            <Button
+              label={sending ? COPY.chat.sendingButton : COPY.chat.sendButton}
+              busy={sending}
+              onPress={send}
+              disabled={!draft.trim() || sending}
+              testID="chat-send"
+            />
+          </View>
+        ) : null}
+        {/* Ending a conversation and reporting someone are both available and
+            neither is the loudest thing here. */}
+        <View style={styles.footerActions}>
+          {!closed ? (
+            <View style={styles.footerAction}>
+              <Button
+                label={COPY.chat.unmatchButton}
+                variant="secondary"
+                compact
+                onPress={unmatch}
+                testID="chat-unmatch"
+              />
+            </View>
+          ) : null}
+          <View style={styles.footerAction}>
+            <Button
+              label={COPY.chat.reportBlockButton}
+              variant="danger"
+              compact
+              onPress={() =>
+                navigation.navigate('ReportBlock', {
+                  userId: match.otherUserId,
+                  displayName: match.displayName,
+                  matchId: match.matchId,
+                })
+              }
+              testID="chat-report-block"
+            />
+          </View>
+        </View>
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  thread: { padding: spacing.md, gap: spacing.sm, flexGrow: 1 },
+  footer: {
+    padding: spacing.md,
+    gap: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: color.veil,
+    backgroundColor: color.background,
+  },
+  composer: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
+  composerField: { flex: 1 },
+  footerActions: { flexDirection: 'row', gap: spacing.sm },
+  footerAction: { flex: 1 },
   bubble: {
     maxWidth: '80%',
     borderRadius: radius.md,
     padding: spacing.sm,
   },
-  bubbleMine: { alignSelf: 'flex-end', backgroundColor: color.accent },
+  bubbleMine: { alignSelf: 'flex-end', backgroundColor: color.ember },
   bubbleTheirs: { alignSelf: 'flex-start', backgroundColor: color.surface },
-  bubbleTextMine: { color: color.onAccent, fontSize: 16 },
-  bubbleTextTheirs: { color: color.textPrimary, fontSize: 16 },
+  bubbleTextMine: { color: color.onEmber, fontSize: font.body, fontFamily: fontFamily.body },
+  bubbleTextTheirs: { color: color.ink, fontSize: font.body, fontFamily: fontFamily.body },
 });

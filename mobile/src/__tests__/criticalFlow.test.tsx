@@ -179,7 +179,7 @@ describe('settings and blocking', () => {
     await fireEvent.press(await screen.findByTestId('block-confirm'));
 
     await fireEvent.press(await screen.findByText('Settings'));
-    expect(await screen.findByText('Deniz')).toBeTruthy();
+    expect(await screen.findByText(/^Deniz, \d+$/)).toBeTruthy();
     await fireEvent.press(await screen.findByTestId('unblock-cand-derya'));
 
     expect(await screen.findByText('You have not blocked anyone.')).toBeTruthy();

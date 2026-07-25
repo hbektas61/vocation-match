@@ -4,7 +4,17 @@ import React, { useCallback, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 
 import { ProfilePhotoField } from '../components/ProfilePhoto';
-import { Body, Button, Caption, Card, EmptyState, Heading, Notice, Screen, Title } from '../components/ui';
+import {
+  Body,
+  Button,
+  Card,
+  EmptyState,
+  Heading,
+  Notice,
+  Screen,
+  SectionLabel,
+  Title,
+} from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type BlockedUser } from '../data';
 import type { RootStackParamList } from '../navigation/types';
@@ -109,8 +119,8 @@ export function SettingsScreen() {
       <Title>{COPY.settings.title}</Title>
       {state.profile ? (
         <Card testID="settings-profile">
-          <Heading>{state.profile.displayName}</Heading>
-          <Caption>Age {state.profile.age}</Caption>
+          <SectionLabel>{COPY.settings.youLabel}</SectionLabel>
+          <Heading>{`${state.profile.displayName}, ${state.profile.age}`}</Heading>
           {state.profile.bio ? <Body>{state.profile.bio}</Body> : null}
           {/* Until this existed, a name typed wrong during onboarding was
               permanent — on a product where the name is most of what a
@@ -125,7 +135,7 @@ export function SettingsScreen() {
       ) : null}
       {state.profile ? (
         <Card testID="settings-photo">
-          <Heading>{COPY.photo.title}</Heading>
+          <SectionLabel>{COPY.photo.title}</SectionLabel>
           <ProfilePhotoField
             displayName={state.profile.displayName}
             photoPath={state.profile.photoPath ?? null}
@@ -136,7 +146,7 @@ export function SettingsScreen() {
         </Card>
       ) : null}
       <Card>
-        <Heading>{COPY.settings.accountTitle}</Heading>
+        <SectionLabel>{COPY.settings.accountTitle}</SectionLabel>
         <Button
           label={COPY.settings.signOutButton}
           variant="secondary"
@@ -146,13 +156,13 @@ export function SettingsScreen() {
         />
       </Card>
       <Card>
-        <Heading>{COPY.settings.locationTitle}</Heading>
+        <SectionLabel>{COPY.settings.locationTitle}</SectionLabel>
         <Body>{COPY.settings.locationNote}</Body>
         <Body>{COPY.trust.noExactLocation}</Body>
         <Body>{COPY.trust.oneHotel}</Body>
       </Card>
       <Card testID="settings-blocked">
-        <Heading>{COPY.settings.blockedTitle}</Heading>
+        <SectionLabel>{COPY.settings.blockedTitle}</SectionLabel>
         {blockedError ? <Notice message={blockedError} tone="error" testID="blocked-error" /> : null}
         {blocked === null ? (
           <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="blocked-loading" />
@@ -174,7 +184,7 @@ export function SettingsScreen() {
         )}
       </Card>
       <Card testID="settings-delete-account">
-        <Heading>{COPY.deleteAccount.title}</Heading>
+        <SectionLabel>{COPY.deleteAccount.title}</SectionLabel>
         <Body>{COPY.deleteAccount.intro}</Body>
         {deleteError ? (
           <Notice message={deleteError} tone="error" testID="delete-account-error" />

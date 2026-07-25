@@ -1,13 +1,12 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import {
   Avatar,
   Body,
   Caption,
-  Card,
   EmptyState,
   Heading,
   Notice,
@@ -19,6 +18,7 @@ import { ApiError, getApi, type MatchSummary } from '../data';
 import type { RootStackParamList } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
+import { spacing } from '../theme';
 
 /** Everything a sighted person sees in one row, in the order they see it. */
 function inboxRowLabel(match: MatchSummary): string {
@@ -85,21 +85,31 @@ export function InboxScreen() {
             onPress={() => navigation.navigate('Chat', { matchId: match.matchId })}
             testID={`inbox-${match.matchId}`}
           >
-            <Card>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <Avatar
-                  url={match.photoPath ? photoUrls[match.photoPath] ?? null : null}
-                  name={match.displayName}
-                  testID={`inbox-photo-${match.matchId}`}
-                />
+            <View style={styles.row}>
+              <Avatar
+                url={match.photoPath ? photoUrls[match.photoPath] ?? null : null}
+                name={match.displayName}
+                testID={`inbox-photo-${match.matchId}`}
+              />
+              <View style={styles.rowText}>
                 <Heading>{match.displayName}</Heading>
+                {match.unmatchedAt !== null ? <Caption>{COPY.inbox.closedLabel}</Caption> : null}
+                <Body>{match.lastMessageBody ?? COPY.inbox.sayHelloPreview}</Body>
               </View>
-              {match.unmatchedAt !== null ? <Caption>{COPY.inbox.closedLabel}</Caption> : null}
-              <Body>{match.lastMessageBody ?? COPY.inbox.sayHelloPreview}</Body>
-            </Card>
+            </View>
           </Pressable>
         ))
       )}
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  rowText: { flex: 1, gap: spacing.xs },
+});

@@ -48,7 +48,7 @@ describe('editing a profile after onboarding', () => {
       expect((await getApi().getOwnProfile())?.displayName).toBe('Deniz');
     });
     // Back on Settings, reading from the store rather than from the form.
-    expect(await screen.findByText('Deniz')).toBeTruthy();
+    expect(await screen.findByText(/^Deniz, \d+$/)).toBeTruthy();
     expect(screen.getByText('Swims at sunrise.')).toBeTruthy();
   });
 

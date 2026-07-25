@@ -1,25 +1,28 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import {
-  Avatar,
-  Badge,
+  ActionButton,
   Body,
   Button,
-  Card,
+  Display,
   EmptyState,
   Gap,
-  Heading,
   Notice,
+  PhotoFrame,
+  RoomRibbon,
+  Rule,
   Screen,
+  SectionLabel,
   Title,
 } from '../components/ui';
 import { nowMs } from '../clock';
-import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
+import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type CandidateCard, type RoomKey, type RoomStatus } from '../data';
 import type { RootStackParamList } from '../navigation/types';
+import { spacing } from '../theme';
 import { earliestRoomExpiry } from '../state/roomSchedule';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
@@ -176,74 +179,122 @@ export function DiscoveryScreen() {
   };
 
   return (
-    <Screen testID="screen-discovery">
-      <Title>{COPY_FOR.discoveryTitle(hotel.name)}</Title>
-      {eligibleRooms.length > 1 ? (
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          {eligibleRooms.map((r) => (
-            <View key={r} style={{ flex: 1 }}>
-              <Button
-                label={ROOM_LABEL[r]}
-                variant={r === room ? 'primary' : 'secondary'}
-                onPress={() => setRoom(r)}
-                testID={`room-${r}`}
+    <Screen testID="screen-discovery" bleed>
+      {/* The photo runs to the edges and the name sits on it, so the first
+          thing on screen is a person rather than a page header. */}
+      <PhotoFrame
+        url={candidate && candidate.photoPath ? photoUrls[candidate.photoPath] ?? null : null}
+        name={candidate?.displayName ?? hotel.name}
+        testID={candidate ? `candidate-photo-${candidate.userId}` : 'deck-empty-photo'}
+      >
+        {candidate ? (
+          <>
+            <RoomRibbon room={room} hotelName={hotel.name} onPhoto testID="candidate-room" />
+            <Display>{`${candidate.displayName}, ${candidate.age}`}</Display>
+          </>
+        ) : null}
+      </PhotoFrame>
+
+      <View style={styles.body}>
+        {eligibleRooms.length > 1 ? (
+          <View style={styles.roomSwitch}>
+            {eligibleRooms.map((r) => (
+              <View key={r} style={styles.roomSwitchItem}>
+                <Button
+                  label={ROOM_LABEL[r]}
+                  variant={r === room ? 'primary' : 'secondary'}
+                  onPress={() => setRoom(r)}
+                  testID={`room-${r}`}
+                />
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {deckError ? <Notice message={deckError} tone="error" testID="discovery-error" /> : null}
+        {actionError ? (
+          <Notice message={actionError} tone="error" testID="discovery-action-error" />
+        ) : null}
+
+        {deck === null ? (
+          <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="deck-loading" />
+        ) : candidate ? (
+          <View style={styles.profile} testID={`candidate-${candidate.userId}`}>
+            {candidate.bio ? (
+              <View style={styles.section}>
+                <SectionLabel>{COPY.discovery.aboutLabel}</SectionLabel>
+                <Body>{candidate.bio}</Body>
+              </View>
+            ) : null}
+
+            <Rule />
+
+            {/* The section no other dating app has, and the reason this one
+                exists: what the two of you actually have in common right now. */}
+            <View style={styles.section}>
+              <SectionLabel>{COPY.discovery.overlapLabel}</SectionLabel>
+              <Body>
+                {room === 'HERE_NOW'
+                  ? COPY.discovery.overlapHereNow
+                  : COPY.discovery.overlapUpcoming}
+              </Body>
+            </View>
+
+            <Gap size="sm" />
+
+            {/* Bumble's mechanic, and the right one: the decision waits until
+                the end of the profile instead of floating over it. */}
+            <View style={styles.actions}>
+              <ActionButton
+                label={COPY.discovery.passButton}
+                glyph="✕"
+                tone="pass"
+                onPress={() => swipe('PASS')}
+                disabled={busy}
+                testID="swipe-pass"
+              />
+              <ActionButton
+                label={`Like ${candidate.displayName}`}
+                glyph="♥"
+                tone="like"
+                onPress={() => swipe('LIKE')}
+                disabled={busy}
+                testID="swipe-like"
               />
             </View>
-          ))}
-        </View>
-      ) : (
-        <Badge
-          label={room === 'UPCOMING' ? COPY.upcoming.statusBadge : COPY.hereNow.statusBadge}
-          tone={room === 'UPCOMING' ? 'upcoming' : 'hereNow'}
-        />
-      )}
-      {deckError ? <Notice message={deckError} tone="error" testID="discovery-error" /> : null}
-      {actionError ? <Notice message={actionError} tone="error" testID="discovery-action-error" /> : null}
-      {deck === null ? (
-        <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="deck-loading" />
-      ) : candidate ? (
-        <Card testID={`candidate-${candidate.userId}`}>
-          <Avatar
-            url={candidate.photoPath ? photoUrls[candidate.photoPath] ?? null : null}
-            name={candidate.displayName}
-            size="lg"
-            testID={`candidate-photo-${candidate.userId}`}
-          />
-          <Heading>
-            {candidate.displayName}, {candidate.age}
-          </Heading>
-          {candidate.bio ? <Body>{candidate.bio}</Body> : null}
-          <Gap size="xs" />
-          <Button
-            label={`Like ${candidate.displayName}`}
-            onPress={() => swipe('LIKE')}
-            disabled={busy}
-            testID="swipe-like"
-          />
-          <Button
-            label={COPY.discovery.passButton}
-            variant="secondary"
-            onPress={() => swipe('PASS')}
-            disabled={busy}
-            testID="swipe-pass"
-          />
-          {/* D-008: report/block must be reachable before any match exists. */}
-          <Button
-            label={COPY.discovery.reportBlockButton}
-            variant="danger"
-            onPress={() =>
-              navigation.navigate('ReportBlock', {
-                userId: candidate.userId,
-                displayName: candidate.displayName,
-              })
-            }
-            disabled={busy}
-            testID="discovery-report-block"
-          />
-        </Card>
-      ) : (
-        <EmptyState message={COPY.discovery.emptyDeck} />
-      )}
+
+            {/* D-008: report/block must be reachable before any match exists. */}
+            <Button
+              label={COPY.discovery.reportBlockButton}
+              variant="danger"
+              onPress={() =>
+                navigation.navigate('ReportBlock', {
+                  userId: candidate.userId,
+                  displayName: candidate.displayName,
+                })
+              }
+              disabled={busy}
+              testID="discovery-report-block"
+            />
+          </View>
+        ) : (
+          <EmptyState message={COPY.discovery.emptyDeck} />
+        )}
+      </View>
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  body: { paddingHorizontal: spacing.md, gap: spacing.md },
+  roomSwitch: { flexDirection: 'row', gap: spacing.sm },
+  roomSwitchItem: { flex: 1 },
+  profile: { gap: spacing.md },
+  section: { gap: spacing.sm },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.xl,
+    paddingVertical: spacing.sm,
+  },
+});

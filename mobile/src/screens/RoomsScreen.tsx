@@ -3,7 +3,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 
-import { Badge, Body, Button, Caption, Card, Notice, Screen, Title } from '../components/ui';
+import { Body, Button, Caption, Card, Notice, RoomRibbon, Screen, Title } from '../components/ui';
 import { nowMs } from '../clock';
 import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation } from '../copy';
 import { ApiError, getApi, type RoomStatus } from '../data';
@@ -89,17 +89,18 @@ export function RoomsScreen() {
     <Screen testID="screen-rooms">
       <Title>{COPY_FOR.roomsTitle(hotel.name)}</Title>
       <Card testID="room-upcoming">
-        <Badge label={COPY.upcoming.statusBadge} tone="upcoming" />
+        <RoomRibbon room="UPCOMING" hotelName={hotel.name} />
         <Body>{COPY.upcoming.explainer}</Body>
         {upcomingStatus ? <Caption>{roomStatusExplanation('UPCOMING', upcomingStatus)}</Caption> : null}
         <Button
-          label={upcomingStatus?.eligible ? 'Update stay dates' : 'Declare stay dates'}
+          label={upcomingStatus?.eligible ? COPY.upcoming.updateButton : COPY.upcoming.saveButton}
+          variant={upcomingStatus?.eligible ? 'secondary' : 'primary'}
           onPress={() => navigation.navigate('Upcoming')}
           testID="open-upcoming"
         />
       </Card>
       <Card testID="room-here-now">
-        <Badge label={COPY.hereNow.statusBadge} tone="hereNow" />
+        <RoomRibbon room="HERE_NOW" hotelName={hotel.name} />
         <Body>{COPY.hereNow.explainer}</Body>
         {hereNowStatus ? <Caption>{roomStatusExplanation('HERE_NOW', hereNowStatus)}</Caption> : null}
         {state.locationPermission === 'denied' ? (
@@ -107,6 +108,7 @@ export function RoomsScreen() {
         ) : null}
         <Button
           label={COPY.hereNow.checkButton}
+          variant={hereNowStatus?.eligible ? 'secondary' : 'primary'}
           onPress={() => navigation.navigate('HereNow')}
           testID="open-here-now"
         />

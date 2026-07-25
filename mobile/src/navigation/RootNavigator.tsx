@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import { ActivityIndicator, Text } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 
 import { Body, Screen } from '../components/ui';
 import { COPY } from '../copy';
@@ -20,29 +20,38 @@ import { RoomsScreen } from '../screens/RoomsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { UpcomingScreen } from '../screens/UpcomingScreen';
 import { useAppStore } from '../state/AppStore';
-import { color } from '../theme';
+import { color, fontFamily } from '../theme';
 import type { RootStackParamList, TabParamList } from './types';
+
+/** The tab's own mark: present when focused, a hairline ring when not. */
+function tabMark({ focused }: { focused: boolean }) {
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no"
+      style={{
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginBottom: 2,
+        backgroundColor: focused ? color.ember : 'transparent',
+        borderWidth: focused ? 0 : 1.5,
+        borderColor: color.border,
+      }}
+    />
+  );
+}
+
+/** The pushed screens share the app's warm ground rather than system white. */
+const stackHeader = {
+  headerStyle: { backgroundColor: color.background },
+  headerShadowVisible: false,
+  headerTintColor: color.ink,
+  headerTitleStyle: { fontFamily: fontFamily.displaySemi, fontSize: 18 },
+} as const;
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tabs = createBottomTabNavigator<TabParamList>();
-
-const TAB_ICONS: Record<keyof TabParamList, string> = {
-  Hotel: '🏨',
-  Rooms: '🚪',
-  Discovery: '💚',
-  Inbox: '💬',
-  Settings: '⚙️',
-};
-
-function tabIcon(routeName: keyof TabParamList) {
-  return function TabIcon() {
-    return (
-      <Text accessibilityElementsHidden importantForAccessibility="no">
-        {TAB_ICONS[routeName]}
-      </Text>
-    );
-  };
-}
 
 function BootstrapScreen() {
   return (
@@ -59,12 +68,25 @@ function BootstrapScreen() {
 function MainTabs() {
   return (
     <Tabs.Navigator
-      screenOptions={({ route }) => ({
+      screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: color.accent,
-        tabBarInactiveTintColor: color.textSecondary,
-        tabBarIcon: tabIcon(route.name),
-      })}
+        tabBarActiveTintColor: color.ember,
+        tabBarInactiveTintColor: color.inkMuted,
+        tabBarStyle: {
+          backgroundColor: color.background,
+          borderTopColor: color.veil,
+        },
+        // A mark from the system rather than five emoji, which read as clip art
+        // next to this type and — in the case of the green heart — argued with
+        // the brand. The slot stays occupied: emptying it pushes the label out
+        // of the bar entirely, which is how this was found.
+        tabBarIcon: tabMark,
+        tabBarLabelStyle: {
+          fontFamily: fontFamily.bodySemi,
+          fontSize: 11,
+          letterSpacing: 0.2,
+        },
+      }}
     >
       <Tabs.Screen name="Hotel" component={HotelScreen} />
       <Tabs.Screen name="Rooms" component={RoomsScreen} />
@@ -113,7 +135,7 @@ export function RootNavigator() {
     );
   }
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={stackHeader}>
       <Stack.Screen name="Tabs" component={MainTabs} options={{ headerShown: false }} />
       <Stack.Screen
         name="Upcoming"

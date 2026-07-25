@@ -46,7 +46,9 @@
           "isAndroidBackgroundLocationEnabled": false,
           "isAndroidForegroundServiceEnabled": false
         }
-      ]
+      ],
+      "expo-font",
+      "expo-asset"
     ]
   }
 }

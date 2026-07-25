@@ -190,6 +190,14 @@ export const COPY = {
   discovery: {
     likeButton: 'Like',
     passButton: 'Pass',
+    aboutLabel: 'About',
+    // The section heading for the thing that makes this app not a general
+    // dating app: the two of you are connected to the same hotel.
+    overlapLabel: 'Where you overlap',
+    overlapHereNow:
+      'You are both within 500 m of this hotel right now. Neither of you can see where the other is.',
+    overlapUpcoming:
+      'You have both said you will be staying at this hotel. Nobody was asked for a reservation.',
     reportBlockButton: 'Report or block',
     emptyDeck: 'Nobody new in this room right now. Check back later.',
     notEligible: 'Open a room first: declare an upcoming stay or run a presence check.',
@@ -198,7 +206,7 @@ export const COPY = {
 
   match: {
     title: "It's a match!",
-    body: 'You liked each other. Say hello while you are both connected to this hotel.',
+    body: 'Say hello while you are both connected to this hotel.',
     notAvailable: 'This match is no longer available.',
     keepBrowsing: 'Keep browsing',
   },
@@ -251,6 +259,7 @@ export const COPY = {
 
   settings: {
     title: 'Settings',
+    youLabel: 'You',
     locationTitle: 'Location and privacy',
     locationNote:
       'Vocation Match never tracks you in the background and never shares exact locations.',

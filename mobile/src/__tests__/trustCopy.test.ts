@@ -41,7 +41,7 @@ const sentences = [...allStrings(COPY), ...allStrings(COPY_FOR)];
  * a marketing claim, and an existing one cannot quietly change meaning without
  * being added to this list on purpose.
  */
-const MAY_DENY = new Set(['upcoming.explainer']);
+const MAY_DENY = new Set(['upcoming.explainer', 'discovery.overlapUpcoming']);
 const DENIAL = /\b(nobody|no one|never|not|without|no)\b/i;
 
 function offences(forbidden: RegExp) {
