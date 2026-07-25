@@ -1,5 +1,41 @@
 # Handoffs
 
+## 2026-07-25 — MVP systems program closed; device pass carried forward
+
+Handoff:
+- Date: 2026-07-25
+- From agent: `project-orchestrator`
+- To agent: `mobile-qa-release`, once a device toolchain exists
+- Status: **program closed** at the owner's instruction, with one item carried
+  forward as a named risk rather than done (decision D-015).
+
+What is true: N-001 through N-010 are implemented and verified, gates P0–P5
+are closed, and every finding from the independent code review, security audit,
+and accessibility audit has been fixed. One command reproduces the evidence —
+`scripts/check.sh`: 228 pgTAP assertions across 11 SQL suites, 11 concurrency
+checks racing real connections, the client/database contract check, `tsc`,
+`eslint --max-warnings 0`, the mobile jest suite, and a web bundle. The
+exported bundle was also driven end to end in a real browser, age gate through
+hotel activation, with no console errors.
+
+What is not true, and must not be read as true later: **nothing has run on a
+phone or a simulator.** The build machine has Command Line Tools without Xcode
+and no Android SDK. That leaves untested exactly what a bundle cannot reach —
+the keychain, the location permission dialog and its denial and revocation
+paths, backgrounding and token refresh, offline behaviour, and
+VoiceOver/TalkBack. `.studio/device-readiness.md` is the checklist to run, and
+it is a list of things to do, not a list of things that passed.
+
+Work this off before any pilot with real users. The cheapest route is Expo Go
+on a phone; the fuller one is Xcode or the Android SDK.
+
+Also open, and deliberately: S-001 photo storage (D-014, the current cap is a
+stop-gap against a passive tracking beacon, not a fix), S-003 email
+confirmation on whatever hosted project this ships to, S-004 the match room
+label, and the account-deletion UI required before store submission.
+
+Nothing was deployed, submitted, or published, and no credential is committed.
+
 ## 2026-07-25 — Program blocked on one thing: no device toolchain
 
 Handoff:

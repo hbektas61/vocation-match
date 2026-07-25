@@ -51,8 +51,10 @@ named. Everything still unticked is unticked on purpose.
 ## Quality
 
 - [x] Happy, empty, loading, and error states on every screen that calls the API.
-- [ ] Offline and permission-denied states verified on a device.
-      *Scenarios listed in `.studio/device-readiness.md`.*
+- [ ] Offline and permission-denied states verified on a device. **Deferred to
+      the next phase as an accepted risk (D-015).** *Scenarios listed in
+      `.studio/device-readiness.md`. Nothing here has been observed on real
+      hardware.*
 - [x] Unit and integration tests pass.
       *`scripts/check.sh` — 228 pgTAP assertions plus 11 concurrency checks,
       and the mobile jest suite.*
@@ -60,8 +62,10 @@ named. Everything still unticked is unticked on purpose.
 - [x] The client and the database cannot drift apart unnoticed.
       *`node scripts/verify-api-contract.js`, itself verified against
       deliberate mismatches.*
-- [ ] iOS and Android device checks. *Matrix and scenarios in
-      `.studio/device-readiness.md`; needs hardware.*
+- [ ] iOS and Android device checks. **Deferred to the next phase as an
+      accepted risk (D-015).** *Matrix and scenarios in
+      `.studio/device-readiness.md`. Must be run before any pilot with real
+      users.*
 - [x] Accessibility pass (backlog R-004). *Independent audit; two blockers found
       and fixed in shared components — errors were never announced on iOS, and
       chat bubbles were not accessibility nodes so the sender was never read.

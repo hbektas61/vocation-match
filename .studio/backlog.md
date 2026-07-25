@@ -60,7 +60,7 @@ applied in order, pgTAP suites plus multi-connection concurrency checks.
 
 ## Phase 4 — staging and device readiness
 
-- [~] N-010 End-to-end evidence done; **device test still outstanding.** `supabase/tests/009_end_to_end.sql` walks two
+- [x] N-010 End-to-end evidence done. The **device test is deferred to the next phase as an accepted risk** (decision D-015), not completed — `supabase/tests/009_end_to_end.sql` walks two
       strangers from an empty database to a conversation using only the calls
       the client makes; `scripts/verify-api-contract.js` proves the client and
       the database cannot drift apart unnoticed; `scripts/check.sh` runs
