@@ -18,7 +18,6 @@ LOOP_PROMPT="$(sed -n '1p' .studio/overnight-loop-prompt.md)"
 
 exec /Users/hamibektas/.local/bin/claude \
   --bg \
-  --print \
   --model opus \
   --effort high \
   --permission-mode dontAsk \
