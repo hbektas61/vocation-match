@@ -68,8 +68,13 @@ Use at most 3–5 active specialists. Assign non-overlapping files.
 | P1 Backend foundation | N-001–N-002, auth/profile RLS, typed boundary, checks, review | done |
 | P2 Hotel/presence/discovery | N-003–N-006, server enforcement, checks, review | done |
 | P3 Matching/chat/safety | N-007–N-009, concurrency and abuse checks, review | done |
-| P4 Staging/device readiness | N-010, R-002–R-004 disposition, E2E/device evidence, final review | done — R-001 to R-004 closed, review findings applied; device-only scenarios specified in `.studio/device-readiness.md` because they need hardware |
+| P4 Staging/device readiness | N-010, R-002–R-004 disposition, E2E/device evidence, final review | **not complete.** R-001 to R-004 closed, review findings applied, end-to-end evidence in place — but no build has run on a device or a simulator, and none can here: this machine has Command Line Tools without Xcode and no Android SDK, so there is no simulator or emulator to run. Scenarios are specified in `.studio/device-readiness.md`; running them needs a toolchain the owner installs. |
 | P5 Final handoff | All evidence recorded and production/store work clearly deferred | done |
+
+**The program is not finished.** N-010 is "staging E2E and device test"; the
+E2E half is done and the device half has not run, so P4 is open and the
+completion promise is not true. The blocker is a missing toolchain, not
+unfinished code — see the handoff below.
 
 Evidence, reproducible in one command — `scripts/check.sh`:
 216 pgTAP assertions across 10 SQL suites, 11 concurrency checks racing real

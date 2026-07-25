@@ -60,21 +60,30 @@ applied in order, pgTAP suites plus multi-connection concurrency checks.
 
 ## Phase 4 — staging and device readiness
 
-- [x] N-010 End-to-end evidence. `supabase/tests/009_end_to_end.sql` walks two
+- [~] N-010 End-to-end evidence done; **device test still outstanding.** `supabase/tests/009_end_to_end.sql` walks two
       strangers from an empty database to a conversation using only the calls
       the client makes; `scripts/verify-api-contract.js` proves the client and
       the database cannot drift apart unnoticed; `scripts/check.sh` runs
       everything. Device checks that need real hardware are specified in
-      `.studio/device-readiness.md` — they are listed, not claimed.
+      `.studio/device-readiness.md` — they are listed, not claimed. No build has
+      run on a device or simulator: this machine has Command Line Tools without
+      Xcode and no Android SDK, so there is nothing to run one on. Installing a
+      toolchain is an owner action. The web bundle was loaded in a real browser
+      as a partial substitute — the app boots and the age gate renders with zero
+      console errors — but that exercises none of the keychain, permission
+      dialog, backgrounding, or screen-reader behaviour that matters.
 
 ## Carried from the independent review (2026-07-25)
 
 - [ ] S-001 Serve profile photos from our own storage bucket instead of an
       arbitrary https URL (decision D-014). Until then the length cap is a
       stop-gap, not a fix — the beacon is still possible.
-- [ ] S-002 Rate limiting on `swipe`, `report_user`, `record_presence_check`,
-      `declare_upcoming_stay`, and message inserts. Fine to defer for an
-      invited pilot; not fine for open signup.
+- [x] S-002 Done. Per-user fixed-window counters in `app.rate_limit()`:
+      reporting 10/hour (the tightest, because unlimited reporting is both a
+      way to bury the moderation queue and a way to mass-block), presence
+      checks 30/hour, messages 60/minute. The counters table is readable by
+      nobody — how close you are to a limit is itself useful to someone probing
+      it. `supabase/tests/010_rate_limits.sql`.
 - [ ] S-003 Confirm email confirmation is enabled on whatever hosted project
       this ships to. It is off in `supabase/config.toml` for local development
       only, and that setting does not travel with the migrations.

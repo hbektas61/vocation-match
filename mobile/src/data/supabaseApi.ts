@@ -75,6 +75,11 @@ export function toApiError(error: PostgresLikeError | null | undefined, fallback
   if (error?.status === 422 || /already registered/i.test(message)) {
     return new ApiError('CONFLICT', message);
   }
+  // Doing something too often is worth telling apart from a failure: the user
+  // should wait, not retry immediately or assume something is broken.
+  if (code === '54000' || error?.status === 429) {
+    return new ApiError('RATE_LIMITED', message);
+  }
   if (/network|fetch failed|timeout/i.test(message)) {
     return new ApiError('NETWORK', 'No connection. Try again.');
   }
@@ -328,9 +333,11 @@ export class SupabaseApi implements VocationApi {
   async getMessages(matchId: string, limit = 100): Promise<ChatMessage[]> {
     const { data, error } = await this.client
       .from('messages')
-      .select('id, match_id, sender_id, body, created_at')
+      .select('id, match_id, sender_id, body, created_at, seq')
       .eq('match_id', matchId)
-      .order('created_at', { ascending: true })
+      // `seq`, not `created_at`: two messages in one transaction share a
+      // transaction timestamp, and ordering by it is a coin flip.
+      .order('seq', { ascending: true })
       .limit(limit);
     if (error) {
       throw toApiError(error, 'Could not load this conversation.');
@@ -346,7 +353,7 @@ export class SupabaseApi implements VocationApi {
     const { data, error } = await this.client
       .from('messages')
       .insert({ match_id: matchId, sender_id: session.userId, body: body.trim() })
-      .select('id, match_id, sender_id, body, created_at')
+      .select('id, match_id, sender_id, body, created_at, seq')
       .single();
     if (error || !data) {
       throw toApiError(error, 'Could not send that message.');

@@ -46,6 +46,13 @@ describe('toApiError', () => {
     );
   });
 
+  it('tells "too often" apart from "broken"', () => {
+    expect(
+      toApiError({ code: '54000', message: 'You are doing that too often. Try again later.' }, 'x')
+        .code,
+    ).toBe('RATE_LIMITED');
+  });
+
   it('maps transport failures to NETWORK', () => {
     expect(toApiError({ message: 'TypeError: fetch failed' }, 'x').code).toBe('NETWORK');
   });

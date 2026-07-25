@@ -54,8 +54,8 @@ named. Everything still unticked is unticked on purpose.
 - [ ] Offline and permission-denied states verified on a device.
       *Scenarios listed in `.studio/device-readiness.md`.*
 - [x] Unit and integration tests pass.
-      *`scripts/check.sh` — 216 pgTAP assertions plus 11 concurrency checks,
-      and 141 mobile jest tests across 11 suites.*
+      *`scripts/check.sh` — 228 pgTAP assertions plus 11 concurrency checks,
+      and the mobile jest suite.*
 - [x] Lint and typecheck pass. *`npx eslint . --max-warnings 0`, `npx tsc --noEmit`.*
 - [x] The client and the database cannot drift apart unnoticed.
       *`node scripts/verify-api-contract.js`, itself verified against

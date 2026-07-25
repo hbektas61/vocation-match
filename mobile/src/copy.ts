@@ -217,6 +217,7 @@ export const COPY = {
     invalidInput: 'Please check the details you entered.',
     notFound: 'We could not find that.',
     conflict: 'That email is already registered.',
+    rateLimited: 'You are doing that too often. Wait a moment and try again.',
     network: 'No connection. Try again.',
     suspended: 'Your account is suspended. You can still block, report, and read your conversations.',
     unknown: 'Something went wrong. Try again.',
@@ -251,6 +252,8 @@ export function apiErrorMessage(code: ApiErrorCode): string {
       return COPY.errors.notFound;
     case 'CONFLICT':
       return COPY.errors.conflict;
+    case 'RATE_LIMITED':
+      return COPY.errors.rateLimited;
     case 'NETWORK':
       return COPY.errors.network;
     case 'UNKNOWN':

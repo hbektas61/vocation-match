@@ -60,10 +60,12 @@ select is(
   'the conversation persists'
 );
 
+-- Both messages share this transaction's `now()`, so ordering by created_at
+-- would be a coin flip. The inbox has to use the message sequence.
 select is(
   (select last_message_body from public.my_matches()),
   'Hi back',
-  'the inbox shows the latest message'
+  'the inbox shows the latest message even when both share a timestamp'
 );
 
 -- ------------------------------------------------------------ impersonation

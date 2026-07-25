@@ -19,6 +19,7 @@ export type ApiErrorCode =
   | 'INVALID_INPUT'
   | 'NOT_FOUND'
   | 'CONFLICT'
+  | 'RATE_LIMITED'
   | 'NETWORK'
   | 'UNKNOWN';
 
