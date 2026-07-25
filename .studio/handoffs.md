@@ -671,3 +671,24 @@ Handoff:
   335 pgTAP assertions across 15 SQL suites, 13 concurrency checks, performance
   smoke, client/database contract, migration replay, `tsc`,
   `eslint --max-warnings 0`, 223 jest tests, web bundle.
+
+## 2026-07-25 — hosted staging provisioned
+
+Handoff:
+- Date: 2026-07-25
+- From: owner + Codex
+- Project: Supabase `vocation-match-staging`
+  (`ftdqkhkeluokpdghzubp`, Frankfurt).
+- Applied: every migration through `20260725002300`; `supabase migration list`
+  reports the local and remote histories as identical.
+- Hosted Auth verified through the Management API: email confirmation on,
+  `vocationmatch://` site and redirect URL, minimum password length 8,
+  refresh-token rotation on, secure password changes on, OTP length 8, and
+  hosted email rate limit 2/hour.
+- Client connection: ignored `mobile/.env.local` contains only the project URL
+  and public publishable key. Auth gateway smoke returns 200. An unauthenticated
+  `hotels` read returns the expected permission denial.
+- Security: legacy JWT-based API keys are disabled; no backend key is stored in
+  the repository. Backend workers must use a dedicated `sb_secret_...` key.
+- Still external: CAPTCHA provider/secret, scheduled storage-cleanup worker,
+  real mailbox confirmation-link pass, and D-015 real-device matrix.

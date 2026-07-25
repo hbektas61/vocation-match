@@ -9,6 +9,24 @@ and is still wrong.
 This is owner work. No credential, key, or password belongs in this repository,
 and none of the steps here should be automated with one.
 
+## Current staging status — 2026-07-25
+
+The hosted staging project is `vocation-match-staging`
+(`ftdqkhkeluokpdghzubp`, Frankfurt). All migrations through
+`20260725002300` are applied and match the local migration history.
+
+- Email confirmation is on; the site and redirect URL are
+  `vocationmatch://`; passwords require at least 8 characters; refresh-token
+  rotation and secure password changes are on.
+- Hosted email sending is limited to 2 per hour. CAPTCHA is still off because
+  it requires an owner-controlled CAPTCHA provider account and secret.
+- The mobile app uses the project's public `sb_publishable_...` key from the
+  ignored `mobile/.env.local`. No backend key is stored in the repository.
+- Legacy JWT-based `anon` and `service_role` API keys are disabled. New work
+  must use publishable keys in clients and independently rotatable secret keys
+  in backend workers.
+- The storage cleanup worker and real-device checks remain outstanding.
+
 ## 1. Turn on email confirmation
 
 **Dashboard → Authentication → Providers → Email → "Confirm email": on.**

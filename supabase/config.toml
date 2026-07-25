@@ -62,9 +62,14 @@ enable_confirmations = true
 # Local mail goes to Inbucket rather than anywhere real.
 double_confirm_changes = true
 secure_password_change = true
+# Keep hosted defaults explicit so `supabase config push` cannot weaken them.
+max_frequency = "1m"
+otp_length = 8
+otp_expiry = 3600
 
-[auth.email.template.confirmation]
-subject = "Confirm your Vocation Match email"
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
 
 [inbucket]
 enabled = true
