@@ -150,6 +150,13 @@ These need real hardware and cannot be closed by any check that runs here.
 Everything here needs hardware, a hosted project, or a real mailbox. None of it
 can be closed by anything in this repository, and none of it is claimed.
 
+**Update, 2026-07-25.** A staging project now exists
+(`vocation-match-staging`), so the items below marked *needs a hosted project*
+are no longer blocked — they are simply not done. That is a different sentence
+and worth keeping straight: the reason they are outstanding is now time rather
+than a missing dependency. The device items are unchanged; this machine still
+has Command Line Tools without Xcode and no Android SDK.
+
 **Account deletion (H2)**
 
 - Delete an account on a device and confirm the keychain entry is really gone:

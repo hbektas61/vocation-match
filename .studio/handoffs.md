@@ -692,3 +692,52 @@ Handoff:
   the repository. Backend workers must use a dedicated `sb_secret_...` key.
 - Still external: CAPTCHA provider/secret, scheduled storage-cleanup worker,
   real mailbox confirmation-link pass, and D-015 real-device matrix.
+
+## 2026-07-25 — the last locally closable checklist line, and what staging changed
+
+Handoff:
+- Date: 2026-07-25
+- From agent: studio-autopilot
+- What I did: closed the one item on the release checklist that this repository
+  could still close on its own, and corrected the records that the owner's
+  staging commit (`da658fe`) had just made stale.
+- **The checklist line.** "Logs and analytics contain no sensitive location,
+  stay, profile, or message content" had been unticked with the note "no
+  analytics SDK is installed, so there is nothing to audit yet — recheck the
+  moment one is added". True, and useless: it depended on somebody remembering.
+  `mobile/src/__tests__/noTelemetry.test.ts` now fails the build if a telemetry
+  dependency or a `console.*` call appears anywhere in the app. It proves
+  nothing about how an SDK would be used; it makes adding one impossible to do
+  quietly, so the privacy pass happens before the first event is sent.
+- **What staging changed, and what it did not.** `da658fe` provisioned
+  `vocation-match-staging` with every migration through `20260725002300`
+  applied and its history matching the local one. Verified on my side: the full
+  suite still passes on top of it, including `verify-auth-config.js` against the
+  edited `supabase/config.toml` (the new `max_frequency`, `otp_length`,
+  `otp_expiry` and `[auth.mfa.totp]` do not trip it, and `[auth.rate_limit]` is
+  untouched).
+  The records said "no hosted project is provisioned" in three places. They now
+  say what is true: a **staging** project exists, production still does not, and
+  the checks that were blocked on a hosted project are no longer blocked —
+  only outstanding. That is a different sentence and worth keeping straight.
+- Still genuinely external, in order of what would bite first:
+  - **A real device (D-015).** Unchanged, and now the only hard blocker for a
+    large part of the list. This machine has Command Line Tools without Xcode
+    and no Android SDK.
+  - **CAPTCHA**, which needs an owner-controlled provider account. Hosted mail
+    is limited to 2/hour, which is tighter than the 30 this repository's check
+    allows, so the rate-limit half of that mitigation is in place.
+  - **The storage cleanup worker.** Its contract exists
+    (`claim_storage_cleanup` / `mark_storage_cleanup_purged`); the job that
+    calls them needs a secret key and so cannot live here.
+  - **A real confirmation link, and a signed-URL round trip.** Both are now
+    possible against staging and neither has been done.
+- One thing to watch, raised by the owner's own commit comment: `config.toml`
+  is the *local* configuration, and `supabase config push` sends it upward. The
+  local `email_sent = 10` is looser than the hosted 2/hour, so a push would
+  weaken the hosted setting rather than strengthen it. Worth deciding which
+  direction is authoritative before anyone runs that command.
+- Verification: `bash scripts/check.sh` — auth configuration, dependency gate,
+  335 pgTAP assertions across 15 SQL suites, 13 concurrency checks, performance
+  smoke, client/database contract, migration replay, `tsc`,
+  `eslint --max-warnings 0`, 226 jest tests, web bundle.

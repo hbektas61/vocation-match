@@ -42,9 +42,14 @@ named. Everything still unticked is unticked on purpose.
 - [x] Withdrawing location consent actually stops sharing.
       *`clearPresenceCheck()` deletes the stored answer rather than only
       changing local state.*
-- [ ] Logs and analytics contain no sensitive location, stay, profile, or
-      message content. *No analytics SDK is installed, so there is nothing to
-      audit yet. Recheck the moment one is added.*
+- [x] Logs and analytics contain no sensitive location, stay, profile, or
+      message content. *There is no analytics SDK and no logging at all in the
+      app — the only version of this rule that cannot be got wrong by accident.
+      "Recheck the moment one is added" was true and useless, because it
+      depended on somebody remembering; `mobile/src/__tests__/noTelemetry.test.ts`
+      now fails the build if a telemetry dependency or a `console.*` call
+      appears, so the privacy pass happens before the first event is sent
+      rather than after.*
 - [x] Account deletion flow exists before store submission.
       *`public.delete_my_account()` takes no arguments — the account comes from
       the JWT — and deletes the `auth.users` row so every cascade fires. Two
@@ -66,7 +71,12 @@ named. Everything still unticked is unticked on purpose.
       build if it is turned off, and the client handles the unconfirmed states
       rather than throwing on the happy path. **The hosted project keeps its
       own copy of this setting and nothing here can check it** —
-      `docs/hosted-setup.md`.*
+      `docs/hosted-setup.md`. **Since done for staging**: the owner provisioned
+      `vocation-match-staging` on 2026-07-25 with confirmation on, the redirect
+      URL set, an 8-character minimum, refresh-token rotation on, and hosted
+      mail limited to 2/hour — tighter than the 30 this repository's check
+      allows. CAPTCHA is still off; it needs a provider account. Production has
+      no project at all.*
 - [x] The sign-up form does not reveal who already has an account.
       *A duplicate sign-up gets the same answer as a fresh one, in both the
       real client and the fake; `apiContract.test.ts`.*
@@ -74,10 +84,12 @@ named. Everything still unticked is unticked on purpose.
 ## Quality
 
 - [x] Happy, empty, loading, and error states on every screen that calls the API.
-- [ ] Offline and permission-denied states verified on a device. **Deferred to
-      the next phase as an accepted risk (D-015).** *Scenarios listed in
+- [ ] Offline and permission-denied states verified on a device. **Deferred as
+      an accepted risk (D-015).** *Scenarios listed in
       `.studio/device-readiness.md`. Nothing here has been observed on real
-      hardware.*
+      hardware. Note that this is now the only thing blocking them: since
+      staging exists, the checks that needed a hosted project are no longer
+      blocked, only outstanding.*
 - [x] Unit and integration tests pass.
       *`scripts/check.sh` — 311 pgTAP assertions across 14 SQL suites, 14
       concurrency checks racing real connections, a performance smoke check, the
@@ -145,8 +157,11 @@ named. Everything still unticked is unticked on purpose.
 
 ## External actions — none taken, all owner decisions
 
-- [ ] Production deploy explicitly approved. *No hosted project is provisioned,
-      and no migration has run anywhere but a throwaway local container.*
+- [ ] Production deploy explicitly approved. *A **staging** project exists as of
+      2026-07-25 (`vocation-match-staging`, Frankfurt) with every migration
+      through `20260725002300` applied and its history matching the local one.
+      No production project is provisioned and nothing has been deployed to
+      one.*
 - [ ] Store metadata reviewed by owner. *No listing exists.*
 - [ ] App Store/Google Play submission explicitly approved. *No build has been
       uploaded anywhere.*
