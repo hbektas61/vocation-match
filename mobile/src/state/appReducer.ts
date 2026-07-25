@@ -21,7 +21,7 @@ export function toDomainProfile(remote: OwnProfile): Profile {
     displayName: remote.displayName,
     age: remote.age,
     bio: remote.bio ?? '',
-    interests: [],
+    interests: remote.interests,
     birthdate: remote.birthdate,
     photoPath: remote.photoPath,
   };
@@ -46,6 +46,15 @@ export interface AppState {
   lastMatchId: string | null;
 
   blockedUsers: BlockedUser[];
+
+  /**
+   * The three teaching cards are owed to somebody who has just finished
+   * onboarding and to nobody else. Holding it in memory rather than on disk is
+   * what makes a completed onboarding stay completed: a cold start begins with
+   * this false, so an account that already has a profile and a hotel goes
+   * straight into the app.
+   */
+  teachingPending: boolean;
 }
 
 export type AppAction =
@@ -65,7 +74,9 @@ export type AppAction =
   | { type: 'CLEAR_LAST_MATCH' }
   | { type: 'BLOCKED_USERS_LOADED'; blockedUsers: BlockedUser[] }
   | { type: 'USER_BLOCKED'; blockedUser: BlockedUser }
-  | { type: 'USER_UNBLOCKED'; userId: string };
+  | { type: 'USER_UNBLOCKED'; userId: string }
+  | { type: 'ONBOARDING_TEACHING_REQUIRED' }
+  | { type: 'ONBOARDING_FINISHED' };
 
 export function initialAppState(): AppState {
   return {
@@ -80,11 +91,18 @@ export function initialAppState(): AppState {
     matches: [],
     lastMatchId: null,
     blockedUsers: [],
+    teachingPending: false,
   };
 }
 
 export function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
+    case 'ONBOARDING_TEACHING_REQUIRED':
+      return { ...state, teachingPending: true };
+
+    case 'ONBOARDING_FINISHED':
+      return { ...state, teachingPending: false };
+
     case 'CONFIRM_AGE':
       return { ...state, ageConfirmed: true };
 
@@ -99,7 +117,9 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       };
 
     case 'AUTH_SUCCESS':
-      return { ...state, session: action.session, profile: action.profile };
+      // Signing in at all means the age gate was passed when the account was
+      // made; without this a returning sign-in falls back to the welcome step.
+      return { ...state, session: action.session, profile: action.profile, ageConfirmed: true };
 
     case 'SIGN_OUT':
       // Signing out clears every piece of this user's state from the device.

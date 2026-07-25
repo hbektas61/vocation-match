@@ -307,7 +307,14 @@ describe('VocationApi contract (in-memory implementation)', () => {
       const feed = await api.getDiscoveryFeed('HERE_NOW');
       expect(feed.length).toBeGreaterThan(0);
       feed.forEach((card) => {
-        expect(Object.keys(card).sort()).toEqual(['age', 'bio', 'displayName', 'photoPath', 'userId']);
+        expect(Object.keys(card).sort()).toEqual([
+          'age',
+          'bio',
+          'displayName',
+          'interests',
+          'photoPath',
+          'userId',
+        ]);
         expect(card.age).toBeGreaterThanOrEqual(18);
       });
     });

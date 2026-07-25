@@ -23,9 +23,11 @@ the checklist below but do not complete any device item by themselves.
 
 ## Walked in a real browser
 
-The exported web bundle was served and driven end to end: age gate → create
-account → profile with a birthdate → hotel activation, landing on the active
-hotel with the trust copy in place and **zero console errors**. That is more
+The exported web bundle was served and driven end to end: welcome → the 18+
+promise → an account → the confirmation wait → sign-in → name → birthdate → the
+three optional steps → hotel → the teaching cards, landing in the app with
+**zero console errors**. Every one of the twelve steps was screenshotted at
+375×667, which is where the layout fails first. That is more
 than "it compiles" — the navigation, the store, the typed API boundary, and the
 in-memory implementation all actually run.
 
@@ -94,6 +96,20 @@ Accessibility (backlog R-004):
 - [ ] Dynamic type at the largest setting does not clip the deck or chat.
 - [ ] Contrast passes on the primary buttons and the trust copy.
 - [ ] Touch targets stay at or above 44pt.
+- [ ] Each onboarding step is *heard* when it replaces the one before it, and
+      the cursor lands somewhere sensible afterwards. The announcement is
+      tested; whether it is audible and where focus goes are not testable off a
+      device.
+
+Android back, in onboarding (O-007):
+
+- [ ] The hardware back button walks back a step at a time, from the hotel to
+      the photo to the interests, with what was typed still in place.
+- [ ] Back on the welcome step, the name step and the teaching cards leaves the
+      app, matching those screens having no back arrow.
+- [ ] The same with the predictive back gesture once
+      `predictiveBackGestureEnabled` is ever turned on — it is off today, and
+      turning it on changes what a swipe does.
 
 ## Not being done, and why
 
@@ -168,8 +184,8 @@ has Command Line Tools without Xcode and no Android SDK.
 **Account deletion (H2)**
 
 - Delete an account on a device and confirm the keychain entry is really gone:
-  force-quit, cold start, and check the app comes back at the age gate rather
-  than holding a token for a user that no longer exists. The removal is tested
+  force-quit, cold start, and check the app comes back at the welcome step
+  rather than holding a token for a user that no longer exists. The removal is tested
   against an injected storage adapter, not against SecureStore.
 - Delete an account while the other person has the conversation open. The match
   and its messages cascade away; confirm their app does not show a ghost row or

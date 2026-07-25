@@ -10,6 +10,89 @@ export const COPY = {
   appName: 'Vocation Match',
   tagline: 'Meet people connected to your hotel.',
 
+  onboarding: {
+    skip: 'Skip',
+    continueButton: 'Continue',
+    progressLabel: (step: number, total: number) => `Step ${step} of ${total}`,
+
+    welcome: {
+      headline: 'Meet the people already at your hotel.',
+      body:
+        'One hotel at a time. You say when you are staying — nobody asks for a reservation, a document, or an ID.',
+      create: 'Create account',
+      signIn: 'I already have an account',
+    },
+
+    promise: {
+      headline: 'Adults only, and a short promise.',
+      body: 'Vocation Match is for people 18 or older. By continuing you confirm you are at least 18.',
+      points: [
+        'Be yourself. The name and photo should be you.',
+        'Meet in public first, and tell someone where you are going.',
+        'Be decent. A conversation you would not want quoted is one to rethink.',
+        'Report anything that feels wrong. It reaches a person, and blocking is one tap.',
+      ],
+      accept: 'I agree',
+    },
+
+    email: { headline: 'What is your email address?', body: 'You will confirm it in a moment.' },
+    password: {
+      headline: 'Create a password.',
+      body: 'At least 8 characters. Long beats complicated.',
+    },
+    name: {
+      headline: 'What should we call you?',
+      body: 'This is the name on your card. Other people never see anything else.',
+    },
+    birthdate: {
+      headline: 'When were you born?',
+      body: 'Only your age is shown. The date itself is never shared with anyone.',
+    },
+    bio: {
+      headline: 'Say something about yourself.',
+      body: 'A sentence is plenty. You can change it later.',
+    },
+    interests: {
+      headline: 'What are you into?',
+      body: 'A few things worth reading on your card.',
+      limit: (max: number) => `Pick up to ${max}. Tap again to remove one.`,
+      atLimit: (max: number) => `That is ${max} — remove one to choose another.`,
+    },
+    photo: {
+      headline: 'Add a photo.',
+      body:
+        'It is stored privately. Only people in a room with you right now, or matched with you, can see it.',
+      skip: 'Skip for now',
+    },
+    hotel: {
+      headline: 'Which hotel are you at?',
+      body: 'Or which one are you going to. You can be in one hotel at a time, and you can change it whenever you like.',
+      confirm: 'Continue',
+    },
+
+    teaching: {
+      upcoming: {
+        title: 'Upcoming',
+        body:
+          'Say when you will be at the hotel and the Upcoming room opens. It is your word — nobody is asked for a reservation, a booking number, or an ID.',
+      },
+      hereNow: {
+        title: 'Here now',
+        /** On the figure, not read aloud — the sentence below it says the same. */
+        figureLabel: 'Within 500 m',
+        body:
+          'One check, while the app is open, of whether you are within 500 m of the hotel. The answer is yes or no. Your position is never stored and never shown to anyone.',
+      },
+      matching: {
+        title: 'Likes and matches',
+        body:
+          'When two people like each other a conversation opens. Blocking and reporting are there from the first card, before any match exists.',
+      },
+      next: 'Next',
+      start: 'Start looking',
+    },
+  },
+
   ageGate: {
     title: 'Adults only',
     body: 'Vocation Match is for people 18 or older. By continuing you confirm you are at least 18.',

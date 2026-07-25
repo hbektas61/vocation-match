@@ -19,7 +19,12 @@ import { AccessibilityInfo } from 'react-native';
 import App from '../../App';
 import { COPY } from '../copy';
 import { FakeApi, setApi } from '../data';
-import { onboardToSettings } from '../testSupport/onboarding';
+import {
+  onboardToSettings,
+  onboardToTeaching,
+  startSignIn,
+  startSignUp,
+} from '../testSupport/onboarding';
 
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
 let announced: string[];
@@ -43,13 +48,9 @@ const spoken = () => announced.join(' | ');
 describe('what gets announced', () => {
   it('says the sign-up worked and is waiting on an email', async () => {
     await render(<App />);
-    await fireEvent.press(await screen.findByTestId('confirm-age'));
-    await fireEvent.press(await screen.findByTestId('auth-switch-mode'));
-    await fireEvent.changeText(await screen.findByTestId('auth-email'), 'new@example.test');
-    await fireEvent.changeText(screen.getByTestId('auth-password'), 'correct horse');
-    await fireEvent.press(screen.getByTestId('auth-submit'));
+    await startSignUp('new@example.test');
 
-    // The form is replaced in place, not pushed, so nothing resets the cursor.
+    // The step is replaced in place, not pushed, so nothing resets the cursor.
     expect(await screen.findByTestId('screen-confirm-email')).toBeTruthy();
     expect(spoken()).toContain(COPY.confirmEmail.title);
     expect(spoken()).toContain(COPY.confirmEmail.body);
@@ -61,10 +62,7 @@ describe('what gets announced', () => {
     await api.signUp('waiting@example.test', 'correct horse');
 
     await render(<App />);
-    await fireEvent.press(await screen.findByTestId('confirm-age'));
-    await fireEvent.changeText(await screen.findByTestId('auth-email'), 'waiting@example.test');
-    await fireEvent.changeText(screen.getByTestId('auth-password'), 'correct horse');
-    await fireEvent.press(screen.getByTestId('auth-submit'));
+    await startSignIn('waiting@example.test');
 
     expect(await screen.findByTestId('screen-confirm-email')).toBeTruthy();
     // Nothing was sent on this path, and saying otherwise costs someone an
@@ -75,11 +73,7 @@ describe('what gets announced', () => {
 
   it('says the email went out again, instead of going quiet', async () => {
     await render(<App />);
-    await fireEvent.press(await screen.findByTestId('confirm-age'));
-    await fireEvent.press(await screen.findByTestId('auth-switch-mode'));
-    await fireEvent.changeText(await screen.findByTestId('auth-email'), 'new@example.test');
-    await fireEvent.changeText(screen.getByTestId('auth-password'), 'correct horse');
-    await fireEvent.press(screen.getByTestId('auth-submit'));
+    await startSignUp('new@example.test');
     await screen.findByTestId('confirm-resend');
     announced = [];
 
@@ -88,6 +82,37 @@ describe('what gets announced', () => {
     expect(await screen.findByTestId('confirm-resent')).toBeTruthy();
     // Silence here is indistinguishable from the button doing nothing.
     expect(spoken()).toContain(COPY.confirmEmail.resent);
+  });
+
+  it('names each onboarding step, which nothing else does', async () => {
+    await render(<App />);
+    await startSignUp('stepper@example.test');
+    await fireEvent.press(await screen.findByTestId('simulate-confirm-email'));
+    await fireEvent.changeText(await screen.findByTestId('auth-email'), 'stepper@example.test');
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await fireEvent.changeText(await screen.findByTestId('auth-password'), 'correct horse');
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await screen.findByTestId('profile-name');
+    announced = [];
+
+    await fireEvent.changeText(screen.getByTestId('profile-name'), 'Deniz');
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+
+    // Twelve steps swap in place inside one navigator screen, so nothing resets
+    // the cursor between them. Without this a VoiceOver user taps "Continue"
+    // and is given a new question in total silence.
+    expect(await screen.findByTestId('screen-onboarding-birthdate')).toBeTruthy();
+    expect(spoken()).toContain(COPY.onboarding.birthdate.headline);
+  });
+
+  it('names each teaching card, which replaces the one before it in place', async () => {
+    await onboardToTeaching();
+    expect(await screen.findByTestId('teaching-next')).toBeTruthy();
+    announced = [];
+
+    await fireEvent.press(screen.getByTestId('teaching-next'));
+
+    expect(spoken()).toContain(COPY.onboarding.teaching.hereNow.title);
   });
 
   it('reads the whole delete-account warning, not only its last sentence', async () => {

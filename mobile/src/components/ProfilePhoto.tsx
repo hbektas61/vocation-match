@@ -16,10 +16,20 @@ export function ProfilePhotoField({
   displayName,
   photoPath,
   onProfileChanged,
+  showExplainer = true,
+  chooseVariant = 'primary',
 }: {
   displayName: string;
   photoPath: string | null;
   onProfileChanged: (profile: OwnProfile) => void;
+  /** Off where the surrounding screen already carries the same sentence. */
+  showExplainer?: boolean;
+  /**
+   * Secondary where the screen already has one primary action in its footer.
+   * Two identical wide fills, stacked, say the two are equally important when
+   * one of them is "move on".
+   */
+  chooseVariant?: 'primary' | 'secondary';
 }) {
   // Kept with the path it belongs to, so removing a photo shows the fallback
   // on the same render rather than briefly showing the old one.
@@ -90,7 +100,7 @@ export function ProfilePhotoField({
   return (
     <>
       <Avatar url={url} name={displayName} size="lg" testID="profile-photo" />
-      <Caption>{COPY.photo.explainer}</Caption>
+      {showExplainer ? <Caption>{COPY.photo.explainer}</Caption> : null}
       {error ? <Notice message={error} tone="error" testID="photo-error" /> : null}
       {!photoPath ? <Body>{COPY.photo.noPhoto}</Body> : null}
       <Gap size="xs" />
@@ -102,6 +112,7 @@ export function ProfilePhotoField({
               ? COPY.photo.replaceButton
               : COPY.photo.addButton
         }
+        variant={chooseVariant}
         busy={busy === 'upload'}
         disabled={busy !== null}
         onPress={choose}

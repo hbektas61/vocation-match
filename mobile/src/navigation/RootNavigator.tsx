@@ -2,19 +2,18 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Body, Screen } from '../components/ui';
 import { COPY } from '../copy';
-import { AgeGateScreen } from '../screens/AgeGateScreen';
-import { AuthScreen } from '../screens/AuthScreen';
 import { ChatScreen } from '../screens/ChatScreen';
 import { DiscoveryScreen } from '../screens/DiscoveryScreen';
 import { EditProfileScreen } from '../screens/EditProfileScreen';
 import { HereNowScreen } from '../screens/HereNowScreen';
 import { HotelScreen } from '../screens/HotelScreen';
+import { OnboardingFlow } from '../onboarding/OnboardingFlow';
 import { InboxScreen } from '../screens/InboxScreen';
 import { MatchScreen } from '../screens/MatchScreen';
-import { ProfileSetupScreen } from '../screens/ProfileSetupScreen';
 import { ReportBlockScreen } from '../screens/ReportBlockScreen';
 import { RoomsScreen } from '../screens/RoomsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
@@ -34,7 +33,7 @@ function tabMark({ focused }: { focused: boolean }) {
         height: 8,
         borderRadius: 4,
         marginBottom: 2,
-        backgroundColor: focused ? color.ember : 'transparent',
+        backgroundColor: focused ? color.ocean : 'transparent',
         borderWidth: focused ? 0 : 1.5,
         borderColor: color.border,
       }}
@@ -66,24 +65,41 @@ function BootstrapScreen() {
 }
 
 function MainTabs() {
+  const insets = useSafeAreaInsets();
   return (
     <Tabs.Navigator
+      // Onboarding ends by choosing a hotel, so opening on the hotel screen
+      // asks the same question twice. The rooms are what was just explained.
+      initialRouteName="Rooms"
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: color.ember,
+        tabBarActiveTintColor: color.ocean,
         tabBarInactiveTintColor: color.inkMuted,
         tabBarStyle: {
           backgroundColor: color.background,
-          borderTopColor: color.veil,
+          borderTopColor: color.rule,
+          // Explicit, because the default height left the mark and the label
+          // together taller than the bar and clipped every label's descenders.
+          height: 64 + insets.bottom,
+          paddingTop: 8,
+          paddingBottom: insets.bottom + 10,
         },
         // A mark from the system rather than five emoji, which read as clip art
         // next to this type and — in the case of the green heart — argued with
         // the brand. The slot stays occupied: emptying it pushes the label out
         // of the bar entirely, which is how this was found.
         tabBarIcon: tabMark,
+        // The icon slot flexes by default and took the whole item, squeezing
+        // the label's box to 7px — which, with `overflow: hidden`, cut every
+        // label in half. Pinning the slot to the mark's own size gives the
+        // label back its line.
+        tabBarIconStyle: { flex: 0, height: 10 },
         tabBarLabelStyle: {
           fontFamily: fontFamily.bodySemi,
           fontSize: 11,
+          // Explicit: without it the label box collapsed to 7px and the
+          // descenders rendered below the bar.
+          lineHeight: 14,
           letterSpacing: 0.2,
         },
       }}
@@ -113,24 +129,14 @@ export function RootNavigator() {
       </Stack.Navigator>
     );
   }
-  if (!state.ageConfirmed) {
+  // One wizard covers the whole way in: the age promise, the account, the
+  // profile, the photo and the hotel. Which step it opens on is derived from
+  // what the server already knows, so a restart resumes without anything having
+  // been written down — and an account that is already complete never sees it.
+  if (!state.profile || !state.activeHotel || state.teachingPending) {
     return (
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="AgeGate" component={AgeGateScreen} />
-      </Stack.Navigator>
-    );
-  }
-  if (!state.session) {
-    return (
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Auth" component={AuthScreen} />
-      </Stack.Navigator>
-    );
-  }
-  if (!state.profile) {
-    return (
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+        <Stack.Screen name="Onboarding" component={OnboardingFlow} />
       </Stack.Navigator>
     );
   }

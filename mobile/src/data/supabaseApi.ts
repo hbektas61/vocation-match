@@ -113,6 +113,7 @@ interface ProfileRow {
   birthdate: string;
   bio: string | null;
   photo_path: string | null;
+  interests: string[] | null;
 }
 
 /**
@@ -275,7 +276,7 @@ export class SupabaseApi implements VocationApi {
   async getOwnProfile(): Promise<OwnProfile | null> {
     const { data, error } = await this.client
       .from('profiles')
-      .select('id, display_name, birthdate, bio, photo_path')
+      .select('id, display_name, birthdate, bio, photo_path, interests')
       .maybeSingle();
     if (error) {
       throw toApiError(error, 'Could not load your profile.');
@@ -289,7 +290,9 @@ export class SupabaseApi implements VocationApi {
       throw new ApiError('UNAUTHENTICATED', 'Sign in to continue.');
     }
     // `photo_path` is deliberately absent: an upsert that carried it would
-    // clear the photo every time someone edited their bio.
+    // clear the photo every time someone edited their bio. `interests` is the
+    // same trap — omitted unless this caller actually has a list, so a form
+    // that does not ask about them cannot silently empty them.
     const { data, error } = await this.client
       .from('profiles')
       .upsert(
@@ -298,10 +301,11 @@ export class SupabaseApi implements VocationApi {
           display_name: input.displayName.trim(),
           birthdate: input.birthdate,
           bio: input.bio?.trim() || null,
+          ...(input.interests ? { interests: input.interests } : {}),
         },
         { onConflict: 'id' },
       )
-      .select('id, display_name, birthdate, bio, photo_path')
+      .select('id, display_name, birthdate, bio, photo_path, interests')
       .single();
     if (error || !data) {
       throw toApiError(error, 'Could not save your profile.');
@@ -575,6 +579,7 @@ export class SupabaseApi implements VocationApi {
       age: row.age,
       bio: row.bio ?? null,
       photoPath: row.photo_path ?? null,
+      interests: row.interests ?? [],
     }));
   }
 
@@ -772,6 +777,7 @@ interface CandidateRow {
   age: number;
   bio: string | null;
   photo_path: string | null;
+  interests: string[] | null;
 }
 
 interface SwipeRow {
@@ -856,5 +862,6 @@ function toOwnProfile(row: ProfileRow): OwnProfile {
     age: ageYears(row.birthdate, todayIsoDate()) ?? 0,
     bio: row.bio,
     photoPath: row.photo_path,
+    interests: row.interests ?? [],
   };
 }

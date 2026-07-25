@@ -61,7 +61,7 @@ describe('deleting an account', () => {
 
     // Right back to the start of the app — every piece of this person's state
     // is cleared from the device, not just the token.
-    expect(await screen.findByTestId('screen-age-gate')).toBeTruthy();
+    expect(await screen.findByTestId('screen-welcome')).toBeTruthy();
     await waitFor(async () => {
       expect(await api.currentSession()).toBeNull();
     });

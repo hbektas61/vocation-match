@@ -9,11 +9,13 @@
  */
 import React, { useState } from 'react';
 
-import { Body, Button, Field, Gap, Notice } from './ui';
+import { Body, Button, Caption, Field, Gap, Notice } from './ui';
 import { todayIsoDate } from '../clock';
 import { apiErrorMessage, COPY } from '../copy';
-import { ApiError, getApi, type OwnProfile } from '../data';
+import { ApiError, getApi, MAX_INTERESTS, type OwnProfile } from '../data';
 import { isAdult, parseIsoDate } from '../domain/age';
+import { INTEREST_CHOICES } from '../fixtures/interests';
+import { ChoiceChip, ChoiceGroup } from '../onboarding/ChoiceChip';
 
 export function ProfileForm({
   initial,
@@ -32,6 +34,7 @@ export function ProfileForm({
   const [displayName, setDisplayName] = useState(initial?.displayName ?? '');
   const [birthdate, setBirthdate] = useState(initial?.birthdate ?? '');
   const [bio, setBio] = useState(initial?.bio ?? '');
+  const [interests, setInterests] = useState<string[]>(initial?.interests ?? []);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,6 +63,7 @@ export function ProfileForm({
         displayName: trimmedName,
         birthdate,
         bio: bio.trim() || null,
+        interests,
       });
       onSaved(saved);
     } catch (err) {
@@ -99,6 +103,33 @@ export function ProfileForm({
         editable={!submitting}
         testID={`${testIDPrefix}-bio`}
       />
+      <Caption>{COPY.onboarding.interests.headline}</Caption>
+      <ChoiceGroup
+        hint={
+          interests.length >= MAX_INTERESTS
+            ? COPY.onboarding.interests.atLimit(MAX_INTERESTS)
+            : COPY.onboarding.interests.limit(MAX_INTERESTS)
+        }
+        testID={`${testIDPrefix}-interests`}
+      >
+        {INTEREST_CHOICES.map((choice) => {
+          const selected = interests.includes(choice);
+          return (
+            <ChoiceChip
+              key={choice}
+              label={choice}
+              selected={selected}
+              disabled={!selected && interests.length >= MAX_INTERESTS}
+              onPress={() =>
+                setInterests((current) =>
+                  selected ? current.filter((c) => c !== choice) : [...current, choice],
+                )
+              }
+              testID={`${testIDPrefix}-interest-${choice.toLowerCase().replace(/\s+/g, '-')}`}
+            />
+          );
+        })}
+      </ChoiceGroup>
       {error ? <Notice message={error} tone="error" testID={`${testIDPrefix}-error`} /> : null}
       <Gap size="sm" />
       <Button

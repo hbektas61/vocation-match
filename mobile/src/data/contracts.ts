@@ -67,6 +67,8 @@ export interface OwnProfile {
    * that person.
    */
   photoPath: string | null;
+  /** A short self-chosen list, at most `MAX_INTERESTS`. */
+  interests: string[];
 }
 
 /**
@@ -79,6 +81,11 @@ export interface ProfileInput {
   /** ISO date, YYYY-MM-DD. */
   birthdate: string;
   bio?: string | null;
+  /**
+   * Omitted means "leave them as they are", not "clear them". A form that does
+   * not ask about interests must not be able to delete them.
+   */
+  interests?: string[];
 }
 
 /** A hotel as the client may see it. Coordinates are deliberately absent. */
@@ -162,7 +169,11 @@ export interface CandidateCard {
   age: number;
   bio: string | null;
   photoPath: string | null;
+  interests: string[];
 }
+
+/** Five, matching `profiles_interests_count`. Said out loud in the UI. */
+export const MAX_INTERESTS = 5;
 
 export interface VocationApi {
   /* auth */

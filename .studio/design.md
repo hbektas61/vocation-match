@@ -5,17 +5,25 @@ inside rather than guessing from the code.
 
 ## What it is based on
 
-The structure comes from the category, and specifically from Bumble: a profile
-is **scrolled through** rather than looked at, and the decision waits at the end
-of that scroll instead of floating over the photo. That is the mechanic worth
-copying, because it is the one that makes reading someone feel different from
-sorting them.
+Two borrowings, both structural rather than visual.
 
-What is deliberately **not** taken: Bumble's yellow, its logo, its
-illustrations, its wording. Those are theirs. The conventions — a full-bleed
-photo card, the name overlaid at the foot of it, sectioned profile blocks, a
-large round pass/like pair — are the category's shared language and the thing
-people already know how to use.
+**The card and the profile** come from the category, and specifically from
+Bumble: a profile is **scrolled through** rather than looked at, and the
+decision waits at the end of that scroll instead of floating over the photo.
+That is the mechanic worth copying, because it is the one that makes reading
+someone feel different from sorting them.
+
+**The way in** follows the shape the category has settled on for onboarding —
+one question per screen, a thin progress line, a large left-aligned headline, a
+single wide action pinned to the bottom, and a short teaching section at the
+end. It is a wizard because each answer is short and the sequence matters, not
+because a long form would not fit.
+
+What is deliberately **not** taken from anyone: a logo, an illustration set,
+photography, or a sentence of copy. Those are theirs. And nothing is asked for
+that the product does not store — no phone number, no gender, no orientation,
+because none of those exist in the schema and a question whose answer is thrown
+away is worse than no question.
 
 ## The direction
 
@@ -26,9 +34,17 @@ The product's own copy is already like that: "self-declared", "within 500 m",
 with words that were written carefully not to oversell, and on an app about
 meeting strangers that argument costs trust.
 
-Red carries it — deep and warm rather than fire-engine. A signal red on a screen
-where two people decide about each other reads as alarm; this one reads as
-attention.
+**Open-sea blue and warm sand** carry it. The palette is the water and the beach
+outside the building the product is about, which is a better reason for a colour
+than a mood board. It replaced a red direction: red on a screen where two people
+decide about each other reads closer to alarm than to attention, and it made the
+one genuinely destructive control — delete account — hard to distinguish from
+the brand.
+
+Two of the values handed to this palette failed contrast on the surfaces they
+were used on and were corrected within the same family: `muted` (3.95:1 on sand,
+under the 4.5 floor for the colour every secondary line uses) and a control edge
+colour, since `line` at 1.17:1 cannot mark the boundary of an input.
 
 ## The signature
 
@@ -53,17 +69,51 @@ accessibility audit (R-004) found real failures that nobody had written down.
 - **Type.** Two families, two jobs. Nunito (rounded terminals) for names and
   headings, Inter for reading. A tracked uppercase label is the third role and
   is only ever used to name a structure — never for prose.
-- **Buttons.** Primary is filled red. Destructive is *outlined* red, because
-  once the brand itself is red, two solid red buttons on one screen — one of
-  which deletes an account — are the same shout for very different things.
+- **Buttons.** Primary is filled ocean with white on it. Destructive is
+  *outlined*, so the one control that deletes an account cannot be mistaken for
+  the one that continues. A disabled button is a real state — a soft fill with a
+  grey label at 4.61:1 — not a 45% fade, which measured 1.99:1 on the label of a
+  control somebody is being asked to read.
+- **White never sits on light blue.** `sea` is a surface colour; text on it is
+  `ink`.
 - **The no-photo state is designed, not handled.** On the first day of a pilot
   almost nobody has uploaded one, so that is the normal case: a shorter frame, a
   large initial in a legible tint. White-on-veil was tried first and read as a
   rendering failure.
 - **Tabs carry a mark, not an emoji.** Five emoji next to this type read as clip
   art, and the green heart argued with the brand. The slot has to stay occupied,
-  though — emptying it pushes the label out of the bar, which is how that was
-  found.
+  though — emptying it pushes the label out of the bar — and it has to be
+  *pinned*: left to flex, the icon slot took the whole item and squeezed the
+  label's box to 7px, which with `overflow: hidden` cut every label in half.
+
+## The way in
+
+Twelve steps, in `mobile/src/onboarding/`: welcome, the 18+ promise, email,
+password, the confirmation wait, name, birthdate, bio, interests, one photo,
+hotel, and three teaching cards.
+
+Three things about it are decisions rather than layout:
+
+- **The step is derived from server state, not stored.** No session means the
+  email step; a session with no profile means the name step; a profile with no
+  hotel means the hotel step. Nothing has to remember where somebody got to,
+  nothing can disagree with the server, and a finished onboarding cannot come
+  back on the next launch. A step someone has walked to stands until it becomes
+  impossible — signed out on a step that needs a session, or the reverse — so
+  the optional steps between saving a profile and choosing a hotel are still
+  reachable.
+- **The action stays visible and disabled** rather than appearing when the
+  answer becomes valid. A control that is not there yet is a control somebody
+  goes looking for.
+- **Location is never asked for here.** The permission prompt belongs at the
+  moment somebody actually runs a Here Now check, where the reason for it is on
+  the screen. There is no background location anywhere in the product.
+
+The teaching cards carry figures built from the same tokens the real screens
+use — the self-declared badge, one proximity ring, two cards meeting — because
+the two rooms are the part nobody arrives already understanding. They replaced a
+large numeral in the same colour as its background, which read as an image that
+had failed to load.
 
 ## What the screenshots caught that the tests could not
 
@@ -73,9 +123,17 @@ Worth recording, because it is the argument for looking at the thing:
 - the fallback initial was invisible;
 - the match screen said "you liked each other" twice;
 - the chat composer scrolled away with the messages, so on a real conversation
-  the box you type into was somewhere down the page.
+  the box you type into was somewhere down the page;
+- every tab label was cut in half at the bottom of the bar;
+- the disabled Continue button's label was effectively unreadable;
+- the photo step printed the same privacy paragraph twice and offered two
+  identical primary buttons;
+- the hotel step named the chosen hotel twice within a hundred pixels;
+- the "matching" teaching figure had collapsed into two hairlines, because
+  absolutely-positioned children were measured against a parent that had
+  shrunk to nothing.
 
-None of those failed a test. All four were obvious in a screenshot.
+None of those failed a test. All of them were obvious in a screenshot.
 
 ## The floor, which the suite does keep
 

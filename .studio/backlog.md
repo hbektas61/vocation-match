@@ -184,6 +184,51 @@ client work; the server already allowed every one of them.
       that mapped to UNKNOWN, so the app said "something went wrong" and never
       worked out the conversation was gone.
 
+## Onboarding and visual direction (completed 2026-07-26)
+
+- [x] O-001 One onboarding wizard replacing the age gate, auth screen and
+      profile setup: twelve steps, one question each, a progress line, a back
+      and a skip only where skipping is real, and a single wide action pinned
+      above the keyboard. The step is derived from server state (D-017), so a
+      finished onboarding cannot reappear and a half-finished one resumes where
+      the server says it is.
+      Evidence: `mobile/src/__tests__/onboarding.test.tsx` — the draft survives
+      going back, the limit on interests is enforced rather than printed, skip
+      appears only on optional steps, and a relaunch lands in the app.
+- [x] O-002 `profiles.interests` (D-018), with the count and per-element bounds
+      enforced in the database and the field carried on the discovery card.
+      Evidence: `supabase/tests/001_profiles.sql` refuses six interests, an
+      over-long one, and a blank one, and proves a refused write leaves the
+      stored list untouched; `005_discovery.sql` pins the card's exact field
+      set.
+- [x] O-003 Ocean-and-sand palette in one token file, with the two supplied
+      values that failed contrast corrected and every value commented with the
+      ratio measured against the surface it is used on.
+- [x] O-004 Four defects only a screenshot found: every tab label cut in half,
+      an unreadable disabled button label, a duplicated privacy paragraph next
+      to two identical primary buttons, and a teaching figure collapsed into
+      two hairlines.
+- [x] O-005 An unrelated profile edit no longer empties the interests list —
+      the same trap the photo field already had. Omitting the field on a write
+      means "leave it alone".
+- [x] O-006 Signing back in restores the active hotel, so a returning account
+      is no longer asked to choose a hotel it already has.
+- [x] O-007 Android's back button walks back through the wizard instead of
+      closing the app. Twelve steps live inside one navigator screen, so there
+      was nothing for React Navigation to pop and back left the app from step
+      four, taking the whole draft with it. Where back goes is now one table
+      read by both the arrow and the button, so the two cannot drift.
+      Evidence: `mobile/src/__tests__/onboarding.test.tsx` — a press goes back
+      a step with the answer intact and is claimed, and a step with no arrow
+      leaves the press unclaimed.
+- [x] O-008 Every onboarding step announces itself. A step swaps in place and a
+      swap does not move the screen-reader cursor the way a push does, so
+      eleven of the twelve steps and two of the three teaching cards arrived in
+      silence — the same defect H-404 fixed elsewhere, in the one flow where it
+      repeats twelve times. The announcement is in the scaffold, so no step can
+      forget it.
+      Evidence: `mobile/src/__tests__/announcements.test.tsx`.
+
 ## Later — monetization
 
 - [ ] L-001 Define premium value and price.

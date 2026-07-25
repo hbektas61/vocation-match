@@ -877,3 +877,92 @@ Handoff:
 - Unchanged and still external: a real device (D-015), CAPTCHA, one manual run
   of the cleanup worker against staging, a real confirmation link, a signed-URL
   round trip.
+
+
+## 2026-07-26 — the way in, and the direction it is drawn in
+
+The task was an onboarding wizard, adapting the *structure* of a well-known
+onboarding flow — one question per screen, a thin progress line, a bottom action
+— without any of its brand, copy or images, and a palette of open-sea blue and
+warm sand.
+
+- **Twelve steps, in `mobile/src/onboarding/`.** Welcome, the 18+ promise,
+  email, password, the confirmation wait, name, birthdate, bio, interests, one
+  photo, hotel, three teaching cards. `AgeGateScreen`, `AuthScreen` and
+  `ProfileSetupScreen` are gone; the navigator has one gate.
+- **The step is derived, not stored (D-017).** That is what makes "a finished
+  onboarding must not reappear" true without writing anything down. The first
+  version let the derived step override a tapped one, which quietly skipped
+  bio, interests and photo the moment the profile was saved — a step somebody
+  walked to now stands until it is impossible.
+- **`interests` is the one schema change (D-018).** The domain model had
+  carried the field with `[]` behind it since the first milestone, and the step
+  that asks for them would otherwise have thrown the answer away.
+- **Two of the palette values I was handed failed contrast** on the surfaces
+  they are used on and were corrected within the same family. Both are written
+  down in `theme.ts` with the measured ratio.
+- **Two real bugs, neither of them about looks.** An unrelated profile edit
+  emptied the interests list, because the write sent `interests ?? []` — the
+  same trap the photo field already had, and the reason `photo_path` is absent
+  from that upsert. And signing back in did not restore the active hotel, so a
+  returning account was asked to choose a hotel it already had.
+- **Six defects only the screenshots found**, listed in `.studio/design.md`.
+  The tab-label one is worth naming here: the icon slot flexes by default, took
+  the whole item, and squeezed the label's box to 7px, which with
+  `overflow: hidden` cut every label in half at every viewport.
+- Verification: `bash scripts/check.sh` — 345 pgTAP assertions across 15 SQL
+  suites, the concurrency checks, performance smoke, migration replay, storage
+  drain, contract check, auth config, dependency gate, `tsc`,
+  `eslint --max-warnings 0`, 247 jest tests, web bundle. Plus `expo-doctor`
+  (20/20) and a scripted walk of all twelve steps at 375×667 with a screenshot
+  of each.
+- Two things worth being straight about. The reference page I was pointed at
+  could not be read — it serves images, so the inventory came from the written
+  brief rather than from the twenty-one screenshots. And the brief asked for
+  Expo SDK 54 / RN 0.81; this project is on SDK 57 / RN 0.86, and I kept the
+  installed versions rather than downgrading a working toolchain.
+- Unchanged and still external: a real device (D-015), CAPTCHA, one manual run
+  of the cleanup worker against staging, a real confirmation link, a signed-URL
+  round trip.
+
+
+## 2026-07-26 (later) — the two ways out that were not wired
+
+Picked the onboarding work back up and re-read it against the brief rather than
+against the previous note. The wizard itself was there and passing; two of the
+brief's device requirements were not met, and neither would have shown up in
+any check that was already being run.
+
+- **Android's back button closed the app.** The twelve steps live inside one
+  navigator screen, so React Navigation had nothing to pop and declined the
+  press — from step four, back meant leaving with the whole draft. The fix is
+  not the handler so much as where the answer lives: `backTarget` is now one
+  table, read by both the arrow in the corner and the hardware button. Written
+  separately they drift, and the one that drifts is the one nobody can see.
+  Three steps deliberately return `null` — welcome is the start, and name and
+  the teaching cards sit past a point walking backwards cannot undo — so the
+  press goes unclaimed exactly where the arrow is absent.
+- **Eleven of the twelve steps arrived in silence.**
+  `useScreenChangeAnnouncement` already existed, with a comment describing this
+  exact defect, and was called on one step. A step swapping in place does not
+  move the screen-reader cursor the way a push does, so tapping Continue handed
+  a VoiceOver user a new question with nothing said. It now lives in
+  `OnboardingScaffold`, and in `TeachingStep` — the only other thing that
+  replaces itself — so no step can forget it. The explicit call on the
+  confirmation step came out rather than announcing twice.
+- Both fixes moved logic *out* of the steps, which is the direction the
+  scaffold was already going: a step supplies a question, never a layout, and
+  now never a navigation rule either.
+- Verification: `tsc`, `eslint --max-warnings 0`, **251 jest tests across 23
+  suites** (four new), `expo export --platform web`, `expo-doctor` 20/20. The
+  back-button tests stand in for Android by driving what the app registered,
+  most-recent-first, the way the platform does — the iOS build under test has a
+  `BackHandler` that never fires, so registration is the honest thing to check.
+- **Not run this time: the database half of `scripts/check.sh`.** Docker is not
+  available in this environment. Nothing in this increment touches SQL, so the
+  345 pgTAP assertions in the note above still describe the schema — but they
+  were not re-run, and that is a blocker rather than a result.
+- Unchanged and still external: a real device (D-015) — now including a real
+  Android back press and a real VoiceOver/TalkBack walk, both listed in
+  `.studio/device-readiness.md` — CAPTCHA, one manual run of the cleanup worker
+  against staging, a real confirmation link, a signed-URL round trip.

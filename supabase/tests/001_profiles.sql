@@ -31,6 +31,49 @@ select throws_ok(
   'an existing profile cannot be edited below 18'
 );
 
+-- ---------------------------------------------------------------- interests
+-- The column is free text chosen by the person it belongs to, which is exactly
+-- the shape of field that becomes a place to put a payload if nothing bounds it.
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
+
+select lives_ok(
+  $$update public.profiles set interests = array['Coffee','Long walks']
+     where id = '00000000-0000-0000-0000-0000000000a1'$$,
+  'a handful of interests can be saved'
+);
+
+select throws_ok(
+  $$update public.profiles
+       set interests = array['a','b','c','d','e','f']
+     where id = '00000000-0000-0000-0000-0000000000a1'$$,
+  '23514',
+  null,
+  'more than five interests is refused by the database, not only by the client'
+);
+
+select throws_ok(
+  $$update public.profiles
+       set interests = array[repeat('x', 25)]
+     where id = '00000000-0000-0000-0000-0000000000a1'$$,
+  '23514',
+  null,
+  'an over-long interest is refused'
+);
+
+select throws_ok(
+  $$update public.profiles set interests = array['   ']
+     where id = '00000000-0000-0000-0000-0000000000a1'$$,
+  '23514',
+  null,
+  'a blank interest is refused'
+);
+
+select is(
+  (select interests from public.profiles where id = '00000000-0000-0000-0000-0000000000a1'),
+  array['Coffee','Long walks'],
+  'a refused write leaves the stored list untouched'
+);
+
 -- ------------------------------------------------------------ ownership
 select throws_ok(
   $$insert into public.profiles (id, display_name, birthdate)

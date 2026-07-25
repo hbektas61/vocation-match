@@ -162,6 +162,8 @@ export function Button({
           variant === 'primary' && styles.buttonLabelOnColor,
           variant === 'secondary' && styles.buttonLabelSecondary,
           variant === 'danger' && styles.buttonLabelDanger,
+          // Last, so it wins over the variant colour.
+          (disabled || busy) && styles.buttonLabelDisabled,
         ]}
       >
         {label}
@@ -203,7 +205,8 @@ export function ActionButton({
       style={({ pressed }) => [
         styles.action,
         tone === 'like' ? styles.actionLike : styles.actionPass,
-        disabled && styles.buttonDisabled,
+        // A glyph, not a label: fading it is legible in a way faded text is not.
+        disabled && styles.actionDisabled,
         pressed && !disabled && styles.buttonPressed,
       ]}
     >
@@ -312,7 +315,7 @@ export function RoomRibbon({
       <View
         style={[
           styles.ribbonDot,
-          { backgroundColor: room === 'HERE_NOW' ? color.ember : color.inkMuted },
+          { backgroundColor: room === 'HERE_NOW' ? color.ocean : color.inkMuted },
         ]}
       />
       <Text style={[styles.ribbonText, onPhoto && styles.ribbonTextOnPhoto]}>
@@ -566,7 +569,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 2,
   },
   buttonCompact: { paddingHorizontal: spacing.sm },
-  buttonPrimary: { backgroundColor: color.ember },
+  buttonPrimary: { backgroundColor: color.ocean },
   buttonSecondary: {
     backgroundColor: 'transparent',
     borderWidth: 1.5,
@@ -577,7 +580,15 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: color.danger,
   },
-  buttonDisabled: { opacity: 0.45 },
+  /**
+   * A real state rather than a fade. Half-opacity white on ocean measured
+   * 1.99:1 — the label of a button somebody is being asked to read and act on.
+   * This is 4.61:1, and it still reads as unavailable because the fill is flat
+   * and the label is grey.
+   */
+  buttonDisabled: { backgroundColor: color.seaSoft, borderColor: color.rule },
+  buttonLabelDisabled: { color: color.inkMuted },
+  actionDisabled: { opacity: 0.45 },
   buttonPressed: { opacity: 0.82 },
   buttonLabel: {
     fontFamily: fontFamily.bodySemi,
@@ -585,7 +596,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   buttonLabelCompact: { fontSize: font.caption + 1, letterSpacing: 0 },
-  buttonLabelOnColor: { color: color.onEmber },
+  buttonLabelOnColor: { color: color.onOcean },
   buttonLabelSecondary: { color: color.ink },
   buttonLabelDanger: { color: color.danger },
 
@@ -601,13 +612,13 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: color.border,
   },
-  actionLike: { backgroundColor: color.ember },
+  actionLike: { backgroundColor: color.ocean },
   actionGlyph: {
     fontSize: 26,
     lineHeight: 30,
     color: color.inkMuted,
   },
-  actionGlyphLike: { color: color.onEmber },
+  actionGlyphLike: { color: color.onOcean },
 
   field: { gap: spacing.xs },
   fieldHint: {
@@ -697,9 +708,9 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.display,
     fontSize: 128,
     lineHeight: 140,
-    // 3.6:1 on the veil. Quiet, but a person can actually see it — white on
-    // veil read as a rendering failure rather than a placeholder.
-    color: '#C9B9BC',
+    // 3.1:1 on the sea-soft fill. Quiet, but a person can actually see it —
+    // white on the fill read as a rendering failure rather than a placeholder.
+    color: '#8FB6BF',
   },
   photoOverlay: {
     position: 'absolute',
@@ -742,9 +753,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     padding: spacing.md,
   },
-  noticeError: { backgroundColor: color.emberSoft },
-  noticeSuccess: { backgroundColor: color.surface },
-  noticeErrorText: { color: color.emberDeep },
+  // 4.76:1 for the error text on it.
+  noticeError: { backgroundColor: '#FDF3F3' },
+  noticeSuccess: { backgroundColor: color.seaSoft },
+  noticeErrorText: { color: color.danger },
 
-  rule: { height: 1, backgroundColor: color.veil },
+  rule: { height: 1, backgroundColor: color.rule },
 });

@@ -28,18 +28,26 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
       const api = getApi();
       let session = null;
       let profile = null;
+      let activeHotel = null;
       try {
         session = await api.currentSession();
         const remoteProfile = session ? await api.getOwnProfile() : null;
         profile = remoteProfile ? toDomainProfile(remoteProfile) : null;
+        // Without this a returning account looks like it never chose a hotel
+        // and gets asked for one again on every launch.
+        activeHotel = session && profile ? await api.getActiveHotel() : null;
       } catch {
         // Restoring the session is best-effort: any failure here falls back
         // to a signed-out start rather than blocking the app from loading.
         session = null;
         profile = null;
+        activeHotel = null;
       }
       if (!cancelled) {
         dispatch({ type: 'BOOTSTRAP_RESOLVED', session, profile });
+        if (activeHotel) {
+          dispatch({ type: 'ACTIVE_HOTEL_LOADED', activeHotel });
+        }
       }
     })();
     return () => {

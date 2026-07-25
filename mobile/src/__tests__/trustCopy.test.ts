@@ -41,7 +41,18 @@ const sentences = [...allStrings(COPY), ...allStrings(COPY_FOR)];
  * a marketing claim, and an existing one cannot quietly change meaning without
  * being added to this list on purpose.
  */
-const MAY_DENY = new Set(['upcoming.explainer', 'discovery.overlapUpcoming']);
+/**
+ * The few sentences whose whole job is to say what the product does *not* ask
+ * for. Naming them one by one is the point: a denial has to be deliberate, and
+ * the allowlist alone is not enough — the sentence still has to contain a
+ * denial word to pass.
+ */
+const MAY_DENY = new Set([
+  'upcoming.explainer',
+  'discovery.overlapUpcoming',
+  'onboarding.welcome.body',
+  'onboarding.teaching.upcoming.body',
+]);
 const DENIAL = /\b(nobody|no one|never|not|without|no)\b/i;
 
 function offences(forbidden: RegExp) {

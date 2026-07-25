@@ -45,6 +45,7 @@ import {
   type UpcomingStay,
   type VocationApi,
 } from './contracts';
+import { MAX_INTERESTS } from './contracts';
 import { buildPhotoPath, isProfilePhotoPath, photoExtensionFor } from './photos';
 
 const SESSION_LIFETIME_MS = 60 * 60 * 1000;
@@ -79,6 +80,7 @@ interface StoredProfile {
   birthdate: string;
   bio: string | null;
   photoPath: string | null;
+  interests: string[];
 }
 
 export interface FakeApiOptions {
@@ -294,8 +296,13 @@ export class FakeApi implements VocationApi {
       displayName,
       birthdate: input.birthdate,
       bio: input.bio?.trim() || null,
-      // Saving the rest of the profile never touches the photo.
+      // Saving the rest of the profile never touches the photo — or the
+      // interests, unless this caller supplied a list of them.
       photoPath: this.profiles.get(userId)?.photoPath ?? null,
+      interests: (input.interests ?? this.profiles.get(userId)?.interests ?? []).slice(
+        0,
+        MAX_INTERESTS,
+      ),
     };
     this.profiles.set(userId, stored);
     return this.toOwnProfile(stored);
@@ -523,6 +530,7 @@ export class FakeApi implements VocationApi {
         age: candidate.age,
         bio: candidate.bio,
         photoPath: null,
+        interests: candidate.interests,
       }));
   }
 

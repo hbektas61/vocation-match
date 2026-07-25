@@ -142,6 +142,7 @@ describe('profile photos through the API', () => {
       'birthdate',
       'displayName',
       'id',
+      'interests',
       'photoPath',
     ]);
   });

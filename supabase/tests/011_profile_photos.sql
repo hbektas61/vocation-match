@@ -54,7 +54,7 @@ select bag_eq(
       from information_schema.column_privileges
      where table_schema = 'public' and table_name = 'profiles'
        and grantee = 'authenticated' and privilege_type = 'UPDATE'$$,
-  $$values ('display_name'::text),('bio'),('birthdate')$$,
+  $$values ('display_name'::text),('bio'),('birthdate'),('interests')$$,
   'the updatable column list still excludes suspended_at — dropping a column did not re-open it — and no longer includes photo_path');
 
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');

@@ -91,7 +91,6 @@ describe('editing a profile after onboarding', () => {
 describe('the stay you declared', () => {
   async function openUpcoming() {
     await onboard();
-    await fireEvent.press(await screen.findByTestId('activate-hotel-lara-shore'));
     await fireEvent.press(await screen.findByText('Rooms'));
     await fireEvent.press(await screen.findByTestId('open-upcoming'));
   }
@@ -156,7 +155,6 @@ describe('a match that vanishes mid-conversation', () => {
   /** Onboard, open a room, match with the fixture who likes back, open chat. */
   async function reachChat() {
     await onboard();
-    await fireEvent.press(await screen.findByTestId('activate-hotel-lara-shore'));
     await fireEvent.press(await screen.findByText('Rooms'));
     await fireEvent.press(await screen.findByTestId('open-here-now'));
     await fireEvent.press(await screen.findByTestId('simulate-near'));

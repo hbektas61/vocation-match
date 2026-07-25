@@ -4,7 +4,7 @@ import React from 'react';
 import App from '../../App';
 import { COPY } from '../copy';
 import { ApiError, FakeApi, getApi, setApi } from '../data';
-import { onboard, signUpAndSignIn } from '../testSupport/onboarding';
+import { onboard, signUpAndSignIn, startSignIn, startSignUp } from '../testSupport/onboarding';
 
 // A fixed clock keeps session lifetimes and age math deterministic across runs.
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
@@ -18,15 +18,14 @@ afterEach(() => {
 });
 
 /**
- * Shared path: age gate → sign-up → email confirmation → sign-in → profile →
- * hotel activation. The confirmation step is not decoration: a project with
- * `enable_confirmations = true` returns no session from a sign-up, so this is
- * the real entry path and the one the app has to work on.
+ * Shared path: the whole onboarding wizard, which now ends at the hotel rather
+ * than dropping someone into the app to find it themselves. The confirmation
+ * step is not decoration: a project with `enable_confirmations = true` returns
+ * no session from a sign-up, so this is the real entry path.
  */
 async function onboardAndActivateHotel() {
   await onboard('Deniz');
-  await fireEvent.press(await screen.findByTestId('activate-hotel-lara-shore'));
-  expect(await screen.findByText(/Active hotel/)).toBeTruthy();
+  expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
 }
 
 /** From the Rooms tab, opens Here Now and simulates an in-range check. */
@@ -214,29 +213,21 @@ describe('the inbox for someone who cannot see it', () => {
 describe('authentication and profile', () => {
   it('shows an error for a failed sign-in', async () => {
     await render(<App />);
-    await fireEvent.press(await screen.findByTestId('confirm-age'));
-
-    await fireEvent.changeText(await screen.findByTestId('auth-email'), 'nobody@example.test');
-    await fireEvent.changeText(screen.getByTestId('auth-password'), 'whatever1');
-    await fireEvent.press(screen.getByTestId('auth-submit'));
+    await startSignIn('nobody@example.test', 'whatever1');
 
     expect(await screen.findByText('Email or password is incorrect.')).toBeTruthy();
-    // The user stays on the auth screen and can try again.
-    expect(screen.getByTestId('screen-auth')).toBeTruthy();
+    // The user stays on the password step and can try again.
+    expect(screen.getByTestId('screen-onboarding-password')).toBeTruthy();
   });
 
   it('waits for a confirmed email rather than signing a new account straight in', async () => {
     await render(<App />);
-    await fireEvent.press(await screen.findByTestId('confirm-age'));
-    await fireEvent.press(await screen.findByTestId('auth-switch-mode'));
-    await fireEvent.changeText(await screen.findByTestId('auth-email'), 'new@example.test');
-    await fireEvent.changeText(screen.getByTestId('auth-password'), 'correct horse');
-    await fireEvent.press(screen.getByTestId('auth-submit'));
+    await startSignUp('new@example.test');
 
     // The bug this replaced: a sessionless sign-up was treated as an error, so
     // a correctly configured project failed on its own happy path.
     expect(await screen.findByTestId('screen-confirm-email')).toBeTruthy();
-    expect(screen.queryByTestId('auth-error')).toBeNull();
+    expect(screen.queryByTestId('onboarding-error')).toBeNull();
     expect(await getApi().currentSession()).toBeNull();
   });
 
@@ -245,10 +236,7 @@ describe('authentication and profile', () => {
     await api.signUp('waiting@example.test', 'correct horse');
 
     await render(<App />);
-    await fireEvent.press(await screen.findByTestId('confirm-age'));
-    await fireEvent.changeText(await screen.findByTestId('auth-email'), 'waiting@example.test');
-    await fireEvent.changeText(screen.getByTestId('auth-password'), 'correct horse');
-    await fireEvent.press(screen.getByTestId('auth-submit'));
+    await startSignIn('waiting@example.test');
 
     expect(await screen.findByTestId('screen-confirm-email')).toBeTruthy();
     expect(screen.getByTestId('confirm-resend')).toBeTruthy();
@@ -256,24 +244,29 @@ describe('authentication and profile', () => {
 
   it('signs in once the address is confirmed', async () => {
     await signUpAndSignIn('confirmed@example.test');
-    expect(await screen.findByTestId('screen-profile-setup')).toBeTruthy();
+    expect(await screen.findByTestId('screen-onboarding-name')).toBeTruthy();
   });
 
-  it('refuses an underage birthdate at profile setup with the 18+ message', async () => {
+  it('refuses an underage birthdate with the 18+ message', async () => {
     await signUpAndSignIn('young@example.test');
 
     await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Kid');
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+
     const recentYear = new Date().getFullYear() - 5;
-    await fireEvent.changeText(screen.getByTestId('profile-birthdate'), `${recentYear}-01-01`);
-    await fireEvent.press(screen.getByTestId('save-profile'));
+    await fireEvent.changeText(
+      await screen.findByTestId('profile-birthdate'),
+      `${recentYear}-01-01`,
+    );
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
 
     expect(await screen.findByText('Vocation Match is 18+ only.')).toBeTruthy();
-    expect(screen.getByTestId('screen-profile-setup')).toBeTruthy();
+    expect(screen.getByTestId('screen-onboarding-birthdate')).toBeTruthy();
   });
 
   it('completes the whole entry path and reaches the main tabs', async () => {
     await onboard('Deniz', 'brandnew@example.test');
-    expect(await screen.findByTestId('activate-hotel-lara-shore')).toBeTruthy();
+    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
   });
 
   it('stops sharing on the server when location permission is denied', async () => {
@@ -303,7 +296,7 @@ describe('authentication and profile', () => {
     await fireEvent.press(screen.getByText('Settings'));
     await fireEvent.press(await screen.findByTestId('sign-out'));
 
-    expect(await screen.findByTestId('confirm-age')).toBeTruthy();
+    expect(await screen.findByTestId('screen-welcome')).toBeTruthy();
   });
 });
 
@@ -315,11 +308,7 @@ describe('authentication and profile', () => {
 describe('waiting for a confirmation email', () => {
   async function reachConfirmScreen(email = 'waiting@example.test') {
     await render(<App />);
-    await fireEvent.press(await screen.findByTestId('confirm-age'));
-    await fireEvent.press(await screen.findByTestId('auth-switch-mode'));
-    await fireEvent.changeText(await screen.findByTestId('auth-email'), email);
-    await fireEvent.changeText(screen.getByTestId('auth-password'), 'correct horse');
-    await fireEvent.press(screen.getByTestId('auth-submit'));
+    await startSignUp(email);
     expect(await screen.findByTestId('screen-confirm-email')).toBeTruthy();
   }
 
@@ -355,20 +344,17 @@ describe('waiting for a confirmation email', () => {
     await fireEvent.press(await screen.findByText('Settings'));
     await fireEvent.press(await screen.findByTestId('sign-out'));
 
-    await fireEvent.press(await screen.findByTestId('confirm-age'));
-    await fireEvent.press(await screen.findByTestId('auth-switch-mode'));
-    await fireEvent.changeText(await screen.findByTestId('auth-email'), 'already@example.test');
-    await fireEvent.changeText(screen.getByTestId('auth-password'), 'correct horse');
-    await fireEvent.press(screen.getByTestId('auth-submit'));
+    await startSignUp('already@example.test');
     expect(await screen.findByTestId('screen-confirm-email')).toBeTruthy();
 
     await fireEvent.press(screen.getByTestId('confirm-back'));
-    expect(await screen.findByTestId('screen-auth')).toBeTruthy();
+    expect(await screen.findByTestId('screen-onboarding-email')).toBeTruthy();
 
     await fireEvent.changeText(screen.getByTestId('auth-email'), 'already@example.test');
-    await fireEvent.changeText(screen.getByTestId('auth-password'), 'correct horse');
-    await fireEvent.press(screen.getByTestId('auth-submit'));
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await fireEvent.changeText(await screen.findByTestId('auth-password'), 'correct horse');
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
     // Straight to the app: this account was complete all along.
-    expect(await screen.findByTestId('activate-hotel-lara-shore')).toBeTruthy();
+    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
   });
 });

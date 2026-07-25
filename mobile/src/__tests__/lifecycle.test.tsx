@@ -45,7 +45,7 @@ async function returnToForeground() {
 describe('coming back to a session that has gone', () => {
   it('signs out rather than showing tabs whose every request fails', async () => {
     await onboard();
-    expect(await screen.findByTestId('activate-hotel-lara-shore')).toBeTruthy();
+    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
 
     // An hour passes with the app in the background: the session lapses.
     clock += 61 * 60 * 1000;
@@ -55,18 +55,18 @@ describe('coming back to a session that has gone', () => {
       expect(await getApi().currentSession()).toBeNull();
     });
     // Back to the start rather than a signed-in-looking app that does nothing.
-    expect(await screen.findByTestId('confirm-age')).toBeTruthy();
+    expect(await screen.findByTestId('screen-welcome')).toBeTruthy();
   });
 
   it('stays put when the session is still good', async () => {
     await onboard();
-    expect(await screen.findByTestId('activate-hotel-lara-shore')).toBeTruthy();
+    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
 
     clock += 60 * 1000;
     await returnToForeground();
 
     // Nothing should have happened at all.
-    expect(screen.getByTestId('activate-hotel-lara-shore')).toBeTruthy();
+    expect(screen.getByTestId('screen-rooms')).toBeTruthy();
     expect(await getApi().currentSession()).not.toBeNull();
   });
 
@@ -81,7 +81,7 @@ describe('coming back to a session that has gone', () => {
 
     // A dropped connection looks exactly like a lapsed session from here.
     // Guessing wrong in that direction throws someone out of the app.
-    expect(screen.getByTestId('activate-hotel-lara-shore')).toBeTruthy();
+    expect(screen.getByTestId('screen-rooms')).toBeTruthy();
   });
 });
 
