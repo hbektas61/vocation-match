@@ -99,7 +99,7 @@ select bag_eq(
       join pg_namespace n on n.oid = p.pronamespace
       join unnest(p.proargnames, p.proargmodes) as a(attname, mode) on true
      where n.nspname = 'public' and p.proname = 'discovery_feed' and a.mode = 't'$$,
-  $$values ('user_id'::text),('display_name'),('age'),('bio'),('photo_url')$$,
+  $$values ('user_id'::text),('display_name'),('age'),('bio'),('photo_path')$$,
   'the feed returns exactly the card fields — no birthdate, no email, no location'
 );
 

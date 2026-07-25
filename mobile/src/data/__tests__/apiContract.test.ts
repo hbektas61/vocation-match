@@ -94,10 +94,6 @@ describe('VocationApi contract (in-memory implementation)', () => {
     it.each([
       ['a one-character name', { displayName: 'A', birthdate: ADULT_BIRTHDATE }],
       ['an over-long bio', { displayName: 'Ada', birthdate: ADULT_BIRTHDATE, bio: 'x'.repeat(301) }],
-      [
-        'a non-https photo',
-        { displayName: 'Ada', birthdate: ADULT_BIRTHDATE, photoUrl: 'http://insecure.test/a.jpg' },
-      ],
       ['an invalid birthdate', { displayName: 'Ada', birthdate: '25-07-2026' }],
     ])('rejects %s', async (_label, input) => {
       await expect(api.saveOwnProfile(input)).rejects.toBeInstanceOf(ApiError);
@@ -274,7 +270,7 @@ describe('VocationApi contract (in-memory implementation)', () => {
       const feed = await api.getDiscoveryFeed('HERE_NOW');
       expect(feed.length).toBeGreaterThan(0);
       feed.forEach((card) => {
-        expect(Object.keys(card).sort()).toEqual(['age', 'bio', 'displayName', 'photoUrl', 'userId']);
+        expect(Object.keys(card).sort()).toEqual(['age', 'bio', 'displayName', 'photoPath', 'userId']);
         expect(card.age).toBeGreaterThanOrEqual(18);
       });
     });

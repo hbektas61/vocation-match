@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
 import {
+  Avatar,
   Badge,
   Body,
   Button,
@@ -20,6 +21,7 @@ import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
 import { ApiError, getApi, type CandidateCard, type RoomKey, type RoomStatus } from '../data';
 import type { RootStackParamList } from '../navigation/types';
 import { earliestRoomExpiry } from '../state/roomSchedule';
+import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
 
 const ROOM_LABEL: Record<RoomKey, string> = {
@@ -110,6 +112,10 @@ export function DiscoveryScreen() {
   );
   const eligibleRooms = rooms?.filter((r) => r.eligible).map((r) => r.room) ?? [];
   const candidate = visibleDeck[0] ?? null;
+  // Only the card on top: signing a URL for a deck of twenty would hand out
+  // nineteen readable links for people the user may never actually see.
+  const photoPaths = useMemo(() => [candidate?.photoPath ?? null], [candidate?.photoPath]);
+  const photoUrls = usePhotoUrls(photoPaths);
 
   if (!hotel) {
     return (
@@ -152,7 +158,7 @@ export function DiscoveryScreen() {
             otherUserId: candidate.userId,
             displayName: candidate.displayName,
             age: candidate.age,
-            photoUrl: candidate.photoUrl,
+            photoPath: candidate.photoPath,
             room,
             createdAt: nowMs(),
             unmatchedAt: null,
@@ -197,6 +203,12 @@ export function DiscoveryScreen() {
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="deck-loading" />
       ) : candidate ? (
         <Card testID={`candidate-${candidate.userId}`}>
+          <Avatar
+            url={candidate.photoPath ? photoUrls[candidate.photoPath] ?? null : null}
+            name={candidate.displayName}
+            size="lg"
+            testID={`candidate-photo-${candidate.userId}`}
+          />
           <Heading>
             {candidate.displayName}, {candidate.age}
           </Heading>

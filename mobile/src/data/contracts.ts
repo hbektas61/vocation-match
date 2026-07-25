@@ -47,15 +47,25 @@ export interface OwnProfile {
   birthdate: string;
   age: number;
   bio: string | null;
-  photoUrl: string | null;
+  /**
+   * Object path in the private photo bucket, never a URL (decision D-014).
+   * A path is not viewable on its own — `getPhotoUrls` exchanges it for a
+   * short-lived signed URL, and only if the server agrees the caller may see
+   * that person.
+   */
+  photoPath: string | null;
 }
 
+/**
+ * Note what cannot be written here: a photo. Setting a profile photo is its own
+ * call, because the only path the server accepts is one that begins with the
+ * caller's own user id and points at an object they just uploaded.
+ */
 export interface ProfileInput {
   displayName: string;
   /** ISO date, YYYY-MM-DD. */
   birthdate: string;
   bio?: string | null;
-  photoUrl?: string | null;
 }
 
 /** A hotel as the client may see it. Coordinates are deliberately absent. */
@@ -97,6 +107,18 @@ export interface PresenceAnswer {
   expiresAt: number;
 }
 
+/**
+ * One image ready to be stored. The picker's raw asset never reaches this
+ * type: it is re-encoded first, which is what drops the EXIF block — a photo
+ * taken at the hotel carries the GPS coordinates this product promises never
+ * to expose (D-005).
+ */
+export interface PhotoUpload {
+  /** Local file URI of the re-encoded image. */
+  uri: string;
+  mimeType: string;
+}
+
 export type RoomKey = 'UPCOMING' | 'HERE_NOW';
 
 export type RoomReason =
@@ -126,7 +148,7 @@ export interface CandidateCard {
   displayName: string;
   age: number;
   bio: string | null;
-  photoUrl: string | null;
+  photoPath: string | null;
 }
 
 export interface VocationApi {
@@ -140,6 +162,22 @@ export interface VocationApi {
   /* profile */
   getOwnProfile(): Promise<OwnProfile | null>;
   saveOwnProfile(input: ProfileInput): Promise<OwnProfile>;
+
+  /* photos */
+  /**
+   * Uploads an image and points the caller's profile at it. Returns the saved
+   * profile so the caller never has to guess whether the two halves — the
+   * object and the row — ended up agreeing.
+   */
+  uploadProfilePhoto(upload: PhotoUpload): Promise<OwnProfile>;
+  /** Clears the profile photo and removes the object. */
+  removeProfilePhoto(): Promise<OwnProfile>;
+  /**
+   * Exchanges object paths for short-lived signed URLs. A path the caller is
+   * not allowed to see is simply absent from the result — that is the same
+   * answer as "no photo", which is what keeps it from being an oracle.
+   */
+  getPhotoUrls(paths: string[]): Promise<Record<string, string>>;
 
   /* hotel */
   searchHotels(query: string): Promise<HotelCard[]>;
@@ -194,7 +232,7 @@ export interface MatchSummary {
   otherUserId: string;
   displayName: string;
   age: number;
-  photoUrl: string | null;
+  photoPath: string | null;
   room: RoomKey;
   createdAt: number;
   /** Set once either side ends the match. History stays readable. */

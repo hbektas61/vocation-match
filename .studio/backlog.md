@@ -75,9 +75,20 @@ applied in order, pgTAP suites plus multi-connection concurrency checks.
 
 ## Carried from the independent review (2026-07-25)
 
-- [ ] S-001 Serve profile photos from our own storage bucket instead of an
-      arbitrary https URL (decision D-014). Until then the length cap is a
-      stop-gap, not a fix — the beacon is still possible.
+- [x] S-001 Done. `profiles.photo_url` no longer exists — not the column, not
+      its constraints, and not any code path that could write a URL. A photo is
+      an object in the private `profile-photos` bucket at
+      `<owner uuid>/<random token>.<ext>`, written only under the owner's own
+      prefix, read only by the owner, a match, or someone in an open room with
+      them, and attached to the profile only through `public.set_profile_photo()`,
+      which refuses a path with no object behind it. EXIF is dropped by
+      re-encoding before upload, because a photo taken at the hotel carries the
+      exact GPS position D-005 says never leaves. Evidence:
+      `supabase/tests/011_profile_photos.sql` (43 assertions),
+      `mobile/src/data/__tests__/{profilePhotos,imagePicker}.test.ts`,
+      `mobile/src/__tests__/profilePhotoUi.test.tsx`. The one thing still
+      deferred is on-device confirmation that the encoder emits metadata-free
+      bytes (D-015).
 - [x] S-002 Done. Per-user fixed-window counters in `app.rate_limit()`:
       reporting 10/hour (the tightest, because unlimited reporting is both a
       way to bury the moderation queue and a way to mass-block), presence

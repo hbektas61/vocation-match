@@ -26,6 +26,11 @@ export interface Profile {
   bio: string;
   interests: string[];
   /**
+   * Object path in the private photo bucket, never a URL (D-014). Undefined on
+   * a `Candidate`, whose photo arrives on the card instead.
+   */
+  photoPath?: string | null;
+  /**
    * ISO date, YYYY-MM-DD. Only ever populated for the signed-in user's own
    * profile — the server never returns another user's birthdate, so
    * `Candidate` (which extends `Profile`) leaves this undefined.

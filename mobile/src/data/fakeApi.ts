@@ -33,6 +33,7 @@ import {
   type HotelCard,
   type MatchSummary,
   type OwnProfile,
+  type PhotoUpload,
   type PresenceAnswer,
   type ProfileInput,
   type ReportInput,
@@ -43,6 +44,7 @@ import {
   type UpcomingStay,
   type VocationApi,
 } from './contracts';
+import { buildPhotoPath, isProfilePhotoPath, photoExtensionFor } from './photos';
 
 const SESSION_LIFETIME_MS = 60 * 60 * 1000;
 const MIN_PASSWORD_LENGTH = 8;
@@ -68,7 +70,7 @@ interface StoredProfile {
   displayName: string;
   birthdate: string;
   bio: string | null;
-  photoUrl: string | null;
+  photoPath: string | null;
 }
 
 export interface FakeApiOptions {
@@ -88,6 +90,9 @@ export class FakeApi implements VocationApi {
   private readonly messageListeners = new Map<string, Set<(message: ChatMessage) => void>>();
   private readonly blocks = new Map<string, number>();
   private readonly reports: (ReportInput & { at: number })[] = [];
+  /** Object path -> local uri. The fake's stand-in for the storage bucket. */
+  private readonly objects = new Map<string, string>();
+  private uploadFailure: ApiError | null = null;
   private session: AuthSession | null = null;
   private nextId = 1;
   private readonly now: () => number;
@@ -107,7 +112,10 @@ export class FakeApi implements VocationApi {
     if (this.users.has(key)) {
       throw new ApiError('CONFLICT', 'That email is already registered.');
     }
-    const user: FakeUser = { id: `user-${this.nextId++}`, email: key, password };
+    // A UUID rather than `user-1`: the server's ids are UUIDs, and a photo path
+    // has to begin with one, so a fake that handed out anything else would let
+    // a broken path through here and fail only against the real database.
+    const user: FakeUser = { id: fakeUserId(this.nextId++), email: key, password };
     this.users.set(key, user);
     return this.openSession(user);
   }
@@ -146,9 +154,6 @@ export class FakeApi implements VocationApi {
     if (input.bio && input.bio.length > 300) {
       throw new ApiError('INVALID_INPUT', 'Keep your bio under 300 characters.');
     }
-    if (input.photoUrl && !input.photoUrl.startsWith('https://')) {
-      throw new ApiError('INVALID_INPUT', 'Photo links must start with https://.');
-    }
     if (!parseIsoDate(input.birthdate)) {
       throw new ApiError('INVALID_INPUT', 'Enter your date of birth as YYYY-MM-DD.');
     }
@@ -160,10 +165,75 @@ export class FakeApi implements VocationApi {
       displayName,
       birthdate: input.birthdate,
       bio: input.bio?.trim() || null,
-      photoUrl: input.photoUrl || null,
+      // Saving the rest of the profile never touches the photo.
+      photoPath: this.profiles.get(userId)?.photoPath ?? null,
     };
     this.profiles.set(userId, stored);
     return this.toOwnProfile(stored);
+  }
+
+  /* ----------------------------------------------------------------- photos */
+
+  async uploadProfilePhoto(upload: PhotoUpload): Promise<OwnProfile> {
+    const userId = await this.requireUserId();
+    const stored = this.profiles.get(userId);
+    if (!stored) {
+      throw new ApiError('NOT_FOUND', 'Finish your profile first.');
+    }
+    // Mirrors the bucket's allowed_mime_types; `photoExtensionFor` raises the
+    // same INVALID_INPUT the server would.
+    photoExtensionFor(upload.mimeType);
+    if (this.uploadFailure) {
+      // Nothing is written when the upload fails — the profile keeps whatever
+      // photo it already had, rather than pointing at an object that is not
+      // there. One-shot, so a test can follow a failure with a retry.
+      const failure = this.uploadFailure;
+      this.uploadFailure = null;
+      throw failure;
+    }
+    const path = buildPhotoPath(userId, upload.mimeType);
+    if (stored.photoPath) {
+      this.objects.delete(stored.photoPath);
+    }
+    this.objects.set(path, upload.uri);
+    stored.photoPath = path;
+    return this.toOwnProfile(stored);
+  }
+
+  async removeProfilePhoto(): Promise<OwnProfile> {
+    const userId = await this.requireUserId();
+    const stored = this.profiles.get(userId);
+    if (!stored) {
+      throw new ApiError('NOT_FOUND', 'Finish your profile first.');
+    }
+    if (stored.photoPath) {
+      this.objects.delete(stored.photoPath);
+      stored.photoPath = null;
+    }
+    return this.toOwnProfile(stored);
+  }
+
+  async getPhotoUrls(paths: string[]): Promise<Record<string, string>> {
+    const userId = await this.requireUserId();
+    const urls: Record<string, string> = {};
+    for (const path of paths) {
+      if (!isProfilePhotoPath(path) || !this.objects.has(path)) {
+        continue;
+      }
+      // The single-session fake cannot represent "someone else's room", so it
+      // enforces the only half it can see: your own prefix. The cross-user half
+      // of the read policy is proved in supabase/tests/011_profile_photos.sql.
+      if (!path.startsWith(`${userId}/`)) {
+        continue;
+      }
+      urls[path] = `signed://${path}`;
+    }
+    return urls;
+  }
+
+  /** Test seam: makes the next upload fail the way a dropped connection would. */
+  failNextUploadWith(error: ApiError | null): void {
+    this.uploadFailure = error;
   }
 
   /* ------------------------------------------------------------------ hotel */
@@ -305,7 +375,7 @@ export class FakeApi implements VocationApi {
         displayName: candidate.displayName,
         age: candidate.age,
         bio: candidate.bio,
-        photoUrl: null,
+        photoPath: null,
       }));
   }
 
@@ -383,7 +453,7 @@ export class FakeApi implements VocationApi {
           otherUserId: match.otherUserId,
           displayName: candidate?.displayName ?? 'Someone',
           age: candidate?.age ?? 0,
-          photoUrl: null,
+          photoPath: null,
           room: match.room,
           createdAt: match.createdAt,
           unmatchedAt: match.unmatchedAt,
@@ -548,6 +618,11 @@ export class FakeApi implements VocationApi {
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
+}
+
+/** A stable, valid UUID per fake account, so ids look like the server's. */
+function fakeUserId(n: number): string {
+  return `00000000-0000-4000-8000-${n.toString(16).padStart(12, '0')}`;
 }
 
 function stayKey(userId: string, hotelId: string): string {

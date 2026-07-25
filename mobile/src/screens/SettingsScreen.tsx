@@ -2,9 +2,11 @@ import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 
+import { ProfilePhotoField } from '../components/ProfilePhoto';
 import { Body, Button, Caption, Card, EmptyState, Heading, Notice, Screen, Title } from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type BlockedUser } from '../data';
+import { toDomainProfile } from '../state/appReducer';
 import { useAppStore } from '../state/AppStore';
 
 export function SettingsScreen() {
@@ -65,10 +67,22 @@ export function SettingsScreen() {
     <Screen testID="screen-settings">
       <Title>{COPY.settings.title}</Title>
       {state.profile ? (
-        <Card>
+        <Card testID="settings-profile">
           <Heading>{state.profile.displayName}</Heading>
           <Caption>Age {state.profile.age}</Caption>
           {state.profile.bio ? <Body>{state.profile.bio}</Body> : null}
+        </Card>
+      ) : null}
+      {state.profile ? (
+        <Card testID="settings-photo">
+          <Heading>{COPY.photo.title}</Heading>
+          <ProfilePhotoField
+            displayName={state.profile.displayName}
+            photoPath={state.profile.photoPath ?? null}
+            onProfileChanged={(saved) =>
+              dispatch({ type: 'SAVE_PROFILE', profile: toDomainProfile(saved) })
+            }
+          />
         </Card>
       ) : null}
       <Card>

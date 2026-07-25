@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   AccessibilityInfo,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -215,6 +216,61 @@ export function Notice({
   );
 }
 
+/**
+ * A profile photo, or the initial that stands in for one.
+ *
+ * `url` is a short-lived signed URL, never a permanent one — see
+ * `getPhotoUrls`. When it is absent the fallback is not decoration: a card with
+ * no image and no placeholder collapses, and a screen reader reading a row of
+ * cards needs to hear something for each person either way, which is why the
+ * whole thing carries one label rather than leaving an unlabelled image.
+ */
+export function Avatar({
+  url,
+  name,
+  size = 'md',
+  testID,
+}: {
+  url: string | null;
+  name: string;
+  size?: 'md' | 'lg';
+  testID?: string;
+}) {
+  // A signed URL can lapse or be refused between being handed out and being
+  // fetched. Remembering *which* URL failed means a refreshed one is tried
+  // again instead of the card being stuck on the fallback for good.
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const showImage = url !== null && url !== failedUrl;
+
+  const box = size === 'lg' ? styles.avatarLg : styles.avatarMd;
+  const label = showImage ? `Photo of ${name}` : `${name} has no photo`;
+  return (
+    <View
+      style={[styles.avatar, box]}
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={label}
+      testID={testID}
+    >
+      {showImage ? (
+        <Image
+          source={{ uri: url }}
+          style={[styles.avatarImage, box]}
+          resizeMode="cover"
+          onError={() => setFailedUrl(url)}
+        />
+      ) : (
+        <Text style={styles.avatarInitial}>{initialOf(name)}</Text>
+      )}
+    </View>
+  );
+}
+
+function initialOf(name: string): string {
+  const trimmed = name.trim();
+  return trimmed ? trimmed[0].toUpperCase() : '?';
+}
+
 export function Gap({ size = 'md' }: { size?: keyof typeof spacing }) {
   return <View style={{ height: spacing[size] }} />;
 }
@@ -285,6 +341,20 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  avatar: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: color.badgeUpcoming,
+    overflow: 'hidden',
+  },
+  avatarMd: { width: 64, height: 64, borderRadius: 32 },
+  avatarLg: { width: 128, height: 128, borderRadius: 64 },
+  avatarImage: { resizeMode: 'cover' },
+  avatarInitial: {
+    fontSize: font.heading,
+    fontWeight: '700',
+    color: color.badgeTextUpcoming,
   },
   notice: {
     backgroundColor: color.surface,

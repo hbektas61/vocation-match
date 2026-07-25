@@ -82,6 +82,9 @@ export function ProfileSetupScreen() {
         editable={!submitting}
         testID="profile-bio"
       />
+      {/* A photo needs a profile row to point at, so it is the next step
+          rather than part of this one. Settings is where it lives. */}
+      <Body>{COPY.profileSetup.photoLater}</Body>
       {error ? <Notice message={error} tone="error" testID="profile-error" /> : null}
       <Gap size="sm" />
       <Button

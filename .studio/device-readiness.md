@@ -118,3 +118,29 @@ The handoff for them is recorded in `.studio/handoffs.md`.
   density; revisit before a large hotel.
 - No account-deletion flow yet. Required before store submission; the schema
   already cascades correctly (`supabase/tests/001_profiles.sql` proves it).
+
+## Added by pilot hardening H1 — profile photos
+
+These need real hardware and cannot be closed by any check that runs here.
+
+- **EXIF really is gone.** Take a photo on a phone with location services on,
+  set it as a profile photo, then pull the stored object out of the bucket and
+  read its metadata. Expect no GPS tags, no timestamp, no device model. What is
+  already proven locally: the picker is called with `exif: false`, and the file
+  that gets uploaded is the re-encoded one and never the path the picker
+  returned (`mobile/src/data/__tests__/imagePicker.test.ts`). What is not
+  proven: that the native JPEG encoder emits a metadata-free file. This is the
+  D-005 guarantee, so it should be checked before any pilot with real people,
+  not before the next code milestone.
+- **A signed URL round trip against a real storage service.** Every policy here
+  is exercised against the same grant shape production has, but no signed URL
+  has ever been minted or fetched. Confirm: an owner sees their own photo; a
+  person in the same open room sees it; someone at another hotel gets nothing;
+  a logged-out request gets nothing.
+- **The permission dialog.** Deny photo-library access on both platforms and
+  confirm the app says so and stays usable — the rest of the product does not
+  need a photo.
+- **A photo that fails to load.** With a lapsed signed URL, the card should fall
+  back to the initial rather than showing a broken image.
+- **Upload on a poor connection.** Interrupt an upload mid-flight; the previous
+  photo must still be showing and the error must say so.

@@ -272,3 +272,78 @@ Handoff:
 - Verification: `npm exec tsc -- --noEmit` passed in `mobile/`.
 - Risks / blockers: Codex sandbox cannot write `.git/config` or access the macOS Keychain; the owner must run the initial remote/commit/push commands in Terminal.
 - Recommended next agent: `cross-platform-engineer`
+
+## 2026-07-25 — H1 profile photos leave the open internet (pilot hardening, phase 1)
+
+Handoff:
+- Date: 2026-07-25
+- From agent: studio-autopilot (`project-orchestrator` + `database-engineer`/`cross-platform-engineer` implementation, `code-reviewer`, `security-auditor`)
+- To agent: `backend-engineer` (H2, in-app account deletion)
+- What I did: closed backlog S-001 and decision D-014. `profiles.photo_url` is gone
+  — the column, both of its stop-gap constraints, and every code path that could
+  write a URL. A profile photo is now an object in a private bucket whose path
+  begins with the owner's user id, read through a policy and never through a
+  permanent URL.
+- Key decisions:
+  - **Path shape is the ownership boundary.** `<owner uuid>/<24–64 char random
+    token>.<jpg|png|webp>`, enforced by two CHECK constraints on `profiles` and by
+    the storage policies. The token comes from a CSPRNG, not `Math.random`,
+    because a user id is public to everyone in a room — if the second segment
+    were predictable the whole path would be.
+  - **Ownership is never taken from the row being written.** `storage.objects.owner`
+    is written by the storage service and is part of the insert, so the policies
+    compare the path prefix to the caller instead. A pgTAP case asserts that
+    claiming to be the owner in the row does not help.
+  - **Reads: owner, match, or same open room — nothing else.** Blocking, suspension
+    and a swipe already made all remove the read. A refused read is indistinguishable
+    from "no photo", so it cannot be used to learn who is in a room with whom.
+  - **`photo_path` is not a writable column.** It was, until the security audit
+    pointed out that a client could PATCH it to any well-shaped string with nothing
+    behind it, and that every distinct value fired the cleanup trigger — a free way
+    to grow `storage_cleanup_queue` without bound. It now goes through
+    `public.set_profile_photo()`, which checks the object exists and counts against
+    a 20/hour limit.
+  - **EXIF is dropped by re-encoding, and never requested.** A photo taken at the
+    hotel carries the exact GPS position — the one thing D-005 says never leaves.
+    The picker asks for `exif: false` and the bytes uploaded come from an
+    `ImageManipulator` re-render, never from the picked file.
+  - **What the database cannot do is stated, not implied.** Deleting a
+    `storage.objects` row makes an object unreadable; it does not delete the bytes.
+    `public.storage_cleanup_queue` records that outstanding work for a service-role
+    job, and the client sweeps its own prefix on every upload and removal so a
+    crash mid-upload leaks at most one object per account.
+- Files touched: `supabase/migrations/20260725001400_profile_photos.sql`,
+  `supabase/migrations/20260725001500_photo_write_path.sql`,
+  `supabase/scripts/storage-bootstrap.sql`, `supabase/scripts/db-test.sh`,
+  `supabase/tests/011_profile_photos.sql`, `supabase/tests/005_discovery.sql`,
+  `scripts/verify-api-contract.js`, `mobile/src/data/{photos,imagePicker,contracts,supabaseApi,fakeApi}.ts`,
+  `mobile/src/components/{ProfilePhoto.tsx,ui.tsx}`, `mobile/src/state/usePhotoUrls.ts`,
+  `mobile/src/screens/{Settings,Discovery,Inbox,ProfileSetup}Screen.tsx`,
+  `mobile/src/{copy.ts,domain/types.ts,state/appReducer.ts}`, `mobile/app.json`,
+  `mobile/package.json` (expo-image-picker, expo-image-manipulator, expo-crypto).
+- Verification: `bash scripts/check.sh` — 271 pgTAP assertions across 12 SQL suites
+  (43 of them new, in `011_profile_photos.sql`), 12 concurrency checks, the
+  client/database contract check (now covering the storage bucket and its policies),
+  `tsc --noEmit`, `eslint --max-warnings 0`, 173 jest tests, and the web bundle.
+  The read policy was negative-controlled: replacing it with a permissive one turns
+  five of the new assertions red, so they depend on the policy rather than on
+  something else being empty.
+- Risks / blockers:
+  - **Deferred, needs a device (D-015).** That the native encoder really drops every
+    EXIF tag is asserted by the code path, not by inspecting stored bytes. The jest
+    suite proves EXIF is never requested and that the original file is never the one
+    uploaded; confirming the output is metadata-free needs a GPS-tagged photo on real
+    hardware. Recorded in `.studio/device-readiness.md`.
+  - **Deferred, needs a hosted project.** Nothing here has run against a real
+    storage service. The policies are exercised against the same wide-open grant
+    shape production has (`storage-bootstrap.sql` grants ALL to anon/authenticated
+    and relies entirely on RLS), but a signed-URL round trip has not been made.
+  - Declared MIME type is trusted by the storage service, not verified against the
+    file bytes. Low risk while the only consumer is a native `<Image>`; it becomes
+    real if a browser-facing surface ever renders this bucket.
+  - Signed URLs last five minutes and an already-issued one survives a block for the
+    rest of its window. Inherent to signed URLs; the window is short and deliberate.
+  - `storage_cleanup_queue` has no drainer yet. It is a record of outstanding work,
+    not a mechanism.
+- Recommended next agent: `backend-engineer` for H2 — `public.delete_my_account()`,
+  the confirmation UX, and local session removal.

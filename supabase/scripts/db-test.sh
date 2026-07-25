@@ -33,6 +33,10 @@ done
 log() { printf '\n=== %s\n' "$*"; }
 
 psql_db()   { docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -U postgres -d "$DB" -q "$@"; }
+# The storage schema is owned by a role `postgres` is not a member of in this
+# bare image. Only the harness bootstrap needs that; every migration and every
+# test runs as `postgres`, exactly as it would against a real project.
+psql_admin() { docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -U supabase_admin -d "$DB" -q "$@"; }
 
 container_running() {
   [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null || echo false)" = "true" ]
@@ -66,6 +70,13 @@ else
   log "starting ${CONTAINER} (${IMAGE}) on port ${PORT}"
   start_container
 fi
+
+# A real project already has the storage service's tables before any of our
+# migrations run. This image does not, because the storage service is not part
+# of it — so recreate that starting point, faithfully enough that the policies
+# are tested against the same wide-open grants production has.
+log "bootstrapping the storage schema (test harness only)"
+psql_admin < "$SUPA_DIR/scripts/storage-bootstrap.sql" >/dev/null
 
 log "applying migrations"
 psql_db -c "create schema if not exists app;

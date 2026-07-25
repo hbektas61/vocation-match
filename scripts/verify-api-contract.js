@@ -45,7 +45,20 @@ for (const match of source.matchAll(helperPattern)) {
   rpcCalls.push({ name: match[1], args: args.sort() });
 }
 
-const tables = new Set([...source.matchAll(/\.from\('(\w+)'\)/g)].map((m) => m[1]));
+const tables = new Set(
+  [...source.matchAll(/\.from\('(\w+)'\)/g)].map((m) => m[1]),
+);
+// `client.storage.from(BUCKET)` is the same kind of hand-written reference as a
+// table name and drifts the same way — a bucket renamed in SQL and not in the
+// client compiles, lints, and passes every unit test. The name is a constant in
+// `photos.ts`, so it is resolved from there rather than pattern-matched at each
+// call site.
+const buckets = new Set();
+const photosSource = readFileSync(join(ROOT, 'mobile/src/data/photos.ts'), 'utf8');
+const bucketConstant = photosSource.match(/PHOTO_BUCKET\s*=\s*'([\w-]+)'/);
+if (source.includes('.storage') && bucketConstant) {
+  buckets.add(bucketConstant[1]);
+}
 
 const selects = [];
 for (const match of source.matchAll(/\.from\('(\w+)'\)[\s\S]{0,200}?\.select\('([^']+)'\)/g)) {
@@ -121,9 +134,40 @@ for (const { table, columns } of selects) {
   }
 }
 
+/* --------------------------------------------------------------- storage */
+
+for (const bucket of buckets) {
+  const row = query(`
+    select id || '\t' || public::text from storage.buckets where id = '${bucket}'
+  `);
+  if (!row) {
+    problems.push(`storage.from('${bucket}') — no such bucket`);
+    continue;
+  }
+  if (row.split('\t')[1] === 't') {
+    // A public bucket hands out permanent URLs for every object in it, which
+    // is exactly the beacon decision D-014 exists to close.
+    problems.push(`the '${bucket}' bucket is public — every object in it has a permanent URL`);
+  }
+  // A private bucket with no read policy is not secure, it is broken: nothing
+  // in it would ever load. A private bucket with a policy for `anon` is the
+  // opposite mistake.
+  const policies = query(`
+    select policyname || '\t' || roles::text
+      from pg_policies where schemaname = 'storage' and tablename = 'objects'
+  `);
+  if (!policies) {
+    problems.push(`storage.objects has no policies, so nothing in '${bucket}' is reachable`);
+  } else if (/\banon\b/.test(policies)) {
+    problems.push(`a storage.objects policy is granted to anon — '${bucket}' is meant to be private`);
+  }
+}
+
 /* ----------------------------------------------------------------- report */
 
-const checked = `${rpcCalls.length} RPC calls, ${tables.size} tables, ${selects.length} column lists`;
+const checked =
+  `${rpcCalls.length} RPC calls, ${tables.size} tables, ${selects.length} column lists, ` +
+  `${buckets.size} storage buckets`;
 
 if (problems.length) {
   console.error(`\nAPI contract mismatch (checked ${checked}):\n`);

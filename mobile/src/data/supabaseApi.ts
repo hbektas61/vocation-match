@@ -20,6 +20,7 @@ import {
   type HotelCard,
   type MatchSummary,
   type OwnProfile,
+  type PhotoUpload,
   type PresenceAnswer,
   type ProfileInput,
   type ReportInput,
@@ -31,6 +32,13 @@ import {
   type VocationApi,
 } from './contracts';
 import type { BackendConfig } from './config';
+import {
+  buildPhotoPath,
+  isProfilePhotoPath,
+  MAX_PHOTO_BYTES,
+  PHOTO_BUCKET,
+  PHOTO_URL_TTL_SECONDS,
+} from './photos';
 import { createSessionStorage, type SessionStorage } from './secureStorage';
 
 interface PostgresLikeError {
@@ -91,7 +99,7 @@ interface ProfileRow {
   display_name: string;
   birthdate: string;
   bio: string | null;
-  photo_url: string | null;
+  photo_path: string | null;
 }
 
 export class SupabaseApi implements VocationApi {
@@ -140,7 +148,7 @@ export class SupabaseApi implements VocationApi {
   async getOwnProfile(): Promise<OwnProfile | null> {
     const { data, error } = await this.client
       .from('profiles')
-      .select('id, display_name, birthdate, bio, photo_url')
+      .select('id, display_name, birthdate, bio, photo_path')
       .maybeSingle();
     if (error) {
       throw toApiError(error, 'Could not load your profile.');
@@ -153,6 +161,8 @@ export class SupabaseApi implements VocationApi {
     if (!session) {
       throw new ApiError('UNAUTHENTICATED', 'Sign in to continue.');
     }
+    // `photo_path` is deliberately absent: an upsert that carried it would
+    // clear the photo every time someone edited their bio.
     const { data, error } = await this.client
       .from('profiles')
       .upsert(
@@ -161,16 +171,133 @@ export class SupabaseApi implements VocationApi {
           display_name: input.displayName.trim(),
           birthdate: input.birthdate,
           bio: input.bio?.trim() || null,
-          photo_url: input.photoUrl || null,
         },
         { onConflict: 'id' },
       )
-      .select('id, display_name, birthdate, bio, photo_url')
+      .select('id, display_name, birthdate, bio, photo_path')
       .single();
     if (error || !data) {
       throw toApiError(error, 'Could not save your profile.');
     }
     return toOwnProfile(data as ProfileRow);
+  }
+
+  /* ----------------------------------------------------------------- photos */
+
+  /**
+   * Upload, then point the profile at it, then sweep everything else away.
+   *
+   * The order matters. Uploading first means a failure leaves the old photo
+   * showing rather than a broken one. The profile must never point at an
+   * object that is not there, which the server now refuses outright
+   * (`set_profile_photo`) and which the sweep below cannot cause, because it
+   * only ever deletes objects the profile does not reference.
+   *
+   * The sweep is also what closes the orphan a crash leaves behind. If the app
+   * dies between the upload and the attach, the object is unreferenced and
+   * nothing on the server knows about it — the next upload or removal finds it
+   * and deletes it, so the leak is bounded by one object per account.
+   */
+  async uploadProfilePhoto(upload: PhotoUpload): Promise<OwnProfile> {
+    const session = await this.currentSession();
+    if (!session) {
+      throw new ApiError('UNAUTHENTICATED', 'Sign in to continue.');
+    }
+    const previous = await this.getOwnProfile();
+    if (!previous) {
+      throw new ApiError('NOT_FOUND', 'Finish your profile first.');
+    }
+
+    const path = buildPhotoPath(session.userId, upload.mimeType);
+    const bytes = await readLocalFile(upload.uri);
+    if (bytes.byteLength > MAX_PHOTO_BYTES) {
+      throw new ApiError('INVALID_INPUT', 'That image is larger than 5 MB.');
+    }
+
+    const uploaded = await this.client.storage
+      .from(PHOTO_BUCKET)
+      .upload(path, bytes, { contentType: upload.mimeType, upsert: false });
+    if (uploaded.error) {
+      throw toApiError(uploaded.error as PostgresLikeError, 'Could not upload that photo.');
+    }
+
+    let saved: ProfileRow;
+    try {
+      saved = await this.rpcSingle<ProfileRow>(
+        'set_profile_photo',
+        { p_path: path },
+        'Could not save that photo.',
+      );
+    } catch (error) {
+      await this.sweepPhotoObjects(session.userId, previous.photoPath);
+      throw error;
+    }
+
+    await this.sweepPhotoObjects(session.userId, saved.photo_path);
+    return toOwnProfile(saved);
+  }
+
+  async removeProfilePhoto(): Promise<OwnProfile> {
+    const session = await this.currentSession();
+    if (!session) {
+      throw new ApiError('UNAUTHENTICATED', 'Sign in to continue.');
+    }
+    if (!(await this.getOwnProfile())) {
+      throw new ApiError('NOT_FOUND', 'Finish your profile first.');
+    }
+
+    const saved = await this.rpcSingle<ProfileRow>(
+      'set_profile_photo',
+      { p_path: null },
+      'Could not remove that photo.',
+    );
+    await this.sweepPhotoObjects(session.userId, null);
+    return toOwnProfile(saved);
+  }
+
+  /**
+   * Deletes every object under the caller's own prefix except the one the
+   * profile currently points at. Best effort: the row is already correct by
+   * the time this runs, and the database has queued a replaced object for
+   * cleanup regardless, so a failure here costs storage rather than
+   * correctness.
+   */
+  private async sweepPhotoObjects(userId: string, keep: string | null): Promise<void> {
+    const { data, error } = await this.client.storage
+      .from(PHOTO_BUCKET)
+      .list(userId, { limit: 100 });
+    if (error || !data?.length) {
+      return;
+    }
+    const stale = data
+      .map((object) => `${userId}/${object.name}`)
+      .filter((name) => name !== keep && isProfilePhotoPath(name));
+    if (stale.length) {
+      await this.client.storage.from(PHOTO_BUCKET).remove(stale);
+    }
+  }
+
+  async getPhotoUrls(paths: string[]): Promise<Record<string, string>> {
+    const wanted = [...new Set(paths.filter(isProfilePhotoPath))];
+    if (wanted.length === 0) {
+      return {};
+    }
+    const { data, error } = await this.client.storage
+      .from(PHOTO_BUCKET)
+      .createSignedUrls(wanted, PHOTO_URL_TTL_SECONDS);
+    if (error) {
+      throw toApiError(error as PostgresLikeError, 'Could not load photos.');
+    }
+    const urls: Record<string, string> = {};
+    for (const entry of data ?? []) {
+      // A path the read policy refuses comes back with an error and no URL.
+      // Leaving it out is the same answer as "no photo", which is what stops
+      // this from telling anyone who is in a room with whom.
+      if (entry.path && entry.signedUrl && !entry.error) {
+        urls[entry.path] = entry.signedUrl;
+      }
+    }
+    return urls;
   }
 
   /* ------------------------------------------------------------------ hotel */
@@ -283,7 +410,7 @@ export class SupabaseApi implements VocationApi {
       displayName: row.display_name,
       age: row.age,
       bio: row.bio ?? null,
-      photoUrl: row.photo_url ?? null,
+      photoPath: row.photo_path ?? null,
     }));
   }
 
@@ -312,7 +439,7 @@ export class SupabaseApi implements VocationApi {
       otherUserId: row.other_user_id,
       displayName: row.display_name,
       age: row.age,
-      photoUrl: row.photo_url,
+      photoPath: row.photo_path,
       room: row.room as RoomKey,
       createdAt: Date.parse(row.created_at),
       unmatchedAt: row.unmatched_at ? Date.parse(row.unmatched_at) : null,
@@ -475,7 +602,7 @@ interface CandidateRow {
   display_name: string;
   age: number;
   bio: string | null;
-  photo_url: string | null;
+  photo_path: string | null;
 }
 
 interface SwipeRow {
@@ -488,7 +615,7 @@ interface MatchRow {
   other_user_id: string;
   display_name: string;
   age: number;
-  photo_url: string | null;
+  photo_path: string | null;
   room: string;
   created_at: string;
   unmatched_at: string | null;
@@ -508,6 +635,29 @@ interface BlockRow {
   user_id: string;
   display_name: string;
   blocked_at: string;
+}
+
+/**
+ * Reads a local image into bytes.
+ *
+ * `fetch` on a `file://` URI is how React Native exposes the picker's result,
+ * and an `ArrayBuffer` is what supabase-js wants — passing the URI string
+ * straight through would upload the text of the path, which is the sort of
+ * thing that only shows up when someone looks at the stored image.
+ */
+async function readLocalFile(uri: string): Promise<ArrayBuffer> {
+  try {
+    const response = await fetch(uri);
+    if (!response.ok) {
+      throw new ApiError('INVALID_INPUT', 'Could not read that image.');
+    }
+    return await response.arrayBuffer();
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError('INVALID_INPUT', 'Could not read that image.');
+  }
 }
 
 function toChatMessage(row: MessageRow): ChatMessage {
@@ -534,6 +684,6 @@ function toOwnProfile(row: ProfileRow): OwnProfile {
     birthdate: row.birthdate,
     age: ageYears(row.birthdate, todayIsoDate()) ?? 0,
     bio: row.bio,
-    photoUrl: row.photo_url,
+    photoPath: row.photo_path,
   };
 }

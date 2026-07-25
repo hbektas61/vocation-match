@@ -23,6 +23,7 @@ export function toDomainProfile(remote: OwnProfile): Profile {
     bio: remote.bio ?? '',
     interests: [],
     birthdate: remote.birthdate,
+    photoPath: remote.photoPath,
   };
 }
 

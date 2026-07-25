@@ -1,12 +1,23 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 
-import { Body, Caption, Card, EmptyState, Heading, Notice, Screen, Title } from '../components/ui';
+import {
+  Avatar,
+  Body,
+  Caption,
+  Card,
+  EmptyState,
+  Heading,
+  Notice,
+  Screen,
+  Title,
+} from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type MatchSummary } from '../data';
 import type { RootStackParamList } from '../navigation/types';
+import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
 
 export function InboxScreen() {
@@ -14,6 +25,8 @@ export function InboxScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [matches, setMatches] = useState<MatchSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const photoPaths = useMemo(() => (matches ?? []).map((m) => m.photoPath), [matches]);
+  const photoUrls = usePhotoUrls(photoPaths);
 
   useFocusEffect(
     useCallback(() => {
@@ -57,7 +70,14 @@ export function InboxScreen() {
             testID={`inbox-${match.matchId}`}
           >
             <Card>
-              <Heading>{match.displayName}</Heading>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Avatar
+                  url={match.photoPath ? photoUrls[match.photoPath] ?? null : null}
+                  name={match.displayName}
+                  testID={`inbox-photo-${match.matchId}`}
+                />
+                <Heading>{match.displayName}</Heading>
+              </View>
               {match.unmatchedAt !== null ? <Caption>{COPY.inbox.closedLabel}</Caption> : null}
               <Body>{match.lastMessageBody ?? COPY.inbox.sayHelloPreview}</Body>
             </Card>

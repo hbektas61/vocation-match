@@ -57,8 +57,25 @@ export const COPY = {
     underAge: 'Vocation Match is 18+ only.',
     bioLabel: 'Bio',
     bioPlaceholder: 'A sentence about you',
+    photoLater: 'You can add a photo from Settings once this is saved.',
     saveButton: 'Save profile',
     saving: 'Saving…',
+  },
+
+  photo: {
+    title: 'Your photo',
+    explainer:
+      'Your photo is stored privately. Only people in a room with you right now, or matched with you, can see it — there is no public link to it, and nobody can find it by guessing.',
+    noPhoto: 'No photo yet. A photo is optional.',
+    addButton: 'Add a photo',
+    replaceButton: 'Change photo',
+    removeButton: 'Remove photo',
+    uploading: 'Uploading…',
+    removing: 'Removing…',
+    permissionDenied:
+      'Photo access was declined. You can add a photo later from Settings; nothing else in the app needs it.',
+    uploadError: 'Could not upload that photo. Your current photo is unchanged. Try again.',
+    removeError: 'Could not remove that photo. Try again.',
   },
 
   hotel: {
