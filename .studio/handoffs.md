@@ -1233,3 +1233,54 @@ line in `.studio/device-readiness.md`: the photo round trip on a real Android
 device above all, the `+90` field with a real keyboard and autofill, the focus
 ring on a real screen, VoiceOver and TalkBack over the new steps, and reduced
 motion. Those are recorded as external blockers, not as passes.
+
+
+## 2026-07-26 — the reviews, and what they found
+
+Both independent reviews ran against `5ad8f03..HEAD`. Six real defects, four of
+them introduced in this session. All fixed, each with a test.
+
+**A failed photo add deleted the rest of the set** (security, high). The error
+path called `sweepPhotoObjects(userId, null)` — list the owner's prefix, delete
+everything not named `keep`. Correct when a profile held one photo; with nine
+it destroys every object still attached to a live row. Reachable from an
+ordinary rate limit or a dropped connection. No attacker required.
+
+**And Settings would have done it deliberately.** The single-photo component
+was still wired there, so changing your photo from Settings swept the prefix
+and took slots 2–9. The fix was not to teach the sweep about the set: the
+single-photo API is deleted and Settings uses the same grid as onboarding. Two
+photo components meant two photo models, and that was the defect rather than a
+detail.
+
+**Returning users were told they had no hotel** (code review, high). Rooms and
+Discovery decided whether a hotel existed from `state.hotels`, a cache filled
+only by visiting the Hotel tab. Nothing on the bootstrap path fills it — and
+taking the hotel out of onboarding removed the last thing that used to seed it,
+so a latent edge case became every relaunch. Whether there *is* a hotel is the
+server's answer; the cache only ever held its name. The regression test was
+checked against the old gate and fails there.
+
+Four smaller ones: `promise` was never impossible once the age was confirmed,
+so a late session left somebody pinned to a pre-signup screen; add/remove/
+reorder shared one 20-an-hour bucket that filling and organising a nine-slot
+grid would exhaust; `reorder` accepted duplicate paths, which passed the length
+and ownership checks and left the set non-contiguous; and `discovery_feed`
+would serve a draft profile a feed even though it refused to show one.
+
+Two things worth keeping from this:
+
+- **The fake cannot see the bug that mattered.** `sweepPhotoObjects` only
+  exists in `SupabaseApi`, so no FakeApi test could ever have caught it. The
+  regression test now pins the *contract* both owe — a failed add changes
+  nothing — and says in its comment that the fake cannot reproduce the
+  mechanism. That gap is worth remembering before trusting a green suite about
+  storage.
+- **The riskiest change was the one that deleted something.** Removing the
+  hotel from onboarding was correct and also removed an accidental load-bearing
+  side effect nobody had written down. Worth asking, next time something is
+  taken out of a flow, what else it was quietly doing.
+
+Verification after the fixes: `bash scripts/check.sh` entirely green — 381 SQL
+assertions, migration replay, the contract check, `tsc`,
+`eslint --max-warnings 0`, 375 jest tests across 33 suites, the web bundle.
