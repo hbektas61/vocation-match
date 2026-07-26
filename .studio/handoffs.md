@@ -1902,3 +1902,20 @@ screen; it is right everywhere now.
 
 Verified: TR browser walk (screen, back pill, İ check by regex against the
 DOM), 397 jest tests, full mobile gate green.
+
+## 2026-07-27 — the empty inbox (designer screen 7)
+
+The two speech bubbles leaning toward each other with a heart between them
+— the reference's glossy 3D render as flat SVG on the shared pale disc —
+under the new subtitle ("Karşılıklı beğeniler ve sohbetlerin burada
+görünür"), with "Henüz eşleşme yok", one sentence of why, and both ways
+out as real navigation: "Keşfetmeye başla" to the Discovery tab,
+"Odaları görüntüle" to Rooms. The bell strip closes the screen with one
+honest edit: the reference said "burada bildirilir" (you'll be notified),
+but D-031 has exactly two push kinds and match is not one of them — so the
+sentence promises the inbox, not the lock screen: "Yeni eşleşmeler
+olduğunda burada görünür." The old one-line EmptyState copy key retired.
+One full-gate flake noted: the R-003 expiry test missed its real-time
+window under parallel load, passed alone and on the gate rerun.
+Verified: TR browser walk (empty state + Rooms navigation), 397 jest
+tests, full mobile gate green.

@@ -399,7 +399,17 @@ export const en = {
     newMatches: 'New matches',
     sayHello: 'Say hello',
     openChatHint: 'Open chat',
-    empty: 'No matches yet. Mutual likes appear here.',
+    subtitle: 'Mutual likes and your conversations live here.',
+    emptyTitle: 'No matches yet',
+    emptyBody: 'When you like each other, conversations will start here.',
+    startDiscovering: 'Start discovering',
+    viewRooms: 'View rooms',
+    /**
+     * "Show up here", not "you will be notified": there is no match push
+     * (D-031 has exactly two kinds), so the sentence promises the inbox,
+     * not the lock screen.
+     */
+    matchesAppearHere: 'New matches show up right here.',
     loadError: 'Could not load your matches. Try again.',
     closedLabel: 'Conversation closed',
     sayHelloPreview: 'Say hello!',
