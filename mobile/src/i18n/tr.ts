@@ -239,6 +239,11 @@ export const tr: Copy = {
   hotel: {
     title: 'Otelin',
     activeLabel: 'Aktif otel.',
+    activePlate: 'Aktif otel',
+    emptyTitle: 'Anahtarında henüz otel yok',
+    emptyBody: 'Bulunduğun ya da gideceğin oteli ara — odalar oradan açılır.',
+    activateCta: (name: string) => `${name} otelini etkinleştir`,
+    switchButton: 'Oteli değiştir',
     noActiveHotel: 'Henüz aktif otel yok.',
     searchLabel: 'Otel ara',
     searchPlaceholder: 'Otel adı veya şehir',

@@ -235,6 +235,11 @@ export const en = {
   hotel: {
     title: 'Your hotel',
     activeLabel: 'Active hotel.',
+    activePlate: 'Active hotel',
+    emptyTitle: 'No hotel on your key yet',
+    emptyBody: 'Search for the hotel you are at, or the one you are going to — the rooms open from there.',
+    activateCta: (name: string) => `Activate ${name}`,
+    switchButton: 'Switch hotel',
     noActiveHotel: 'No active hotel yet.',
     searchLabel: 'Search hotels',
     searchPlaceholder: 'Hotel name or city',

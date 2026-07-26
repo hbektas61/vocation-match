@@ -1,23 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import {
-  Body,
-  Button,
-  Caption,
-  Card,
-  EmptyState,
-  Field,
-  Gap,
-  Heading,
-  Notice,
-  Screen,
-  Title,
-} from '../components/ui';
+import { Body, Button, Caption, Card, DoorPlate, EmptyState, Field, Gap, Heading, KeyCard, Notice, Screen, StateChip, Title } from '../components/ui';
+import { HotelCover } from '../components/HotelCover';
 import { nowMs } from '../clock';
 import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
-import { ApiError, getApi, type HotelCard } from '../data';
+import { ApiError, getApi, type HotelCard, type RoomStatus } from '../data';
 import { useAppStore } from '../state/AppStore';
+import { color, font, fontFamily, radius, spacing } from '../theme';
 
 /** Two characters before anything is fetched. */
 const MIN_QUERY = 2;
@@ -41,6 +31,8 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
   const [switchedNotice, setSwitchedNotice] = useState(false);
   const [activating, setActivating] = useState(false);
   const [activateError, setActivateError] = useState<string | null>(null);
+  /** For the two mini state chips on the active hotel's key card. */
+  const [roomStates, setRoomStates] = useState<RoomStatus[] | null>(null);
 
   const activeHotel = state.hotels.find((h) => h.id === state.activeHotel?.hotelId) ?? null;
 
@@ -56,6 +48,14 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         const active = await api.getActiveHotel();
         if (cancelled) return;
         dispatch({ type: 'ACTIVE_HOTEL_LOADED', activeHotel: active });
+        if (active) {
+          api
+            .getRooms()
+            .then((rooms) => {
+              if (!cancelled) setRoomStates(rooms);
+            })
+            .catch(() => undefined);
+        }
         // `getActiveHotel` answers with an id, and the card above it needs a
         // name. Resolved here rather than by showing the catalogue: these go
         // into the store, never into `results`, so nothing becomes selectable
@@ -128,6 +128,12 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       const active = await api.getActiveHotel();
       dispatch({ type: 'HOTELS_LOADED', hotels: mergeHotel(state.hotels, hotel) });
       dispatch({ type: 'HOTEL_ACTIVATED', activeHotel: active ?? { hotelId: hotel.id, activatedAt: nowMs() } });
+      // The key card's mini door-states have to describe the hotel just
+      // activated, not the one from screen-mount.
+      api
+        .getRooms()
+        .then(setRoomStates)
+        .catch(() => undefined);
       setSwitchedNotice(result.previousHotelId !== null && result.previousHotelId !== hotel.id);
       onActivated?.();
     } catch (err) {
@@ -155,17 +161,44 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       {loadingActive ? (
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="hotel-loading" />
       ) : activeHotel ? (
-        <Card>
+        /* The centre of this product's identity, dressed as its own object:
+           the key you are currently holding. Postcard cover, engraved plate,
+           and the two doors' states at a glance. */
+        <KeyCard open testID="active-hotel-card">
+          <HotelCover name={activeHotel.name} size="lg" />
+          <View style={styles.activeHead}>
+            <DoorPlate>{COPY.hotel.activePlate}</DoorPlate>
+            <Caption>{`${activeHotel.city}, ${activeHotel.country}`}</Caption>
+          </View>
           <Heading>{activeHotel.name}</Heading>
-          <Caption>
-            {activeHotel.city}, {activeHotel.country}
-          </Caption>
-          <Body>
-            {COPY.hotel.activeLabel} {COPY.trust.oneHotel}
-          </Body>
-        </Card>
+          {roomStates ? (
+            <View style={styles.roomStates}>
+              {roomStates.map((status) => (
+                <View key={status.room} style={styles.roomState}>
+                  <Caption>
+                    {status.room === 'UPCOMING'
+                      ? COPY.rooms.upcomingPlate
+                      : COPY.rooms.hereNowPlate}
+                  </Caption>
+                  <StateChip
+                    open={status.eligible}
+                    label={status.eligible ? COPY.rooms.openChip : COPY.rooms.closedChip}
+                  />
+                </View>
+              ))}
+            </View>
+          ) : null}
+          <Caption>{COPY.trust.oneHotel}</Caption>
+        </KeyCard>
       ) : (
-        <Notice message={`${COPY.hotel.noActiveHotel} ${COPY.trust.oneHotel}`} />
+        /* The first thing a new account sees here, so it is an invitation
+           rather than a report of absence: a hollow key card waiting for its
+           hotel, and the search directly beneath it. */
+        <View style={styles.emptyKey} testID="hotel-empty-state">
+          <View style={styles.emptyStripe} />
+          <Heading>{COPY.hotel.emptyTitle}</Heading>
+          <Body>{COPY.hotel.emptyBody}</Body>
+        </View>
       )}
 
       {switchedNotice ? <Notice message={COPY.hotel.switchedNotice} testID="hotel-switched" /> : null}
@@ -176,7 +209,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           <Heading>{COPY_FOR.switchPrompt(pendingSwitch.name)}</Heading>
           <Body>{COPY.trust.switchWarning}</Body>
           <Button
-            label={`Switch to ${pendingSwitch.name}`}
+            label={COPY.hotel.switchButton}
             onPress={() => activate(pendingSwitch)}
             disabled={activating}
             testID="confirm-switch"
@@ -224,24 +257,34 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       ) : results.length === 0 ? (
         <EmptyState message={COPY.hotel.noResults} testID="hotel-no-results" />
       ) : (
-        results.map((hotel) => (
-          <Card key={hotel.id}>
-            <Heading>{hotel.name}</Heading>
-            <Caption>
-              {hotel.city}, {hotel.country}
-            </Caption>
-            {activeHotel?.id === hotel.id ? (
-              <Caption>{COPY.hotel.activatedNote}</Caption>
-            ) : (
-              <Button
-                label={`Activate ${hotel.name}`}
-                onPress={() => requestActivation(hotel)}
-                disabled={activating}
-                testID={`activate-${hotel.id}`}
-              />
-            )}
-          </Card>
-        ))
+        results.map((hotel) => {
+          const isActive = activeHotel?.id === hotel.id;
+          return (
+            <Pressable
+              key={hotel.id}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isActive ? `${hotel.name}. ${COPY.hotel.activatedNote}` : COPY.hotel.activateCta(hotel.name)
+              }
+              accessibilityState={{ disabled: activating || isActive }}
+              disabled={activating || isActive}
+              onPress={() => requestActivation(hotel)}
+              style={({ pressed }) => [styles.resultRow, pressed && styles.resultPressed]}
+              testID={`activate-${hotel.id}`}
+            >
+              <HotelCover name={hotel.name} />
+              <View style={styles.resultText}>
+                <Heading>{hotel.name}</Heading>
+                <Caption>{`${hotel.city}, ${hotel.country}`}</Caption>
+              </View>
+              {isActive ? (
+                <StateChip open label={COPY.hotel.activePlate} />
+              ) : (
+                <Text style={styles.resultChevron}>›</Text>
+              )}
+            </Pressable>
+          );
+        })
       )}
     </Screen>
   );
@@ -252,3 +295,43 @@ function mergeHotel(hotels: HotelCard[], hotel: HotelCard): HotelCard[] {
   if (hotels.some((h) => h.id === hotel.id)) return hotels;
   return [...hotels, hotel];
 }
+
+const styles = StyleSheet.create({
+  activeHead: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+  },
+  roomStates: { flexDirection: 'row', gap: spacing.lg },
+  roomState: { gap: spacing.xs },
+  /** A hollow key card: the shape of what is missing, waiting to be filled. */
+  emptyKey: {
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: color.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  emptyStripe: {
+    height: 14,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: color.accent,
+    borderRadius: 3,
+    marginBottom: spacing.xs,
+  },
+  resultRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  resultPressed: { opacity: 0.8 },
+  resultText: { flex: 1, gap: 2 },
+  resultChevron: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.heading,
+    color: color.inkMuted,
+  },
+});

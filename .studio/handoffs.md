@@ -1616,3 +1616,35 @@ cron job live and active, both extensions present, and a manual dispatcher
 run draining cleanly. What no suite can prove is the last inch: a real push
 on a real locked phone needs a development build (Expo Go lost remote push in
 SDK 53) — spelled out in device-readiness.
+
+
+## 2026-07-26 — the hotel dressed as what it is
+
+The owner's review call was right: the centre of the product's identity was
+its least designed screen. The slice:
+
+- **The active hotel is a key card now** — the signature object, carrying a
+  postcard cover, the ACTIVE HOTEL plate with city beside it, the name, and
+  both doors' OPEN/CLOSED states at a glance (refreshed on activation, not
+  only on mount — the first screenshot caught that they described the
+  previous screen-load).
+- **Postcards instead of placeholders.** OSM knows where hotels are, not what
+  they look like; instead of a grey box pretending a photo failed, each hotel
+  gets a deterministic abstract card — a wash from the pinned palette, its
+  initial set large, a postmark ring — seeded by its name so it is stable
+  across renders and launches. Deliberately abstract: a generative palm tree
+  would be a lie about the hotel.
+- **Search results are mini postcards**, whole row tappable, the active one
+  wearing its chip instead of an action.
+- **The empty state is an invitation**: a hollow dashed key card — the shape
+  of what is missing — with one sentence, and the search right under it.
+- Two stray English strings died on the way ("Switch to X", "Activate X").
+
+Verified with the usual loop: TR browser walk, three screenshots (empty,
+results, active), one defect caught by the screenshot and fixed, 393 jest
+tests across 34 suites green.
+
+Left deliberately on the table, each needing an owner decision or a later
+phase: room population counts on the hotel card (a privacy decision — small
+rooms deanonymise), and real map/photo covers (licensing and a tile-usage
+policy).
