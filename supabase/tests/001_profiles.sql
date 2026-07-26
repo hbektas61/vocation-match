@@ -124,6 +124,57 @@ select throws_ok(
   null,
   'a signed-in user cannot delete a profile row at all — not another person''s, and not their own');
 
+-- ------------------------------------------------------ PostgREST upsert
+-- The app never speaks plain INSERT or UPDATE: `saveOwnProfile` goes
+-- through PostgREST's upsert, whose conflict arm writes `SET id =
+-- excluded.id, ...` — every payload column including the key. This is the
+-- statement shape that failed the first real onboarding on hosted Supabase
+-- with 42501 while every plain-statement test stayed green, so the shape
+-- itself is pinned here.
+select tests.create_user('upsy@example.test', '00000000-0000-0000-0000-000000000091');
+select tests.authenticate_as('00000000-0000-0000-0000-000000000091');
+
+select lives_ok(
+  $$insert into public.profiles (id, display_name, birthdate, bio)
+    values ('00000000-0000-0000-0000-000000000091', 'First save',
+            (current_date - interval '30 years')::date, null)
+    on conflict (id) do update
+      set id = excluded.id, display_name = excluded.display_name,
+          birthdate = excluded.birthdate, bio = excluded.bio$$,
+  'the upsert''s insert arm works for a first-time profile'
+);
+
+select lives_ok(
+  $$insert into public.profiles (id, display_name, birthdate, bio)
+    values ('00000000-0000-0000-0000-000000000091', 'Second save',
+            (current_date - interval '30 years')::date, null)
+    on conflict (id) do update
+      set id = excluded.id, display_name = excluded.display_name,
+          birthdate = excluded.birthdate, bio = excluded.bio$$,
+  'and its conflict arm — the one that also sets id — works for a re-save'
+);
+
+select is(
+  (select display_name from public.profiles
+    where id = '00000000-0000-0000-0000-000000000091'),
+  'Second save',
+  'the re-save actually landed'
+);
+
+-- The id grant must not become a way to claim somebody else's row.
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
+select throws_ok(
+  $$insert into public.profiles (id, display_name, birthdate, bio)
+    values ('00000000-0000-0000-0000-000000000091', 'Hijack',
+            (current_date - interval '30 years')::date, null)
+    on conflict (id) do update
+      set id = excluded.id, display_name = excluded.display_name,
+          birthdate = excluded.birthdate, bio = excluded.bio$$,
+  '42501',
+  null,
+  'upserting onto another person''s row is refused outright'
+);
+
 -- ----------------------------------------------------------------- anon
 select tests.authenticate_as_anon();
 

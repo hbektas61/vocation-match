@@ -1693,3 +1693,26 @@ should" was the Mac's firewall dropping inbound LAN connections — dev
 serving moved to tunnel mode (`npx expo start --tunnel`); `@expo/ngrok` went
 in as a devDependency because the global npm cache has root-owned files
 (pre-existing; `sudo chown -R 501:20 ~/.npm` is the owner-side fix).
+
+## 2026-07-26 — "bunu yapma iznin yok" at the birthdate
+
+The first real onboarding on staging died at the first profile save with
+FORBIDDEN. Reproduced by hand against hosted PostgREST: 42501. The cause is
+a shape mismatch three layers deep: `saveOwnProfile` uses PostgREST's
+upsert, whose conflict arm writes `SET id = excluded.id, …` — every payload
+column *including the key* — and the column-level UPDATE grant list did not
+include `id`. Every container test spoke plain INSERT/UPDATE and stayed
+green; the app never did.
+
+Fix (migration 20260726000800, staging-applied): `id` joins the UPDATE
+grant list, which is safe because the update policy's
+`with check (id = app.current_user_id())` makes it worthless — the only
+value the column can be "changed" to is the one it already has. The
+PostgREST upsert shape itself is now pinned in pgTAP (001): insert arm,
+conflict arm, and the hijack attempt that must still fail. The pinned
+updatable-column list in 011 gained `id` with the reasoning inline.
+Staging re-verified by curl: first save and re-save both land. 411 SQL
+assertions green.
+
+Lesson recorded once more: the container proves the SQL, only the hosted
+project proves the *client's* SQL.

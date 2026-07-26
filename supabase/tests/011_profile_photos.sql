@@ -54,8 +54,11 @@ select bag_eq(
       from information_schema.column_privileges
      where table_schema = 'public' and table_name = 'profiles'
        and grantee = 'authenticated' and privilege_type = 'UPDATE'$$,
-  $$values ('display_name'::text),('bio'),('birthdate'),('interests'),
+  $$values ('id'::text),('display_name'),('bio'),('birthdate'),('interests'),
            ('gender_identity'),('show_gender'),('orientations'),('show_orientation'),('show_me')$$,
+  -- `id` is in the list because PostgREST's upsert sets every payload column
+  -- including the key (001 pins the shape); the update policy's with-check
+  -- keeps it worthless as a way into anyone else's row.
   'the updatable column list still excludes suspended_at — dropping a column did not re-open it — and no longer includes photo_path');
 
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
