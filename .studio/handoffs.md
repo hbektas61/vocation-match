@@ -1413,3 +1413,19 @@ set; HotelScreen sets it by whether it is the tab or the gate (`onActivated`
 is precisely that difference). Off by default on purpose: forgetting it under
 a header is invisible, forgetting it on a tab puts the title under the clock —
 which is how the prop got here.
+
+
+## 2026-07-26 — the grab has to be felt
+
+Owner feedback on the drag: it works, but "I can't tell that I've picked it
+up." Right — the lift was only a shadow. It is now the platform trio, one
+signal per sense: the tile grows a little (the eye), the shadow deepens
+(depth), and the device taps back through `expo-haptics` (the hand) — the same
+vocabulary the OS's own reorderable grids use, so nobody has to be taught it.
+`expo-haptics` added at the version `expo` pins for SDK 54; web and simulators
+without an engine no-op through the catch.
+
+Fixing the feel surfaced a real bug the shadow had been hiding: a hold that
+matured but never moved never granted the responder, so its release arrived
+through no responder callback and the tile stayed floating forever. The
+release path now settles the tile whenever the responder was never granted.

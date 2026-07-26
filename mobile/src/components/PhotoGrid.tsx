@@ -18,6 +18,7 @@
  * accessibility actions on each tile ("move earlier", "move later"), which
  * assistive tech presents and sighted users never see.
  */
+import * as Haptics from 'expo-haptics';
 import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -246,23 +247,48 @@ function DraggableTile({
   testID?: string;
 }) {
   const shift = useRef(new Animated.ValueXY()).current;
+  const scale = useRef(new Animated.Value(1)).current;
   const [dragging, setDragging] = useState(false);
   // The responder is created once and closes over the first render; these refs
   // carry the current truth into its callbacks.
   const held = useRef(false);
+  const granted = useRef(false);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const live = useRef({ index, count, tileWidth, tileHeight, disabled, onMove });
   live.current = { index, count, tileWidth, tileHeight, disabled, onMove };
 
+  /**
+   * The grab has to be *felt*, not deduced. Three signals at the moment the
+   * hold matures, because each covers a different sense: the tile grows a
+   * little (the eye), the shadow deepens (depth), and the device taps back
+   * (the hand) — the same trio the platform's own reorderable grids use, so
+   * the gesture reads as "I have it" without anyone being taught.
+   */
+  const lift = () => {
+    held.current = true;
+    setDragging(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
+    Animated.spring(scale, {
+      toValue: 1.07,
+      useNativeDriver: true,
+      speed: 40,
+      bounciness: 6,
+    }).start();
+  };
+
   const settleHome = () => {
     held.current = false;
+    granted.current = false;
     setDragging(false);
-    Animated.spring(shift, {
-      toValue: { x: 0, y: 0 },
-      useNativeDriver: true,
-      speed: 30,
-      bounciness: 4,
-    }).start();
+    Animated.parallel([
+      Animated.spring(shift, {
+        toValue: { x: 0, y: 0 },
+        useNativeDriver: true,
+        speed: 30,
+        bounciness: 4,
+      }),
+      Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 4 }),
+    ]).start();
   };
 
   const responder = useRef(
@@ -272,13 +298,13 @@ function DraggableTile({
       // swipe that happens to begin on a photo is still a scroll.
       onStartShouldSetPanResponder: () => {
         if (live.current.disabled || live.current.tileWidth === 0) return false;
-        holdTimer.current = setTimeout(() => {
-          held.current = true;
-          setDragging(true);
-        }, HOLD_MS);
+        holdTimer.current = setTimeout(lift, HOLD_MS);
         return false;
       },
       onMoveShouldSetPanResponder: () => held.current,
+      onPanResponderGrant: () => {
+        granted.current = true;
+      },
       // Once the tile is lifted, nothing may steal the gesture back.
       onPanResponderTerminationRequest: () => !held.current,
       onPanResponderMove: (_event, gesture) => {
@@ -300,6 +326,10 @@ function DraggableTile({
 
   const clearHold = () => {
     if (holdTimer.current) clearTimeout(holdTimer.current);
+    // A hold that matured but never moved never granted the responder, so its
+    // release arrives only here — without this, a long press with no drag left
+    // the tile floating lifted forever.
+    if (!granted.current && held.current) settleHome();
     if (!held.current) setDragging(false);
   };
 
@@ -328,7 +358,7 @@ function DraggableTile({
         styles.slot,
         tileWidth > 0 && { width: tileWidth, height: tileHeight },
         dragging && styles.slotLifted,
-        { transform: [{ translateX: shift.x }, { translateY: shift.y }] },
+        { transform: [{ translateX: shift.x }, { translateY: shift.y }, { scale }] },
       ]}
       testID={testID}
     >
