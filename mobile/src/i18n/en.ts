@@ -273,6 +273,12 @@ export const en = {
     checkInPlaceholder: '2026-08-01',
     checkOutPlaceholder: '2026-08-08',
     saveButton: 'Save stay dates',
+    /** The designer's screen furniture (2026-07-27). */
+    privacyNote: 'No booking number or ID details are needed, and nothing is shared with anyone.',
+    updateLater: 'You can update the dates later.',
+    invalidFormat: 'Enter both dates as YYYY-MM-DD.',
+    checkoutNotAfter: 'Check-out must be after check-in.',
+    stayEnded: 'That stay has already ended. Enter a current or future stay.',
     updateButton: 'Update stay dates',
     saving: 'Saving…',
     currentPrefix: 'You have declared',

@@ -40,6 +40,25 @@ export function CalendarIllustration({ size = 96 }: { size?: number }) {
   );
 }
 
+/** A shield with a lock and a check: nothing asked for, nothing shared. */
+export function ShieldLock({ size = 64 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 64 64" fill="none">
+      <Path
+        d="M32 6c6 4.5 12.5 7 19 7v17c0 12.5-8.5 19.5-18.2 23a2.4 2.4 0 0 1-1.6 0C21.5 49.5 13 42.5 13 30V13c6.5 0 13-2.5 19-7z"
+        fill="rgba(123, 79, 168, 0.10)"
+        stroke={MID}
+        strokeWidth={2.5}
+      />
+      <Rect x={24} y={26} width={16} height={13} rx={3} fill={DEEP} />
+      <Path d="M27 26v-4a5 5 0 0 1 10 0v4" stroke={DEEP} strokeWidth={2.5} fill="none" />
+      <Circle cx={32} cy={32} r={2.2} fill="#FFFFFF" />
+      <Circle cx={44} cy={46} r={8} fill={MID} />
+      <Path d="M40.5 46l2.6 2.6 5-5" stroke="#FFFFFF" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 /** A pin dropped between the palm and the town: near, and only near. */
 export function PinScene({ size = 96 }: { size?: number }) {
   return (

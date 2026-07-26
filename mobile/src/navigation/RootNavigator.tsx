@@ -179,7 +179,9 @@ export function RootNavigator() {
       <Stack.Screen
         name="Upcoming"
         component={UpcomingScreen}
-        options={{ title: COPY.upcoming.roomTitle }}
+        // The designer's declare screen (2026-07-27) draws its own back pill
+        // and title; a native header on top would print the title twice.
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="HereNow"

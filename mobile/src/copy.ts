@@ -39,6 +39,16 @@ export function getLocale(): Locale {
 }
 
 /**
+ * Uppercase that speaks the current language. CSS-style `textTransform:
+ * 'uppercase'` turns the Turkish i into I instead of İ — "Giriş" became
+ * "GIRIŞ" on a real screen — so every tracked label goes through here
+ * instead.
+ */
+export function upperCase(text: string): string {
+  return text.toLocaleUpperCase(locale === 'tr' ? 'tr-TR' : 'en-US');
+}
+
+/**
  * Why a birthdate was refused, in words that name the part to look at.
  *
  * Shared by onboarding and profile editing, because the two screens asking the

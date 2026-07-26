@@ -1,19 +1,66 @@
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import Svg, { Path, Rect } from 'react-native-svg';
 
-import { Body, Button, Caption, Field, Gap, Notice, Screen, Title } from '../components/ui';
+import { Body, Button, Caption, Field, Gap, Heading, Notice, Screen, Title } from '../components/ui';
+import { ShieldLock } from '../components/RoomIllustrations';
 import { todayIsoDate } from '../clock';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type UpcomingStay } from '../data';
 import { validateStayDates } from '../domain/upcoming';
 import type { RootScreenProps } from '../navigation/types';
+import { color, font, fontFamily, radius, spacing } from '../theme';
 
-const VALIDATION_MESSAGES = {
-  INVALID_FORMAT: 'Enter both dates as YYYY-MM-DD.',
-  CHECKOUT_NOT_AFTER_CHECKIN: 'Check-out must be after check-in.',
-  STAY_ALREADY_ENDED: 'That stay has already ended. Enter a current or future stay.',
-} as const;
+const CalendarGlyph = () => (
+  <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Rect x={3} y={5} width={18} height={16} rx={3} />
+    <Path d="M8 3v4M16 3v4M3 11h18M8 15h.01M12 15h.01M16 15h.01M8 18h.01M12 18h.01" />
+  </Svg>
+);
+
+/**
+ * One date, as the designer's field card (2026-07-27): the calendar in its
+ * pale disc, then the label, the box and the format hint the Field already
+ * draws. The format stays ISO on purpose — it is the one the server speaks,
+ * and the hint says so in the reader's own words.
+ */
+function DateCard({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  editable,
+  testID,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder: string;
+  editable: boolean;
+  testID: string;
+}) {
+  return (
+    <View style={styles.dateCard}>
+      <View style={styles.dateDisc}>
+        <CalendarGlyph />
+      </View>
+      <View style={styles.dateField}>
+        <Field
+          label={label}
+          hint={COPY.upcoming.dateHint}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          keyboardType="numbers-and-punctuation"
+          autoCapitalize="none"
+          editable={editable}
+          testID={testID}
+        />
+      </View>
+    </View>
+  );
+}
 
 export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
   const [checkIn, setCheckIn] = useState('');
@@ -63,7 +110,13 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
     // coherence rules and its rejection wins if the two ever disagree.
     const validation = validateStayDates(checkIn.trim(), checkOut.trim(), todayIsoDate());
     if (!validation.ok) {
-      setError(VALIDATION_MESSAGES[validation.reason]);
+      setError(
+        validation.reason === 'INVALID_FORMAT'
+          ? COPY.upcoming.invalidFormat
+          : validation.reason === 'CHECKOUT_NOT_AFTER_CHECKIN'
+            ? COPY.upcoming.checkoutNotAfter
+            : COPY.upcoming.stayEnded,
+      );
       return;
     }
     setError(null);
@@ -92,10 +145,30 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
   };
 
   return (
-    <Screen testID="screen-upcoming">
+    <Screen safeTop testID="screen-upcoming">
+      {/* The designer's back pill, since the native header is gone. */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={COPY.rooms.plainTitle}
+        onPress={() => navigation.goBack()}
+        style={({ pressed }) => [styles.backPill, pressed && styles.pressed]}
+        testID="upcoming-back"
+      >
+        <Text style={styles.backChevron}>‹</Text>
+        <Text style={styles.backLabel}>{COPY.rooms.plainTitle}</Text>
+      </Pressable>
+
       <Title>{COPY.upcoming.roomTitle}</Title>
       <Body>{COPY.upcoming.explainer}</Body>
-      <Gap size="sm" />
+
+      <View style={styles.privacyCard}>
+        <ShieldLock />
+        <View style={styles.privacyWords}>
+          <Text style={styles.privacyTitle}>{COPY.rooms.privacyTitle}</Text>
+          <Caption>{COPY.upcoming.privacyNote}</Caption>
+        </View>
+      </View>
+
       {existing === undefined ? (
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="upcoming-loading" />
       ) : null}
@@ -104,29 +177,34 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
           {`${COPY.upcoming.currentPrefix} ${existing.startDate} → ${existing.endDate}.`}
         </Caption>
       ) : null}
-      <Body>{COPY.upcoming.formTitle}</Body>
-      <Field
+
+      <Heading>{COPY.upcoming.formTitle}</Heading>
+      <DateCard
         label={COPY.upcoming.checkInLabel}
-        hint={COPY.upcoming.dateHint}
         value={checkIn}
         onChangeText={setCheckIn}
         placeholder={COPY.upcoming.checkInPlaceholder}
-        keyboardType="numbers-and-punctuation"
-        autoCapitalize="none"
         editable={!busy}
         testID="upcoming-check-in"
       />
-      <Field
+      <DateCard
         label={COPY.upcoming.checkOutLabel}
-        hint={COPY.upcoming.dateHint}
         value={checkOut}
         onChangeText={setCheckOut}
         placeholder={COPY.upcoming.checkOutPlaceholder}
-        keyboardType="numbers-and-punctuation"
-        autoCapitalize="none"
         editable={!busy}
         testID="upcoming-check-out"
       />
+
+      <View style={styles.infoStrip}>
+        <View style={styles.infoDot}>
+          <Text style={styles.infoGlyph}>i</Text>
+        </View>
+        <View style={styles.infoWords}>
+          <Caption>{COPY.upcoming.updateLater}</Caption>
+        </View>
+      </View>
+
       {error ? <Notice message={error} tone="error" testID="upcoming-error" /> : null}
       <Gap size="sm" />
       <Button
@@ -161,3 +239,90 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  backPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: color.surface,
+    borderWidth: 1,
+    borderColor: color.border,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  pressed: { opacity: 0.8 },
+  backChevron: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.heading,
+    lineHeight: font.heading + 2,
+    color: color.accentDeep,
+  },
+  backLabel: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.body,
+    color: color.accentDeep,
+  },
+  privacyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: 'rgba(123, 79, 168, 0.05)',
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  privacyWords: { flex: 1, gap: 2 },
+  privacyTitle: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.body,
+    color: color.ink,
+  },
+  dateCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: color.surface,
+    borderWidth: 1,
+    borderColor: color.border,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    shadowColor: color.ink,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  dateDisc: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: color.veil,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateField: { flex: 1 },
+  infoStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm + 2,
+    backgroundColor: 'rgba(123, 79, 168, 0.05)',
+    borderRadius: radius.md,
+    padding: spacing.sm + 4,
+  },
+  infoDot: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: color.accentDeep,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoGlyph: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.caption,
+    color: '#FFFFFF',
+  },
+  infoWords: { flex: 1 },
+});

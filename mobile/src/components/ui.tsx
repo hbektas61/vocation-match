@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { COPY } from '../copy';
+import { COPY, upperCase } from '../copy';
 
 import {
   ACTION_TOUCH,
@@ -135,7 +135,7 @@ export function Caption({
 export function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <Text accessibilityRole="header" style={styles.sectionLabel}>
-      {children}
+      {typeof children === 'string' ? upperCase(children) : children}
     </Text>
   );
 }
@@ -306,7 +306,7 @@ export function Field(
 
   return (
     <View style={styles.field}>
-      {hideLabel ? null : <Text style={styles.fieldLabel}>{label}</Text>}
+      {hideLabel ? null : <Text style={styles.fieldLabel}>{upperCase(label)}</Text>}
       <View
         // The box carries the border, so the border is only assertable if the
         // box can be found.
@@ -384,7 +384,7 @@ export function StateChip({ open, label, testID }: { open: boolean; label: strin
     >
       <View style={[styles.stateDot, open ? styles.stateDotOpen : styles.stateDotClosed]} />
       <Text style={[styles.stateChipText, open ? styles.stateChipTextOpen : styles.stateChipTextClosed]}>
-        {label}
+        {upperCase(label)}
       </Text>
     </View>
   );
@@ -395,7 +395,11 @@ export function StateChip({ open, label, testID }: { open: boolean; label: strin
  * quiet. Structure, never prose.
  */
 export function DoorPlate({ children }: { children: React.ReactNode }) {
-  return <Text style={styles.doorPlate}>{children}</Text>;
+  return (
+    <Text style={styles.doorPlate}>
+      {typeof children === 'string' ? upperCase(children) : children}
+    </Text>
+  );
 }
 
 /**
@@ -465,7 +469,7 @@ export function Badge({ label, tone }: { label: string; tone: 'upcoming' | 'here
         room.solid ? null : styles.badgeOpen,
       ]}
     >
-      <Text style={[styles.badgeText, { color: room.text }]}>{label}</Text>
+      <Text style={[styles.badgeText, { color: room.text }]}>{upperCase(label)}</Text>
     </View>
   );
 }
@@ -693,7 +697,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
     letterSpacing: 1.4,
-    textTransform: 'uppercase',
     color: color.inkMuted,
   },
 
@@ -784,7 +787,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
     letterSpacing: 1.2,
-    textTransform: 'uppercase',
     color: color.inkMuted,
   },
   /**
@@ -907,7 +909,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
     letterSpacing: 1,
-    textTransform: 'uppercase',
   },
   stateChipTextOpen: { color: color.accentDeep },
   stateChipTextClosed: { color: color.inkMuted },
@@ -918,7 +919,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
     letterSpacing: 1.6,
-    textTransform: 'uppercase',
     color: color.inkMuted,
   },
   checkboxRow: {
@@ -949,7 +949,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
     letterSpacing: 1,
-    textTransform: 'uppercase',
   },
 
   displayOnPhoto: { color: color.onPhoto },

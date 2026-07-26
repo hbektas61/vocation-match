@@ -53,6 +53,9 @@ const MAY_DENY = new Set([
   // The same denial, split for the designer's room card (2026-07-27): the
   // claim in bold, this sentence under it.
   'rooms.upcomingBody',
+  // The declare screen's privacy card (2026-07-27): names the booking
+  // number only to deny ever needing one.
+  'upcoming.privacyNote',
   'discovery.overlapUpcoming',
   'onboarding.welcome.body',
 ]);
@@ -138,6 +141,7 @@ const TR_MAY_DENY = new Set([
   'upcoming.explainer',
   // The same denial, split for the designer's room card (2026-07-27).
   'rooms.upcomingBody',
+  'upcoming.privacyNote',
   'discovery.overlapUpcoming',
   'onboarding.welcome.body',
   // The delete-account promise names the report record it keeps; the sentence

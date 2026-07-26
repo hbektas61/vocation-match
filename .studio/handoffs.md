@@ -1878,3 +1878,27 @@ All flows and testIDs preserved (open-upcoming, open-here-now,
 rooms-choose-hotel, R-003 expiry refresh, permission-denied notice).
 Verified by TR browser walk over both cards and the footer; 397 jest
 tests, full mobile gate green.
+
+## 2026-07-27 — the declare screen (designer screen 6), and the İ that CSS cannot spell
+
+The Upcoming declare screen is the designer's now: its own back pill
+("‹ Odalar") in place of the native header, the big title over the reviewed
+explainer, a privacy card with a shield-and-lock drawing ("Rezervasyon
+numarası veya kimlik bilgisi gerekmez, kimseyle paylaşılmaz" — a new denial
+sentence, allowlisted by name in the trust audit in both languages), the
+two date fields as cards with calendar discs, the "Tarihleri daha sonra
+güncelleyebilirsin" info strip, and the same save/withdraw machinery
+underneath, untouched (existing-stay prefill, withdraw with its warning,
+server-echoed validation).
+
+Two bugs died en route. The screen's client-side validation messages had
+been hardcoded English since birth — now copy keys in both languages. And
+the screenshot caught "GIRIŞ TARIHI": CSS-style textTransform uppercases i
+to I, not İ — Turkish has two i's and RN doesn't know. Every tracked label
+(field labels, door plates, state chips, section labels, room badges) now
+goes through a locale-aware upperCase() in copy.ts, and textTransform is
+gone from the codebase. "AKTİF OTEL" had been quietly wrong on every
+screen; it is right everywhere now.
+
+Verified: TR browser walk (screen, back pill, İ check by regex against the
+DOM), 397 jest tests, full mobile gate green.

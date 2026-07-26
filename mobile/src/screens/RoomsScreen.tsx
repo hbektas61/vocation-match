@@ -7,7 +7,7 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { Body, Button, Caption, Notice, Screen, StateChip, Title } from '../components/ui';
 import { CalendarIllustration, PinScene } from '../components/RoomIllustrations';
 import { nowMs } from '../clock';
-import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation } from '../copy';
+import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation, upperCase } from '../copy';
 import { ApiError, getApi, type RoomKey, type RoomStatus } from '../data';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { earliestRoomExpiry } from '../state/roomSchedule';
@@ -73,7 +73,7 @@ function RoomCard({
       <View style={styles.cardHead}>
         <View style={styles.platePill}>
           <Text style={styles.platePillText}>
-            {room === 'UPCOMING' ? COPY.rooms.upcomingPlate : COPY.rooms.hereNowPlate}
+            {upperCase(room === 'UPCOMING' ? COPY.rooms.upcomingPlate : COPY.rooms.hereNowPlate)}
           </Text>
         </View>
         <StateChip
@@ -284,7 +284,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
     letterSpacing: 1.6,
-    textTransform: 'uppercase',
     color: color.accentDeep,
   },
   cardBodyRow: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
