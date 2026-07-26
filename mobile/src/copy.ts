@@ -184,9 +184,10 @@ export const COPY = {
 
     /** The grid. */
     gridTitle: 'Add photos',
-    // Deliberately not "hold, drag and drop": this reorders by buttons, and
-    // describing a gesture the screen does not support is worse than plain.
-    gridHint: (max: number) => `Up to ${max}. The first one is what people see first.`,
+    gridHint: (max: number) =>
+      `Up to ${max}. Hold a photo and drag it to change the order — the first is what people see first.`,
+    /** Spoken to a screen reader instead of the drag, which it cannot perform. */
+    dragHint: 'Use the available actions to change this photo\u2019s position.',
     slotLabel: (slot: number) => `Photo ${slot}`,
     emptySlotLabel: (slot: number) => `Add photo ${slot}`,
     primaryBadge: 'First',

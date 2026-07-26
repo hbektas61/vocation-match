@@ -147,7 +147,10 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
   };
 
   return (
-    <Screen testID="screen-hotel">
+    // As a tab there is no header over this screen, so it takes the top inset
+    // itself; as the choose-a-hotel gate it sits under a native modal header,
+    // which already has. `onActivated` is exactly the difference between the two.
+    <Screen safeTop={!onActivated} testID="screen-hotel">
       <Title>{COPY.hotel.title}</Title>
       {loadingActive ? (
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="hotel-loading" />

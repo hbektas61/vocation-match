@@ -6,7 +6,7 @@
  * accepts a photo, that reordering actually reorders, and that removing
  * promotes whatever was behind it.
  */
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { FakeApi, getApi, setApi } from '../data';
 import { pickProfilePhoto } from '../data/imagePicker';
@@ -73,14 +73,23 @@ describe('the grid', () => {
     expect(screen.getByTestId('photo-grid-add-2').props.accessibilityState.disabled).toBe(false);
   });
 
-  it('really reorders, rather than describing a gesture it does not have', async () => {
+  it('reorders through the screen-reader actions the drag cannot offer', async () => {
+    // The visible reorder is a hold-and-drag, which jest cannot perform and a
+    // screen reader cannot either. The accessibility actions are the assistive
+    // path, and driving them exercises the same move the gesture makes.
     await reachPhotoStep('+905551118003');
     picks();
     await addPhoto(1);
     await addPhoto(2);
     const [first, second] = (await getApi().getOwnPhotos()).map((photo) => photo.path);
 
-    await fireEvent.press(screen.getByTestId('photo-grid-earlier-2'));
+    // Driven through the prop, since fireEvent does not dispatch this event
+    // name — which is also exactly what the platform does with it.
+    await act(async () => {
+      screen
+        .getByTestId('photo-grid-slot-2')
+        .props.onAccessibilityAction({ nativeEvent: { actionName: 'moveEarlier' } });
+    });
 
     await waitFor(async () => {
       expect((await getApi().getOwnPhotos()).map((p) => p.path)).toEqual([second, first]);
@@ -89,13 +98,22 @@ describe('the grid', () => {
     expect((await getApi().getOwnProfile())?.photoPath).toBe(second);
   });
 
-  it('cannot move the first photo any earlier, or the last any later', async () => {
+  it('offers no move where there is nowhere to go', async () => {
     await reachPhotoStep('+905551118004');
     picks();
     await addPhoto(1);
 
-    expect(screen.getByTestId('photo-grid-earlier-1').props.accessibilityState.disabled).toBe(true);
-    expect(screen.getByTestId('photo-grid-later-1').props.accessibilityState.disabled).toBe(true);
+    // A single photo can move nowhere, so the tile announces no actions —
+    // and invoking one anyway changes nothing.
+    expect(screen.getByTestId('photo-grid-slot-1').props.accessibilityActions).toEqual([]);
+    await act(async () => {
+      screen
+        .getByTestId('photo-grid-slot-1')
+        .props.onAccessibilityAction({ nativeEvent: { actionName: 'moveLater' } });
+    });
+    await waitFor(async () => {
+      expect(await getApi().getOwnPhotos()).toHaveLength(1);
+    });
   });
 
   it('removes a slot and promotes what was behind it', async () => {

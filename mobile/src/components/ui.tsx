@@ -31,11 +31,21 @@ export function Screen({
   scroll = true,
   /** Lets a screen run its own content to the edges — a photo, mostly. */
   bleed = false,
+  /**
+   * On for every screen that has no native header over it — the five tabs,
+   * and bootstrap. A screen under a stack header must leave this off: the
+   * header already consumes the status-bar inset, and taking it again pushes
+   * the content down twice. Off by default because forgetting it under a
+   * header is invisible, while forgetting it on a tab puts the title under
+   * the clock — which is exactly how this prop got here.
+   */
+  safeTop = false,
   testID,
 }: {
   children: React.ReactNode;
   scroll?: boolean;
   bleed?: boolean;
+  safeTop?: boolean;
   testID?: string;
 }) {
   const content = scroll ? (
@@ -49,7 +59,7 @@ export function Screen({
     <View style={[bleed ? styles.screenBleed : styles.screenContent, styles.flex]}>{children}</View>
   );
   return (
-    <SafeAreaView style={styles.screen} edges={['bottom']} testID={testID}>
+    <SafeAreaView style={styles.screen} edges={safeTop ? ['top', 'bottom'] : ['bottom']} testID={testID}>
       {content}
     </SafeAreaView>
   );

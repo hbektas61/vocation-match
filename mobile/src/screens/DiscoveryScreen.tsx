@@ -126,7 +126,7 @@ export function DiscoveryScreen() {
 
   if (!hasHotel) {
     return (
-      <Screen testID="screen-discovery">
+      <Screen safeTop testID="screen-discovery">
         <Title>Discovery</Title>
         <Notice message={`${COPY.roomReason.NO_ACTIVE_HOTEL} ${COPY.trust.oneHotel}`} />
         <Button
@@ -140,7 +140,7 @@ export function DiscoveryScreen() {
 
   if (rooms === null) {
     return (
-      <Screen testID="screen-discovery">
+      <Screen safeTop testID="screen-discovery">
         <Title>Discovery</Title>
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="discovery-loading" />
       </Screen>
@@ -149,7 +149,7 @@ export function DiscoveryScreen() {
 
   if (!room) {
     return (
-      <Screen testID="screen-discovery">
+      <Screen safeTop testID="screen-discovery">
         <Title>Discovery</Title>
         <Notice message={COPY.discovery.notEligible} />
       </Screen>
@@ -188,7 +188,7 @@ export function DiscoveryScreen() {
   };
 
   return (
-    <Screen testID="screen-discovery" bleed>
+    <Screen safeTop testID="screen-discovery" bleed>
       {/* The photo runs to the edges and the name sits on it, so the first
           thing on screen is a person rather than a page header. */}
       <PhotoFrame

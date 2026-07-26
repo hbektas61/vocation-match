@@ -55,7 +55,7 @@ const Tabs = createBottomTabNavigator<TabParamList>();
 
 function BootstrapScreen() {
   return (
-    <Screen testID="screen-bootstrap">
+    <Screen safeTop testID="screen-bootstrap">
       <ActivityIndicator
         accessibilityLabel={COPY.bootstrap.loading}
         testID="bootstrap-spinner"
@@ -68,7 +68,7 @@ function BootstrapScreen() {
 function AccountLoadErrorScreen() {
   const { dispatch } = useAppStore();
   return (
-    <Screen testID="screen-account-load-error">
+    <Screen safeTop testID="screen-account-load-error">
       <Notice message={COPY.bootstrap.accountLoadError} tone="error" />
       <Button
         label={COPY.common.retry}

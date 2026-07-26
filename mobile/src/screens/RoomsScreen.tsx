@@ -65,7 +65,7 @@ export function RoomsScreen() {
 
   if (error) {
     return (
-      <Screen testID="screen-rooms">
+      <Screen safeTop testID="screen-rooms">
         <Title>Rooms</Title>
         <Notice message={error} tone="error" testID="rooms-error" />
       </Screen>
@@ -74,7 +74,7 @@ export function RoomsScreen() {
 
   if (rooms === null) {
     return (
-      <Screen testID="screen-rooms">
+      <Screen safeTop testID="screen-rooms">
         <Title>Rooms</Title>
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="rooms-loading" />
       </Screen>
@@ -86,7 +86,7 @@ export function RoomsScreen() {
     // wrong and leaves them to find where to fix it. The way out belongs on the
     // screen that is blocked.
     return (
-      <Screen testID="screen-rooms">
+      <Screen safeTop testID="screen-rooms">
         <Title>Rooms</Title>
         <Notice message={`${COPY.roomReason.NO_ACTIVE_HOTEL} ${COPY.trust.oneHotel}`} />
         <Button
@@ -99,7 +99,7 @@ export function RoomsScreen() {
   }
 
   return (
-    <Screen testID="screen-rooms">
+    <Screen safeTop testID="screen-rooms">
       <Title>{COPY_FOR.roomsTitle(hotelName)}</Title>
       <Card testID="room-upcoming">
         <RoomRibbon room="UPCOMING" hotelName={hotelName} />

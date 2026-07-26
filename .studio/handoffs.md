@@ -1386,3 +1386,30 @@ from the live DOM, and screenshotted it. Zero console errors on the walk. One
 process note for next time: two of the styling edits silently missed (an
 unasserted string replace), and only the screenshot caught it — every replace
 in that pass now asserts, and the visual check stays part of the loop.
+
+
+## 2026-07-26 — drag lands, and every tab was under the clock
+
+Two more from the owner's phone.
+
+**Reordering is the gesture now (D-027 amended).** The arrow buttons and the
+dark band earned their existence as the honest alternative to a fake caption;
+the owner used them and asked for the photos back. Hold a tile ~180 ms and it
+lifts and follows the finger; release over a slot and the order changes —
+index arithmetic, no measurement, and the server's answer re-renders the grid
+so picture and order cannot disagree. The hold delay is load-bearing: the grid
+scrolls with the page, and a drag that began on first movement would steal
+every swipe that starts on a photo. The screen-reader path survives as
+per-tile "move earlier/later" accessibility actions — invisible to sighted
+users, which is what the owner asked for, and operable, which D-027 requires.
+One test-harness note: RNTL's fireEvent does not dispatch accessibilityAction,
+so the tests drive the prop directly.
+
+**Every headerless screen started under the status bar.** `Screen` applied
+only the bottom safe-area edge — right for the stack screens, whose native
+header consumes the top inset, and wrong for all five tabs and bootstrap,
+which have no header. Now a `safeTop` prop, on for exactly the headerless
+set; HotelScreen sets it by whether it is the tab or the gate (`onActivated`
+is precisely that difference). Off by default on purpose: forgetting it under
+a header is invisible, forgetting it on a tab puts the title under the clock —
+which is how the prop got here.

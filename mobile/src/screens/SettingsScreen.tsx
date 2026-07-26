@@ -124,7 +124,7 @@ export function SettingsScreen() {
   };
 
   return (
-    <Screen testID="screen-settings">
+    <Screen safeTop testID="screen-settings">
       <Title>{COPY.settings.title}</Title>
       {state.profile ? (
         <Card testID="settings-profile">

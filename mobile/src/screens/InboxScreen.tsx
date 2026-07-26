@@ -63,7 +63,7 @@ export function InboxScreen() {
   );
 
   return (
-    <Screen testID="screen-inbox">
+    <Screen safeTop testID="screen-inbox">
       <Title>{COPY.inbox.title}</Title>
       {error ? (
         <Notice message={error} tone="error" testID="inbox-error" />
