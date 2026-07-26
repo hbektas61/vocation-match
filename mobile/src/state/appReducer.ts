@@ -51,13 +51,6 @@ export interface AppState {
 
   blockedUsers: BlockedUser[];
 
-  /**
-   * The three teaching cards are owed to somebody who has just finished
-   * onboarding and to nobody else. Holding it in memory rather than on disk is
-   * what makes a completed onboarding stay completed: a cold start begins with
-   * this false, so an account that already has a profile and a hotel goes
-   * straight into the app.
-   */
 }
 
 export type AppAction =

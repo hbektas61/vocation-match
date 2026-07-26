@@ -51,7 +51,6 @@ const MAY_DENY = new Set([
   'upcoming.explainer',
   'discovery.overlapUpcoming',
   'onboarding.welcome.body',
-  'onboarding.teaching.upcoming.body',
 ]);
 const DENIAL = /\b(nobody|no one|never|not|without|no)\b/i;
 

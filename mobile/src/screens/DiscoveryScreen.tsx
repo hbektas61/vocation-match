@@ -125,6 +125,11 @@ export function DiscoveryScreen() {
       <Screen testID="screen-discovery">
         <Title>Discovery</Title>
         <Notice message={`${COPY.roomReason.NO_ACTIVE_HOTEL} ${COPY.trust.oneHotel}`} />
+        <Button
+          label={COPY.hotel.chooseCta}
+          onPress={() => navigation.navigate('ChooseHotel')}
+          testID="discovery-choose-hotel"
+        />
       </Screen>
     );
   }

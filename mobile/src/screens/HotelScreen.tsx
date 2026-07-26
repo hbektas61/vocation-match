@@ -22,7 +22,15 @@ import { useAppStore } from '../state/AppStore';
 /** Two characters before anything is fetched. */
 const MIN_QUERY = 2;
 
-export function HotelScreen() {
+/**
+ * The hotel, as a tab and as a gate.
+ *
+ * `onActivated` is what the gate passes in: when somebody reached this screen
+ * because they tried to open a room, choosing is the end of that errand and
+ * they should be put back where they were going. As a tab there is nowhere to
+ * return to, so it is absent and the screen simply stays.
+ */
+export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) {
   const { state, dispatch } = useAppStore();
   const [query, setQuery] = useState('');
   // `null` results mean a search is in flight (loading state).
@@ -121,6 +129,7 @@ export function HotelScreen() {
       dispatch({ type: 'HOTELS_LOADED', hotels: mergeHotel(state.hotels, hotel) });
       dispatch({ type: 'HOTEL_ACTIVATED', activeHotel: active ?? { hotelId: hotel.id, activatedAt: nowMs() } });
       setSwitchedNotice(result.previousHotelId !== null && result.previousHotelId !== hotel.id);
+      onActivated?.();
     } catch (err) {
       setActivateError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
     } finally {

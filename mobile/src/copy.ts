@@ -90,27 +90,6 @@ export const COPY = {
       confirm: 'Continue',
     },
 
-    teaching: {
-      upcoming: {
-        title: 'Upcoming',
-        body:
-          'Say when you will be at the hotel and the Upcoming room opens. It is your word — nobody is asked for a reservation, a booking number, or an ID.',
-      },
-      hereNow: {
-        title: 'Here now',
-        /** On the figure, not read aloud — the sentence below it says the same. */
-        figureLabel: 'Within 500 m',
-        body:
-          'One check, while the app is open, of whether you are within 500 m of the hotel. The answer is yes or no. Your position is never stored and never shown to anyone.',
-      },
-      matching: {
-        title: 'Likes and matches',
-        body:
-          'When two people like each other a conversation opens. Blocking and reporting are there from the first card, before any match exists.',
-      },
-      next: 'Next',
-      start: 'Start looking',
-    },
   },
 
   ageGate: {
@@ -210,6 +189,8 @@ export const COPY = {
     noActiveHotel: 'No active hotel yet.',
     searchLabel: 'Search hotels',
     searchPlaceholder: 'Hotel name or city',
+    chooseTitle: 'Choose your hotel',
+    chooseCta: 'Choose a hotel',
     searchPrompt: 'Type a hotel name to search.',
     noResults: 'No hotels match that search.',
     loadError: 'Could not load hotels. Try again.',

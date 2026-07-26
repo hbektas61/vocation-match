@@ -77,10 +77,18 @@ export function RoomsScreen() {
   }
 
   if (noActiveHotel || !hotel) {
+    // Saying "activate a hotel first" and stopping there tells somebody what is
+    // wrong and leaves them to find where to fix it. The way out belongs on the
+    // screen that is blocked.
     return (
       <Screen testID="screen-rooms">
         <Title>Rooms</Title>
         <Notice message={`${COPY.roomReason.NO_ACTIVE_HOTEL} ${COPY.trust.oneHotel}`} />
+        <Button
+          label={COPY.hotel.chooseCta}
+          onPress={() => navigation.navigate('ChooseHotel')}
+          testID="rooms-choose-hotel"
+        />
       </Screen>
     );
   }

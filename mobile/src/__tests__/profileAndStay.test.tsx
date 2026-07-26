@@ -90,6 +90,47 @@ describe('editing a profile after onboarding', () => {
   });
 });
 
+describe('the identity answers, after onboarding', () => {
+  it('can be corrected later, including the one that decides your own feed', async () => {
+    await onboardToSettings('Deniz');
+    await fireEvent.press(await screen.findByTestId('open-edit-profile'));
+
+    // Onboarding asks these once. Being wrong about yourself forever is not a
+    // reasonable consequence of a mistap — and show_me in particular decides
+    // whose cards you are shown, so getting it wrong with no way back leaves
+    // somebody with an empty deck and no explanation.
+    await fireEvent.press(await screen.findByTestId('edit-profile-gender-man'));
+    await fireEvent.press(screen.getByTestId('edit-profile-show-gender'));
+    await fireEvent.press(screen.getByTestId('edit-profile-orientation-queer'));
+    await fireEvent.press(screen.getByTestId('edit-profile-show-me-men'));
+    await fireEvent.press(screen.getByTestId('save-edit-profile'));
+
+    await waitFor(async () => {
+      const saved = await getApi().getOwnProfile();
+      expect(saved?.gender).toBe('MAN');
+      expect(saved?.showGender).toBe(true);
+      expect(saved?.orientations).toEqual(['Queer']);
+      expect(saved?.showMe).toBe('MEN');
+    });
+  });
+
+  it('does not lose the completion mark when a profile is edited', async () => {
+    await onboardToSettings('Deniz');
+    const before = (await getApi().getOwnProfile())?.onboardingCompletedAt;
+    await fireEvent.press(await screen.findByTestId('open-edit-profile'));
+
+    await fireEvent.changeText(await screen.findByTestId('edit-profile-name'), 'Deniz A');
+    await fireEvent.press(screen.getByTestId('save-edit-profile'));
+
+    // An edit that quietly turned a finished profile back into a draft would
+    // take somebody out of discovery without saying so.
+    await waitFor(async () => {
+      expect((await getApi().getOwnProfile())?.displayName).toBe('Deniz A');
+    });
+    expect((await getApi().getOwnProfile())?.onboardingCompletedAt).toBe(before);
+  });
+});
+
 describe('the stay you declared', () => {
   async function openUpcoming() {
     await onboardWithHotel();

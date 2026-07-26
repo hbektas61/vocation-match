@@ -4,6 +4,7 @@ export type RootStackParamList = {
   Bootstrap: undefined;
   Onboarding: undefined;
   EditProfile: undefined;
+  ChooseHotel: undefined;
   Tabs: undefined;
   Upcoming: undefined;
   HereNow: undefined;

@@ -133,3 +133,42 @@ describe('once a query is typed', () => {
     expect(await screen.findByTestId('activate-hotel-lara-shore')).toBeTruthy();
   });
 });
+
+describe('reaching for a room without a hotel', () => {
+  it('offers the way to fix it on the screen that is blocked', async () => {
+    await onboard('Deniz', '+905551117010');
+
+    // Onboarding no longer asks for a hotel, so this is the ordinary state of
+    // a brand new account rather than an edge case.
+    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
+    expect(screen.getByTestId('rooms-choose-hotel')).toBeTruthy();
+  });
+
+  it('opens the search with nothing chosen, and comes back once one is', async () => {
+    await onboard('Deniz', '+905551117011');
+    await fireEvent.press(await screen.findByTestId('rooms-choose-hotel'));
+
+    // The gate is the same search as the tab: nothing offered until asked.
+    expect(await screen.findByTestId('hotel-search-prompt')).toBeTruthy();
+
+    await fireEvent.changeText(screen.getByTestId('hotel-search'), 'lara');
+    await settle();
+    await fireEvent.press(await screen.findByTestId('activate-hotel-lara-shore'));
+    await settle();
+
+    // Choosing finishes the errand, so it hands back what was being reached
+    // for rather than leaving somebody on a hotel screen.
+    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
+    expect(screen.queryByTestId('rooms-choose-hotel')).toBeNull();
+  });
+
+  it('can be backed out of without choosing anything', async () => {
+    await onboard('Deniz', '+905551117012');
+    await fireEvent.press(await screen.findByTestId('rooms-choose-hotel'));
+    await screen.findByTestId('hotel-search-prompt');
+
+    // A screen you cannot leave without picking a hotel is how default
+    // selections get made.
+    expect(await getApi().getActiveHotel()).toBeNull();
+  });
+});

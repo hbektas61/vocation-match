@@ -9,10 +9,17 @@
  */
 import React, { useState } from 'react';
 
-import { Body, Button, Caption, Field, Gap, Notice } from './ui';
+import { Body, Button, Caption, Checkbox, Field, Gap, Notice } from './ui';
 import { todayIsoDate } from '../clock';
 import { apiErrorMessage, birthdateMessage, COPY } from '../copy';
-import { ApiError, getApi, MAX_INTERESTS, type OwnProfile } from '../data';
+import {
+  ApiError,
+  getApi,
+  MAX_INTERESTS,
+  MAX_ORIENTATIONS,
+  type OwnProfile,
+  type ShowMe,
+} from '../data';
 import {
   dateDigitsFromIso,
   dateProblem,
@@ -20,8 +27,15 @@ import {
   isoFromDateDigits,
   toDateDigits,
 } from '../domain/dateInput';
+import {
+  genderLabel,
+  MORE_GENDERS,
+  ORIENTATIONS,
+  PRIMARY_GENDERS,
+  SHOW_ME_OPTIONS,
+} from '../fixtures/identity';
 import { INTEREST_CHOICES } from '../fixtures/interests';
-import { ChoiceChip, ChoiceGroup } from '../onboarding/ChoiceChip';
+import { ChoiceChip, ChoiceGroup, ChoiceRow } from '../onboarding/ChoiceChip';
 
 export function ProfileForm({
   initial,
@@ -45,6 +59,11 @@ export function ProfileForm({
   );
   const [bio, setBio] = useState(initial?.bio ?? '');
   const [interests, setInterests] = useState<string[]>(initial?.interests ?? []);
+  const [gender, setGender] = useState(initial?.gender ?? '');
+  const [showGender, setShowGender] = useState(initial?.showGender ?? false);
+  const [orientations, setOrientations] = useState<string[]>(initial?.orientations ?? []);
+  const [showOrientation, setShowOrientation] = useState(initial?.showOrientation ?? false);
+  const [showMe, setShowMe] = useState<ShowMe | ''>(initial?.showMe ?? '');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,6 +91,13 @@ export function ProfileForm({
         birthdate,
         bio: bio.trim() || null,
         interests,
+        // Sent only when there is something to send. An empty gender here
+        // would be a form clearing an answer it merely failed to load.
+        ...(gender ? { gender } : {}),
+        showGender,
+        orientations,
+        showOrientation,
+        ...(showMe ? { showMe } : {}),
       });
       onSaved(saved);
     } catch (err) {
@@ -137,6 +163,75 @@ export function ProfileForm({
             />
           );
         })}
+      </ChoiceGroup>
+
+      {/* The three identity answers, editable for the same reason the name is:
+          onboarding asks them once, and being wrong about yourself forever is
+          not a reasonable consequence of a mistap. `showMe` matters most —
+          it decides whose cards this person is shown, so getting it wrong and
+          having no way back would leave somebody with an empty deck and no
+          explanation. */}
+      <Caption>{COPY.onboarding.gender.headline}</Caption>
+      <ChoiceGroup testID={`${testIDPrefix}-gender`}>
+        {[...PRIMARY_GENDERS, ...MORE_GENDERS].map((value) => (
+          <ChoiceChip
+            key={value}
+            label={genderLabel(value)}
+            selected={gender === value}
+            onPress={() => setGender(value)}
+            testID={`${testIDPrefix}-gender-${value.toLowerCase().replace(/\s+/g, '-')}`}
+          />
+        ))}
+      </ChoiceGroup>
+      <Checkbox
+        label={COPY.onboarding.gender.showOnProfile}
+        checked={showGender}
+        onChange={setShowGender}
+        testID={`${testIDPrefix}-show-gender`}
+      />
+
+      <Caption>{COPY.onboarding.orientation.headline}</Caption>
+      <ChoiceGroup
+        hint={COPY.onboarding.orientation.limit(MAX_ORIENTATIONS)}
+        testID={`${testIDPrefix}-orientations`}
+      >
+        {ORIENTATIONS.map((value) => {
+          const selected = orientations.includes(value);
+          return (
+            <ChoiceRow
+              key={value}
+              label={value}
+              selected={selected}
+              disabled={!selected && orientations.length >= MAX_ORIENTATIONS}
+              onPress={() =>
+                setOrientations((current) =>
+                  selected ? current.filter((v) => v !== value) : [...current, value],
+                )
+              }
+              testID={`${testIDPrefix}-orientation-${value.toLowerCase()}`}
+            />
+          );
+        })}
+      </ChoiceGroup>
+      <Checkbox
+        label={COPY.onboarding.orientation.showOnProfile}
+        checked={showOrientation}
+        onChange={setShowOrientation}
+        testID={`${testIDPrefix}-show-orientation`}
+      />
+      <Caption>{COPY.onboarding.orientation.notAFilter}</Caption>
+
+      <Caption>{COPY.onboarding.showMe.headline}</Caption>
+      <ChoiceGroup hint={COPY.onboarding.showMe.body} testID={`${testIDPrefix}-show-me`}>
+        {SHOW_ME_OPTIONS.map((option) => (
+          <ChoiceChip
+            key={option.value}
+            label={option.label}
+            selected={showMe === option.value}
+            onPress={() => setShowMe(option.value)}
+            testID={`${testIDPrefix}-show-me-${option.value.toLowerCase()}`}
+          />
+        ))}
       </ChoiceGroup>
       {error ? <Notice message={error} tone="error" testID={`${testIDPrefix}-error`} /> : null}
       <Gap size="sm" />

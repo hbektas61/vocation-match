@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Notice, Screen } from '../components/ui';
 import { COPY } from '../copy';
 import { ChatScreen } from '../screens/ChatScreen';
+import { ChooseHotelScreen } from '../screens/ChooseHotelScreen';
 import { DiscoveryScreen } from '../screens/DiscoveryScreen';
 import { EditProfileScreen } from '../screens/EditProfileScreen';
 import { HereNowScreen } from '../screens/HereNowScreen';
@@ -195,6 +196,11 @@ export function RootNavigator() {
         name="EditProfile"
         component={EditProfileScreen}
         options={{ title: COPY.editProfile.title }}
+      />
+      <Stack.Screen
+        name="ChooseHotel"
+        component={ChooseHotelScreen}
+        options={{ title: COPY.hotel.chooseTitle, presentation: 'modal' }}
       />
       <Stack.Screen name="ReportBlock" component={ReportBlockScreen} options={{ title: 'Safety' }} />
     </Stack.Navigator>
