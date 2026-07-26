@@ -818,19 +818,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     fontFamily: fontFamily.body,
     fontSize: font.body,
-    lineHeight: font.body * 1.3,
+    // No lineHeight on purpose: a single-line TextInput on a real iPhone
+    // draws a set lineHeight asymmetrically and the text slides off the
+    // vertical centre — which is exactly the "+90 and the number are not on
+    // one line" the owner kept seeing. The shell centres the natural line.
     color: color.ink,
     // Android top-aligns inside a fixed-height box and reserves room under the
     // baseline; both are why the text sat against the ceiling. iOS ignores
     // these and is centred by the shell instead — once its own default
-    // vertical padding is removed, which is what pushed the phone number off
-    // centre on a real device.
+    // vertical padding is removed.
     textAlignVertical: 'center',
     includeFontPadding: false,
     paddingVertical: 0,
   },
   /** A paragraph reads from the top, however tall the box has grown. */
-  inputMultiline: { textAlignVertical: 'top', minHeight: MIN_TOUCH * 2 },
+  inputMultiline: {
+    textAlignVertical: 'top',
+    minHeight: MIN_TOUCH * 2,
+    // A paragraph does want breathing room between lines; only the
+    // single-line case cannot afford it.
+    lineHeight: font.body * 1.3,
+  },
 
   /**
    * The surface and the ground are both white now, so a card is told apart by

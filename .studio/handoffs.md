@@ -1670,3 +1670,26 @@ their eventual home. The slice:
 - Premium: intent recorded in D-032, deliberately NOT built — the project's
   own rule holds entitlement/billing behind an explicit phase advance in
   decisions.md. One owner sentence opens it.
+
+## 2026-07-26 — the first real sign-in, unblocked and lined up
+
+The owner tried the device build and hit two walls; both fell:
+
+- **"Bir şeyler ters gitti" at the phone step.** Reproduced against staging
+  directly: `phone_provider_disabled` — hosted auth had phone sign-in off
+  and no SMS provider. Enabled phone auth with five test OTP numbers
+  (555 111 00 01–05, code 123456, no SMS ever sent, zero cost) and proved
+  the full loop by curl: request → verify → session token. Real SMS
+  provider remains an owner decision; it is config, not code.
+- **"+90 and the number are not on one line", still.** Root cause this
+  time: an explicit `lineHeight` on a single-line `TextInput`, which a real
+  iPhone draws asymmetrically. Single-line inputs now use the natural line
+  box (paragraph composers keep theirs), and the +90 prefix carries the
+  same metrics as the digits beside it. Web geometry check: prefix, input
+  and box vertical midpoints identical to the pixel.
+
+Also from the same session: the owner's Expo Go "taking much longer than it
+should" was the Mac's firewall dropping inbound LAN connections — dev
+serving moved to tunnel mode (`npx expo start --tunnel`); `@expo/ngrok` went
+in as a devDependency because the global npm cache has root-owned files
+(pre-existing; `sudo chown -R 501:20 ~/.npm` is the owner-side fix).

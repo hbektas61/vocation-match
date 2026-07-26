@@ -297,3 +297,18 @@ has Command Line Tools without Xcode and no Android SDK.
 - Largest Dynamic Type sizes on the new Settings cards and the SMS-code
   screen.
 - Switch Control and an external keyboard: focus order and visible focus.
+
+## Staging phone sign-in (2026-07-26)
+
+Phone auth is now ENABLED on staging with **test OTP numbers** — no SMS is
+ever sent, no SMS provider is wired, no money moves. The device build
+(`.env.local` → staging) signs in with:
+
+- Numbers: `+90 555 111 00 01` through `…00 05`
+- Code: always `123456`
+- Valid until 2027-01-01 (auth config `sms_test_otp_valid_until`)
+
+Any other number fails at "send code" with a provider error — expected, not
+a bug. A real SMS provider (Twilio et al.) costs money and is an owner
+decision recorded in the open list; nothing in the app changes when it
+lands, only the auth config.

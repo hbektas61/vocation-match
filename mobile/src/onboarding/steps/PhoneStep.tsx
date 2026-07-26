@@ -139,6 +139,10 @@ const styles = StyleSheet.create({
   prefix: {
     fontFamily: fontFamily.bodyMedium,
     fontSize: font.body,
+    // The same text metrics as the input beside it — natural line box, no
+    // Android font padding, same size in the same family. Different metrics
+    // were half of why +90 and the digits refused to sit on one line.
+    includeFontPadding: false,
     color: color.ink,
     marginRight: spacing.sm,
   },
