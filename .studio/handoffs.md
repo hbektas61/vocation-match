@@ -1751,3 +1751,21 @@ device therefore still require the dev build (already on the open list).
 Full gate green, 396 tests.
 
 Rule worth keeping: never `import('react-native')` dynamically, anywhere.
+
+## 2026-07-26 — the empty room learned to listen (owner's Banani reference)
+
+The owner sent a dark-theme radar design for the empty discovery room. It
+came in as HTML/Tailwind; what shipped is the same composition translated
+into this app's own language, not the export: white ground instead of
+#0d0d1a, the four concentric rings in lavender-deep alphas graduating
+toward the centre, the glowing dot in accentDeep with a soft halo standing
+in for the CSS box-shadow, and an outward pulse (Animated, native driver)
+in place of the conic-gradient sweep RN cannot draw. The pulse stands
+still when the platform's reduce-motion is on. Header buttons and the tab
+bar from the export were dropped — ours already exist.
+
+Copy is the reference's own Turkish, with an English shape to match
+("Henüz kimse yok" / the calm sentence / "Tekrar tara"), replacing the old
+emptyDeck string. "Scan again" refetches the deck for real — pinned by a
+test that counts the server calls. Verified in the TR browser walk against
+an actually empty room (Çeşme's Here Now). 397 jest tests green.

@@ -333,7 +333,14 @@ export const en = {
     overlapUpcoming:
       'You have both said you will be staying at this hotel. Nobody was asked for a reservation.',
     reportBlockButton: 'Report or block',
-    emptyDeck: 'Nobody new in this room right now. Check back later.',
+    /**
+     * The empty room, per the owner's reference: a headline, one calm
+     * sentence, and a scan-again action under the radar drawing. No
+     * apology, no "unfortunately" — an empty room is a fact, not a failure.
+     */
+    emptyTitle: 'No one here yet',
+    emptyBody: 'Nobody is waiting in this room right now. Check back in a little while.',
+    rescan: 'Scan again',
     notEligible: 'Open a room first: declare an upcoming stay or run a presence check.',
     loadError: 'Could not load candidates. Try again.',
   },

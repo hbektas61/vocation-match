@@ -333,7 +333,9 @@ export const tr: Copy = {
     overlapUpcoming:
       'İkiniz de bu otelde kalacağınızı söylediniz. Kimseden rezervasyon istenmedi.',
     reportBlockButton: 'Bildir veya engelle',
-    emptyDeck: 'Şu an bu odada yeni kimse yok. Sonra tekrar bak.',
+    emptyTitle: 'Henüz kimse yok',
+    emptyBody: 'Şu an bu odada seni bekleyen kimse yok. Birazdan tekrar kontrol et.',
+    rescan: 'Tekrar tara',
     notEligible: 'Önce bir oda aç: yaklaşan konaklama beyan et ya da yakınlık kontrolü yap.',
     loadError: 'Adaylar yüklenemedi. Tekrar dene.',
   },

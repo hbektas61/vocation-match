@@ -6,7 +6,7 @@
  * fixture candidates own no photos, so the feed is stubbed at the instance —
  * what is under test is the card, not the fixtures.
  */
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { FakeApi, getApi, setApi, type CandidateCard } from '../data';
 import { onboardWithHotel } from '../testSupport/onboarding';
@@ -105,5 +105,35 @@ describe('the card photo set', () => {
 
     expect(screen.queryByTestId('card-photo-segments')).toBeNull();
     expect(screen.queryByTestId('card-photo-next')).toBeNull();
+  });
+});
+
+describe('the empty room (owner reference, 2026-07-26)', () => {
+  it('shows the radar with a scan-again action, and scanning asks the server again', async () => {
+    await onboardWithHotel('Deniz', '+905551118201');
+    const api = getApi();
+    // An empty room, straight from the server's mouth.
+    const feedSpy = jest.spyOn(api, 'getDiscoveryFeed').mockResolvedValue([]);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Rooms' }));
+    await fireEvent.press(await screen.findByTestId('open-here-now'));
+    await fireEvent.press(await screen.findByTestId('simulate-near'));
+    await screen.findByText(/You are in/);
+    await fireEvent.press(screen.getByTestId('here-now-done'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Discovery' }));
+
+    expect(await screen.findByTestId('discovery-empty')).toBeTruthy();
+    expect(screen.getByText('No one here yet')).toBeTruthy();
+
+    const callsBefore = feedSpy.mock.calls.length;
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('discovery-rescan'));
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    // "Scan again" is a real question to the server, not a reassurance.
+    expect(feedSpy.mock.calls.length).toBeGreaterThan(callsBefore);
+    feedSpy.mockRestore();
   });
 });

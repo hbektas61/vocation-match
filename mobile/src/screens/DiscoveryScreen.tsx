@@ -4,11 +4,12 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Notice, RoomRibbon, Screen, Title } from '../components/ui';
+import { RadarEmpty } from '../components/RadarEmpty';
 import { nowMs } from '../clock';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type CandidateCard, type RoomKey, type RoomStatus } from '../data';
 import type { RootStackParamList } from '../navigation/types';
-import { color, fontFamily, palette, radius, spacing } from '../theme';
+import { color, font, fontFamily, palette, radius, spacing } from '../theme';
 import { earliestRoomExpiry } from '../state/roomSchedule';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
@@ -25,6 +26,8 @@ export function DiscoveryScreen() {
   const [room, setRoom] = useState<RoomKey | null>(null);
   const [deck, setDeck] = useState<CandidateCard[] | null>(null);
   const [deckError, setDeckError] = useState<string | null>(null);
+  /** Bumped by "scan again" on the empty room; the deck effect re-runs. */
+  const [scan, setScan] = useState(0);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   /** Which of the candidate's photos is showing; reset per candidate. */
@@ -89,7 +92,7 @@ export function DiscoveryScreen() {
     return () => {
       cancelled = true;
     };
-  }, [room]);
+  }, [room, scan]);
 
   // A mutual match interrupts the deck with the celebration screen.
   useEffect(() => {
@@ -321,12 +324,23 @@ export function DiscoveryScreen() {
           </View>
         </View>
       ) : (
-        <View style={styles.card}>
-          <View style={styles.cardNoPhoto}>
-            <Text style={styles.cardInitial}>?</Text>
+        /* The empty room as a scan still running (owner's reference,
+           2026-07-26): rings, a listening dot, one calm sentence, and the
+           way to ask again — not a grey card with a question mark. */
+        <View style={styles.emptyRoom} testID="discovery-empty">
+          <RadarEmpty />
+          <View style={styles.emptyWords}>
+            <Text accessibilityRole="header" style={styles.emptyTitle}>
+              {COPY.discovery.emptyTitle}
+            </Text>
+            <Text style={styles.emptyBody}>{COPY.discovery.emptyBody}</Text>
           </View>
-          <View style={styles.cardTop} pointerEvents="none">
-            <Text style={styles.cardName}>{COPY.discovery.emptyDeck}</Text>
+          <View style={styles.emptyAction}>
+            <Button
+              label={COPY.discovery.rescan}
+              onPress={() => setScan((n) => n + 1)}
+              testID="discovery-rescan"
+            />
           </View>
         </View>
       )}
@@ -335,6 +349,30 @@ export function DiscoveryScreen() {
 }
 
 const styles = StyleSheet.create({
+  /** Centered column, generous air — the reference's stage. */
+  emptyRoom: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xl,
+    paddingHorizontal: spacing.xl,
+  },
+  emptyWords: { alignItems: 'center', gap: spacing.sm },
+  emptyTitle: {
+    fontFamily: fontFamily.display,
+    fontSize: font.title,
+    color: color.ink,
+    textAlign: 'center',
+  },
+  emptyBody: {
+    fontFamily: fontFamily.body,
+    fontSize: font.body,
+    lineHeight: font.body * 1.6,
+    color: color.inkMuted,
+    textAlign: 'center',
+    maxWidth: 260,
+  },
+  emptyAction: { alignSelf: 'stretch', maxWidth: 280, width: '100%' },
   roomSwitch: {
     flexDirection: 'row',
     gap: spacing.sm,
