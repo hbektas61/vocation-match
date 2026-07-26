@@ -153,8 +153,15 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case 'SAVE_PROFILE':
       return { ...state, profile: action.profile };
 
-    case 'HOTELS_LOADED':
-      return { ...state, hotels: action.hotels };
+    case 'HOTELS_LOADED': {
+      // Merged, not replaced. Since hotels arrive from a search rather than
+      // from a catalogue fetch, replacing would drop the active hotel out of
+      // the store the moment somebody searched for something else — and its
+      // name is what the "switch away from" prompt is built from.
+      const byId = new Map(state.hotels.map((hotel) => [hotel.id, hotel]));
+      for (const hotel of action.hotels) byId.set(hotel.id, hotel);
+      return { ...state, hotels: [...byId.values()] };
+    }
 
     case 'ACTIVE_HOTEL_LOADED':
       return { ...state, activeHotel: action.activeHotel };

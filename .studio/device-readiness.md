@@ -117,6 +117,17 @@ The lavender palette and the phone field (D-020, D-021, D-022):
       the `textAlignVertical`/`includeFontPadding` pair exists for.
 - [ ] White cards on the white ground still read as cards at 375pt.
 
+The profile questions and the hotel gate:
+
+- [ ] VoiceOver and TalkBack over gender, orientation and show-me, including
+      the two publish toggles — their default is off and that has to be
+      audible, not just visible.
+- [ ] The "More" list opening in place does not lose the screen-reader cursor.
+- [ ] A real photo picked from a real gallery, uploaded, shown, replaced and
+      removed. This is the one the automated suite cannot speak to at all.
+- [ ] Hotel search with a real keyboard: two-character threshold, debounce,
+      and a genuinely slow network for the stale-answer case.
+
 Accessibility (backlog R-004):
 
 - [ ] VoiceOver and TalkBack walk the whole onboarding → match → chat path.

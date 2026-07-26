@@ -1101,3 +1101,56 @@ schema, no dead UI.
 `+90` field with a real keyboard, paste and autofill; the focus ring on a real
 screen; VoiceOver and TalkBack; and the photo round trip, which cannot be
 diagnosed anywhere but a real runtime.
+
+
+## 2026-07-26 (later still) — five of the seven slices
+
+Continued straight through. What is on `main` now, each verified by a full
+`scripts/check.sh` before it was committed:
+
+1. **Palette and global input** (D-020, D-021) — white ground, one lavender,
+   a focus state that does not depend on a 1.55:1 colour, `Field` owning its
+   box so a line centres on both platforms.
+2. **`+90`** (D-022) — fixed prefix, ten national digits, E.164 at the call.
+3. **`DD/MM/YYYY`** — display only; ISO at every boundary, and the 18+ line
+   asserted with the process clock moved either side of UTC.
+4. **The profile questions** (D-023, D-024, D-025) — bio out; name, birthdate,
+   gender, orientation, show-me, passions, photo in; `onboarding_completed_at`
+   set only by the server; show-me filtering discovery in both directions; the
+   hotel out of onboarding entirely.
+5. **Hotel search** — nothing fetched or offered until two characters are
+   typed, stale answers discarded by sequence, and four distinct states.
+
+Three things worth carrying forward that the work turned up rather than
+implemented:
+
+- Updating another user's row in a pgTAP test is a **silent RLS no-op**. Three
+  assertions passed for the wrong reason until each change was made as its own
+  owner. Worth remembering the next time a discovery test looks green.
+- `verify-migration-replay.sh` seeds rows **partway through** the migration
+  list, so `tests.create_member` cannot assume a column that a later migration
+  adds. It now sets the identity columns only if they exist — which is also
+  what leaves the backfill something real to back-fill.
+- Merging rather than replacing on `HOTELS_LOADED` is load-bearing now that
+  hotels arrive from a search: replacing dropped the active hotel out of the
+  store as soon as somebody searched for anything else, and its name is what
+  the switch prompt is built from. A test caught it; the screen looked fine.
+
+### Still to do — the photo slice, and only that
+
+**Nine ordered photos and the upload failure.** Untouched, and deliberately not
+half-started: there is no 3×3 grid pretending to be one, and no schema for
+photos beyond the single `profiles.photo_path` that has always been there. It
+needs an additive ordered-photo model with the private bucket, EXIF strip,
+signed URLs and cleanup queue extended to every slot, a primary-photo concept,
+and a backward-compatible move of the existing `photo_path`.
+
+The upload bug cannot honestly be closed from here. The suspicion in the brief
+— that `fetch(file://…).arrayBuffer()` does not do what it appears to on a real
+Expo runtime — is plausible and is exactly the kind of thing a FakeApi test
+will report as working. It needs the staged isolation the brief lists, on a
+device or simulator. Recorded as an external blocker rather than guessed at.
+
+Also still external: every device line in `.studio/device-readiness.md` — the
+`+90` field with a real keyboard and autofill, the focus ring on a real screen,
+VoiceOver and TalkBack over the new steps, and reduced motion.

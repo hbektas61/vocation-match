@@ -57,7 +57,10 @@ export function InterestsStep({
       body={COPY.onboarding.interests.body}
       onBack={onBack}
       onSkip={() => save([])}
-      actionLabel={COPY.onboarding.continueButton}
+      // The count is on the button because that is where somebody looks to
+      // find out whether they may carry on, and "3/5" answers both questions
+      // at once.
+      actionLabel={COPY.onboarding.interests.counter(chosen.length, MAX_INTERESTS)}
       actionEnabled={chosen.length > 0 && !busy}
       actionBusy={busy}
       onAction={() => save(chosen)}

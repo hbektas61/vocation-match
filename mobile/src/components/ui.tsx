@@ -529,9 +529,9 @@ function initialOf(name: string): string {
   return trimmed ? trimmed[0].toUpperCase() : '?';
 }
 
-export function EmptyState({ message }: { message: string }) {
+export function EmptyState({ message, testID }: { message: string; testID?: string }) {
   return (
-    <View style={styles.empty} accessibilityRole="text">
+    <View style={styles.empty} accessibilityRole="text" testID={testID}>
       <Text style={styles.emptyGlyph} accessibilityElementsHidden importantForAccessibility="no">
         ·
       </Text>

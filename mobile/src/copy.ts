@@ -210,6 +210,7 @@ export const COPY = {
     noActiveHotel: 'No active hotel yet.',
     searchLabel: 'Search hotels',
     searchPlaceholder: 'Hotel name or city',
+    searchPrompt: 'Type a hotel name to search.',
     noResults: 'No hotels match that search.',
     loadError: 'Could not load hotels. Try again.',
     activatedNote: 'This is your active hotel.',
