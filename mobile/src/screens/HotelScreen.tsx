@@ -5,7 +5,7 @@ import { Body, Button, Caption, Card, DoorPlate, EmptyState, Field, Gap, Heading
 import { HotelCover } from '../components/HotelCover';
 import { nowMs } from '../clock';
 import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
-import { ApiError, getApi, type HotelCard, type RoomStatus } from '../data';
+import { ApiError, getApi, type HotelCard, type RoomHeadcount, type RoomStatus } from '../data';
 import { useAppStore } from '../state/AppStore';
 import { color, font, fontFamily, radius, spacing } from '../theme';
 
@@ -33,6 +33,12 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
   const [activateError, setActivateError] = useState<string | null>(null);
   /** For the two mini state chips on the active hotel's key card. */
   const [roomStates, setRoomStates] = useState<RoomStatus[] | null>(null);
+  /**
+   * Thresholded headcounts (D-032). A null entry renders as nothing — no
+   * "quiet room" wording — because below five people even "somebody is
+   * here" points at a person.
+   */
+  const [roomCounts, setRoomCounts] = useState<RoomHeadcount[] | null>(null);
 
   const activeHotel = state.hotels.find((h) => h.id === state.activeHotel?.hotelId) ?? null;
 
@@ -53,6 +59,12 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
             .getRooms()
             .then((rooms) => {
               if (!cancelled) setRoomStates(rooms);
+            })
+            .catch(() => undefined);
+          api
+            .getRoomCounts()
+            .then((counts) => {
+              if (!cancelled) setRoomCounts(counts);
             })
             .catch(() => undefined);
         }
@@ -134,6 +146,10 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         .getRooms()
         .then(setRoomStates)
         .catch(() => undefined);
+      api
+        .getRoomCounts()
+        .then(setRoomCounts)
+        .catch(() => undefined);
       setSwitchedNotice(result.previousHotelId !== null && result.previousHotelId !== hotel.id);
       onActivated?.();
     } catch (err) {
@@ -184,6 +200,14 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
                     open={status.eligible}
                     label={status.eligible ? COPY.rooms.openChip : COPY.rooms.closedChip}
                   />
+                  {(() => {
+                    const count = roomCounts?.find((entry) => entry.room === status.room);
+                    return count?.headcount != null ? (
+                      <Caption testID={`room-count-${status.room}`}>
+                        {COPY_FOR.roomHeadcount(count.headcount)}
+                      </Caption>
+                    ) : null;
+                  })()}
                 </View>
               ))}
             </View>

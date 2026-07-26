@@ -20,7 +20,7 @@ import {
 } from '../domain/hereNow';
 import { isUpcomingEligible, validateStayDates } from '../domain/upcoming';
 import type { HereNowCheck, UpcomingDeclaration } from '../domain/types';
-import { CANDIDATES } from '../fixtures/candidates';
+import { CANDIDATES, ROOM_CROWD } from '../fixtures/candidates';
 import { getHotelById, searchHotels as searchHotelFixtures } from '../fixtures/hotels';
 import {
   ApiError,
@@ -37,6 +37,7 @@ import {
   type PresenceAnswer,
   type ProfileInput,
   type ReportInput,
+  type RoomHeadcount,
   type RoomKey,
   type RoomStatus,
   type SwipeDirection,
@@ -46,6 +47,7 @@ import {
   MAX_INTERESTS,
   MAX_ORIENTATIONS,
   MAX_PHOTOS,
+  ROOM_COUNT_THRESHOLD,
   type ProfilePhoto,
   type ShowMe,
 } from './contracts';
@@ -574,6 +576,26 @@ export class FakeApi implements VocationApi {
         validUntil: hereNowEligible && presence ? presence.checkedAt + HERE_NOW_FRESHNESS_MS : null,
       },
     ];
+  }
+
+  async getRoomCounts(): Promise<RoomHeadcount[]> {
+    const userId = await this.requireUserId();
+    const active = this.activeHotels.get(userId) ?? null;
+    if (!active) {
+      throw new ApiError('NOT_FOUND', 'Choose a hotel first.');
+    }
+    // Mirrors `hotel_room_counts` (D-032): every eligible person at the
+    // hotel is in the number — show_me never filters a headcount — and the
+    // number is only spoken at five or more. Below that, null; and null
+    // renders as nothing.
+    return (['UPCOMING', 'HERE_NOW'] as RoomKey[]).map((room) => {
+      const crowd = ROOM_CROWD[active.hotelId]?.[room] ?? 0;
+      const visible =
+        CANDIDATES.filter(
+          (candidate) => candidate.hotelId === active.hotelId && candidate.rooms.includes(room),
+        ).length + crowd;
+      return { room, headcount: visible >= ROOM_COUNT_THRESHOLD ? visible : null };
+    });
   }
 
   /* -------------------------------------------------------------- discovery */

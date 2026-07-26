@@ -459,4 +459,5 @@ export const trFor: CopyFor = {
     hotelName ? `${hotelName} odaları` : 'Otelinin odaları',
   discoveryTitle: (hotelName: string) => `${hotelName} keşfi`,
   switchPrompt: (hotelName: string) => `${hotelName} oteline geçilsin mi?`,
+  roomHeadcount: (count: number) => `${count} kişi`,
 };

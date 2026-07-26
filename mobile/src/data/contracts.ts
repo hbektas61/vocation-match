@@ -177,6 +177,27 @@ export interface RoomStatus {
   validUntil?: number | null;
 }
 
+/**
+ * How crowded a room is — told only when the crowd hides the individual
+ * (D-032). The threshold exists because "1 person in Here Now" plus a glance
+ * around the lobby is identification. The count ignores show_me in both
+ * directions (a room's population is a fact about the room, not about who
+ * you would swipe on), never includes the caller, and is exact only at five
+ * or more. The server owns the rule; this constant lets the fake mirror it,
+ * never enforce it.
+ */
+export const ROOM_COUNT_THRESHOLD = 5;
+
+export interface RoomHeadcount {
+  room: RoomKey;
+  /**
+   * Exact number of other people in the room, or null below the threshold.
+   * Null must render as *nothing* — not "a few", not "somebody" — because at
+   * one person even "somebody is here" is a presence leak.
+   */
+  headcount: number | null;
+}
+
 /** What one user may see about another: a card, and nothing more. */
 export interface CandidateCard {
   userId: string;
@@ -305,6 +326,8 @@ export interface VocationApi {
    */
   clearPresenceCheck(): Promise<void>;
   getRooms(): Promise<RoomStatus[]>;
+  /** Thresholded headcounts for the active hotel's rooms (D-032). */
+  getRoomCounts(): Promise<RoomHeadcount[]>;
 
   /* discovery */
   getDiscoveryFeed(room: RoomKey, limit?: number): Promise<CandidateCard[]>;

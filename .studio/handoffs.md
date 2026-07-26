@@ -1648,3 +1648,25 @@ Left deliberately on the table, each needing an owner decision or a later
 phase: room population counts on the hotel card (a privacy decision — small
 rooms deanonymise), and real map/photo covers (licensing and a tile-usage
 policy).
+
+## 2026-07-26 — the key card learns to count, carefully
+
+Owner: show room headcounts on the hotel card, with a threshold; premium is
+their eventual home. The slice:
+
+- `hotel_room_counts()` (migration 20260726000700, staging-applied): exact
+  number of *other* eligible people per room at the caller's active hotel —
+  at five or more. Below five: null, and null renders as nothing. Not "a
+  few", not "somebody" — at one person even "somebody is here" is a presence
+  leak. The count ignores show_me both ways, never includes the caller,
+  drops suspended/incomplete accounts. D-032.
+- 9 pgTAP assertions (tests/017): threshold silence, the fifth person, the
+  caller excluded, other hotels not leaking in, suspension silencing the
+  count, no-hotel refused, anon refused. 407 SQL assertions total.
+- Client: `getRoomCounts()` in both APIs; the fake mirrors the threshold and
+  its Lara Shore fixtures straddle it (Upcoming 6, Here Now 3) so one screen
+  shows both behaviours — verified in the TR browser walk: "6 kişi" under
+  Yaklaşan, deliberate silence under Şu an burada. Jest 394/394.
+- Premium: intent recorded in D-032, deliberately NOT built — the project's
+  own rule holds entitlement/billing behind an explicit phase advance in
+  decisions.md. One owner sentence opens it.

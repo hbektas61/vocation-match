@@ -28,6 +28,7 @@ import {
   type ProfilePhoto,
   type ShowMe,
   type ReportInput,
+  type RoomHeadcount,
   type RoomKey,
   type RoomStatus,
   type SwipeDirection,
@@ -625,6 +626,20 @@ export class SupabaseApi implements VocationApi {
       eligible: row.eligible,
       reason: row.reason as RoomStatus['reason'],
       validUntil: row.valid_until ? Date.parse(row.valid_until) : null,
+    }));
+  }
+
+  async getRoomCounts(): Promise<RoomHeadcount[]> {
+    // The threshold lives in `hotel_room_counts`, not here: the server
+    // answers with an exact number or null, and null renders as nothing
+    // (D-032).
+    const { data, error } = await this.client.rpc('hotel_room_counts');
+    if (error) {
+      throw toApiError(error, 'Could not load the room counts.');
+    }
+    return (data ?? []).map((row: { room: string; headcount: number | null }) => ({
+      room: row.room as RoomKey,
+      headcount: row.headcount,
     }));
   }
 

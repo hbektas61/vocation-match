@@ -134,6 +134,23 @@ describe('once a query is typed', () => {
   });
 });
 
+describe('the headcount on the key card (D-032)', () => {
+  it('shows an exact number at five or more, and nothing at all below', async () => {
+    await openHotelTab();
+    await fireEvent.changeText(screen.getByTestId('hotel-search'), 'lara');
+    await settle();
+    await fireEvent.press(await screen.findByTestId('activate-hotel-lara-shore'));
+    await settle();
+
+    // Lara Shore's fixtures put six people in Upcoming and three in Here
+    // Now. Six is spoken; three is not — and not as "a few people" either,
+    // because below the threshold even "somebody is here" points at a
+    // person. Silence is the design, so the test demands silence.
+    expect(await screen.findByTestId('room-count-UPCOMING')).toHaveTextContent('6 people');
+    expect(screen.queryByTestId('room-count-HERE_NOW')).toBeNull();
+  });
+});
+
 describe('reaching for a room without a hotel', () => {
   it('offers the way to fix it on the screen that is blocked', async () => {
     await onboard('Deniz', '+905551117010');

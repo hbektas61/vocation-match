@@ -108,6 +108,20 @@ export const CANDIDATES: Candidate[] = [
 ];
 
 /**
+ * People who are in the rooms but not in the tester's deck.
+ *
+ * The headcount (D-032) counts every eligible person at the hotel — it
+ * ignores show_me in both directions, exactly like the server — so the fake
+ * needs a crowd larger than the handful of swipeable fixtures without
+ * flooding discovery with cards. Lara Shore's Upcoming crosses the
+ * five-person threshold while its Here Now stays under it, so the preview
+ * shows both behaviours on one screen: a number, and a deliberate silence.
+ */
+export const ROOM_CROWD: Record<string, { UPCOMING: number; HERE_NOW: number }> = {
+  'hotel-lara-shore': { UPCOMING: 4, HERE_NOW: 1 },
+};
+
+/**
  * Seed swipes representing candidates who already liked the tester.
  * These flow through the same mutual-match rule as real swipes.
  */

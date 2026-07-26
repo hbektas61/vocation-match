@@ -468,6 +468,12 @@ export const enFor = {
     hotelName ? `Rooms at ${hotelName}` : 'Rooms at your hotel',
   discoveryTitle: (hotelName: string) => `Discovery at ${hotelName}`,
   switchPrompt: (hotelName: string) => `Switch to ${hotelName}?`,
+  /**
+   * Shown only when the server sent a number, which it does only at five or
+   * more people (D-032). There is no wording for "a few" on purpose: below
+   * the threshold the room says nothing at all.
+   */
+  roomHeadcount: (count: number) => `${count} people`,
 };
 
 export type Copy = typeof en;
