@@ -1811,3 +1811,12 @@ short phones keep both buttons above the tab bar. Also fixed en route:
 Discovery's three fallback screens had a hardcoded English "Discovery"
 title — now localized. The critical-flow gate test now walks this screen
 and through the proximity shortcut. 397 jest tests green.
+
+## 2026-07-27 — the orbit's centre became a door (designer's second pass)
+
+Hours after the orbit screen shipped, the designer replaced its centre: the
+solid dot and three bubbles are gone; the door itself now stands ajar at
+the middle of the orbit in its own deeper pool of lavender, and an empty
+armchair waits in a white bubble on a low stage at the disc's foot. Same
+component (OrbitEmpty), same screen wiring, same tests — only the drawing
+changed. Verified by TR browser walk screenshot; 397 jest tests green.
