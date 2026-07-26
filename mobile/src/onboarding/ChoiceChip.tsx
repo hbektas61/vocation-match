@@ -52,7 +52,15 @@ export function ChoiceChip({
         pressed && styles.chipPressed,
       ]}
     >
-      <Text style={[styles.chipLabel, selected && styles.chipLabelSelected]}>{label}</Text>
+      <Text
+        style={[
+          styles.chipLabel,
+          wide && styles.chipLabelWide,
+          selected && styles.chipLabelSelected,
+        ]}
+      >
+        {label}
+      </Text>
       {trailing ? <Text style={styles.chipTrailing}>{trailing}</Text> : null}
     </Pressable>
   );
@@ -194,5 +202,11 @@ const styles = StyleSheet.create({
     fontSize: font.body,
     color: color.ink,
   },
-  chipLabelSelected: { fontFamily: fontFamily.bodySemi, color: color.accentDeep },
+  /**
+   * The owner read the medium-weight ink on these airy pills as bold and
+   * black. Regular weight at body size is still an 18:1 read; the pill's
+   * border and fill carry the structure, so the label can speak quietly.
+   */
+  chipLabelWide: { fontFamily: fontFamily.body },
+  chipLabelSelected: { fontFamily: fontFamily.bodyMedium, color: color.accentDeep },
 });
