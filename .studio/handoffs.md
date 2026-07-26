@@ -1033,3 +1033,71 @@ Handoff:
 - Existing email-only Auth users are not automatically migrated. Preserving a
   real account UID would require a separately reviewed, phone-verified identity
   migration; staging fixtures can instead be reset by an explicit owner action.
+
+
+## 2026-07-26 (later) — the owner's brief: base reconciled, first two slices in
+
+Picked up `CLAUDE_UI_ONBOARDING_HANDOFF.md` plus the two reference screenshots.
+Before any of it, the base had to be sorted out, and that is the part worth
+reading.
+
+**The base.** I had been working in `.claude/worktrees/pilot-hardening`, which
+was on Expo 57 / RN 0.86 with email-and-password onboarding — both of them
+things the brief forbids. The brief named `5ad8f03` as the authorised base and
+that object did not exist locally, which made it look like a mistake; it was
+not. `origin/main` had moved and this clone had simply never fetched it. What
+was actually on disk was the phone-only OTP work, uncommitted, ~1000 lines,
+in the primary checkout. So:
+
+- Verified that working tree (full `scripts/check.sh` green) and committed it,
+  rather than leaving a thousand unversioned lines to be lost.
+- Then found `5ad8f03` on the remote with a byte-identical tree, dropped my
+  duplicate commit, and rebased the real work onto it. No force-push, nothing
+  reset, nothing deleted.
+- The worktree commit `a323d7e` is superseded and stays where it is. Its two
+  fixes — the Android back handler and the per-step screen-reader
+  announcement — are already in the phone-only line, so nothing was lost.
+
+**Slice 1, the palette (D-020, D-021).** Both owner rules applied at the token
+file: every sand surface white, every blue and green accent `#E1C4FF`. The old
+`ocean`/`sea`/`sand` names are gone rather than re-pointed, so nothing reads as
+a colour it is not. One measurement drove the rest of the design: the brand
+colour is 1.55:1 on white. It therefore cannot be a boundary, cannot carry text
+on white, and cannot be a state by itself — so it never appears alone. The
+focused border is exactly the hex the owner asked for, plus weight, fill and a
+`#7B4FA8` ring, because the colour on its own is a focus state a lot of people
+cannot see. `Field` now owns the box rather than the `TextInput`, which is what
+lets a single line centre vertically on both platforms while a composer still
+starts at the top; it also stops swallowing the caller's `onFocus`, `onBlur`
+and `style`. Cards survive white-on-white via an edge and a small lift, and the
+two rooms are told apart by word and filled-versus-hollow mark rather than hue.
+The theme test computes the ratios from the tokens instead of trusting the
+comments, which is what stops the next hex nudge from silently invalidating
+them.
+
+**Slice 2, the phone prefix (D-022).** `+90` is drawn beside the box and never
+enters the editable value. Ten national digits in, E.164 out, once, at the
+call. The Turkey-only parser is its own module and reads the four ways people
+really supply a number — plain, trunk zero, `+90`, contact card, spaced or
+hyphenated — because rejecting a pasted number reads as the app being broken.
+"Not finished" and "not a mobile number" are separate answers, since a landline
+typed in full is complete and more digits will never fix it.
+
+Verification for both: `bash scripts/check.sh` entirely green — 348 SQL
+assertions, concurrency, performance smoke, migration replay, storage drain,
+the client/database contract, `tsc`, `eslint --max-warnings 0`, 321 jest tests
+across 29 suites, and the web bundle. Pushed to `origin/main` as `354b5cc`.
+
+**Not started yet, and honestly the larger half of the brief.** Birthdate
+`DD/MM/YYYY`; removing the bio step; the new profile order with gender,
+orientation and show-me, which is a migration, RLS, column grants, discovery
+semantics and an explicit `onboarding_completed_at`; Passions with its counter;
+nine ordered photos and the real cause of the upload failure; and taking the
+hotel out of onboarding in favour of a gate at first discovery intent. Each of
+those is its own vertical slice and none of them is started — no half-applied
+schema, no dead UI.
+
+**Still external.** Every device line in `.studio/device-readiness.md`: the
+`+90` field with a real keyboard, paste and autofill; the focus ring on a real
+screen; VoiceOver and TalkBack; and the photo round trip, which cannot be
+diagnosed anywhere but a real runtime.

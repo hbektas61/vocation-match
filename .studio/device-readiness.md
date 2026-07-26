@@ -104,6 +104,19 @@ Product rules, on a device rather than in SQL:
 - [ ] Unblocking from Settings works and does not restore the old match.
 - [ ] No screen ever shows a distance, a coordinate, or the word "verified".
 
+The lavender palette and the phone field (D-020, D-021, D-022):
+
+- [ ] The focused input border on a real screen, in daylight. The ratio maths
+      says colour alone is not enough and the ring is what carries it; whether
+      the ring reads as a ring rather than a smudge is a device question.
+- [ ] `+90` with the real `phone-pad`: cursor and backspace behaviour at the
+      boundary between the fixed prefix and the first typed digit.
+- [ ] Paste from a contact card and from a message, on both platforms.
+- [ ] SMS autofill still lands in the code field with the prefix in place.
+- [ ] A single-line field's text sits centred on Android, which is the platform
+      the `textAlignVertical`/`includeFontPadding` pair exists for.
+- [ ] White cards on the white ground still read as cards at 375pt.
+
 Accessibility (backlog R-004):
 
 - [ ] VoiceOver and TalkBack walk the whole onboarding → match → chat path.
