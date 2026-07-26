@@ -19,8 +19,15 @@ One thing `supabase db push` does not do: seed data. `supabase/seed.sql` (the
 five pilot hotels) has to be applied to the hosted project separately — the
 first pilot run surfaced this as every hotel search answering "no results",
 because the schema was there and the catalogue was empty. It is idempotent;
-running it again is safe. Without `psql` on the machine, the management API
-runs it:
+running it again is safe — though since the `hotel-search` edge function
+landed, the seed only matters as a starting point: the catalogue now grows on
+its own from OpenStreetMap as people search (D-029). The function deploys with
+
+```bash
+npx supabase functions deploy hotel-search
+```
+
+Without `psql` on the machine, the management API runs the seed:
 
 ```bash
 curl -s -X POST \

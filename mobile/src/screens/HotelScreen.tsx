@@ -196,6 +196,9 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         placeholder={COPY.hotel.searchPlaceholder}
         testID="hotel-search"
       />
+      {/* An ODbL licence term: the stored hotel data has to say where it is
+          from, somewhere the person seeing it can read. */}
+      <Caption>{COPY.hotel.attribution}</Caption>
       {searchError ? (
         <>
           <Notice message={searchError} tone="error" testID="hotel-search-error" />

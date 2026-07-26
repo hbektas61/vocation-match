@@ -204,6 +204,9 @@ export const COPY = {
     searchLabel: 'Search hotels',
     searchPlaceholder: 'Hotel name or city',
     chooseTitle: 'Choose your hotel',
+    // ODbL: storing OSM data requires saying where it came from, where people
+    // can see it. This caption is a licence term, not decoration.
+    attribution: 'Hotel data © OpenStreetMap contributors',
     chooseCta: 'Choose a hotel',
     searchPrompt: 'Type a hotel name to search.',
     noResults: 'No hotels match that search.',

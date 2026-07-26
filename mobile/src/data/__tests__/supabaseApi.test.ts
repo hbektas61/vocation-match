@@ -84,6 +84,58 @@ afterEach(() => {
   global.fetch = originalFetch;
 });
 
+describe('hotel search', () => {
+  const HOTEL = { id: '11111111-1111-4111-8111-111111111111', name: 'Rixos Tekirova', city: 'Kemer', country: 'Turkiye', address: null };
+  const CATALOGUE = { id: '22222222-2222-4222-8222-222222222222', name: 'Lara Shore Resort', city: 'Antalya', country: 'Turkiye', address: null };
+
+  function searchApi(handler: (url: string) => Response) {
+    const fetchMock = jest.fn(async (input: RequestInfo | URL) => handler(String(input)));
+    global.fetch = fetchMock as unknown as typeof fetch;
+    return { api: new SupabaseApi({ url: URL, anonKey: ANON_KEY }, createMemoryStorage()), fetchMock };
+  }
+
+  it('prefers the edge function, which is the catalogue plus the world', async () => {
+    const { api, fetchMock } = searchApi((url) => {
+      if (url.includes('/functions/v1/hotel-search')) {
+        return jsonResponse({ hotels: [HOTEL] });
+      }
+      throw new Error(`unexpected call: ${url}`);
+    });
+
+    const hotels = await api.searchHotels('rixos');
+
+    expect(hotels).toEqual([HOTEL]);
+    // And never the direct RPC on the happy path.
+    expect(fetchMock.mock.calls.every(([u]) => !String(u).includes('/rpc/'))).toBe(true);
+  });
+
+  it('falls back to the catalogue when the function is unreachable', async () => {
+    // A missing or down function narrows the answer; it must not remove it.
+    const { api } = searchApi((url) => {
+      if (url.includes('/functions/v1/hotel-search')) {
+        return jsonResponse({ error: 'boom' }, 500);
+      }
+      if (url.includes('/rpc/search_hotels')) {
+        return jsonResponse([CATALOGUE]);
+      }
+      throw new Error(`unexpected call: ${url}`);
+    });
+
+    expect(await api.searchHotels('lara')).toEqual([CATALOGUE]);
+  });
+
+  it('surfaces an error only when both routes have failed', async () => {
+    const { api } = searchApi((url) => {
+      if (url.includes('/functions/v1/hotel-search')) {
+        return jsonResponse({ error: 'boom' }, 500);
+      }
+      return jsonResponse({ message: 'permission denied' }, 403);
+    });
+
+    await expect(api.searchHotels('lara')).rejects.toMatchObject({ code: expect.any(String) });
+  });
+});
+
 describe('SupabaseApi phone OTP', () => {
   function otpApi(handler: (url: string, init?: RequestInit) => Response) {
     const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) =>

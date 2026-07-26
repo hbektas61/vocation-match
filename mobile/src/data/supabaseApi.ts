@@ -471,17 +471,27 @@ export class SupabaseApi implements VocationApi {
   /* ------------------------------------------------------------------ hotel */
 
   async searchHotels(query: string): Promise<HotelCard[]> {
+    // The edge function is the catalogue *plus* the world: it asks OSM when
+    // the local table answers thinly and caches what it finds, so the search
+    // is not limited to hotels somebody already picked. If the function is
+    // unreachable — not deployed, cold, or down — the catalogue alone is
+    // still a correct answer, just a narrower one, so this degrades to the
+    // direct RPC rather than to an error.
+    try {
+      const { data, error } = await this.client.functions.invoke('hotel-search', {
+        body: { query },
+      });
+      if (!error && Array.isArray(data?.hotels)) {
+        return (data.hotels as HotelRow[]).map(toHotelCard);
+      }
+    } catch {
+      // Fall through to the catalogue.
+    }
     const { data, error } = await this.client.rpc('search_hotels', { p_query: query });
     if (error) {
       throw toApiError(error, 'Could not search hotels.');
     }
-    return (data ?? []).map((row: HotelRow) => ({
-      id: row.id,
-      name: row.name,
-      city: row.city,
-      country: row.country,
-      address: row.address ?? null,
-    }));
+    return ((data ?? []) as HotelRow[]).map(toHotelCard);
   }
 
   async getActiveHotel(): Promise<ActiveHotel | null> {
@@ -782,6 +792,16 @@ interface HotelRow {
   city: string;
   country: string;
   address: string | null;
+}
+
+function toHotelCard(row: HotelRow): HotelCard {
+  return {
+    id: row.id,
+    name: row.name,
+    city: row.city,
+    country: row.country,
+    address: row.address ?? null,
+  };
 }
 
 interface ActivationRow {

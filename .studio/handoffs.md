@@ -1312,3 +1312,44 @@ Worth writing down as a habit: `scripts/check.sh` proves the migrations against
 a throwaway container, and nothing in the loop proves them against staging.
 Until a staging check exists, "all checks passed" and "staging works" are two
 different sentences.
+
+
+## 2026-07-26 — the catalogue learns to grow
+
+The owner's next question after the seed fix was the right one: "are these
+just the hotels we put in the database? we cannot register every hotel by
+hand." No — and the schema had been waiting for this. `hotels` has called
+itself a provider-fed cache since the day it was created; the seed file was
+simply the only provider it ever had.
+
+The provider now exists: a `hotel-search` edge function (D-029). Catalogue
+first; when it answers thinly, Nominatim (OSM's geocoder) is asked for
+hotel-type places in Turkey, the hits go through `upsert_hotel_from_provider`
+— the same single write boundary everything else uses — and the search runs
+again. Verified live against staging: "rixos" pulled six real hotels from OSM
+on the first call, and the identical second call answered in 334 ms without
+leaving the database. The client degrades to the catalogue-only RPC when the
+function is unreachable, so a cold or missing function narrows the answer
+rather than removing it.
+
+Two choices worth defending later:
+
+- **OSM, not Google Places, and it is not about the money.** ODbL lets us
+  store what we fetch (with the attribution line the hotel screen now
+  carries). Google's terms forbid caching place data beyond an ID, which is
+  incompatible with a product whose whole design is "activate a hotel that
+  lives in our table".
+- **The bloat fear is answered by laziness, not by limits.** Nothing preloads
+  the world. A hotel enters the table when somebody first searches for it,
+  so growth is bounded by the set of real hotels people actually look for —
+  and a repeated search never leaves Postgres.
+
+Also this session, from the owner's first hands-on run: the focused input's
+lavender fill is gone (border-only, D-021 amended), and the "not found for
+everything" report turned out to be staging missing the day's migrations plus
+a never-seeded catalogue — both fixed and both now written into
+`docs/hosted-setup.md`.
+
+Still true: Nominatim's policy is one request a second with a real
+User-Agent. Debounce, the two-character minimum and cache-first keep a pilot
+under that comfortably; past a pilot, the function is where a queue goes.
