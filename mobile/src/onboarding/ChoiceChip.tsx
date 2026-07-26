@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   chipIdle: { backgroundColor: color.surface, borderColor: color.border },
-  chipSelected: { backgroundColor: color.seaSoft, borderColor: color.ocean },
+  chipSelected: { backgroundColor: color.accentSoft, borderColor: color.accentDeep },
   chipDisabled: { opacity: 0.45 },
   chipPressed: { opacity: 0.85 },
   chipLabel: {
@@ -96,5 +96,5 @@ const styles = StyleSheet.create({
     fontSize: font.body,
     color: color.ink,
   },
-  chipLabelSelected: { fontFamily: fontFamily.bodySemi, color: color.ocean },
+  chipLabelSelected: { fontFamily: fontFamily.bodySemi, color: color.accentDeep },
 });

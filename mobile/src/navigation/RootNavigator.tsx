@@ -33,7 +33,7 @@ function tabMark({ focused }: { focused: boolean }) {
         height: 8,
         borderRadius: 4,
         marginBottom: 2,
-        backgroundColor: focused ? color.ocean : 'transparent',
+        backgroundColor: focused ? color.accentDeep : 'transparent',
         borderWidth: focused ? 0 : 1.5,
         borderColor: color.border,
       }}
@@ -87,7 +87,7 @@ function MainTabs() {
       initialRouteName="Rooms"
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: color.ocean,
+        tabBarActiveTintColor: color.accentDeep,
         tabBarInactiveTintColor: color.inkMuted,
         tabBarStyle: {
           backgroundColor: color.background,

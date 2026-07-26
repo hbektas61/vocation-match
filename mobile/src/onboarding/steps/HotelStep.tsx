@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   list: { gap: spacing.md },
   row: { gap: spacing.xs },
   chosen: {
-    backgroundColor: color.seaSoft,
+    backgroundColor: color.accentSoft,
     borderRadius: radius.md,
     padding: spacing.md,
     gap: spacing.xs,

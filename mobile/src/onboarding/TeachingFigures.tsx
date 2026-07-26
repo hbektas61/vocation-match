@@ -33,7 +33,7 @@ export function UpcomingFigure() {
   return (
     <Figure>
       <View style={styles.card}>
-        <View style={[styles.badge, { backgroundColor: color.sand }]}>
+        <View style={[styles.badge, { backgroundColor: color.accent }]}>
           <Text style={styles.badgeText}>{COPY.upcoming.statusBadge}</Text>
         </View>
         <View style={[styles.line, { width: '70%' }]} />
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     width: 176,
     height: 176,
     borderRadius: 88,
-    backgroundColor: color.seaSoft,
+    backgroundColor: color.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -101,12 +101,12 @@ const styles = StyleSheet.create({
     height: 104,
     borderRadius: 52,
     borderWidth: 2,
-    borderColor: color.ocean,
+    borderColor: color.accentDeep,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pin: { width: 18, height: 18, borderRadius: 9, backgroundColor: color.ocean },
-  ringLabel: { fontFamily: fontFamily.bodySemi, fontSize: font.caption, color: color.ocean },
+  pin: { width: 18, height: 18, borderRadius: 9, backgroundColor: color.accentDeep },
+  ringLabel: { fontFamily: fontFamily.bodySemi, fontSize: font.caption, color: color.accentDeep },
 
   // Fixed rather than proportional: absolutely-positioned children measured
   // against a parent that had shrunk to nothing, and the two cards rendered as
@@ -122,5 +122,5 @@ const styles = StyleSheet.create({
     borderColor: color.rule,
   },
   pairLeft: { left: 0, transform: [{ rotate: '-6deg' }] },
-  pairRight: { right: 0, backgroundColor: color.seaSoft, transform: [{ rotate: '6deg' }] },
+  pairRight: { right: 0, backgroundColor: color.accentSoft, transform: [{ rotate: '6deg' }] },
 });

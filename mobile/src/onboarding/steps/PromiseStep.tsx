@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: color.ocean,
+    backgroundColor: color.accentDeep,
     marginTop: 8,
   },
   pointText: {

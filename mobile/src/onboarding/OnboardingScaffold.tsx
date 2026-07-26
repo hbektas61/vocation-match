@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     overflow: 'hidden',
   },
-  progressFill: { height: 3, backgroundColor: color.ocean },
+  progressFill: { height: 3, backgroundColor: color.accentDeep },
   bar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   barSkip: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.body,
-    color: color.ocean,
+    color: color.accentDeep,
   },
   content: {
     paddingHorizontal: spacing.md,

@@ -258,8 +258,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     padding: spacing.sm,
   },
-  bubbleMine: { alignSelf: 'flex-end', backgroundColor: color.ocean },
+  bubbleMine: { alignSelf: 'flex-end', backgroundColor: color.accentDeep },
   bubbleTheirs: { alignSelf: 'flex-start', backgroundColor: color.surface },
-  bubbleTextMine: { color: color.onOcean, fontSize: font.body, fontFamily: fontFamily.body },
+  bubbleTextMine: { color: color.onAccent, fontSize: font.body, fontFamily: fontFamily.body },
   bubbleTextTheirs: { color: color.ink, fontSize: font.body, fontFamily: fontFamily.body },
 });

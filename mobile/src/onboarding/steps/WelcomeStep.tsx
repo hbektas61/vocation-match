@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '46%',
-    backgroundColor: color.seaSoft,
+    backgroundColor: color.accentSoft,
     borderBottomLeftRadius: 120,
   },
   content: { flex: 1, justifyContent: 'flex-end', padding: spacing.md },
@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.display,
     fontSize: font.heading,
     letterSpacing: 0.4,
-    color: color.ocean,
+    color: color.accentDeep,
   },
   headline: {
     fontFamily: fontFamily.display,

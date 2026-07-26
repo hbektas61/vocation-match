@@ -20,6 +20,7 @@ import {
   font,
   fontFamily,
   MIN_TOUCH,
+  palette,
   radius,
   roomTone,
   spacing,
@@ -229,6 +230,30 @@ export function ActionButton({
  * placeholder disappears the moment someone types and is not reliably read out
  * — leaving a screen-reader user to guess the expected format.
  */
+/**
+ * Every bordered single-line input in the app.
+ *
+ * Two things here are the whole reason it exists rather than each screen
+ * rolling its own `TextInput`:
+ *
+ * - **Focus.** The owner asked for the focused border to be exactly the brand
+ *   lavender, and it is. But that colour is 1.55:1 against white, well under
+ *   the 3:1 WCAG 1.4.11 wants from the thing marking a control — so on its own
+ *   it would be a focus state a good number of people simply cannot see. The
+ *   exact colour is kept and given a companion: the border thickens, and a
+ *   ring in the darker sibling (5.96:1) is drawn outside it. Colour, weight
+ *   and a second edge, so no one signal has to carry it.
+ * - **Vertical centring.** Android puts extra room under the baseline and
+ *   top-aligns the text in a fixed-height box, which is what made every field
+ *   look like the text had been pushed up against the ceiling.
+ *   `textAlignVertical` and `includeFontPadding` are the two knobs for it, and
+ *   they are Android-only; iOS gets there through symmetric padding instead.
+ *   Horizontal alignment is deliberately untouched — text stays left.
+ *
+ * A caller's own `onFocus`, `onBlur` and `style` are honoured rather than
+ * swallowed, because a field that quietly drops the handler you passed it is
+ * worse than one that never offered the prop.
+ */
 export function Field(
   props: TextInputProps & {
     label: string;
@@ -240,19 +265,48 @@ export function Field(
      * and printing it again is noise.
      */
     hideLabel?: boolean;
+    /** Marks the field as the one an error is about, and draws it that way. */
+    invalid?: boolean;
+    /** Rendered inside the box, before the text. The `+90` on the phone step. */
+    prefix?: React.ReactNode;
   },
 ) {
-  const { label, hint, hideLabel, ...inputProps } = props;
+  const { label, hint, hideLabel, invalid, prefix, style, onFocus, onBlur, ...inputProps } = props;
+  const [focused, setFocused] = useState(false);
+  const multiline = inputProps.multiline === true;
+
   return (
     <View style={styles.field}>
       {hideLabel ? null : <Text style={styles.fieldLabel}>{label}</Text>}
-      <TextInput
-        accessibilityLabel={label}
-        accessibilityHint={hint}
-        placeholderTextColor={color.inkMuted}
-        style={styles.input}
-        {...inputProps}
-      />
+      <View
+        // The box carries the border, so the border is only assertable if the
+        // box can be found.
+        testID={inputProps.testID ? `${inputProps.testID}-box` : undefined}
+        style={[
+          styles.inputShell,
+          multiline && styles.inputShellMultiline,
+          focused && styles.inputShellFocused,
+          invalid && styles.inputShellInvalid,
+        ]}
+      >
+        {prefix}
+        <TextInput
+          accessibilityLabel={label}
+          accessibilityHint={hint}
+          placeholderTextColor={color.inkMuted}
+          underlineColorAndroid="transparent"
+          onFocus={(event) => {
+            setFocused(true);
+            onFocus?.(event);
+          }}
+          onBlur={(event) => {
+            setFocused(false);
+            onBlur?.(event);
+          }}
+          style={[styles.input, multiline && styles.inputMultiline, style]}
+          {...inputProps}
+        />
+      </View>
       {hint ? <Text style={styles.fieldHint}>{hint}</Text> : null}
     </View>
   );
@@ -275,10 +329,20 @@ export function Card({
 }
 
 export function Badge({ label, tone }: { label: string; tone: 'upcoming' | 'hereNow' }) {
-  const palette = tone === 'hereNow' ? roomTone.HERE_NOW : roomTone.UPCOMING;
+  // The label already says which room this is; the fill and the edge are the
+  // second and third signals, never the first. Here Now takes the brand fill,
+  // Upcoming stays open with a drawn edge, so the pair survives being seen by
+  // someone who cannot separate the two hues.
+  const room = tone === 'hereNow' ? roomTone.HERE_NOW : roomTone.UPCOMING;
   return (
-    <View style={[styles.badge, { backgroundColor: palette.fill }]}>
-      <Text style={[styles.badgeText, { color: palette.text }]}>{label}</Text>
+    <View
+      style={[
+        styles.badge,
+        { backgroundColor: room.fill },
+        room.solid ? null : styles.badgeOpen,
+      ]}
+    >
+      <Text style={[styles.badgeText, { color: room.text }]}>{label}</Text>
     </View>
   );
 }
@@ -312,12 +376,10 @@ export function RoomRibbon({
       accessibilityLabel={`${state} at ${hotelName}`}
       testID={testID}
     >
-      <View
-        style={[
-          styles.ribbonDot,
-          { backgroundColor: room === 'HERE_NOW' ? color.ocean : color.inkMuted },
-        ]}
-      />
+      {/* Filled for Here Now, a hollow ring for Upcoming. The word beside it
+          already carries the meaning; this is so the two are still a pair when
+          the colours are not doing any work. */}
+      <View style={[styles.ribbonDot, room === 'UPCOMING' && styles.ribbonDotOpen]} />
       <Text style={[styles.ribbonText, onPhoto && styles.ribbonTextOnPhoto]}>
         {`${state.toUpperCase()} · ${hotelName.toUpperCase()}`}
       </Text>
@@ -569,7 +631,17 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 2,
   },
   buttonCompact: { paddingHorizontal: spacing.sm },
-  buttonPrimary: { backgroundColor: color.ocean },
+  /**
+   * The brand fill with a dark label on it — 11.68:1 — rather than white,
+   * which the lavender cannot carry. The border is the darker sibling at
+   * 5.96:1 on white, because the fill alone is 1.55:1 and a primary action
+   * whose edge nobody can find is not a primary action.
+   */
+  buttonPrimary: {
+    backgroundColor: color.accent,
+    borderWidth: 1.5,
+    borderColor: color.accentDeep,
+  },
   buttonSecondary: {
     backgroundColor: 'transparent',
     borderWidth: 1.5,
@@ -586,7 +658,7 @@ const styles = StyleSheet.create({
    * This is 4.61:1, and it still reads as unavailable because the fill is flat
    * and the label is grey.
    */
-  buttonDisabled: { backgroundColor: color.seaSoft, borderColor: color.rule },
+  buttonDisabled: { backgroundColor: color.accentSoft, borderColor: color.border },
   buttonLabelDisabled: { color: color.inkMuted },
   actionDisabled: { opacity: 0.45 },
   buttonPressed: { opacity: 0.82 },
@@ -596,7 +668,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   buttonLabelCompact: { fontSize: font.caption + 1, letterSpacing: 0 },
-  buttonLabelOnColor: { color: color.onOcean },
+  buttonLabelOnColor: { color: color.onAccent },
   buttonLabelSecondary: { color: color.ink },
   buttonLabelDanger: { color: color.danger },
 
@@ -612,13 +684,17 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: color.border,
   },
-  actionLike: { backgroundColor: color.ocean },
+  actionLike: {
+    backgroundColor: color.accent,
+    borderWidth: 1.5,
+    borderColor: color.accentDeep,
+  },
   actionGlyph: {
     fontSize: 26,
     lineHeight: 30,
     color: color.inkMuted,
   },
-  actionGlyphLike: { color: color.onOcean },
+  actionGlyphLike: { color: color.onAccent },
 
   field: { gap: spacing.xs },
   fieldHint: {
@@ -634,23 +710,74 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: color.inkMuted,
   },
-  input: {
+  /**
+   * The box. It owns the border and the height so the `TextInput` inside can
+   * be a plain line of text that centres itself, which is the only arrangement
+   * that behaves the same on both platforms.
+   */
+  inputShell: {
+    flexDirection: 'row',
+    alignItems: 'center',
     minHeight: MIN_TOUCH,
     borderWidth: 1.5,
     borderColor: color.border,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.md,
+    backgroundColor: color.surface,
+  },
+  /** A composer grows downward, so its text starts at the top and stays there. */
+  inputShellMultiline: { alignItems: 'stretch', paddingVertical: spacing.sm },
+  /**
+   * The exact colour the owner asked for, plus the two things that make it
+   * perceivable: a heavier edge, and a ring in the darker sibling at 5.96:1 on
+   * white. `shadow*` draws the ring on iOS and web; `elevation` is deliberately
+   * left off, since on Android it would render as a drop shadow rather than a
+   * ring — there the extra border weight and the fill are what change.
+   */
+  inputShellFocused: {
+    borderColor: color.accent,
+    borderWidth: 2.5,
+    backgroundColor: color.accentSoft,
+    shadowColor: color.accentDeep,
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  inputShellInvalid: { borderColor: color.danger },
+  input: {
+    flex: 1,
+    paddingHorizontal: 0,
     fontFamily: fontFamily.body,
     fontSize: font.body,
+    lineHeight: font.body * 1.3,
     color: color.ink,
-    backgroundColor: color.background,
+    // Android top-aligns inside a fixed-height box and reserves room under the
+    // baseline; both are why the text sat against the ceiling. iOS ignores
+    // these and is centred by the shell instead.
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
+  /** A paragraph reads from the top, however tall the box has grown. */
+  inputMultiline: { textAlignVertical: 'top', minHeight: MIN_TOUCH * 2 },
 
+  /**
+   * The surface and the ground are both white now, so a card is told apart by
+   * its edge and its lift rather than by its fill. Neither alone was enough at
+   * 375pt: the border is quiet by design and the shadow disappears on Android
+   * without `elevation`.
+   */
   card: {
     backgroundColor: color.surface,
     borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.rule,
     padding: spacing.md,
     gap: spacing.sm,
+    shadowColor: color.ink,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
 
   badge: {
@@ -659,6 +786,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: spacing.xs + 2,
   },
+  badgeOpen: { borderWidth: 1.5, borderColor: color.border },
   badgeText: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
@@ -677,7 +805,17 @@ const styles = StyleSheet.create({
   },
   ribbonInline: { backgroundColor: color.surface },
   ribbonOnPhoto: { backgroundColor: 'rgba(25, 16, 22, 0.78)' },
-  ribbonDot: { width: 7, height: 7, borderRadius: radius.pill },
+  ribbonDot: {
+    width: 8,
+    height: 8,
+    borderRadius: radius.pill,
+    backgroundColor: color.accentDeep,
+  },
+  ribbonDotOpen: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: color.inkMuted,
+  },
   ribbonText: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
@@ -708,9 +846,10 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.display,
     fontSize: 128,
     lineHeight: 140,
-    // 3.1:1 on the sea-soft fill. Quiet, but a person can actually see it —
-    // white on the fill read as a rendering failure rather than a placeholder.
-    color: '#8FB6BF',
+    // 3.32:1 on the lavender-soft fill. Quiet, but a person can actually see
+    // it — white on the fill read as a rendering failure rather than a
+    // placeholder.
+    color: palette.placeholder,
   },
   photoOverlay: {
     position: 'absolute',
@@ -754,8 +893,8 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   // 4.76:1 for the error text on it.
-  noticeError: { backgroundColor: '#FDF3F3' },
-  noticeSuccess: { backgroundColor: color.seaSoft },
+  noticeError: { backgroundColor: color.dangerSoft },
+  noticeSuccess: { backgroundColor: color.accentSoft },
   noticeErrorText: { color: color.danger },
 
   rule: { height: 1, backgroundColor: color.rule },
