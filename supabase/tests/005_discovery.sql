@@ -235,6 +235,17 @@ select is(
   'an unfinished profile is in the room but not in the feed'
 );
 
+-- And is refused a feed of its own. The navigator already prevents this, which
+-- is the reason to enforce it here too: a rule that lives only on the client
+-- holds until somebody calls the RPC directly (found by security review).
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000e9');
+select throws_ok(
+  $$select * from public.discovery_feed('UPCOMING')$$,
+  'P0002',
+  'Finish your profile first.',
+  'a draft profile cannot browse either, not just be browsed'
+);
+
 -- Every change below is made by its own owner. Updating somebody else's row
 -- is not a shortcut here — RLS turns it into a silent no-op, which would make
 -- these assertions pass for the wrong reason.

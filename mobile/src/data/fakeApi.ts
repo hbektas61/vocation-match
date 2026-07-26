@@ -338,6 +338,15 @@ export class FakeApi implements VocationApi {
       throw new ApiError('INVALID_INPUT', 'That is nine photos already.');
     }
     photoExtensionFor(upload.mimeType);
+    // Injected failure, so a test can ask what a failed add leaves behind. The
+    // fake has no storage prefix to sweep, so it cannot reproduce the real
+    // defect here — what it does hold is the contract both implementations owe:
+    // a failed add changes nothing.
+    if (this.uploadFailure) {
+      const failure = this.uploadFailure;
+      this.uploadFailure = null;
+      throw failure;
+    }
     const path = buildPhotoPath(userId, upload.mimeType);
     this.objects.set(path, upload.uri);
     this.photoSets.set(userId, [...paths, path]);
@@ -373,6 +382,8 @@ export class FakeApi implements VocationApi {
     return this.getOwnPhotos();
   }
 
+
+
   /** Slot 1, or nothing. The same invariant the migration holds. */
   private syncPrimaryPhoto(userId: string): void {
     const stored = this.profiles.get(userId);
@@ -381,45 +392,6 @@ export class FakeApi implements VocationApi {
       ...stored,
       photoPath: this.photoSets.get(userId)?.[0] ?? null,
     });
-  }
-
-  async uploadProfilePhoto(upload: PhotoUpload): Promise<OwnProfile> {
-    const userId = await this.requireUserId();
-    const stored = this.profiles.get(userId);
-    if (!stored) {
-      throw new ApiError('NOT_FOUND', 'Finish your profile first.');
-    }
-    // Mirrors the bucket's allowed_mime_types; `photoExtensionFor` raises the
-    // same INVALID_INPUT the server would.
-    photoExtensionFor(upload.mimeType);
-    if (this.uploadFailure) {
-      // Nothing is written when the upload fails — the profile keeps whatever
-      // photo it already had, rather than pointing at an object that is not
-      // there. One-shot, so a test can follow a failure with a retry.
-      const failure = this.uploadFailure;
-      this.uploadFailure = null;
-      throw failure;
-    }
-    const path = buildPhotoPath(userId, upload.mimeType);
-    if (stored.photoPath) {
-      this.objects.delete(stored.photoPath);
-    }
-    this.objects.set(path, upload.uri);
-    stored.photoPath = path;
-    return this.toOwnProfile(stored);
-  }
-
-  async removeProfilePhoto(): Promise<OwnProfile> {
-    const userId = await this.requireUserId();
-    const stored = this.profiles.get(userId);
-    if (!stored) {
-      throw new ApiError('NOT_FOUND', 'Finish your profile first.');
-    }
-    if (stored.photoPath) {
-      this.objects.delete(stored.photoPath);
-      stored.photoPath = null;
-    }
-    return this.toOwnProfile(stored);
   }
 
   async getPhotoUrls(paths: string[]): Promise<Record<string, string>> {

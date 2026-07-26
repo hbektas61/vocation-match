@@ -79,6 +79,17 @@ select throws_ok(
   'a partial list is refused, so reordering cannot be used to delete'
 );
 
+-- Right length, wrong contents. Found by the independent security review: the
+-- length and ownership checks both pass, and the update then matches one photo
+-- twice and another not at all.
+select throws_ok(
+  $$select public.reorder_profile_photos(
+      array[(select one from p), (select one from p), (select two from p)])$$,
+  '23514',
+  'That is not the whole set.',
+  'a list that repeats a photo is refused, however long it is'
+);
+
 -- ------------------------------------------------------------------ removing
 select public.remove_profile_photo(1::smallint);
 
@@ -168,6 +179,15 @@ select is(
       and privilege_type in ('INSERT', 'UPDATE', 'DELETE')),
   0,
   'no client has a direct write on the set'
+);
+
+-- Filling the grid and then organising it is ordinary use, and used to run
+-- into the single-photo upload budget (found by code review).
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
+select lives_ok(
+  $$select public.reorder_profile_photos(
+      array(select path from public.own_profile_photos() order by slot desc))$$,
+  'reordering a full grid repeatedly is not rate-limited like an upload'
 );
 
 select * from finish(true);

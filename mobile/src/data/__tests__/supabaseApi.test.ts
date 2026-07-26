@@ -206,7 +206,7 @@ describe('FakeApi.deleteAccount', () => {
   it('leaves no record of the account anywhere', async () => {
     const api = await signedIn();
     const before = (await api.getOwnProfile())!.id;
-    await api.uploadProfilePhoto({ uri: 'file:///tmp/pick.jpg', mimeType: 'image/jpeg' });
+    await api.addProfilePhoto({ uri: 'file:///tmp/pick.jpg', mimeType: 'image/jpeg' });
     await api.setActiveHotel('hotel-lara-shore');
     await api.declareUpcomingStay('2026-08-01', '2026-08-08');
     const swiped = await api.swipe('cand-derya', 'UPCOMING', 'LIKE');

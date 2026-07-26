@@ -211,7 +211,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           as "nothing matched", and neither is the same as "still looking" —
           collapsing any two of them makes the screen look broken in the case
           it collapsed. */}
-      {!searchable(query) ? (
+      {searchError ? null : !searchable(query) ? (
         <EmptyState message={COPY.hotel.searchPrompt} testID="hotel-search-prompt" />
       ) : results === null ? (
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="hotel-loading" />

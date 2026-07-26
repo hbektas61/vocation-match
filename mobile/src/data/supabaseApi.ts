@@ -416,9 +416,11 @@ export class SupabaseApi implements VocationApi {
 
     const { data, error } = await this.client.rpc('add_profile_photo', { p_path: path });
     if (error) {
-      // The object is uploaded but attached to nothing. The sweep is what stops
-      // it sitting in a private bucket that nothing points at.
-      await this.sweepPhotoObjects(session.userId, null);
+      // Only the object this call just made. Sweeping the prefix — which is
+      // what the single-photo path used to do — would delete every other photo
+      // in the set, all of which are still attached to live rows. A failed add
+      // must cost the one upload that failed and nothing else.
+      await this.client.storage.from(PHOTO_BUCKET).remove([path]);
       throw toApiError(error, 'Could not save that photo.');
     }
     return ((data ?? []) as PhotoRow[]).map(toProfilePhoto);
@@ -440,84 +442,8 @@ export class SupabaseApi implements VocationApi {
     return ((data ?? []) as PhotoRow[]).map(toProfilePhoto);
   }
 
-  async uploadProfilePhoto(upload: PhotoUpload): Promise<OwnProfile> {
-    const session = await this.currentSession();
-    if (!session) {
-      throw new ApiError('UNAUTHENTICATED', 'Sign in to continue.');
-    }
-    const previous = await this.getOwnProfile();
-    if (!previous) {
-      throw new ApiError('NOT_FOUND', 'Finish your profile first.');
-    }
 
-    const path = buildPhotoPath(session.userId, upload.mimeType);
-    const bytes = await readLocalFile(upload.uri);
-    if (bytes.byteLength > MAX_PHOTO_BYTES) {
-      throw new ApiError('INVALID_INPUT', 'That image is larger than 5 MB.');
-    }
 
-    const uploaded = await this.client.storage
-      .from(PHOTO_BUCKET)
-      .upload(path, bytes, { contentType: upload.mimeType, upsert: false });
-    if (uploaded.error) {
-      throw toApiError(uploaded.error as PostgresLikeError, 'Could not upload that photo.');
-    }
-
-    let saved: ProfileRow;
-    try {
-      saved = await this.rpcSingle<ProfileRow>(
-        'set_profile_photo',
-        { p_path: path },
-        'Could not save that photo.',
-      );
-    } catch (error) {
-      await this.sweepPhotoObjects(session.userId, previous.photoPath);
-      throw error;
-    }
-
-    await this.sweepPhotoObjects(session.userId, saved.photo_path);
-    return toOwnProfile(saved);
-  }
-
-  async removeProfilePhoto(): Promise<OwnProfile> {
-    const session = await this.currentSession();
-    if (!session) {
-      throw new ApiError('UNAUTHENTICATED', 'Sign in to continue.');
-    }
-    if (!(await this.getOwnProfile())) {
-      throw new ApiError('NOT_FOUND', 'Finish your profile first.');
-    }
-
-    const saved = await this.rpcSingle<ProfileRow>(
-      'set_profile_photo',
-      { p_path: null },
-      'Could not remove that photo.',
-    );
-    await this.sweepPhotoObjects(session.userId, null);
-    return toOwnProfile(saved);
-  }
-
-  /**
-   * Deletes every object under the caller's own prefix except the one the
-   * profile currently points at. Best effort: the row is already correct by
-   * the time this runs, and the database has queued a replaced object for
-   * cleanup regardless, so a failure here costs storage rather than
-   * correctness.
-   */
-  private async sweepPhotoObjects(userId: string, keep: string | null): Promise<void> {
-    const { data, error } = await this.client.storage
-      .from(PHOTO_BUCKET)
-      .list(userId, { limit: 100 });
-    if (error || !data?.length) {
-      return;
-    }
-    const stale = data
-      .map((object) => `${userId}/${object.name}`)
-      .filter((name) => name !== keep && isProfilePhotoPath(name));
-    if (stale.length) {
-      await this.client.storage.from(PHOTO_BUCKET).remove(stale);
-    }
-  }
 
   async getPhotoUrls(paths: string[]): Promise<Record<string, string>> {
     const wanted = [...new Set(paths.filter(isProfilePhotoPath))];

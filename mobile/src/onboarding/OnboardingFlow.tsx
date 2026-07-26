@@ -312,8 +312,14 @@ function backTarget(step: OnboardingStep): OnboardingStep | null {
 function impossible(step: OnboardingStep, state: { session: unknown; ageConfirmed: boolean }): boolean {
   switch (step) {
     case 'welcome':
+      return state.session !== null;
     case 'promise':
-      return state.ageConfirmed && step === 'promise' ? false : state.session !== null;
+      // Two ways to be impossible, and the earlier version only wrote one of
+      // them down: a session already exists, or the age has not been confirmed
+      // yet. Folding those into a single ternary made `promise` *never*
+      // impossible once the age was confirmed — so a session arriving while
+      // somebody had walked back here left them pinned to a pre-signup screen.
+      return state.session !== null || !state.ageConfirmed;
     case 'phone':
     case 'otp':
       return state.session !== null;

@@ -13,7 +13,7 @@
  * and is what a discovery card shows, which is why it is marked rather than
  * left for somebody to infer from position.
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Body, Caption, Notice } from './ui';
@@ -37,11 +37,16 @@ export function PhotoGrid({
 }) {
   const [busy, setBusy] = useState<number | 'add' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // State alone cannot guard this: two presses inside one tick both read the
+  // old `busy` before React re-renders and disables the controls. The ref is
+  // set synchronously, so the second press has something true to read.
+  const running = useRef(false);
   const urls = usePhotoUrls(photos.map((photo) => photo.path));
 
   const run = useCallback(
     async (key: number | 'add', work: () => Promise<ProfilePhoto[]>, failure: string) => {
-      if (busy !== null) return;
+      if (running.current) return;
+      running.current = true;
       setBusy(key);
       setError(null);
       try {
@@ -49,10 +54,11 @@ export function PhotoGrid({
       } catch (err) {
         setError(err instanceof ApiError ? apiErrorMessage(err.code) : failure);
       } finally {
+        running.current = false;
         setBusy(null);
       }
     },
-    [busy, onChanged],
+    [onChanged],
   );
 
   const add = () =>

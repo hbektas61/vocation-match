@@ -400,7 +400,8 @@ export function RoomRibbon({
   testID,
 }: {
   room: 'UPCOMING' | 'HERE_NOW';
-  hotelName: string;
+  /** Null while the card carrying it has not been fetched yet. */
+  hotelName: string | null;
   onPhoto?: boolean;
   testID?: string;
 }) {
@@ -410,7 +411,7 @@ export function RoomRibbon({
       style={[styles.ribbon, onPhoto ? styles.ribbonOnPhoto : styles.ribbonInline]}
       accessible
       accessibilityRole="text"
-      accessibilityLabel={`${state} at ${hotelName}`}
+      accessibilityLabel={hotelName ? `${state} at ${hotelName}` : state}
       testID={testID}
     >
       {/* Filled for Here Now, a hollow ring for Upcoming. The word beside it
@@ -418,7 +419,7 @@ export function RoomRibbon({
           the colours are not doing any work. */}
       <View style={[styles.ribbonDot, room === 'UPCOMING' && styles.ribbonDotOpen]} />
       <Text style={[styles.ribbonText, onPhoto && styles.ribbonTextOnPhoto]}>
-        {`${state.toUpperCase()} · ${hotelName.toUpperCase()}`}
+        {hotelName ? `${state.toUpperCase()} · ${hotelName.toUpperCase()}` : state.toUpperCase()}
       </Text>
     </View>
   );

@@ -254,9 +254,6 @@ export interface VocationApi {
   removeProfilePhotoAt(slot: number): Promise<ProfilePhoto[]>;
   /** The complete list of the caller's own paths, in the order wanted. */
   reorderProfilePhotos(paths: string[]): Promise<ProfilePhoto[]>;
-  uploadProfilePhoto(upload: PhotoUpload): Promise<OwnProfile>;
-  /** Clears the profile photo and removes the object. */
-  removeProfilePhoto(): Promise<OwnProfile>;
   /**
    * Exchanges object paths for short-lived signed URLs. A path the caller is
    * not allowed to see is simply absent from the result — that is the same

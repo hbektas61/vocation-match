@@ -19,7 +19,7 @@ import { BackHandler } from 'react-native';
 import App from '../../App';
 import { FakeApi, getApi, MAX_INTERESTS, setApi } from '../data';
 import { INTEREST_CHOICES } from '../fixtures/interests';
-import { onboard, authenticateWithPhone } from '../testSupport/onboarding';
+import { onboard, onboardWithHotel, authenticateWithPhone } from '../testSupport/onboarding';
 
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
 
@@ -379,6 +379,20 @@ describe('a finished onboarding', () => {
     expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
     expect(screen.queryByTestId('screen-welcome')).toBeNull();
     expect(screen.queryByTestId('screen-onboarding-photo')).toBeNull();
+  });
+
+  it('does not ask a returning user for a hotel they already have', async () => {
+    await onboardWithHotel('Deniz', '+905551110019');
+    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
+
+    // A relaunch never visits the Hotel tab, and nothing on the bootstrap path
+    // fills the cached hotel cards — so a screen that decided "do you have a
+    // hotel" from that cache told every returning user they had none. Whether
+    // there is one is the server's answer; the cache only ever holds its name.
+    await relaunch();
+
+    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
+    expect(screen.queryByTestId('rooms-choose-hotel')).toBeNull();
   });
 
   it('lands in the app with no hotel, and asks for one only when it is needed', async () => {

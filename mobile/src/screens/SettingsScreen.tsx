@@ -3,10 +3,11 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 
-import { ProfilePhotoField } from '../components/ProfilePhoto';
+import { PhotoGrid } from '../components/PhotoGrid';
 import {
   Body,
   Button,
+  Caption,
   Card,
   EmptyState,
   Heading,
@@ -16,9 +17,8 @@ import {
   Title,
 } from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
-import { ApiError, getApi, type BlockedUser } from '../data';
+import { ApiError, getApi, type BlockedUser, type ProfilePhoto } from '../data';
 import type { RootStackParamList } from '../navigation/types';
-import { toDomainProfile } from '../state/appReducer';
 import { useAppStore } from '../state/AppStore';
 
 /**
@@ -51,11 +51,20 @@ export function SettingsScreen() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<ProfilePhoto[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
       setBlockedError(null);
+      // The photo set, so the grid shows what is actually there rather than
+      // filling in from a cached primary.
+      getApi()
+        .getOwnPhotos()
+        .then((existing) => {
+          if (!cancelled) setPhotos(existing);
+        })
+        .catch(() => undefined);
       (async () => {
         try {
           const fetched = await getApi().getBlockedUsers();
@@ -136,13 +145,13 @@ export function SettingsScreen() {
       {state.profile ? (
         <Card testID="settings-photo">
           <SectionLabel>{COPY.photo.title}</SectionLabel>
-          <ProfilePhotoField
-            displayName={state.profile.displayName}
-            photoPath={state.profile.photoPath ?? null}
-            onProfileChanged={(saved) =>
-              dispatch({ type: 'SAVE_PROFILE', profile: toDomainProfile(saved) })
-            }
-          />
+          {/* The same grid as onboarding. Two photo components meant two photo
+              models, and the single-photo one deleted every object under the
+              prefix except the one it knew about — which, once a profile could
+              hold nine, meant changing your photo here silently destroyed the
+              other eight. One model, one code path. */}
+          <Caption>{COPY.photo.explainer}</Caption>
+          <PhotoGrid photos={photos} onChanged={setPhotos} testID="settings-photo-grid" />
         </Card>
       ) : null}
       <Card>

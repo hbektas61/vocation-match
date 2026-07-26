@@ -1,15 +1,19 @@
 /**
  * H-105 — the photo controls in Settings.
  *
- * The picker itself is native, so it is mocked; what is under test is what the
- * screen does with each of its three answers — an image, a cancel, and a
- * refused permission — plus a failed upload, which has to leave the previous
- * photo alone and say so rather than showing a spinner that stops.
+ * Settings used to have a photo component of its own, and that was the defect
+ * rather than a detail: two components meant two photo models, and the
+ * single-photo one deleted every object under the owner's prefix except the
+ * one it knew about. Once a profile could hold nine, changing your photo from
+ * Settings silently destroyed the other eight. It is now the same grid the
+ * onboarding step uses, so what is left to check here is that Settings really
+ * reaches the whole set — and that there is still nowhere to type a link.
+ *
+ * The grid's own behaviour is covered in `photoGridUi.test.tsx`.
  */
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
-import { COPY } from '../copy';
-import { ApiError, FakeApi, getApi, setApi } from '../data';
+import { FakeApi, getApi, setApi } from '../data';
 import { pickProfilePhoto } from '../data/imagePicker';
 import { onboardToSettings } from '../testSupport/onboarding';
 
@@ -25,91 +29,87 @@ beforeEach(() => {
   setApi(new FakeApi({ now: () => FIXED }));
 });
 
-describe('profile photo in Settings', () => {
-  it('offers to add a photo, and no way at all to type a link', async () => {
-    await onboardToSettings();
-    expect(await screen.findByTestId('settings-photo')).toBeTruthy();
-    expect(screen.getByTestId('choose-photo')).toBeTruthy();
-    expect(screen.queryByTestId('remove-photo')).toBeNull();
-    // The old failure mode was a text field taking any https URL. There is no
-    // field on this screen that could hold one.
-    expect(screen.queryByLabelText(/photo url/i)).toBeNull();
+const picks = () =>
+  picker.mockResolvedValue({
+    status: 'picked',
+    upload: { uri: 'file:///tmp/a.jpg', mimeType: 'image/jpeg' },
   });
 
-  it('uploads a chosen image and then offers to remove it', async () => {
+describe('profile photos in Settings', () => {
+  it('offers the grid, and no way at all to type a link', async () => {
     await onboardToSettings();
-    expect(await screen.findByTestId('settings-photo')).toBeTruthy();
-    picker.mockResolvedValue({
-      status: 'picked',
-      upload: { uri: 'file:///tmp/pick.jpg', mimeType: 'image/jpeg' },
-    });
 
-    await fireEvent.press(screen.getByTestId('choose-photo'));
-
-    await waitFor(async () => {
-      expect((await getApi().getOwnProfile())?.photoPath).not.toBeNull();
-    });
-    expect(await screen.findByTestId('remove-photo')).toBeTruthy();
-    expect(screen.getByTestId('choose-photo')).toBeTruthy();
+    expect(await screen.findByTestId('settings-photo-grid')).toBeTruthy();
+    // D-014: there is no URL field anywhere, because there is no URL to write.
+    expect(screen.queryByPlaceholderText(/https?:/i)).toBeNull();
   });
 
-  it('removes it again', async () => {
+  it('adds a photo from Settings', async () => {
     await onboardToSettings();
-    expect(await screen.findByTestId('settings-photo')).toBeTruthy();
-    picker.mockResolvedValue({
-      status: 'picked',
-      upload: { uri: 'file:///tmp/pick.jpg', mimeType: 'image/jpeg' },
-    });
-    await fireEvent.press(screen.getByTestId('choose-photo'));
-    await fireEvent.press(await screen.findByTestId('remove-photo'));
+    picks();
+
+    await fireEvent.press(await screen.findByTestId('settings-photo-grid-add-1'));
 
     await waitFor(async () => {
-      expect((await getApi().getOwnProfile())?.photoPath).toBeNull();
+      expect(await getApi().getOwnPhotos()).toHaveLength(1);
     });
-    expect(screen.queryByTestId('remove-photo')).toBeNull();
+  });
+
+  it('keeps the rest of the set when one photo is changed', async () => {
+    // The regression the shared component existed to cause: three photos, then
+    // a fourth added from Settings, and the first three still there.
+    await onboardToSettings();
+    picks();
+    for (const slot of [1, 2, 3]) {
+      await fireEvent.press(await screen.findByTestId(`settings-photo-grid-add-${slot}`));
+      await waitFor(async () => {
+        expect(await getApi().getOwnPhotos()).toHaveLength(slot);
+      });
+    }
+    const before = (await getApi().getOwnPhotos()).map((photo) => photo.path);
+
+    await fireEvent.press(await screen.findByTestId('settings-photo-grid-add-4'));
+
+    await waitFor(async () => {
+      expect(await getApi().getOwnPhotos()).toHaveLength(4);
+    });
+    expect((await getApi().getOwnPhotos()).slice(0, 3).map((p) => p.path)).toEqual(before);
+  });
+
+  it('removes one again, and the card follows the set', async () => {
+    await onboardToSettings();
+    picks();
+    await fireEvent.press(await screen.findByTestId('settings-photo-grid-add-1'));
+    await waitFor(async () => {
+      expect(await getApi().getOwnPhotos()).toHaveLength(1);
+    });
+
+    await fireEvent.press(screen.getByTestId('settings-photo-grid-remove-1'));
+
+    await waitFor(async () => {
+      expect(await getApi().getOwnPhotos()).toEqual([]);
+    });
+    expect((await getApi().getOwnProfile())?.photoPath).toBeNull();
   });
 
   it('says nothing and changes nothing when the picker is cancelled', async () => {
     await onboardToSettings();
-    expect(await screen.findByTestId('settings-photo')).toBeTruthy();
     picker.mockResolvedValue({ status: 'cancelled' });
 
-    await fireEvent.press(screen.getByTestId('choose-photo'));
+    await fireEvent.press(await screen.findByTestId('settings-photo-grid-add-1'));
 
-    await waitFor(() => expect(picker).toHaveBeenCalled());
-    expect(screen.queryByTestId('photo-error')).toBeNull();
-    expect((await getApi().getOwnProfile())?.photoPath).toBeNull();
+    await waitFor(async () => {
+      expect(await getApi().getOwnPhotos()).toEqual([]);
+    });
+    expect(screen.queryByTestId('settings-photo-grid-error')).toBeNull();
   });
 
   it('explains a refused photo permission instead of failing silently', async () => {
     await onboardToSettings();
-    expect(await screen.findByTestId('settings-photo')).toBeTruthy();
     picker.mockResolvedValue({ status: 'permission-denied' });
 
-    await fireEvent.press(screen.getByTestId('choose-photo'));
+    await fireEvent.press(await screen.findByTestId('settings-photo-grid-add-1'));
 
-    expect(await screen.findByTestId('photo-error')).toBeTruthy();
-    expect(screen.getByText(COPY.photo.permissionDenied)).toBeTruthy();
-  });
-
-  it('reports a failed upload and keeps the photo that was already there', async () => {
-    await onboardToSettings();
-    expect(await screen.findByTestId('settings-photo')).toBeTruthy();
-    const api = getApi() as FakeApi;
-    picker.mockResolvedValue({
-      status: 'picked',
-      upload: { uri: 'file:///tmp/pick.jpg', mimeType: 'image/jpeg' },
-    });
-    await fireEvent.press(screen.getByTestId('choose-photo'));
-    await screen.findByTestId('remove-photo');
-    const before = (await api.getOwnProfile())?.photoPath;
-
-    api.failNextUploadWith(new ApiError('NETWORK', 'No connection. Try again.'));
-    await fireEvent.press(screen.getByTestId('choose-photo'));
-
-    expect(await screen.findByTestId('photo-error')).toBeTruthy();
-    expect((await api.getOwnProfile())?.photoPath).toBe(before);
-    // And the button is usable again rather than stuck on "Uploading…".
-    expect(screen.getByLabelText(COPY.photo.replaceButton)).toBeTruthy();
+    expect(await screen.findByTestId('settings-photo-grid-error')).toBeTruthy();
   });
 });

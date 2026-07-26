@@ -412,7 +412,8 @@ export const COPY = {
  * hotel should be readable in one place.
  */
 export const COPY_FOR = {
-  roomsTitle: (hotelName: string) => `Rooms at ${hotelName}`,
+  roomsTitle: (hotelName: string | null) =>
+    hotelName ? `Rooms at ${hotelName}` : 'Rooms at your hotel',
   discoveryTitle: (hotelName: string) => `Discovery at ${hotelName}`,
   switchPrompt: (hotelName: string) => `Switch to ${hotelName}?`,
 } as const;

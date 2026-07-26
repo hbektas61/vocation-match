@@ -74,7 +74,7 @@ describe('editing a profile after onboarding', () => {
   it('keeps the photo, which is managed on its own', async () => {
     await onboardToSettings();
     const api = getApi() as FakeApi;
-    const withPhoto = await api.uploadProfilePhoto({
+    const withPhoto = await api.addProfilePhoto({
       uri: 'file:///tmp/pick.jpg',
       mimeType: 'image/jpeg',
     });
@@ -86,7 +86,7 @@ describe('editing a profile after onboarding', () => {
     await waitFor(async () => {
       expect((await api.getOwnProfile())?.displayName).toBe('Renamed');
     });
-    expect((await api.getOwnProfile())?.photoPath).toBe(withPhoto.photoPath);
+    expect((await api.getOwnProfile())?.photoPath).toBe(withPhoto[0].path);
   });
 });
 

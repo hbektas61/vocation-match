@@ -60,67 +60,82 @@ describe('profile photos through the API', () => {
 
   it('stores an upload and resolves it to a URL for its owner', async () => {
     const api = await signedInWithProfile();
-    const saved = await api.uploadProfilePhoto(JPEG);
+    const [saved] = await api.addProfilePhoto(JPEG);
+    const owner = await api.getOwnProfile();
 
-    expect(saved.photoPath).not.toBeNull();
-    expect(isProfilePhotoPath(saved.photoPath!)).toBe(true);
-    expect(saved.photoPath!.startsWith(`${saved.id}/`)).toBe(true);
+    expect(isProfilePhotoPath(saved.path)).toBe(true);
+    expect(saved.path.startsWith(`${owner!.id}/`)).toBe(true);
+    // The card reads the derived primary, which has to be the same object.
+    expect(owner?.photoPath).toBe(saved.path);
 
-    const urls = await api.getPhotoUrls([saved.photoPath!]);
-    expect(urls[saved.photoPath!]).toBeDefined();
+    const urls = await api.getPhotoUrls([saved.path]);
+    expect(urls[saved.path]).toBeDefined();
   });
 
-  it('replaces the old object rather than accumulating them', async () => {
+  it('keeps both photos now that a profile may hold nine', async () => {
+    // This used to assert the opposite — a second upload replaced the first,
+    // because a profile could only hold one. Adding a photo is now additive,
+    // and the security review found that the old replace semantics, left in
+    // place, deleted every other object in the set on a failed add.
     const api = await signedInWithProfile();
-    const first = await api.uploadProfilePhoto(JPEG);
-    const second = await api.uploadProfilePhoto(JPEG);
+    const [first] = await api.addProfilePhoto(JPEG);
+    const set = await api.addProfilePhoto(JPEG);
+    const second = set[1];
 
-    expect(second.photoPath).not.toBe(first.photoPath);
-    const urls = await api.getPhotoUrls([first.photoPath!, second.photoPath!]);
-    expect(urls[first.photoPath!]).toBeUndefined();
-    expect(urls[second.photoPath!]).toBeDefined();
+    expect(second.path).not.toBe(first.path);
+    const urls = await api.getPhotoUrls([first.path, second.path]);
+    expect(urls[first.path]).toBeDefined();
+    expect(urls[second.path]).toBeDefined();
   });
 
   it('removes the photo and the object together', async () => {
     const api = await signedInWithProfile();
-    const uploaded = await api.uploadProfilePhoto(JPEG);
-    const cleared = await api.removeProfilePhoto();
+    const [uploaded] = await api.addProfilePhoto(JPEG);
 
-    expect(cleared.photoPath).toBeNull();
-    expect(await api.getPhotoUrls([uploaded.photoPath!])).toEqual({});
+    expect(await api.removeProfilePhotoAt(1)).toEqual([]);
+    expect((await api.getOwnProfile())?.photoPath).toBeNull();
+    expect(await api.getPhotoUrls([uploaded.path])).toEqual({});
   });
 
-  it('leaves the current photo in place when an upload fails', async () => {
+  it('leaves the whole existing set in place when an add fails', async () => {
     const api = await signedInWithProfile();
-    const first = await api.uploadProfilePhoto(JPEG);
+    const [first] = await api.addProfilePhoto(JPEG);
+    const second = (await api.addProfilePhoto(JPEG))[1];
 
     api.failNextUploadWith(new ApiError('NETWORK', 'No connection. Try again.'));
-    await expect(api.uploadProfilePhoto(JPEG)).rejects.toMatchObject({ code: 'NETWORK' });
+    await expect(api.addProfilePhoto(JPEG)).rejects.toMatchObject({ code: 'NETWORK' });
 
-    // The honest outcome of a failed replace: the old photo, not a blank one
-    // and not a profile pointing at an object that was never written.
-    const after = await api.getOwnProfile();
-    expect(after?.photoPath).toBe(first.photoPath);
-    expect((await api.getPhotoUrls([first.photoPath!]))[first.photoPath!]).toBeDefined();
+    // The finding this test exists for: a failed add must cost the one upload
+    // that failed and nothing else. The previous error path swept the owner's
+    // whole storage prefix, which deleted every photo still attached to a live
+    // row — reachable from an ordinary rate limit or a dropped connection.
+    expect((await api.getOwnPhotos()).map((photo) => photo.path)).toEqual([
+      first.path,
+      second.path,
+    ]);
+    const urls = await api.getPhotoUrls([first.path, second.path]);
+    expect(urls[first.path]).toBeDefined();
+    expect(urls[second.path]).toBeDefined();
+    expect((await api.getOwnProfile())?.photoPath).toBe(first.path);
   });
 
   it('refuses a file type the bucket does not accept', async () => {
     const api = await signedInWithProfile();
     await expect(
-      api.uploadProfilePhoto({ uri: 'file:///tmp/a.gif', mimeType: 'image/gif' }),
+      api.addProfilePhoto({ uri: 'file:///tmp/a.gif', mimeType: 'image/gif' }),
     ).rejects.toMatchObject({ code: 'INVALID_INPUT' });
     expect((await api.getOwnProfile())?.photoPath).toBeNull();
   });
 
   it('keeps the photo when the rest of the profile is edited', async () => {
     const api = await signedInWithProfile();
-    const uploaded = await api.uploadProfilePhoto(JPEG);
+    const [uploaded] = await api.addProfilePhoto(JPEG);
     const edited = await api.saveOwnProfile({
       displayName: 'Ada L',
       birthdate: ADULT_BIRTHDATE,
       bio: 'New bio',
     });
-    expect(edited.photoPath).toBe(uploaded.photoPath);
+    expect(edited.photoPath).toBe(uploaded.path);
   });
 
   it('has no way to write a URL — the field does not exist', async () => {
@@ -152,7 +167,7 @@ describe('profile photos through the API', () => {
 
   it('resolves nothing for a path that is not yours or not a path at all', async () => {
     const api = await signedInWithProfile();
-    await api.uploadProfilePhoto(JPEG);
+    await api.addProfilePhoto(JPEG);
     const urls = await api.getPhotoUrls([
       '00000000-0000-4000-8000-0000000000ff/abcdefghijklmnopqrstuvwx.jpg',
       'https://tracker.example/beacon.jpg',
@@ -163,9 +178,9 @@ describe('profile photos through the API', () => {
   it('needs a session', async () => {
     const api = await signedInWithProfile();
     await api.signOut();
-    await expect(api.uploadProfilePhoto(JPEG)).rejects.toMatchObject({
+    await expect(api.addProfilePhoto(JPEG)).rejects.toMatchObject({
       code: 'UNAUTHENTICATED',
     });
-    await expect(api.removeProfilePhoto()).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
+    await expect(api.removeProfilePhotoAt(1)).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
   });
 });

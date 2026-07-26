@@ -42,7 +42,11 @@ export function DiscoveryScreen() {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  // Same as Rooms: whether there is an active hotel comes from the server, and
+  // the cached card only ever supplies its name.
   const hotel = state.hotels.find((h) => h.id === state.activeHotel?.hotelId) ?? null;
+  const hotelName = hotel?.name ?? null;
+  const hasHotel = state.activeHotel !== null;
 
   // Room eligibility can change from another tab, so refresh it on focus,
   // and again at the soonest expiry (R-003) so an open deck closes itself
@@ -120,7 +124,7 @@ export function DiscoveryScreen() {
   const photoPaths = useMemo(() => [candidate?.photoPath ?? null], [candidate?.photoPath]);
   const photoUrls = usePhotoUrls(photoPaths);
 
-  if (!hotel) {
+  if (!hasHotel) {
     return (
       <Screen testID="screen-discovery">
         <Title>Discovery</Title>
@@ -189,12 +193,12 @@ export function DiscoveryScreen() {
           thing on screen is a person rather than a page header. */}
       <PhotoFrame
         url={candidate && candidate.photoPath ? photoUrls[candidate.photoPath] ?? null : null}
-        name={candidate?.displayName ?? hotel.name}
+        name={candidate?.displayName ?? ''}
         testID={candidate ? `candidate-photo-${candidate.userId}` : 'deck-empty-photo'}
       >
         {candidate ? (
           <>
-            <RoomRibbon room={room} hotelName={hotel.name} onPhoto testID="candidate-room" />
+            <RoomRibbon room={room} hotelName={hotelName} onPhoto testID="candidate-room" />
             <Display>{`${candidate.displayName}, ${candidate.age}`}</Display>
           </>
         ) : null}

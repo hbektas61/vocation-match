@@ -17,7 +17,12 @@ export function RoomsScreen() {
   const [rooms, setRooms] = useState<RoomStatus[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Whether there *is* an active hotel is the server's answer, carried in the
+  // room status. The cached card is only ever the source of its *name*: it is
+  // populated by visiting the Hotel tab, and nothing fills it on a cold start,
+  // so gating on it told every returning user they had no hotel.
   const hotel = state.hotels.find((h) => h.id === state.activeHotel?.hotelId) ?? null;
+  const hotelName = hotel?.name ?? null;
 
   // Refresh on focus (coming back from Upcoming or Here Now), and again once
   // more at the soonest room expiry (R-003) so a lapsed Here Now check stops
@@ -76,7 +81,7 @@ export function RoomsScreen() {
     );
   }
 
-  if (noActiveHotel || !hotel) {
+  if (noActiveHotel) {
     // Saying "activate a hotel first" and stopping there tells somebody what is
     // wrong and leaves them to find where to fix it. The way out belongs on the
     // screen that is blocked.
@@ -95,9 +100,9 @@ export function RoomsScreen() {
 
   return (
     <Screen testID="screen-rooms">
-      <Title>{COPY_FOR.roomsTitle(hotel.name)}</Title>
+      <Title>{COPY_FOR.roomsTitle(hotelName)}</Title>
       <Card testID="room-upcoming">
-        <RoomRibbon room="UPCOMING" hotelName={hotel.name} />
+        <RoomRibbon room="UPCOMING" hotelName={hotelName} />
         <Body>{COPY.upcoming.explainer}</Body>
         {upcomingStatus ? <Caption>{roomStatusExplanation('UPCOMING', upcomingStatus)}</Caption> : null}
         <Button
@@ -108,7 +113,7 @@ export function RoomsScreen() {
         />
       </Card>
       <Card testID="room-here-now">
-        <RoomRibbon room="HERE_NOW" hotelName={hotel.name} />
+        <RoomRibbon room="HERE_NOW" hotelName={hotelName} />
         <Body>{COPY.hereNow.explainer}</Body>
         {hereNowStatus ? <Caption>{roomStatusExplanation('HERE_NOW', hereNowStatus)}</Caption> : null}
         {state.locationPermission === 'denied' ? (
