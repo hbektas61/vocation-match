@@ -383,6 +383,24 @@ export class SupabaseApi implements VocationApi {
    * it, and an upload that succeeds while the attach fails leaves an object
    * the cleanup queue is responsible for rather than a half-written profile.
    */
+  async registerPushToken(token: string, platform: 'ios' | 'android', locale: string): Promise<void> {
+    const { error } = await this.client.rpc('register_push_token', {
+      p_token: token,
+      p_platform: platform,
+      p_locale: locale,
+    });
+    if (error) {
+      throw toApiError(error, 'Could not register for notifications.');
+    }
+  }
+
+  async unregisterPushToken(token: string): Promise<void> {
+    const { error } = await this.client.rpc('unregister_push_token', { p_token: token });
+    if (error) {
+      throw toApiError(error, 'Could not unregister this device.');
+    }
+  }
+
   async getOwnPhotos(): Promise<ProfilePhoto[]> {
     const { data, error } = await this.client.rpc('own_profile_photos');
     if (error) {

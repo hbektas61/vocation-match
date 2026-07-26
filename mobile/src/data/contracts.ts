@@ -254,6 +254,13 @@ export interface VocationApi {
    * The owner's ordered photo set. Never returned for anybody else — a card
    * carries one path, so how many photos somebody has is not collectable.
    */
+  /**
+   * Push tokens are device credentials: registered after sign-in so a message
+   * or an arrival can reach a closed app, re-registered when the language
+   * changes (the words are fixed at send time), removed before sign-out.
+   */
+  registerPushToken(token: string, platform: 'ios' | 'android', locale: string): Promise<void>;
+  unregisterPushToken(token: string): Promise<void>;
   getOwnPhotos(): Promise<ProfilePhoto[]>;
   /** Appends at the first free slot. Returns the whole set, ready to redraw. */
   addProfilePhoto(upload: PhotoUpload): Promise<ProfilePhoto[]>;

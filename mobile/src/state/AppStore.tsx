@@ -3,6 +3,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { setLocale, type Locale } from '../copy';
 import { getApi } from '../data';
 import { readLocalePreference, writeLocalePreference } from '../i18n/localePreference';
+import { registerForPush } from '../notifications/push';
 import {
   appReducer,
   initialAppState,
@@ -96,6 +97,15 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   }, [state.session, state.accountLoadStatus]);
+
+  // A finished profile is the moment pushes start mattering: messages and
+  // arrivals can now involve this person. Locale is a dependency on purpose —
+  // the words of a push are fixed at send time, so changing language
+  // re-registers the device with the new one.
+  useEffect(() => {
+    if (!state.session || !state.profile?.onboardingCompletedAt) return;
+    void registerForPush(getApi(), state.locale);
+  }, [state.session, state.profile?.onboardingCompletedAt, state.locale]);
 
   // A session can lapse, or its account be deleted from another device, while
   // the app sits in the background trusting the answer it got at start-up.

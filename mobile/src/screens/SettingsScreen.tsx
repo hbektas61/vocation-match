@@ -4,6 +4,7 @@ import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { LanguageSwitch } from '../components/LanguageSwitch';
+import { unregisterPush } from '../notifications/push';
 import { PhotoGrid } from '../components/PhotoGrid';
 import { Avatar, Body, Button, Caption, Card, EmptyState, Heading, Notice, Screen, SectionLabel, Title } from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
@@ -78,6 +79,8 @@ export function SettingsScreen() {
   );
 
   const signOut = async () => {
+    // While still signed in — the server rightly refuses this afterwards.
+    await unregisterPush(getApi());
     if (signingOut) return;
     setSigningOut(true);
     try {

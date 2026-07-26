@@ -107,6 +107,8 @@ export class FakeApi implements VocationApi {
   private readonly objects = new Map<string, string>();
   /** Owner -> ordered paths. Slot 1 is the primary, exactly as on the server. */
   private readonly photoSets = new Map<string, string[]>();
+  /** Token -> device record, the fake's stand-in for push_tokens. */
+  private readonly pushTokens = new Map<string, { userId: string; platform: string; locale: string }>();
   private uploadFailure: ApiError | null = null;
   private deleteFailure: ApiError | null = null;
   private otpRequestFailure: ApiError | null = null;
@@ -320,6 +322,15 @@ export class FakeApi implements VocationApi {
    * `photoPath` is derived from slot 1 here exactly as `app.sync_primary_photo`
    * derives it on the server, so a card cannot disagree with a grid.
    */
+  async registerPushToken(token: string, platform: 'ios' | 'android', locale: string): Promise<void> {
+    const userId = await this.requireUserId();
+    this.pushTokens.set(token, { userId, platform, locale });
+  }
+
+  async unregisterPushToken(token: string): Promise<void> {
+    this.pushTokens.delete(token);
+  }
+
   async getOwnPhotos(): Promise<ProfilePhoto[]> {
     const userId = await this.requireUserId();
     return [...(this.photoSets.get(userId) ?? [])].map((path, index) => ({

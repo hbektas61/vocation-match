@@ -143,6 +143,17 @@ Photos, which is where the automated suite says least (D-026, D-028):
       attach — the object should end up in the cleanup queue, not attached.
 - [ ] Permission refused, and refused-then-granted from Settings.
 
+Push notifications (D-031) — the part no suite can prove:
+
+- [ ] Remote pushes need a development build: Expo Go stopped receiving them
+      in SDK 53. `npx expo run:ios` / EAS build, with an EAS projectId, is the
+      gate to the first real push.
+- [ ] A real message push on a locked phone: sender's name, no message body.
+- [ ] A real arrival push: declare a stay from a second account and watch the
+      first phone. Then a second arrival inside six hours: silence.
+- [ ] Language: a device registered in Turkish gets Turkish words.
+- [ ] Sign out, then message that account from the other phone: no push.
+
 Accessibility (backlog R-004):
 
 - [ ] VoiceOver and TalkBack walk the whole onboarding → match → chat path.

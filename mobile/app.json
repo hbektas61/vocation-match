@@ -41,14 +41,15 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Vocation Match checks once, while you have the app open, whether you are within 500 metres of your hotel. It keeps only yes or no — never where you are, and never a distance anyone else can see.",
+          "locationWhenInUsePermission": "Vocation Match checks once, while you have the app open, whether you are within 500 metres of your hotel. It keeps only yes or no \u2014 never where you are, and never a distance anyone else can see.",
           "isIosBackgroundLocationEnabled": false,
           "isAndroidBackgroundLocationEnabled": false,
           "isAndroidForegroundServiceEnabled": false
         }
       ],
       "expo-font",
-      "expo-asset"
+      "expo-asset",
+      "expo-notifications"
     ]
   }
 }

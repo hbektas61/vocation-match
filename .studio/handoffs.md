@@ -1583,3 +1583,36 @@ fixture candidates own no photos — what is under test is the card.
 
 Applied to staging with `supabase db push` in the same sitting, since the
 owner tests there — the seed-gap lesson from this morning, remembered.
+
+
+## 2026-07-26 — pushes: the knock, not the letter (D-031)
+
+The owner asked whether notifications existed. They did not; they do now, in
+exactly two kinds, and the privacy lines were drawn before the plumbing:
+
+- **MESSAGE** — the sender's name and a fixed sentence. Never the message
+  body: lock screens have readers, and this product's one promise is
+  discretion.
+- **ROOM_NEW** — "somebody new at your hotel", nameless (who arrived is what
+  the room itself is for), sent to the room-eligible people at that hotel,
+  once per person per hotel per six hours so an arrival day is not a buzz per
+  guest.
+
+The shape is queue-and-dispatch, chosen so the *rules* are provable: triggers
+write queue rows transactionally in plain SQL — 15 new pgTAP assertions pin
+who is told, who never is (the sender, the arriver, the blocked, the
+tokenless), and in which language — while pg_cron + pg_net drain the queue to
+Expo's push API every minute on the host. The guards let the same migration
+apply on a bare test container where neither extension exists.
+
+Tokens are device credentials: owner-only, registered with the device's
+language once onboarding completes (the words of a push are fixed at send
+time, so changing language re-registers), removed before sign-out because
+afterwards the server rightly refuses.
+
+Verified: full scripts/check.sh green — 398 SQL assertions, 393 jest tests
+across 34 suites — migration pushed to staging, and on staging itself: the
+cron job live and active, both extensions present, and a manual dispatcher
+run draining cleanly. What no suite can prove is the last inch: a real push
+on a real locked phone needs a development build (Expo Go lost remote push in
+SDK 53) — spelled out in device-readiness.
