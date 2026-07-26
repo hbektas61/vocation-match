@@ -208,10 +208,28 @@ describe('the inbox for someone who cannot see it', () => {
 
     await fireEvent.press(await screen.findByText('Inbox'));
     const [summary] = await getApi().getMatches();
-    const row = await screen.findByTestId(`inbox-${summary.matchId}`);
 
+    // A match with no conversation yet lives in the new-matches strip: a face,
+    // the name, and the invitation — that is the whole of what the item does,
+    // and the label says all of it.
+    const fresh = await screen.findByTestId(`inbox-${summary.matchId}`);
+    expect(fresh.props.accessibilityLabel).toContain('Derya');
+    expect(fresh.props.accessibilityLabel).toContain(COPY.inbox.sayHello);
+
+    // Once there are words, it becomes a conversation row, and the label has
+    // to carry the preview a sighted person sees. The message goes through the
+    // API so the tab bar stays reachable; a focus round-trip refreshes the list.
+    await getApi().sendMessage(summary.matchId, 'Hi!');
+    await fireEvent.press(screen.getByText('Discovery'));
+    await fireEvent.press(await screen.findByText('Inbox'));
+
+    // Wait for the refreshed list — the strip item and the row share the
+    // match's testID, and querying mid-refresh can hand back the node that is
+    // being unmounted.
+    await screen.findByText('Hi!');
+    const row = screen.getByTestId(`inbox-${summary.matchId}`);
     expect(row.props.accessibilityLabel).toContain('Derya');
-    expect(row.props.accessibilityLabel).toContain(COPY.inbox.sayHelloPreview);
+    expect(row.props.accessibilityLabel).toContain('Hi!');
     expect(row.props.accessibilityLabel).toContain('Open chat');
   });
 });

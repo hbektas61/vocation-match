@@ -300,6 +300,7 @@ export const COPY = {
   },
 
   match: {
+    bothAtPlate: 'You are both at',
     title: "It's a match!",
     body: 'Say hello while you are both connected to this hotel.',
     notAvailable: 'This match is no longer available.',
@@ -330,6 +331,8 @@ export const COPY = {
 
   inbox: {
     title: 'Inbox',
+    newMatches: 'New matches',
+    sayHello: 'Say hello',
     empty: 'No matches yet. Mutual likes appear here.',
     loadError: 'Could not load your matches. Try again.',
     closedLabel: 'Conversation closed',
@@ -393,6 +396,10 @@ export const COPY = {
 
   rooms: {
     plainTitle: 'Rooms',
+    openChip: 'Open',
+    closedChip: 'Closed',
+    upcomingPlate: 'Upcoming',
+    hereNowPlate: 'Here now',
   },
 
   errors: {

@@ -1,9 +1,19 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { Body, Button, Caption, Card, Notice, RoomRibbon, Screen, Title } from '../components/ui';
+import {
+  Body,
+  Button,
+  Caption,
+  DoorPlate,
+  KeyCard,
+  Notice,
+  Screen,
+  StateChip,
+  Title,
+} from '../components/ui';
 import { nowMs } from '../clock';
 import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation } from '../copy';
 import { ApiError, getApi, type RoomStatus } from '../data';
@@ -98,35 +108,70 @@ export function RoomsScreen() {
     );
   }
 
+  const upcomingOpen = upcomingStatus?.eligible === true;
+  const hereNowOpen = hereNowStatus?.eligible === true;
+
   return (
     <Screen safeTop testID="screen-rooms">
       <Title>{COPY_FOR.roomsTitle(hotelName)}</Title>
-      <Card testID="room-upcoming">
-        <RoomRibbon room="UPCOMING" hotelName={hotelName} />
+
+      {/* The two rooms as key cards: the product's own object, and the state
+          readable from across the pool — the band and the chip both say it,
+          and the chip says it in a word. */}
+      <KeyCard open={upcomingOpen} testID="room-upcoming">
+        <View style={styles.cardHead}>
+          <DoorPlate>{COPY.rooms.upcomingPlate}</DoorPlate>
+          <StateChip
+            open={upcomingOpen}
+            label={upcomingOpen ? COPY.rooms.openChip : COPY.rooms.closedChip}
+            testID="room-upcoming-state"
+          />
+        </View>
         <Body>{COPY.upcoming.explainer}</Body>
-        {upcomingStatus ? <Caption>{roomStatusExplanation('UPCOMING', upcomingStatus)}</Caption> : null}
+        {upcomingStatus ? (
+          <Caption>{roomStatusExplanation('UPCOMING', upcomingStatus)}</Caption>
+        ) : null}
         <Button
-          label={upcomingStatus?.eligible ? COPY.upcoming.updateButton : COPY.upcoming.saveButton}
-          variant={upcomingStatus?.eligible ? 'secondary' : 'primary'}
+          label={upcomingOpen ? COPY.upcoming.updateButton : COPY.upcoming.saveButton}
+          variant={upcomingOpen ? 'secondary' : 'primary'}
           onPress={() => navigation.navigate('Upcoming')}
           testID="open-upcoming"
         />
-      </Card>
-      <Card testID="room-here-now">
-        <RoomRibbon room="HERE_NOW" hotelName={hotelName} />
+      </KeyCard>
+
+      <KeyCard open={hereNowOpen} testID="room-here-now">
+        <View style={styles.cardHead}>
+          <DoorPlate>{COPY.rooms.hereNowPlate}</DoorPlate>
+          <StateChip
+            open={hereNowOpen}
+            label={hereNowOpen ? COPY.rooms.openChip : COPY.rooms.closedChip}
+            testID="room-here-now-state"
+          />
+        </View>
         <Body>{COPY.hereNow.explainer}</Body>
-        {hereNowStatus ? <Caption>{roomStatusExplanation('HERE_NOW', hereNowStatus)}</Caption> : null}
+        {hereNowStatus ? (
+          <Caption>{roomStatusExplanation('HERE_NOW', hereNowStatus)}</Caption>
+        ) : null}
         {state.locationPermission === 'denied' ? (
           <Notice message={COPY.hereNow.permissionDenied} tone="error" />
         ) : null}
         <Button
           label={COPY.hereNow.checkButton}
-          variant={hereNowStatus?.eligible ? 'secondary' : 'primary'}
+          variant={hereNowOpen ? 'secondary' : 'primary'}
           onPress={() => navigation.navigate('HereNow')}
           testID="open-here-now"
         />
-      </Card>
+      </KeyCard>
+
       <Caption>{COPY.trust.noExactLocation}</Caption>
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  cardHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+});

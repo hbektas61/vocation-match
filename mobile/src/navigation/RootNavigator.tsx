@@ -189,7 +189,9 @@ export function RootNavigator() {
       <Stack.Screen
         name="Match"
         component={MatchScreen}
-        options={{ title: COPY.match.title, presentation: 'modal' }}
+        // The screen carries its own display-size title; a header repeating it
+        // above a back arrow made the moment read like a form.
+        options={{ headerShown: false, presentation: 'modal' }}
       />
       <Stack.Screen name="Chat" component={ChatScreen} options={{ title: 'Chat' }} />
       <Stack.Screen

@@ -1,25 +1,16 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { PhotoGrid } from '../components/PhotoGrid';
-import {
-  Body,
-  Button,
-  Caption,
-  Card,
-  EmptyState,
-  Heading,
-  Notice,
-  Screen,
-  SectionLabel,
-  Title,
-} from '../components/ui';
+import { Avatar, Body, Button, Caption, Card, EmptyState, Heading, Notice, Screen, SectionLabel, Title } from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type BlockedUser, type ProfilePhoto } from '../data';
 import type { RootStackParamList } from '../navigation/types';
+import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
+import { spacing } from '../theme';
 
 /**
  * What the app is entitled to claim about a deletion that did not visibly work.
@@ -52,6 +43,7 @@ export function SettingsScreen() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [photos, setPhotos] = useState<ProfilePhoto[]>([]);
+  const profileUrls = usePhotoUrls([state.profile?.photoPath ?? null]);
 
   useFocusEffect(
     useCallback(() => {
@@ -128,9 +120,19 @@ export function SettingsScreen() {
       <Title>{COPY.settings.title}</Title>
       {state.profile ? (
         <Card testID="settings-profile">
-          <SectionLabel>{COPY.settings.youLabel}</SectionLabel>
-          <Heading>{`${state.profile.displayName}, ${state.profile.age}`}</Heading>
-          {state.profile.bio ? <Body>{state.profile.bio}</Body> : null}
+          {/* The face first: this screen's subject is the person, and a card
+              that opens with a section label reads as a form about them. */}
+          <View style={styles.profileHead}>
+            <Avatar
+              url={state.profile.photoPath ? profileUrls[state.profile.photoPath] ?? null : null}
+              name={state.profile.displayName}
+              size="md"
+            />
+            <View style={styles.profileText}>
+              <Heading>{`${state.profile.displayName}, ${state.profile.age}`}</Heading>
+              {state.profile.bio ? <Body numberOfLines={2}>{state.profile.bio}</Body> : null}
+            </View>
+          </View>
           {/* Until this existed, a name typed wrong during onboarding was
               permanent — on a product where the name is most of what a
               stranger has to go on. */}
@@ -246,3 +248,8 @@ export function SettingsScreen() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  profileHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  profileText: { flex: 1, gap: 2 },
+});

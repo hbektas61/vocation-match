@@ -97,8 +97,19 @@ export function Heading({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function Body({ children }: { children: React.ReactNode }) {
-  return <Text style={styles.body}>{children}</Text>;
+export function Body({
+  children,
+  numberOfLines,
+}: {
+  children: React.ReactNode;
+  /** For previews: a preview that wraps to four lines is not a preview. */
+  numberOfLines?: number;
+}) {
+  return (
+    <Text style={styles.body} numberOfLines={numberOfLines}>
+      {children}
+    </Text>
+  );
 }
 
 export function Caption({
@@ -330,6 +341,61 @@ export function Field(
 }
 
 /**
+ * The signature object: a hotel key card.
+ *
+ * A rounded panel crossed near the top by one flat band — the magstripe, the
+ * most touched object in the product's world. A lavender band is an open
+ * door; a hollow hairline band is a closed one. Deliberately nothing else of
+ * the artefact is drawn (no chip, no hologram): one band keeps it a reference
+ * rather than a costume. Used in exactly two places — the rooms, and the
+ * match moment — so it stays a signature rather than wallpaper.
+ */
+export function KeyCard({
+  open,
+  children,
+  testID,
+}: {
+  /** Whether this door is open. The band shows it; the content must say it too. */
+  open: boolean;
+  children: React.ReactNode;
+  testID?: string;
+}) {
+  return (
+    <View style={styles.keyCard} testID={testID}>
+      <View style={[styles.keyStripe, open ? styles.keyStripeOpen : styles.keyStripeClosed]} />
+      <View style={styles.keyBody}>{children}</View>
+    </View>
+  );
+}
+
+/**
+ * OPEN / CLOSED, as a word with a mark. The fill is the third signal after
+ * the word and the dot, so the state survives every kind of colour vision.
+ */
+export function StateChip({ open, label, testID }: { open: boolean; label: string; testID?: string }) {
+  return (
+    <View
+      style={[styles.stateChip, open ? styles.stateChipOpen : styles.stateChipClosed]}
+      accessible
+      accessibilityRole="text"
+      accessibilityLabel={label}
+      testID={testID}
+    >
+      <View style={[styles.stateDot, !open && styles.stateDotHollow]} />
+      <Text style={styles.stateChipText}>{label}</Text>
+    </View>
+  );
+}
+
+/**
+ * The small plate a hotel screws beside a door: the room's name, tracked and
+ * quiet. Structure, never prose.
+ */
+export function DoorPlate({ children }: { children: React.ReactNode }) {
+  return <Text style={styles.doorPlate}>{children}</Text>;
+}
+
+/**
  * A labelled checkbox.
  *
  * The box is drawn rather than imported so the checked state is a mark and a
@@ -435,7 +501,7 @@ export function RoomRibbon({
           already carries the meaning; this is so the two are still a pair when
           the colours are not doing any work. */}
       <View style={[styles.ribbonDot, room === 'UPCOMING' && styles.ribbonDotOpen]} />
-      <Text style={[styles.ribbonText, onPhoto && styles.ribbonTextOnPhoto]}>
+      <Text style={[styles.ribbonText, onPhoto && styles.ribbonTextOnPhoto]} numberOfLines={1}>
         {hotelName ? `${state.toUpperCase()} · ${hotelName.toUpperCase()}` : state.toUpperCase()}
       </Text>
     </View>
@@ -839,6 +905,58 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: spacing.xs + 2,
+  },
+  keyCard: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.rule,
+    backgroundColor: color.surface,
+    overflow: 'hidden',
+    shadowColor: color.ink,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  keyStripe: { height: 14, marginTop: spacing.md },
+  keyStripeOpen: { backgroundColor: color.accent },
+  keyStripeClosed: {
+    backgroundColor: 'transparent',
+    borderTopWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderColor: color.rule,
+  },
+  keyBody: { padding: spacing.md, gap: spacing.sm },
+  stateChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+  },
+  stateChipOpen: { backgroundColor: color.accent },
+  stateChipClosed: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: color.border },
+  stateChipText: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.label,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: color.ink,
+  },
+  stateDot: { width: 7, height: 7, borderRadius: radius.pill, backgroundColor: color.ink },
+  stateDotHollow: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: color.inkMuted,
+  },
+  doorPlate: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.label,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: color.inkMuted,
   },
   checkboxRow: {
     flexDirection: 'row',

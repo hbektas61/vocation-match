@@ -1452,3 +1452,39 @@ Two details doing quiet work:
   handover from animation to layout moves nothing on screen. Clearing the
   arrangement early was the bug the owner originally reported, in different
   clothes — tiles springing home only to jump forward when the data arrived.
+
+
+## 2026-07-26 — the five inner screens, designed
+
+The owner asked for Rooms, Inbox, Chat, Match and Settings to be designed
+rather than repaired, borrowing dating-app conventions where they earn their
+keep, with the hotel bond as the identity. The plan is in `design.md`; what
+shipped:
+
+- **The signature — the key card.** A rounded panel crossed by one flat
+  magstripe band: lavender when the door is open, hollow hairline when
+  closed. Exactly two homes — the two rooms, and the match moment — so it
+  stays a signature rather than wallpaper. One band, no chip, no hologram:
+  a reference, not a costume.
+- **Rooms**: state first. DOOR-PLATE room names, a worded OPEN/CLOSED chip
+  (word + filled/hollow dot + fill — never colour alone), trust copy kept
+  but demoted to caption.
+- **Inbox**: the Hinge/Bumble split, borrowed because it is information —
+  faces with no conversation yet in a ringed strip, conversations as rows
+  with preview, short time-ago, hairline rules, closed matches dimmed but
+  readable.
+- **Chat**: a bond header that does not scroll away — who this is and which
+  room · hotel you know them from. Fixed a real contrast bug while there:
+  my bubbles were ink on deep lavender at 3.04:1. Now lavender with ink
+  (11.68:1), asymmetric messenger corners.
+- **Match**: the moment. Faces, the title once (the modal header was
+  printing it twice over a stray back arrow — gone), and the key card
+  carrying YOU ARE BOTH AT · hotel, with the ribbon reduced to the room so
+  the card does not say the hotel twice.
+- **Settings**: the face first — avatar, name, bio — then the sections.
+
+Verified the way the work was judged: full browser walk at 375×720 through
+onboarding → rooms → match → chat → inbox → settings, screenshots of each,
+two critique passes (the second caught the doubled match title, the
+hotel-name repetition, and a ribbon wrapping to two lines). Zero console
+errors on the walk. 378 jest tests across 33 suites, all green.

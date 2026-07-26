@@ -143,3 +143,47 @@ state, errors and success are announced, the delete warning is read in full, and
 `trustCopy.test.ts` fails the build if a sentence starts claiming more than the
 system delivers. Those did not change, and a change to the look must not change
 them either.
+
+## 2026-07-26 — the five inner screens, designed rather than repaired
+
+The owner's brief: Rooms, Inbox, Chat, Match and Settings feel fixed, not
+designed; borrow conventions from other dating apps where they have earned
+their keep; and build the identity around the one thing no other dating app
+has — "this person is at your hotel".
+
+### The signature: the key card
+
+The product's own world is a hotel, and a hotel's most touched object is the
+key card. The signature element is a **key-card panel with a magstripe band**:
+a rounded card crossed near the top by a solid horizontal band. Lavender band
+= an open door; hairline hollow band = closed. It appears in exactly two
+places — the two rooms on the Rooms screen, and the "you're both at" panel on
+the match moment — so it stays a signature rather than wallpaper. The ribbon
+chip (dot + ROOM · HOTEL) remains its small-format sibling everywhere else.
+
+One risk, named: a magstripe could read as kitsch. It is one flat band with no
+skeuomorphic detail — no hologram, no chip, no embossing — which keeps it a
+reference rather than a costume.
+
+### Per screen, one job each
+
+- **Rooms** — "which doors are open to me right now." State first: OPEN /
+  CLOSED as a worded chip (never colour alone), the room name as a small
+  tracked plate, the trust sentence kept but demoted to caption. Key-card
+  panels.
+- **Inbox** — "who is waiting on me." The convention borrowed from Hinge and
+  Bumble because it is genuinely informative: matches with no conversation yet
+  as a horizontal strip of faces ("Say hello"), conversations below with
+  name, preview, and a short time-ago. Closed matches stay readable, dimmed.
+- **Chat** — "talk, with the bond in view." An in-screen header (avatar, name,
+  the ribbon chip) so where-you-know-them-from never scrolls away. Mine =
+  lavender fill with ink text (fixing a real 3.04:1 contrast bug: dark purple
+  bubble with near-black text), theirs = soft veil; asymmetric corners, the
+  messenger convention. Composer as a pill with a round send control.
+- **Match** — "celebrate the bond." The one screen allowed to be a moment:
+  overlapping faces, then the key card carrying BOTH-AT · hotel — the fact no
+  other app could print — then the two actions.
+- **Settings** — "my account, quietly." A profile header (photo, name, age,
+  edit) above the existing sections. No new drama; restraint is the job here.
+
+Palette and type are pinned (D-020, D-021, Nunito/Inter) and unchanged.

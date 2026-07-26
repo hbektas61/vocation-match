@@ -2,11 +2,12 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { nowMs } from '../clock';
-import { Body, Button, Field, Notice, Screen } from '../components/ui';
+import { Avatar, Body, Button, Field, Heading, Notice, RoomRibbon, Screen } from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type ChatMessage } from '../data';
 import type { RootScreenProps } from '../navigation/types';
 import { color, font, fontFamily, radius, spacing } from '../theme';
+import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
 
 export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
@@ -22,6 +23,7 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   const [checkedServer, setCheckedServer] = useState(false);
 
   const match = state.matches.find((m) => m.matchId === matchId) ?? null;
+  const photoUrls = usePhotoUrls([match?.photoPath ?? null]);
   const selfId = state.session?.userId ?? null;
 
   /** Replaces the cached matches with the server's, whatever it says. */
@@ -141,8 +143,25 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
     }
   };
 
+  const hotel = state.hotels.find((h) => h.id === state.activeHotel?.hotelId) ?? null;
+
   return (
     <Screen testID="screen-chat" scroll={false}>
+      {/* The bond, kept in view while talking: who this is, and the one fact
+          no other app could print — which room and which hotel you know each
+          other from. It does not scroll away with the messages. */}
+      <View style={styles.bondHeader}>
+        <Avatar
+          url={match.photoPath ? photoUrls[match.photoPath] ?? null : null}
+          name={match.displayName}
+          size="md"
+        />
+        <View style={styles.bondText}>
+          <Heading>{`${match.displayName}, ${match.age}`}</Heading>
+          <RoomRibbon room={match.room} hotelName={hotel?.name ?? null} />
+        </View>
+      </View>
+
       {/* The composer stays put and the conversation moves under it. It used
           to scroll away with the messages, so on a real conversation the box
           you type into was somewhere down the page. */}
@@ -241,6 +260,15 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
 }
 
 const styles = StyleSheet.create({
+  bondHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: color.rule,
+  },
+  bondText: { flex: 1, gap: spacing.xs },
   thread: { padding: spacing.md, gap: spacing.sm, flexGrow: 1 },
   footer: {
     padding: spacing.md,
@@ -258,8 +286,22 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     padding: spacing.sm,
   },
-  bubbleMine: { alignSelf: 'flex-end', backgroundColor: color.accentDeep },
-  bubbleTheirs: { alignSelf: 'flex-start', backgroundColor: color.surface },
-  bubbleTextMine: { color: color.onAccent, fontSize: font.body, fontFamily: fontFamily.body },
+  /**
+   * Mine on the brand fill with ink — the previous pairing was ink on the
+   * *deep* lavender, which measured 3.04:1: a real contrast bug wearing a
+   * brand colour. The straight corner is the messenger convention for "this
+   * side said it", which is how the two voices read apart without colour.
+   */
+  bubbleMine: {
+    alignSelf: 'flex-end',
+    backgroundColor: color.accent,
+    borderBottomRightRadius: 4,
+  },
+  bubbleTheirs: {
+    alignSelf: 'flex-start',
+    backgroundColor: color.veil,
+    borderBottomLeftRadius: 4,
+  },
+  bubbleTextMine: { color: color.ink, fontSize: font.body, fontFamily: fontFamily.body },
   bubbleTextTheirs: { color: color.ink, fontSize: font.body, fontFamily: fontFamily.body },
 });
