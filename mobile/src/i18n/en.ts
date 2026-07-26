@@ -341,7 +341,12 @@ export const en = {
     emptyTitle: 'No one here yet',
     emptyBody: 'Nobody is waiting in this room right now. Check back in a little while.',
     rescan: 'Scan again',
-    notEligible: 'Open a room first: declare an upcoming stay or run a presence check.',
+    /** Discovery before any door is open — the orbit screen's words. */
+    noRoomTitle: "You haven't entered a room yet",
+    noRoomBody:
+      'Join a room or run a proximity check before you start discovering. The rooms open to you will show up here.',
+    goToRooms: 'Go to rooms',
+    checkProximity: 'Check my proximity',
     loadError: 'Could not load candidates. Try again.',
   },
 

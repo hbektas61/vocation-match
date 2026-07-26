@@ -89,15 +89,19 @@ describe('critical flow', () => {
     expect(screen.queryByTestId('candidate-cand-derya')).toBeNull();
   });
 
-  it('keeps discovery closed until a room is opened', async () => {
+  it('keeps discovery closed until a room is opened, and offers both ways in', async () => {
     await onboardAndActivateHotel();
 
     await fireEvent.press(screen.getByText('Discovery'));
-    expect(
-      await screen.findByText(
-        'Open a room first: declare an upcoming stay or run a presence check.',
-      ),
-    ).toBeTruthy();
+    // The pre-room orbit screen (owner's designer, 2026-07-27): no deck, a
+    // named reason, and the two doors out of the state — rooms, or a
+    // proximity check right here.
+    expect(await screen.findByTestId('discovery-no-room')).toBeTruthy();
+    expect(screen.getByText("You haven't entered a room yet")).toBeTruthy();
+    expect(screen.getByTestId('discovery-go-rooms')).toBeTruthy();
+
+    await fireEvent.press(screen.getByTestId('discovery-check-proximity'));
+    expect(await screen.findByTestId('simulate-near')).toBeTruthy();
   });
 });
 

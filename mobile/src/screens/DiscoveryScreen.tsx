@@ -1,14 +1,15 @@
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, type NavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Notice, RoomRibbon, Screen, Title } from '../components/ui';
+import { OrbitEmpty } from '../components/OrbitEmpty';
 import { RadarEmpty } from '../components/RadarEmpty';
 import { nowMs } from '../clock';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type CandidateCard, type RoomKey, type RoomStatus } from '../data';
-import type { RootStackParamList } from '../navigation/types';
+import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { color, font, fontFamily, palette, radius, spacing } from '../theme';
 import { earliestRoomExpiry } from '../state/roomSchedule';
 import { usePhotoUrls } from '../state/usePhotoUrls';
@@ -22,6 +23,8 @@ const ROOM_LABEL: Record<RoomKey, string> = {
 export function DiscoveryScreen() {
   const { state, dispatch } = useAppStore();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  // A second, honestly-typed handle for jumping to a sibling tab.
+  const tabNavigation = useNavigation<NavigationProp<TabParamList>>();
   const [rooms, setRooms] = useState<RoomStatus[] | null>(null);
   const [room, setRoom] = useState<RoomKey | null>(null);
   const [deck, setDeck] = useState<CandidateCard[] | null>(null);
@@ -131,7 +134,7 @@ export function DiscoveryScreen() {
   if (!hasHotel) {
     return (
       <Screen safeTop testID="screen-discovery">
-        <Title>Discovery</Title>
+        <Title>{COPY.tabs.discovery}</Title>
         <Notice message={`${COPY.roomReason.NO_ACTIVE_HOTEL} ${COPY.trust.oneHotel}`} />
         <Button
           label={COPY.hotel.chooseCta}
@@ -145,17 +148,41 @@ export function DiscoveryScreen() {
   if (rooms === null) {
     return (
       <Screen safeTop testID="screen-discovery">
-        <Title>Discovery</Title>
+        <Title>{COPY.tabs.discovery}</Title>
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="discovery-loading" />
       </Screen>
     );
   }
 
   if (!room) {
+    /* The designer's pre-room screen (2026-07-27): the orbit field, why the
+       deck is closed in two sentences, and both ways in as buttons — the
+       rooms, or a proximity check straight from here. */
     return (
       <Screen safeTop testID="screen-discovery">
-        <Title>Discovery</Title>
-        <Notice message={COPY.discovery.notEligible} />
+        <Title>{COPY.tabs.discovery}</Title>
+        <View style={styles.noRoom} testID="discovery-no-room">
+          <OrbitEmpty size={240} />
+          <View style={styles.emptyWords}>
+            <Text accessibilityRole="header" style={styles.emptyTitle}>
+              {COPY.discovery.noRoomTitle}
+            </Text>
+            <Text style={styles.emptyBody}>{COPY.discovery.noRoomBody}</Text>
+          </View>
+          <View style={styles.emptyAction}>
+            <Button
+              label={COPY.discovery.goToRooms}
+              onPress={() => tabNavigation.navigate('Rooms')}
+              testID="discovery-go-rooms"
+            />
+            <Button
+              label={COPY.discovery.checkProximity}
+              variant="secondary"
+              onPress={() => navigation.navigate('HereNow')}
+              testID="discovery-check-proximity"
+            />
+          </View>
+        </View>
       </Screen>
     );
   }
@@ -372,7 +399,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     maxWidth: 260,
   },
-  emptyAction: { alignSelf: 'stretch', maxWidth: 280, width: '100%' },
+  emptyAction: { alignSelf: 'stretch', maxWidth: 280, width: '100%', gap: spacing.sm },
+  noRoom: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+  },
   roomSwitch: {
     flexDirection: 'row',
     gap: spacing.sm,

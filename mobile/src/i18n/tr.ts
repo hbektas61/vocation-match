@@ -336,7 +336,11 @@ export const tr: Copy = {
     emptyTitle: 'Henüz kimse yok',
     emptyBody: 'Şu an bu odada seni bekleyen kimse yok. Birazdan tekrar kontrol et.',
     rescan: 'Tekrar tara',
-    notEligible: 'Önce bir oda aç: yaklaşan konaklama beyan et ya da yakınlık kontrolü yap.',
+    noRoomTitle: 'Henüz bir odaya girmedin',
+    noRoomBody:
+      'Keşfetmeye başlamadan önce bir odaya katıl ya da yakınlık kontrolü yap. Sana uygun odaları burada göreceksin.',
+    goToRooms: 'Odalara git',
+    checkProximity: 'Yakınlığımı kontrol et',
     loadError: 'Adaylar yüklenemedi. Tekrar dene.',
   },
 

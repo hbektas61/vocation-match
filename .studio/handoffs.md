@@ -1794,3 +1794,20 @@ eyebrow. Verified by TR browser walk (results + active), 397 jest tests.
 Standing note for this collaboration: exports are references, not sources —
 our tokens, our components, our privacy semantics win; the geometry and
 mood are the designer's.
+
+## 2026-07-27 — discovery before any door is open (designer screen 3)
+
+The case the in-room radar did not cover: Discovery tapped with no eligible
+room at all. Was a bare Notice; now the designer's orbit screen — a pale
+disc with two orbit rings, satellite dots, three floating bubbles carrying
+the ways in (people, a door, a place; lucide-style paths drawn with
+react-native-svg, newly added via expo install, Expo Go-safe), a solid
+deep-lavender centre. Deliberately static, unlike the radar: nothing is
+scanning until a door opens. Under it, the designer's own Turkish
+("Henüz bir odaya girmedin"), and both exits as buttons — "Odalara git"
+jumps to the Rooms tab, "Yakınlığımı kontrol et" opens the proximity check
+directly. The drawing is laid out once at 300pt and scaled (240 here) so
+short phones keep both buttons above the tab bar. Also fixed en route:
+Discovery's three fallback screens had a hardcoded English "Discovery"
+title — now localized. The critical-flow gate test now walks this screen
+and through the proximity shortcut. 397 jest tests green.
