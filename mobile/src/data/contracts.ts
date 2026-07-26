@@ -195,6 +195,14 @@ export interface CandidateCard {
 export const MAX_INTERESTS = 5;
 /** Three, matching `profiles_orientations_count`. */
 export const MAX_ORIENTATIONS = 3;
+/** Nine, matching `profile_photos.slot`'s range. */
+export const MAX_PHOTOS = 9;
+
+/** One photo in the owner's own ordered set. Slot 1 is what a card shows. */
+export interface ProfilePhoto {
+  slot: number;
+  path: string;
+}
 
 export interface VocationApi {
   /* auth */
@@ -236,6 +244,16 @@ export interface VocationApi {
    * profile so the caller never has to guess whether the two halves — the
    * object and the row — ended up agreeing.
    */
+  /**
+   * The owner's ordered photo set. Never returned for anybody else — a card
+   * carries one path, so how many photos somebody has is not collectable.
+   */
+  getOwnPhotos(): Promise<ProfilePhoto[]>;
+  /** Appends at the first free slot. Returns the whole set, ready to redraw. */
+  addProfilePhoto(upload: PhotoUpload): Promise<ProfilePhoto[]>;
+  removeProfilePhotoAt(slot: number): Promise<ProfilePhoto[]>;
+  /** The complete list of the caller's own paths, in the order wanted. */
+  reorderProfilePhotos(paths: string[]): Promise<ProfilePhoto[]>;
   uploadProfilePhoto(upload: PhotoUpload): Promise<OwnProfile>;
   /** Clears the profile photo and removes the object. */
   removeProfilePhoto(): Promise<OwnProfile>;

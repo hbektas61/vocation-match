@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-import { ProfilePhotoField } from '../../components/ProfilePhoto';
+import { PhotoGrid } from '../../components/PhotoGrid';
 import { apiErrorMessage, COPY } from '../../copy';
-import { ApiError } from '../../data';
-import { toDomainProfile } from '../../state/appReducer';
-import { useAppStore } from '../../state/AppStore';
+import { ApiError, getApi, type ProfilePhoto } from '../../data';
 import { OnboardingScaffold } from '../OnboardingScaffold';
 import type { StepProps } from './types';
 
@@ -23,10 +21,9 @@ export function PhotoStep({
   onBack,
   finish,
 }: StepProps & { finish: () => Promise<void> }) {
-  const { state, dispatch } = useAppStore();
+  const [photos, setPhotos] = useState<ProfilePhoto[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const current = state.profile?.photoPath ?? profile?.photoPath ?? null;
 
   // The last step, so it finishes rather than navigating. A photo is not
   // required (D-024), which is why Done is live either way — but the profile
@@ -44,6 +41,21 @@ export function PhotoStep({
     }
   };
 
+  // The set already on the account, so coming back to this step shows what is
+  // there rather than an empty grid over a profile that has photos.
+  useEffect(() => {
+    let cancelled = false;
+    getApi()
+      .getOwnPhotos()
+      .then((existing) => {
+        if (!cancelled) setPhotos(existing);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <OnboardingScaffold
       step={step}
@@ -58,18 +70,7 @@ export function PhotoStep({
       error={error}
       testID="screen-onboarding-photo"
     >
-      <ProfilePhotoField
-        // The step's own subtitle already says where the photo lives and who
-        // can see it; printing the same paragraph twice on one screen reads as
-        // a mistake rather than as emphasis.
-        showExplainer={false}
-        chooseVariant="secondary"
-        displayName={state.profile?.displayName ?? profile?.displayName ?? ''}
-        photoPath={current}
-        onProfileChanged={(saved) =>
-          dispatch({ type: 'SAVE_PROFILE', profile: toDomainProfile(saved) })
-        }
-      />
+      <PhotoGrid photos={photos} onChanged={setPhotos} />
     </OnboardingScaffold>
   );
 }

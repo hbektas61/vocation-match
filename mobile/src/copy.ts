@@ -181,6 +181,20 @@ export const COPY = {
       'Photo access was declined. You can add a photo later from Settings; nothing else in the app needs it.',
     uploadError: 'Could not upload that photo. Your current photo is unchanged. Try again.',
     removeError: 'Could not remove that photo. Try again.',
+
+    /** The grid. */
+    gridTitle: 'Add photos',
+    // Deliberately not "hold, drag and drop": this reorders by buttons, and
+    // describing a gesture the screen does not support is worse than plain.
+    gridHint: (max: number) => `Up to ${max}. The first one is what people see first.`,
+    slotLabel: (slot: number) => `Photo ${slot}`,
+    emptySlotLabel: (slot: number) => `Add photo ${slot}`,
+    primaryBadge: 'First',
+    moveEarlier: (slot: number) => `Move photo ${slot} earlier`,
+    moveLater: (slot: number) => `Move photo ${slot} later`,
+    removeAt: (slot: number) => `Remove photo ${slot}`,
+    reorderError: 'Could not change the order. Try again.',
+    full: (max: number) => `That is ${max} photos — remove one to add another.`,
   },
 
   hotel: {

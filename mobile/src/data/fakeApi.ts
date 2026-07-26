@@ -45,6 +45,8 @@ import {
   type VocationApi,
   MAX_INTERESTS,
   MAX_ORIENTATIONS,
+  MAX_PHOTOS,
+  type ProfilePhoto,
   type ShowMe,
 } from './contracts';
 
@@ -103,6 +105,8 @@ export class FakeApi implements VocationApi {
   private readonly reports: (ReportInput & { at: number })[] = [];
   /** Object path -> local uri. The fake's stand-in for the storage bucket. */
   private readonly objects = new Map<string, string>();
+  /** Owner -> ordered paths. Slot 1 is the primary, exactly as on the server. */
+  private readonly photoSets = new Map<string, string[]>();
   private uploadFailure: ApiError | null = null;
   private deleteFailure: ApiError | null = null;
   private otpRequestFailure: ApiError | null = null;
@@ -309,6 +313,75 @@ export class FakeApi implements VocationApi {
   }
 
   /* ----------------------------------------------------------------- photos */
+
+  /**
+   * The set, mirroring `own_profile_photos` and the three functions beside it.
+   *
+   * `photoPath` is derived from slot 1 here exactly as `app.sync_primary_photo`
+   * derives it on the server, so a card cannot disagree with a grid.
+   */
+  async getOwnPhotos(): Promise<ProfilePhoto[]> {
+    const userId = await this.requireUserId();
+    return [...(this.photoSets.get(userId) ?? [])].map((path, index) => ({
+      slot: index + 1,
+      path,
+    }));
+  }
+
+  async addProfilePhoto(upload: PhotoUpload): Promise<ProfilePhoto[]> {
+    const userId = await this.requireUserId();
+    if (!this.profiles.get(userId)) {
+      throw new ApiError('NOT_FOUND', 'Finish your profile first.');
+    }
+    const paths = this.photoSets.get(userId) ?? [];
+    if (paths.length >= MAX_PHOTOS) {
+      throw new ApiError('INVALID_INPUT', 'That is nine photos already.');
+    }
+    photoExtensionFor(upload.mimeType);
+    const path = buildPhotoPath(userId, upload.mimeType);
+    this.objects.set(path, upload.uri);
+    this.photoSets.set(userId, [...paths, path]);
+    this.syncPrimaryPhoto(userId);
+    return this.getOwnPhotos();
+  }
+
+  async removeProfilePhotoAt(slot: number): Promise<ProfilePhoto[]> {
+    const userId = await this.requireUserId();
+    const paths = [...(this.photoSets.get(userId) ?? [])];
+    // Idempotent on an empty slot: a retry after a dropped response must not
+    // read as a failure.
+    if (slot >= 1 && slot <= paths.length) {
+      const [removed] = paths.splice(slot - 1, 1);
+      this.objects.delete(removed);
+      this.photoSets.set(userId, paths);
+      this.syncPrimaryPhoto(userId);
+    }
+    return this.getOwnPhotos();
+  }
+
+  async reorderProfilePhotos(paths: string[]): Promise<ProfilePhoto[]> {
+    const userId = await this.requireUserId();
+    const current = this.photoSets.get(userId) ?? [];
+    if (paths.length !== current.length) {
+      throw new ApiError('INVALID_INPUT', 'That is not the whole set.');
+    }
+    if (paths.some((path) => !current.includes(path))) {
+      throw new ApiError('FORBIDDEN', 'That photo is not yours.');
+    }
+    this.photoSets.set(userId, [...paths]);
+    this.syncPrimaryPhoto(userId);
+    return this.getOwnPhotos();
+  }
+
+  /** Slot 1, or nothing. The same invariant the migration holds. */
+  private syncPrimaryPhoto(userId: string): void {
+    const stored = this.profiles.get(userId);
+    if (!stored) return;
+    this.profiles.set(userId, {
+      ...stored,
+      photoPath: this.photoSets.get(userId)?.[0] ?? null,
+    });
+  }
 
   async uploadProfilePhoto(upload: PhotoUpload): Promise<OwnProfile> {
     const userId = await this.requireUserId();

@@ -6,6 +6,7 @@
  * client cannot read another user's row or create an underage profile.
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { File } from 'expo-file-system';
 
 import { ageYears } from '../domain/age';
 import { todayIsoDate } from '../clock';
@@ -22,7 +23,9 @@ import {
   type OwnProfile,
   type PhotoUpload,
   type PresenceAnswer,
+  MAX_PHOTOS,
   type ProfileInput,
+  type ProfilePhoto,
   type ShowMe,
   type ReportInput,
   type RoomKey,
@@ -372,6 +375,71 @@ export class SupabaseApi implements VocationApi {
    * nothing on the server knows about it — the next upload or removal finds it
    * and deletes it, so the leak is bounded by one object per account.
    */
+  /**
+   * The owner's ordered set.
+   *
+   * Uploading and attaching stay two steps, as they were for the single photo:
+   * the object has to exist before the server will accept a path pointing at
+   * it, and an upload that succeeds while the attach fails leaves an object
+   * the cleanup queue is responsible for rather than a half-written profile.
+   */
+  async getOwnPhotos(): Promise<ProfilePhoto[]> {
+    const { data, error } = await this.client.rpc('own_profile_photos');
+    if (error) {
+      throw toApiError(error, 'Could not load your photos.');
+    }
+    return ((data ?? []) as PhotoRow[]).map(toProfilePhoto);
+  }
+
+  async addProfilePhoto(upload: PhotoUpload): Promise<ProfilePhoto[]> {
+    const session = await this.currentSession();
+    if (!session) {
+      throw new ApiError('UNAUTHENTICATED', 'Sign in to continue.');
+    }
+    const existing = await this.getOwnPhotos();
+    if (existing.length >= MAX_PHOTOS) {
+      throw new ApiError('INVALID_INPUT', 'That is nine photos already.');
+    }
+
+    const path = buildPhotoPath(session.userId, upload.mimeType);
+    const bytes = await readLocalFile(upload.uri);
+    if (bytes.byteLength > MAX_PHOTO_BYTES) {
+      throw new ApiError('INVALID_INPUT', 'That image is larger than 5 MB.');
+    }
+
+    const uploaded = await this.client.storage
+      .from(PHOTO_BUCKET)
+      .upload(path, bytes, { contentType: upload.mimeType, upsert: false });
+    if (uploaded.error) {
+      throw toApiError(uploaded.error as PostgresLikeError, 'Could not upload that photo.');
+    }
+
+    const { data, error } = await this.client.rpc('add_profile_photo', { p_path: path });
+    if (error) {
+      // The object is uploaded but attached to nothing. The sweep is what stops
+      // it sitting in a private bucket that nothing points at.
+      await this.sweepPhotoObjects(session.userId, null);
+      throw toApiError(error, 'Could not save that photo.');
+    }
+    return ((data ?? []) as PhotoRow[]).map(toProfilePhoto);
+  }
+
+  async removeProfilePhotoAt(slot: number): Promise<ProfilePhoto[]> {
+    const { data, error } = await this.client.rpc('remove_profile_photo', { p_slot: slot });
+    if (error) {
+      throw toApiError(error, 'Could not remove that photo.');
+    }
+    return ((data ?? []) as PhotoRow[]).map(toProfilePhoto);
+  }
+
+  async reorderProfilePhotos(paths: string[]): Promise<ProfilePhoto[]> {
+    const { data, error } = await this.client.rpc('reorder_profile_photos', { p_paths: paths });
+    if (error) {
+      throw toApiError(error, 'Could not reorder your photos.');
+    }
+    return ((data ?? []) as PhotoRow[]).map(toProfilePhoto);
+  }
+
   async uploadProfilePhoto(upload: PhotoUpload): Promise<OwnProfile> {
     const session = await this.currentSession();
     if (!session) {
@@ -858,26 +926,41 @@ interface BlockRow {
 }
 
 /**
- * Reads a local image into bytes.
+ * The picked file, as bytes.
  *
- * `fetch` on a `file://` URI is how React Native exposes the picker's result,
- * and an `ArrayBuffer` is what supabase-js wants — passing the URI string
- * straight through would upload the text of the path, which is the sort of
- * thing that only shows up when someone looks at the stored image.
+ * This used to be `fetch(uri).then(r => r.arrayBuffer())`, which is the
+ * idiomatic-looking version and does not survive contact with either platform.
+ * `fetch` reaches the network stack: on Android that is OkHttp, which has no
+ * handler for the `file` scheme at all, so every upload failed there with a
+ * bare "Network request failed". On iOS the request succeeds, and then
+ * `arrayBuffer()` goes through React Native's `FileReader`, which implements it
+ * by asking the native module for a **base64 data URL** and decoding it in JS —
+ * a whole extra copy of a multi-megabyte image, in string form, on the JS
+ * thread.
+ *
+ * `expo-file-system`'s `File` implements `Blob` and reads the bytes natively,
+ * which is the supported way to do this on SDK 54. It is a dependency added at
+ * the version `expo` itself pins for this SDK — not an SDK change.
+ *
+ * The failure is deliberately distinguishable from an upload failure: those are
+ * two different things to fix, and collapsing them into one "could not upload"
+ * is what made this hard to see in the first place.
  */
 async function readLocalFile(uri: string): Promise<ArrayBuffer> {
   try {
-    const response = await fetch(uri);
-    if (!response.ok) {
-      throw new ApiError('INVALID_INPUT', 'Could not read that image.');
-    }
-    return await response.arrayBuffer();
-  } catch (error) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
+    return await new File(uri).arrayBuffer();
+  } catch {
     throw new ApiError('INVALID_INPUT', 'Could not read that image.');
   }
+}
+
+interface PhotoRow {
+  slot: number;
+  path: string;
+}
+
+function toProfilePhoto(row: PhotoRow): ProfilePhoto {
+  return { slot: row.slot, path: row.path };
 }
 
 function toChatMessage(row: MessageRow): ChatMessage {
