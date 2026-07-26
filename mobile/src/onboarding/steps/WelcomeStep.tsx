@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LanguageSwitch } from '../../components/LanguageSwitch';
 import { Button, Gap } from '../../components/ui';
 import { COPY } from '../../copy';
 import { useAppStore } from '../../state/AppStore';
@@ -20,6 +21,11 @@ export function WelcomeStep({ go }: StepProps) {
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']} testID="screen-welcome">
       {/* Sea into sand, faintly. The subject is a hotel by water. */}
       <View style={styles.wash} />
+      {/* The first decision on the first screen: which language the rest of
+          this conversation happens in. */}
+      <View style={styles.languageRow}>
+        <LanguageSwitch testID="welcome-language" />
+      </View>
       <View style={styles.content}>
         <Text accessibilityRole="header" style={styles.wordmark}>
           {COPY.appName}
@@ -55,6 +61,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.accentSoft,
     borderBottomLeftRadius: 120,
   },
+  languageRow: { alignItems: 'flex-end', padding: spacing.md },
   content: { flex: 1, justifyContent: 'flex-end', padding: spacing.md },
   wordmark: {
     fontFamily: fontFamily.display,

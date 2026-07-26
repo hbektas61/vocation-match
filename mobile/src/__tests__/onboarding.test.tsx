@@ -17,7 +17,9 @@ import React from 'react';
 import { BackHandler } from 'react-native';
 
 import App from '../../App';
+import { COPY, setLocale } from '../copy';
 import { FakeApi, getApi, MAX_INTERESTS, setApi } from '../data';
+import { tr } from '../i18n/tr';
 import { INTEREST_CHOICES } from '../fixtures/interests';
 import { onboard, onboardWithHotel, authenticateWithPhone } from '../testSupport/onboarding';
 
@@ -46,6 +48,31 @@ async function relaunch(): Promise<void> {
   });
   await renderAsync(<App />);
 }
+
+describe('the language', () => {
+  // Module state: a suite that leaves the app speaking Turkish would fail
+  // every English assertion that runs after it.
+  afterEach(() => setLocale('en'));
+
+  it('switches the whole conversation from the first screen', async () => {
+    await renderAsync(<App />);
+    await fireEvent.press(await screen.findByTestId('welcome-language-tr'));
+
+    // The screen itself re-renders in Turkish…
+    expect(await screen.findByText(tr.onboarding.welcome.headline)).toBeTruthy();
+
+    // …and the choice travels with the flow rather than living on one screen.
+    await fireEvent.press(screen.getByTestId('welcome-phone'));
+    expect(await screen.findByText(tr.onboarding.promise.headline)).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    expect(await screen.findByText(tr.onboarding.phone.headline)).toBeTruthy();
+  });
+
+  it('speaks English by default, so nothing changed for existing tests', async () => {
+    await renderAsync(<App />);
+    expect(await screen.findByText(COPY.onboarding.welcome.headline)).toBeTruthy();
+  });
+});
 
 describe('moving through the wizard', () => {
   it('keeps what was typed when you go back and come forward again', async () => {

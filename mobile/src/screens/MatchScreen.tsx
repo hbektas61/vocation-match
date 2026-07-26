@@ -48,7 +48,7 @@ export function MatchScreen({ navigation, route }: RootScreenProps<'Match'>) {
         <View style={styles.faces}>
           <Avatar
             url={state.profile?.photoPath ? photoUrls[state.profile.photoPath] ?? null : null}
-            name={state.profile?.displayName ?? 'You'}
+            name={state.profile?.displayName ?? COPY.match.selfFallback}
             size="lg"
           />
           <View style={styles.facesOverlap}>
@@ -74,12 +74,11 @@ export function MatchScreen({ navigation, route }: RootScreenProps<'Match'>) {
       ) : null}
 
       <Body>
-        {`You and ${match.displayName} liked each other. `}
-        {COPY.match.body}
+        {`${COPY.match.likedEachOther(match.displayName)} ${COPY.match.body}`}
       </Body>
       <Gap size="sm" />
       <Button
-        label={`Say hello to ${match.displayName}`}
+        label={COPY.match.sayHelloCta(match.displayName)}
         onPress={() => navigation.replace('Chat', { matchId: match.matchId })}
         testID="match-open-chat"
       />

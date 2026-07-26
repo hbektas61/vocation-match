@@ -1,3 +1,4 @@
+import type { Locale } from '../copy';
 import type {
   ActiveHotel,
   AuthSession,
@@ -30,6 +31,12 @@ export function toDomainProfile(remote: OwnProfile): Profile {
 }
 
 export interface AppState {
+  /**
+   * Which language the app speaks. The words themselves live in the COPY
+   * binding; this field exists so choosing a language re-renders the tree
+   * that reads them.
+   */
+  locale: Locale;
   bootstrapStatus: BootstrapStatus;
   /** Profile/hotel hydration after a session is found or newly created. */
   accountLoadStatus: AccountLoadStatus;
@@ -54,6 +61,7 @@ export interface AppState {
 }
 
 export type AppAction =
+  | { type: 'SET_LOCALE'; locale: Locale }
   | { type: 'CONFIRM_AGE' }
   | { type: 'BOOTSTRAP_RESOLVED'; session: AuthSession | null; profile: Profile | null }
   | { type: 'AUTH_SUCCESS'; session: AuthSession; profile: Profile | null }
@@ -81,6 +89,7 @@ export type AppAction =
 
 export function initialAppState(): AppState {
   return {
+    locale: 'en',
     bootstrapStatus: 'loading',
     accountLoadStatus: 'idle',
     ageConfirmed: false,
@@ -98,6 +107,11 @@ export function initialAppState(): AppState {
 
 export function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
+
+    case 'SET_LOCALE':
+      // The module binding is switched by the dispatcher before this runs;
+      // the state change is what makes every COPY reader render again.
+      return { ...state, locale: action.locale };
 
     case 'CONFIRM_AGE':
       return { ...state, ageConfirmed: true };

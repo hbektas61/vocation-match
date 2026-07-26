@@ -12,6 +12,7 @@
  * survives exactly until the next person writes a headline. So it is a test.
  */
 import { COPY, COPY_FOR } from '../copy';
+import { tr, trFor } from '../i18n/tr';
 
 /** Every string the app can say, flattened out of the nested copy object. */
 function allStrings(value: unknown, path = ''): { path: string; text: string }[] {
@@ -120,5 +121,60 @@ describe('what the app is allowed to claim', () => {
     expect(COPY.deleteAccount.whatStays).toMatch(/report/i);
     expect(COPY.deleteAccount.refused).toMatch(/nothing was deleted/i);
     expect(COPY.deleteAccount.unconfirmed).toMatch(/could not confirm/i);
+  });
+});
+
+/**
+ * The same rule, in the second language. A promise that holds in English and
+ * breaks in Turkish is broken — the audit has to read what the person reads.
+ * Turkish inflects, so these match stems rather than whole words.
+ */
+const trSentences = [...allStrings(tr), ...allStrings(trFor)];
+
+const TR_MAY_DENY = new Set([
+  'upcoming.explainer',
+  'discovery.overlapUpcoming',
+  'onboarding.welcome.body',
+  // The delete-account promise names the report record it keeps; the sentence
+  // exists to deny that deleting erases it.
+  'deleteAccount.whatStays',
+]);
+const TR_DENIAL = /\b(kimse|asla|hiç|yok|istenmez|istemez|değil)/i;
+
+function trOffences(forbidden: RegExp) {
+  return trSentences
+    .filter(({ path, text }) => {
+      if (!forbidden.test(text)) return false;
+      return !(TR_MAY_DENY.has(path) && TR_DENIAL.test(text));
+    })
+    .map(({ path, text }) => `${path}: ${text}`);
+}
+
+describe('what the app is allowed to claim, in Turkish', () => {
+  it('has Turkish copy to check at all', () => {
+    expect(trSentences.length).toBeGreaterThan(80);
+  });
+
+  it.each([
+    ['doğrulanmış bir şey', /doğrulan|onaylanmış|onaylandı/i],
+    ['bir rezervasyon', /rezervasyon/i],
+    ['otelin kefil olması', /otel onay|kefil/i],
+    ['bir garanti', /garanti/i],
+    ['gerçek misafir', /gerçek misafir/i],
+    ['kimlik kontrolü', /pasaport|kimlik kontrol/i],
+    ['birinin tam olarak ne kadar uzakta olduğu', /\d+\s*(m|metre|km)\s+uzak(lık|ta)\b.*göster/i],
+  ])('asla şunu iddia etmez: %s', (_label, forbidden) => {
+    expect(trOffences(forbidden)).toEqual([]);
+  });
+
+  it('Yaklaşan odasını kendi beyanın olarak anlatır', () => {
+    expect(tr.upcoming.statusBadge).toMatch(/beyan/i);
+    expect(tr.upcoming.explainer).toMatch(/beyan/i);
+    expect(tr.upcoming.explainer).toMatch(/rezervasyon|kimlik/i);
+  });
+
+  it('Şu An Burada odasını konum değil yakınlık olarak anlatır', () => {
+    expect(tr.hereNow.explainer).toMatch(/500\s*m/i);
+    expect(tr.hereNow.explainer).toMatch(/asla gösterilmez ve saklanmaz/i);
   });
 });

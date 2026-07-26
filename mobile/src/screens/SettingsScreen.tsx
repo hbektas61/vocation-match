@@ -3,6 +3,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
+import { LanguageSwitch } from '../components/LanguageSwitch';
 import { PhotoGrid } from '../components/PhotoGrid';
 import { Avatar, Body, Button, Caption, Card, EmptyState, Heading, Notice, Screen, SectionLabel, Title } from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
@@ -156,6 +157,10 @@ export function SettingsScreen() {
           <PhotoGrid photos={photos} onChanged={setPhotos} testID="settings-photo-grid" />
         </Card>
       ) : null}
+      <Card>
+        <SectionLabel>{COPY.language.label}</SectionLabel>
+        <LanguageSwitch testID="settings-language" />
+      </Card>
       <Card>
         <SectionLabel>{COPY.settings.accountTitle}</SectionLabel>
         <Button

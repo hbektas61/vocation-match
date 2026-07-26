@@ -1488,3 +1488,36 @@ onboarding → rooms → match → chat → inbox → settings, screenshots of e
 two critique passes (the second caught the doubled match title, the
 hotel-name repetition, and a ribbon wrapping to two lines). Zero console
 errors on the walk. 378 jest tests across 33 suites, all green.
+
+
+## 2026-07-26 — the app learns Turkish
+
+End-to-end EN/TR (D-030). What made it cheap is what the codebase had already
+paid for: every sentence lived in one file. So the language is one live
+binding — `COPY` — reassigned by `setLocale`; no call site changed. English
+defines the type, Turkish must satisfy it, and the compiler is what stops a
+sentence shipping in one language.
+
+The choice is on the first screen (two pills, each labelled in its own
+language, because the person who needs to switch is the one who cannot read
+the current one), repeatable in Settings, persisted through the same storage
+adapter the session uses. The stored preference is applied during bootstrap,
+so the only thing that can flash English is the spinner.
+
+Three things worth keeping:
+
+- **A proxy was the obvious mechanism and the wrong one.** `Object.entries`
+  sees nothing through a proxy over an empty target — and that is exactly how
+  the D-007 trust audit flattens the copy. The audit must be able to see the
+  mechanism, so the mechanism is a plain reassigned binding.
+- **The trust audit now runs in both languages**, with Turkish stem-matching
+  (rezervasyon/doğrulan/kefil…), because a promise that holds in English and
+  breaks in Turkish is broken.
+- **The browser walk caught four stray hardcoded strings** the type system
+  never could — "Rooms" on the empty tab, "Open chat" in an accessibility
+  label, the match sentence, and the room name inside the ribbon. Grep found
+  three more siblings once the first appeared. All copy now goes through COPY.
+
+Verified: full TR walk in a browser at 375×720 — welcome through rooms,
+discovery, and a match, every visible sentence Turkish, zero console errors —
+plus 390 jest tests across 33 suites including the bilingual audit.

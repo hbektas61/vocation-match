@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { COPY } from '../copy';
+
 import {
   ACTION_TOUCH,
   color,
@@ -488,7 +490,7 @@ export function RoomRibbon({
   onPhoto?: boolean;
   testID?: string;
 }) {
-  const state = room === 'HERE_NOW' ? 'Here now' : 'Upcoming';
+  const state = room === 'HERE_NOW' ? COPY.rooms.hereNowPlate : COPY.rooms.upcomingPlate;
   return (
     <View
       style={[styles.ribbon, onPhoto ? styles.ribbonOnPhoto : styles.ribbonInline]}

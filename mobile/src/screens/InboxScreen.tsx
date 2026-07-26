@@ -28,7 +28,7 @@ function inboxRowLabel(match: MatchSummary): string {
     parts.push(COPY.inbox.closedLabel);
   }
   parts.push(match.lastMessageBody ?? COPY.inbox.sayHelloPreview);
-  parts.push('Open chat');
+  parts.push(COPY.inbox.openChatHint);
   return parts.join('. ');
 }
 

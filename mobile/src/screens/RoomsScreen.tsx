@@ -76,7 +76,7 @@ export function RoomsScreen() {
   if (error) {
     return (
       <Screen safeTop testID="screen-rooms">
-        <Title>Rooms</Title>
+        <Title>{COPY.rooms.plainTitle}</Title>
         <Notice message={error} tone="error" testID="rooms-error" />
       </Screen>
     );
@@ -85,7 +85,7 @@ export function RoomsScreen() {
   if (rooms === null) {
     return (
       <Screen safeTop testID="screen-rooms">
-        <Title>Rooms</Title>
+        <Title>{COPY.rooms.plainTitle}</Title>
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="rooms-loading" />
       </Screen>
     );
@@ -97,7 +97,7 @@ export function RoomsScreen() {
     // screen that is blocked.
     return (
       <Screen safeTop testID="screen-rooms">
-        <Title>Rooms</Title>
+        <Title>{COPY.rooms.plainTitle}</Title>
         <Notice message={`${COPY.roomReason.NO_ACTIVE_HOTEL} ${COPY.trust.oneHotel}`} />
         <Button
           label={COPY.hotel.chooseCta}

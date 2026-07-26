@@ -119,11 +119,11 @@ function MainTabs() {
         },
       }}
     >
-      <Tabs.Screen name="Hotel" component={HotelScreen} />
-      <Tabs.Screen name="Rooms" component={RoomsScreen} />
-      <Tabs.Screen name="Discovery" component={DiscoveryScreen} />
-      <Tabs.Screen name="Inbox" component={InboxScreen} />
-      <Tabs.Screen name="Settings" component={SettingsScreen} />
+      <Tabs.Screen name="Hotel" component={HotelScreen} options={{ title: COPY.tabs.hotel }} />
+      <Tabs.Screen name="Rooms" component={RoomsScreen} options={{ title: COPY.tabs.rooms }} />
+      <Tabs.Screen name="Discovery" component={DiscoveryScreen} options={{ title: COPY.tabs.discovery }} />
+      <Tabs.Screen name="Inbox" component={InboxScreen} options={{ title: COPY.tabs.inbox }} />
+      <Tabs.Screen name="Settings" component={SettingsScreen} options={{ title: COPY.tabs.settings }} />
     </Tabs.Navigator>
   );
 }
@@ -193,7 +193,7 @@ export function RootNavigator() {
         // above a back arrow made the moment read like a form.
         options={{ headerShown: false, presentation: 'modal' }}
       />
-      <Stack.Screen name="Chat" component={ChatScreen} options={{ title: 'Chat' }} />
+      <Stack.Screen name="Chat" component={ChatScreen} options={{ title: COPY.chat.title }} />
       <Stack.Screen
         name="EditProfile"
         component={EditProfileScreen}
@@ -204,7 +204,7 @@ export function RootNavigator() {
         component={ChooseHotelScreen}
         options={{ title: COPY.hotel.chooseTitle, presentation: 'modal' }}
       />
-      <Stack.Screen name="ReportBlock" component={ReportBlockScreen} options={{ title: 'Safety' }} />
+      <Stack.Screen name="ReportBlock" component={ReportBlockScreen} options={{ title: COPY.safety.title }} />
     </Stack.Navigator>
   );
 }
