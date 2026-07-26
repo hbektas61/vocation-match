@@ -766,20 +766,14 @@ const styles = StyleSheet.create({
   /** A composer grows downward, so its text starts at the top and stays there. */
   inputShellMultiline: { alignItems: 'stretch', paddingVertical: spacing.sm },
   /**
-   * The exact colour the owner asked for, plus the two things that make it
-   * perceivable: a heavier edge, and a ring in the darker sibling at 5.96:1 on
-   * white. `shadow*` draws the ring on iOS and web; `elevation` is deliberately
-   * left off, since on Android it would render as a drop shadow rather than a
-   * ring — there the extra border weight and the fill are what change.
+   * The exact colour the owner asked for, on the border and only on the border
+   * — the owner tried the filled version and asked for it to go. What keeps
+   * the state perceivable without the fill is the weight: 1.5 to 2.5 is a
+   * visible change even for someone the hue does not register for.
    */
   inputShellFocused: {
     borderColor: color.accent,
     borderWidth: 2.5,
-    backgroundColor: color.accentSoft,
-    shadowColor: color.accentDeep,
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    shadowOffset: { width: 0, height: 0 },
   },
   inputShellInvalid: { borderColor: color.danger },
   input: {

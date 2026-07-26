@@ -13,7 +13,22 @@ and none of the steps here should be automated with one.
 
 The hosted staging project is `vocation-match-staging`
 (`ftdqkhkeluokpdghzubp`, Frankfurt). All migrations through
-`20260725002300` are applied and match the local migration history.
+`20260726000400` are applied and match the local migration history.
+
+One thing `supabase db push` does not do: seed data. `supabase/seed.sql` (the
+five pilot hotels) has to be applied to the hosted project separately — the
+first pilot run surfaced this as every hotel search answering "no results",
+because the schema was there and the catalogue was empty. It is idempotent;
+running it again is safe. Without `psql` on the machine, the management API
+runs it:
+
+```bash
+curl -s -X POST \
+  "https://api.supabase.com/v1/projects/ftdqkhkeluokpdghzubp/database/query" \
+  -H "Authorization: Bearer $(cat ~/.supabase/access-token)" \
+  -H "Content-Type: application/json" \
+  -d "$(python3 -c 'import json,pathlib;print(json.dumps({"query":pathlib.Path("supabase/seed.sql").read_text()}))')"
+```
 
 - The app now uses phone OTP only. Email/password entry has been removed and
   the repository configuration disables email sign-up.

@@ -1284,3 +1284,31 @@ Two things worth keeping from this:
 Verification after the fixes: `bash scripts/check.sh` entirely green — 381 SQL
 assertions, migration replay, the contract check, `tsc`,
 `eslint --max-warnings 0`, 375 jest tests across 33 suites, the web bundle.
+
+
+## 2026-07-26 — first hands-on pilot feedback, and a staging drift
+
+The owner opened the app. Two reports, both real.
+
+**"Why does the input background turn purple?"** The focus state filled the
+box with `accentSoft` and drew an outer ring, on the reasoning in D-021 — the
+border colour alone is 1.55:1 and invisible to many. The owner saw it and
+wants the border only. Done: the fill and the ring are gone, and the weight
+change (1.5 → 2.5) is now the whole companion cue. D-021 is amended in place
+rather than silently contradicted, with the floor stated: never colour alone.
+
+**"Every hotel search says not found."** Not a client bug. Staging was missing
+all four of today's migrations — `supabase db push` had never been run for
+them — and, separately, the hotels catalogue on staging was **empty**: nothing
+in the setup docs said seed.sql had to be applied to the hosted project, and it
+never had been. So the schema half of the app was a day behind and the data
+half had never existed. Both fixed: migrations pushed (all four applied
+cleanly, including the backfill), seed run through the management API since
+this machine has no `psql`, verified with `search_hotels('lara')` answering
+Lara Shore Resort server-side. The docs now carry both the new high-water mark
+and the seed step, so the next environment does not rediscover this.
+
+Worth writing down as a habit: `scripts/check.sh` proves the migrations against
+a throwaway container, and nothing in the loop proves them against staging.
+Until a staging check exists, "all checks passed" and "staging works" are two
+different sentences.

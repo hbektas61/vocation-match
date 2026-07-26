@@ -47,11 +47,12 @@ describe('focus', () => {
     fireEvent(screen.getByTestId('f'), 'focus');
     const focused = shellOf('f');
 
-    // Weight and fill change too, so the state survives being seen by someone
-    // for whom the hue does not register at all.
+    // The weight is the companion cue. The fill and the outer ring were tried
+    // and the owner asked for them to go — the border is the whole signal now,
+    // so its change in weight is what has to survive for someone the hue does
+    // not register for.
     expect(focused.borderWidth).toBeGreaterThan(Number(resting.borderWidth));
-    expect(focused.backgroundColor).not.toBe(resting.backgroundColor);
-    expect(focused.shadowColor).toBe(color.accentDeep);
+    expect(focused.backgroundColor).toBe(resting.backgroundColor);
   });
 
   it('goes back to a neutral edge on blur', () => {
