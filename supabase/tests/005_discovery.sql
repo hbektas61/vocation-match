@@ -99,8 +99,8 @@ select bag_eq(
       join pg_namespace n on n.oid = p.pronamespace
       join unnest(p.proargnames, p.proargmodes) as a(attname, mode) on true
      where n.nspname = 'public' and p.proname = 'discovery_feed' and a.mode = 't'$$,
-  $$values ('user_id'::text),('display_name'),('age'),('bio'),('photo_path'),('interests'),
-           ('gender'),('orientations')$$,
+  $$values ('user_id'::text),('display_name'),('age'),('bio'),('photo_path'),('photo_paths'),
+           ('interests'),('gender'),('orientations')$$,
   'the feed returns exactly the card fields — no birthdate, no email, no location, no show_me'
 );
 
@@ -358,6 +358,33 @@ select is(
     where table_name = 'discovery_feed' and column_name = 'show_me'),
   0,
   'show_me is never returned to anybody else'
+);
+
+-- ------------------------------------------------- the card's photo set
+-- Owner decision amending D-026: the card carries every photo, in order.
+select tests.clear_auth();
+insert into storage.objects (bucket_id, name, owner)
+values
+  ('profile-photos', '00000000-0000-0000-0000-0000000000a1/cardset1aaaa2222bbbb3333.jpg',
+   '00000000-0000-0000-0000-0000000000a1'),
+  ('profile-photos', '00000000-0000-0000-0000-0000000000a1/cardset4cccc5555dddd6666.jpg',
+   '00000000-0000-0000-0000-0000000000a1');
+
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
+select public.add_profile_photo('00000000-0000-0000-0000-0000000000a1/cardset1aaaa2222bbbb3333.jpg');
+select public.add_profile_photo('00000000-0000-0000-0000-0000000000a1/cardset4cccc5555dddd6666.jpg');
+
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
+select is(
+  (select f.photo_paths from public.discovery_feed('UPCOMING') f where f.display_name = 'Ada'),
+  array['00000000-0000-0000-0000-0000000000a1/cardset1aaaa2222bbbb3333.jpg',
+        '00000000-0000-0000-0000-0000000000a1/cardset4cccc5555dddd6666.jpg'],
+  'the card carries the whole set, in the owner''s order'
+);
+select is(
+  (select f.photo_path from public.discovery_feed('UPCOMING') f where f.display_name = 'Ada'),
+  '00000000-0000-0000-0000-0000000000a1/cardset1aaaa2222bbbb3333.jpg',
+  'and the single photo_path is still the primary, so nothing built on it moves'
 );
 
 select * from finish(true);

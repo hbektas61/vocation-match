@@ -626,7 +626,10 @@ export class SupabaseApi implements VocationApi {
       age: row.age,
       bio: row.bio ?? null,
       photoPath: row.photo_path ?? null,
+      photoPaths: row.photo_paths ?? [],
       interests: row.interests ?? [],
+      gender: row.gender ?? null,
+      orientations: row.orientations ?? [],
     }));
   }
 
@@ -835,6 +838,9 @@ interface CandidateRow {
   bio: string | null;
   photo_path: string | null;
   interests: string[] | null;
+  photo_paths: string[] | null;
+  gender: string | null;
+  orientations: string[] | null;
 }
 
 interface SwipeRow {

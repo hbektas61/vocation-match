@@ -184,6 +184,12 @@ export interface CandidateCard {
   age: number;
   bio: string | null;
   photoPath: string | null;
+  /**
+   * Every photo, in the owner's order — the owner's 2026-07-26 amendment to
+   * D-026: one photo on a card is not believable. `photoPath` stays as the
+   * primary for the surfaces that only need one.
+   */
+  photoPaths: string[];
   interests: string[];
   /** Present only when its owner published it; `null` otherwise. */
   gender: string | null;

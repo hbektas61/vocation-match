@@ -27,6 +27,8 @@ export function DiscoveryScreen() {
   const [deckError, setDeckError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  /** Which of the candidate's photos is showing; reset per candidate. */
+  const [photoIndex, setPhotoIndex] = useState(0);
 
   // Same as Rooms: whether there is an active hotel comes from the server, and
   // the cached card only ever supplies its name.
@@ -107,7 +109,20 @@ export function DiscoveryScreen() {
   const candidate = visibleDeck[0] ?? null;
   // Only the card on top: signing a URL for a deck of twenty would hand out
   // nineteen readable links for people the user may never actually see.
-  const photoPaths = useMemo(() => [candidate?.photoPath ?? null], [candidate?.photoPath]);
+  const cardPaths = useMemo(
+    () =>
+      candidate
+        ? candidate.photoPaths.length > 0
+          ? candidate.photoPaths
+          : candidate.photoPath
+            ? [candidate.photoPath]
+            : []
+        : [],
+    [candidate],
+  );
+  const photoPaths = cardPaths;
+  useEffect(() => setPhotoIndex(0), [candidate?.userId]);
+  const shownPath = cardPaths[Math.min(photoIndex, Math.max(cardPaths.length - 1, 0))] ?? null;
   const photoUrls = usePhotoUrls(photoPaths);
 
   if (!hasHotel) {
@@ -206,12 +221,12 @@ export function DiscoveryScreen() {
            room · hotel bond — as its only tag, and the three actions floating
            at its foot. No sections to scroll; the decision is made here. */
         <View style={styles.card} testID={`candidate-${candidate.userId}`}>
-          {candidate.photoPath && photoUrls[candidate.photoPath] ? (
+          {shownPath && photoUrls[shownPath] ? (
             <Image
-              source={{ uri: photoUrls[candidate.photoPath] }}
+              source={{ uri: photoUrls[shownPath] }}
               style={styles.cardPhoto}
               resizeMode="cover"
-              accessibilityLabel={`Photo of ${candidate.displayName}`}
+              accessibilityLabel={`Photo ${photoIndex + 1} of ${cardPaths.length} of ${candidate.displayName}`}
               testID={`candidate-photo-${candidate.userId}`}
             />
           ) : (
@@ -220,9 +235,40 @@ export function DiscoveryScreen() {
             </View>
           )}
 
+          {/* Tap left to go back a photo, right to go forward — the grammar
+              every story viewer has taught. Under the actions, over the photo. */}
+          {cardPaths.length > 1 ? (
+            <>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Previous photo"
+                onPress={() => setPhotoIndex((i) => Math.max(0, i - 1))}
+                style={styles.tapZoneLeft}
+                testID="card-photo-previous"
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Next photo"
+                onPress={() => setPhotoIndex((i) => Math.min(cardPaths.length - 1, i + 1))}
+                style={styles.tapZoneRight}
+                testID="card-photo-next"
+              />
+            </>
+          ) : null}
+
           {/* Name at the top over its own scrim, the way the reference sets
               it — light weight, because the photo is the loud one here. */}
           <View style={styles.cardTop} pointerEvents="none">
+            {cardPaths.length > 1 ? (
+              <View style={styles.segments} testID="card-photo-segments">
+                {cardPaths.map((path, index) => (
+                  <View
+                    key={path}
+                    style={[styles.segment, index === photoIndex && styles.segmentActive]}
+                  />
+                ))}
+              </View>
+            ) : null}
             <Text style={styles.cardName}>
               {`${candidate.displayName}, ${candidate.age}`}
             </Text>
@@ -321,6 +367,33 @@ const styles = StyleSheet.create({
     fontSize: 128,
     lineHeight: 140,
     color: palette.placeholder,
+  },
+  segments: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: spacing.xs,
+  },
+  segment: {
+    flex: 1,
+    height: 3,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
+  },
+  segmentActive: { backgroundColor: '#FFFFFF' },
+  /** Below the top scrim and the action row, so both stay tappable. */
+  tapZoneLeft: {
+    position: 'absolute',
+    left: 0,
+    top: 110,
+    bottom: 120,
+    width: '40%',
+  },
+  tapZoneRight: {
+    position: 'absolute',
+    right: 0,
+    top: 110,
+    bottom: 120,
+    width: '40%',
   },
   cardTop: {
     position: 'absolute',

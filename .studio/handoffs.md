@@ -1558,3 +1558,28 @@ list, Heteroseksüel…Sorgulama sürecinde, Kadınlar/Erkekler/Herkes.
 Verified on the browser walk in Turkish — the half-typed mask, the stacked
 gender list, the show-me pills, all screenshotted — and 390 jest tests across
 33 suites.
+
+
+## 2026-07-26 — the card carries the whole set (D-026 amended, by the owner)
+
+The owner approved what the deck redesign had deliberately left out: the
+photo-pager segments, and with them the whole photo set on the card. "One
+photo is not believable" — and that is a product judgement the privacy rule
+was his to trade against.
+
+What actually changed is small, and why is worth recording: the storage read
+policy (`app.may_view_photo`) has always authorised a viewer **per owner**,
+not per path. Anyone who could see the first photo could already have read
+slots 2–9 had they known the names; the unguessable name was the only
+barrier. So the amendment shares names with exactly the people the policy
+already admits — `discovery_feed` gains `photo_paths` in the owner's order,
+`photo_path` stays as the primary so the inbox and match surfaces move
+nothing, and no policy changed.
+
+The card gained the reference's segment bars and tap-left/tap-right photo
+navigation, with no wrap at the ends (wrapping makes people lose their
+place). The UI test stubs the feed at the API instance, because the fake's
+fixture candidates own no photos — what is under test is the card.
+
+Applied to staging with `supabase db push` in the same sitting, since the
+owner tests there — the seed-gap lesson from this morning, remembered.

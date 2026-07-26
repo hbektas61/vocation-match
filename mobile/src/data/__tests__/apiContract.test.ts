@@ -286,6 +286,7 @@ describe('VocationApi contract (in-memory implementation)', () => {
           'interests',
           'orientations',
           'photoPath',
+          'photoPaths',
           'userId',
         ]);
         expect(card.age).toBeGreaterThanOrEqual(18);

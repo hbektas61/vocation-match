@@ -593,6 +593,7 @@ export class FakeApi implements VocationApi {
         age: candidate.age,
         bio: candidate.bio,
         photoPath: null,
+        photoPaths: [],
         interests: candidate.interests,
         gender: candidate.showGender ? candidate.gender : null,
         orientations: candidate.showOrientation ? candidate.orientations : [],
