@@ -88,11 +88,19 @@ end;
 $$;
 
 -- An auth user plus an adult profile: the normal starting state for a test.
+--
+-- Finished by default, because "a member" means somebody who got all the way
+-- in. A draft is the exception and has to be asked for, which is what keeps
+-- the incomplete-profile tests honest — they say what they are testing rather
+-- than relying on a fixture happening to leave a column null.
 create or replace function tests.create_member(
   p_email     text,
   p_id        uuid default null,
   p_name      text default null,
-  p_birthdate date default null
+  p_birthdate date default null,
+  p_gender    text default 'WOMAN',
+  p_show_me   text default 'EVERYONE',
+  p_complete  boolean default true
 )
 returns uuid
 language plpgsql
@@ -106,6 +114,27 @@ begin
   values (v_id,
           coalesce(p_name, split_part(p_email, '@', 1)),
           coalesce(p_birthdate, (current_date - interval '30 years')::date));
+
+  -- The identity columns are set separately and only if they exist yet.
+  -- `verify-migration-replay.sh` seeds rows partway through the migration list
+  -- precisely so that later migrations meet a database with data in it, which
+  -- means this helper has to work on both sides of the migration that adds
+  -- them. Leaving the rows without a completion mark is also what gives that
+  -- migration's backfill something real to back-fill.
+  if exists (
+    select 1 from information_schema.columns
+     where table_schema = 'public' and table_name = 'profiles'
+       and column_name = 'gender_identity'
+  ) then
+    execute format(
+      'update public.profiles
+          set gender_identity = %L, show_me = %L, onboarding_completed_at = %s
+        where id = %L',
+      p_gender, p_show_me,
+      case when p_complete then 'now()' else 'null' end,
+      v_id);
+  end if;
+
   return v_id;
 end;
 $$;

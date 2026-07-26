@@ -22,7 +22,6 @@ import { FakeApi, setApi } from '../data';
 import {
   authenticateWithPhone,
   onboardToSettings,
-  onboardToTeaching,
   requestPhoneCode,
 } from '../testSupport/onboarding';
 
@@ -91,15 +90,6 @@ describe('what gets announced', () => {
     expect(spoken()).toContain(COPY.onboarding.birthdate.headline);
   });
 
-  it('names each teaching card, which replaces the one before it in place', async () => {
-    await onboardToTeaching();
-    expect(await screen.findByTestId('teaching-next')).toBeTruthy();
-    announced = [];
-
-    await fireEvent.press(screen.getByTestId('teaching-next'));
-
-    expect(spoken()).toContain(COPY.onboarding.teaching.hereNow.title);
-  });
 
   it('reads the whole delete-account warning, not only its last sentence', async () => {
     await onboardToSettings();

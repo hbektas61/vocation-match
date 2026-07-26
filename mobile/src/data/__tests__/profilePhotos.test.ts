@@ -138,9 +138,15 @@ describe('profile photos through the API', () => {
       'bio',
       'birthdate',
       'displayName',
+      'gender',
       'id',
       'interests',
+      'onboardingCompletedAt',
+      'orientations',
       'photoPath',
+      'showGender',
+      'showMe',
+      'showOrientation',
     ]);
   });
 

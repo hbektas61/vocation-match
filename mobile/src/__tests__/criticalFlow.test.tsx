@@ -6,7 +6,7 @@ import { COPY } from '../copy';
 import { ApiError, FakeApi, getApi, setApi } from '../data';
 import {
   authenticateWithPhone,
-  onboard,
+  onboardWithHotel,
   requestPhoneCode,
 } from '../testSupport/onboarding';
 
@@ -27,13 +27,13 @@ afterEach(() => {
  * only way into the account, whether it already exists or is new.
  */
 async function onboardAndActivateHotel() {
-  await onboard('Deniz');
+  await onboardWithHotel('Deniz');
   expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
 }
 
 /** From the Rooms tab, opens Here Now and simulates an in-range check. */
 async function checkInAtHotel() {
-  await fireEvent.press(screen.getByText('Rooms'));
+  await fireEvent.press(screen.getByRole('button', { name: 'Rooms' }));
   await fireEvent.press(await screen.findByTestId('open-here-now'));
   await fireEvent.press(await screen.findByTestId('simulate-near'));
   expect(await screen.findByText(/You are in/)).toBeTruthy();
@@ -105,7 +105,7 @@ describe('rooms and hotel switching', () => {
   it('shows the server-decided reason a room is still closed', async () => {
     await onboardAndActivateHotel();
 
-    await fireEvent.press(screen.getByText('Rooms'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Rooms' }));
     expect(
       await screen.findByText('Closed — declare your stay dates to enter.'),
     ).toBeTruthy();
@@ -122,11 +122,14 @@ describe('rooms and hotel switching', () => {
     ).toBeTruthy();
 
     await fireEvent.press(screen.getByText('Hotel'));
+    // The search box still holds what the first hotel was found with, and the
+    // list only ever shows what the query returned.
+    await fireEvent.changeText(await screen.findByTestId('hotel-search'), 'bosphorus');
     await fireEvent.press(await screen.findByTestId('activate-hotel-bosphorus-garden'));
     await fireEvent.press(await screen.findByTestId('confirm-switch'));
     expect(await screen.findByText(/Switched hotels/)).toBeTruthy();
 
-    await fireEvent.press(screen.getByText('Rooms'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Rooms' }));
     expect(
       await screen.findByText('Closed — run a presence check to enter.'),
     ).toBeTruthy();
@@ -158,7 +161,7 @@ describe('rooms and hotel switching', () => {
 
     // Force a fresh focus-triggered fetch so the mocked sequence is consumed.
     await fireEvent.press(screen.getByText('Hotel'));
-    await fireEvent.press(screen.getByText('Rooms'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Rooms' }));
     expect(
       await screen.findByText('Open — a recent check placed you within 500 m.'),
     ).toBeTruthy();
@@ -272,7 +275,7 @@ describe('authentication and profile', () => {
 
   it('keeps a returning session when active-hotel hydration fails, then retries it', async () => {
     const phone = '+905551110025';
-    await onboard('Already', phone);
+    await onboardWithHotel('Already', phone);
     await fireEvent.press(await screen.findByText('Settings'));
     await fireEvent.press(await screen.findByTestId('sign-out'));
 
@@ -308,7 +311,7 @@ describe('authentication and profile', () => {
   });
 
   it('completes the whole entry path and reaches the main tabs', async () => {
-    await onboard('Deniz', '+905551110016');
+    await onboardWithHotel('Deniz', '+905551110016');
     expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
   });
 
@@ -321,7 +324,7 @@ describe('authentication and profile', () => {
       (await getApi().getRooms()).find((room) => room.room === 'HERE_NOW')?.eligible,
     ).toBe(true);
 
-    await fireEvent.press(screen.getByText('Rooms'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Rooms' }));
     await fireEvent.press(await screen.findByTestId('open-here-now'));
     await fireEvent.press(await screen.findByTestId('simulate-deny'));
 
@@ -436,7 +439,7 @@ describe('waiting for an SMS code', () => {
 
   it('opens an existing account after the same phone completes OTP again', async () => {
     const phone = '+905551110019';
-    await onboard('Already', phone);
+    await onboardWithHotel('Already', phone);
     await fireEvent.press(await screen.findByText('Settings'));
     await fireEvent.press(await screen.findByTestId('sign-out'));
 

@@ -161,7 +161,11 @@ export function RootNavigator() {
   // profile, the photo and the hotel. Which step it opens on is derived from
   // what the server already knows, so a restart resumes without anything having
   // been written down — and an account that is already complete never sees it.
-  if (!state.profile || !state.activeHotel || state.teachingPending) {
+  // Finished, not merely present: a profile row exists from the birthdate step
+  // onward, and an active hotel is no longer part of finishing. Somebody with a
+  // complete profile and no hotel belongs in the app — the hotel is asked for
+  // at the point they reach for something that needs one.
+  if (!state.profile?.onboardingCompletedAt) {
     return (
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Onboarding" component={OnboardingFlow} />

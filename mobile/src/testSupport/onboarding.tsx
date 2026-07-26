@@ -53,10 +53,11 @@ export async function authenticateWithPhone(phone = DEFAULT_PHONE): Promise<void
 }
 
 /**
- * The above, plus the profile, the optional steps and the hotel — stopping on
- * the first teaching card, which is the last thing between here and the app.
+ * The above, plus every profile answer. Ends in the app: finishing the last
+ * step is what marks the profile complete, and the hotel is no longer part of
+ * getting in.
  */
-export async function onboardToTeaching(
+export async function onboard(
   name = 'Deniz',
   phone = DEFAULT_PHONE,
 ): Promise<void> {
@@ -68,33 +69,55 @@ export async function onboardToTeaching(
   await type('profile-birthdate', ADULT_BIRTHDATE_TYPED);
   await press('onboarding-continue');
 
-  await press('onboarding-skip'); // bio
-  await press('onboarding-skip'); // interests
-  await press('onboarding-skip'); // photo
-
-  await type('hotel-search', 'lara');
-  await press(`activate-${PILOT_HOTEL}`);
+  await press('gender-woman');
   await press('onboarding-continue');
-}
 
-/** All of it, through the three teaching cards and into the app. */
-export async function onboard(
-  name = 'Deniz',
-  phone = DEFAULT_PHONE,
-): Promise<void> {
-  await onboardToTeaching(name, phone);
+  await press('onboarding-skip'); // orientation
 
-  // The three teaching cards, which only appear straight after onboarding.
-  await press('teaching-next');
-  await press('teaching-next');
-  await press('teaching-start');
+  await press('show-me-everyone');
+  await press('onboarding-continue');
+
+  await press('onboarding-skip'); // passions
+  await press('onboarding-continue'); // Done, with no photo
 }
 
 /** Onboards, then opens the Settings tab. */
 export async function onboardToSettings(name = 'Deniz'): Promise<void> {
-  await onboard(name);
+  await onboardWithHotel(name);
   const settings = await screen.findByText('Settings');
   await act(async () => {
     fireEvent.press(settings);
   });
+}
+
+/**
+ * Picks a hotel from the Hotel tab.
+ *
+ * Onboarding no longer asks for one, so any test that needs a room has to come
+ * through here — which is the point: it makes "needs a hotel" visible in the
+ * test rather than something onboarding quietly did for everybody.
+ */
+export async function activateHotel(hotelId = PILOT_HOTEL): Promise<void> {
+  await fireEvent.press(await screen.findByText('Hotel'));
+  await type('hotel-search', 'lara');
+  await press(`activate-${hotelId}`);
+  // Back to where the rooms are, which is where somebody who came here to use
+  // one would expect to end up. By role, because "Rooms" is also a heading on
+  // the screen itself and the plain text query matches both.
+  await fireEvent.press(await screen.findByRole('button', { name: 'Rooms' }));
+}
+
+/**
+ * Onboards and then picks a hotel.
+ *
+ * Most tests that existed before the hotel left onboarding assume a room is
+ * reachable, and this keeps that assumption true for them without pretending
+ * onboarding still asks.
+ */
+export async function onboardWithHotel(
+  name = 'Deniz',
+  phone = DEFAULT_PHONE,
+): Promise<void> {
+  await onboard(name, phone);
+  await activateHotel();
 }

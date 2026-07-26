@@ -17,10 +17,9 @@ import React from 'react';
 import { BackHandler } from 'react-native';
 
 import App from '../../App';
-import { COPY } from '../copy';
 import { FakeApi, getApi, MAX_INTERESTS, setApi } from '../data';
 import { INTEREST_CHOICES } from '../fixtures/interests';
-import { onboard, onboardToTeaching, authenticateWithPhone } from '../testSupport/onboarding';
+import { onboard, authenticateWithPhone } from '../testSupport/onboarding';
 
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
 
@@ -77,7 +76,7 @@ describe('moving through the wizard', () => {
   });
 
   it('offers a skip only on the steps that are genuinely optional', async () => {
-    await authenticateWithPhone('+905551110013');
+    await authenticateWithPhone('+905551110003');
 
     await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
@@ -86,17 +85,26 @@ describe('moving through the wizard', () => {
     expect(screen.queryByTestId('onboarding-skip')).toBeNull();
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
 
-    // Bio, interests and photo can all be left for later.
-    expect(await screen.findByTestId('onboarding-skip')).toBeTruthy();
-    await fireEvent.press(screen.getByTestId('onboarding-skip'));
-    expect(await screen.findByTestId('onboarding-skip')).toBeTruthy();
-    await fireEvent.press(screen.getByTestId('onboarding-skip'));
+    // Gender is required — the server refuses to finish without it.
+    expect(await screen.findByTestId('screen-onboarding-gender')).toBeTruthy();
+    expect(screen.queryByTestId('onboarding-skip')).toBeNull();
+    await fireEvent.press(screen.getByTestId('gender-woman'));
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+
+    // Orientation is not, and skipping it writes nothing.
     expect(await screen.findByTestId('onboarding-skip')).toBeTruthy();
     await fireEvent.press(screen.getByTestId('onboarding-skip'));
 
-    // The hotel is not: every room in the product is a room at a hotel.
-    expect(await screen.findByTestId('screen-onboarding-hotel')).toBeTruthy();
+    // Show me is required too: it decides what this person's own feed holds.
+    expect(await screen.findByTestId('screen-onboarding-show-me')).toBeTruthy();
     expect(screen.queryByTestId('onboarding-skip')).toBeNull();
+    await fireEvent.press(screen.getByTestId('show-me-everyone'));
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+
+    // Passions and the photo can both be left for later.
+    expect(await screen.findByTestId('onboarding-skip')).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('onboarding-skip'));
+    expect(await screen.findByTestId('screen-onboarding-photo')).toBeTruthy();
   });
 });
 
@@ -184,7 +192,7 @@ describe('the birthdate', () => {
     expect(screen.getByTestId('profile-birthdate').props.value).toBe('01/03/1994');
 
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
-    await screen.findByTestId('screen-onboarding-bio');
+    await screen.findByTestId('screen-onboarding-gender');
 
     // The boundary: the day/month order is a display decision and the stored
     // form is the one that sorts and compares.
@@ -211,7 +219,11 @@ describe('interests', () => {
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
     await fireEvent.changeText(await screen.findByTestId('profile-birthdate'), '01/03/1994');
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
-    await fireEvent.press(await screen.findByTestId('onboarding-skip')); // bio
+    await fireEvent.press(await screen.findByTestId('gender-woman'));
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await fireEvent.press(await screen.findByTestId('onboarding-skip')); // orientation
+    await fireEvent.press(await screen.findByTestId('show-me-everyone'));
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
     expect(await screen.findByTestId('interest-choices')).toBeTruthy();
   }
 
@@ -265,6 +277,95 @@ describe('interests', () => {
   });
 });
 
+describe('gender, orientation and who you are shown', () => {
+  async function reachGender(phone: string) {
+    await authenticateWithPhone(phone);
+    await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await fireEvent.changeText(await screen.findByTestId('profile-birthdate'), '01/03/1994');
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    return screen.findByTestId('screen-onboarding-gender');
+  }
+
+  it('collects the answer but does not publish it unless asked', async () => {
+    await reachGender('+905551119910');
+
+    await fireEvent.press(screen.getByTestId('gender-woman'));
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+
+    const saved = await getApi().getOwnProfile();
+    // Answering is required; broadcasting it is a separate decision, and its
+    // default is no.
+    expect(saved?.gender).toBe('WOMAN');
+    expect(saved?.showGender).toBe(false);
+  });
+
+  it('publishes it when the toggle is on', async () => {
+    await reachGender('+905551119911');
+
+    await fireEvent.press(screen.getByTestId('gender-woman'));
+    await fireEvent.press(screen.getByTestId('show-gender'));
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+
+    expect((await getApi().getOwnProfile())?.showGender).toBe(true);
+  });
+
+  it('opens the rest of the list in place rather than going somewhere', async () => {
+    await reachGender('+905551119912');
+
+    expect(screen.queryByTestId('gender-non-binary')).toBeNull();
+    await fireEvent.press(screen.getByTestId('gender-more'));
+
+    await fireEvent.press(await screen.findByTestId('gender-non-binary'));
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+
+    expect((await getApi().getOwnProfile())?.gender).toBe('Non-binary');
+  });
+
+  it('writes nothing at all when orientation is skipped', async () => {
+    await reachGender('+905551119913');
+    await fireEvent.press(screen.getByTestId('gender-woman'));
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+
+    await fireEvent.press(await screen.findByTestId('onboarding-skip'));
+
+    // Skipping is an answer of "none", not a default to be filled in later.
+    const saved = await getApi().getOwnProfile();
+    expect(saved?.orientations).toEqual([]);
+    expect(saved?.showOrientation).toBe(false);
+  });
+
+  it('stops at three orientations rather than only saying so', async () => {
+    await reachGender('+905551119914');
+    await fireEvent.press(screen.getByTestId('gender-woman'));
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await screen.findByTestId('orientation-choices');
+
+    for (const value of ['straight', 'gay', 'lesbian']) {
+      await fireEvent.press(screen.getByTestId(`orientation-${value}`));
+    }
+    const overflow = screen.getByTestId('orientation-bisexual');
+    expect(overflow.props.accessibilityState.disabled).toBe(true);
+
+    await fireEvent.press(overflow);
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+
+    expect((await getApi().getOwnProfile())?.orientations).toHaveLength(3);
+  });
+
+  it('does not finish while a required answer is missing', async () => {
+    await reachGender('+905551119915');
+    await fireEvent.press(screen.getByTestId('gender-woman'));
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await fireEvent.press(await screen.findByTestId('onboarding-skip'));
+
+    // Show me is the second thing the server insists on, so the profile is
+    // still a draft here however much else has been answered.
+    expect(await screen.findByTestId('screen-onboarding-show-me')).toBeTruthy();
+    expect((await getApi().getOwnProfile())?.onboardingCompletedAt).toBeNull();
+  });
+});
+
 describe('a finished onboarding', () => {
   it('does not come back on the next launch', async () => {
     await onboard('Deniz', '+905551110017');
@@ -277,22 +378,15 @@ describe('a finished onboarding', () => {
 
     expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
     expect(screen.queryByTestId('screen-welcome')).toBeNull();
-    expect(screen.queryByTestId('screen-onboarding-hotel')).toBeNull();
+    expect(screen.queryByTestId('screen-onboarding-photo')).toBeNull();
   });
 
-  it('shows the three teaching cards once, and only after finishing', async () => {
-    await onboardToTeaching('Deniz', '+905551110018');
+  it('lands in the app with no hotel, and asks for one only when it is needed', async () => {
+    await onboard('Deniz', '+905551110018');
 
-    expect(await screen.findByText(COPY.onboarding.teaching.upcoming.title)).toBeTruthy();
-    await fireEvent.press(screen.getByTestId('teaching-next'));
-    await fireEvent.press(screen.getByTestId('teaching-next'));
-    await fireEvent.press(screen.getByTestId('teaching-start'));
-
+    // Choosing a hotel is no longer part of finishing, so a complete profile
+    // gets in without one.
     expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
-
-    // And not again on the next launch.
-    await relaunch();
-    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
-    expect(screen.queryByText(COPY.onboarding.teaching.upcoming.title)).toBeNull();
+    expect(screen.queryByTestId('screen-onboarding-photo')).toBeNull();
   });
 });

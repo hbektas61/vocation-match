@@ -60,7 +60,7 @@ export function BirthdateStep({
     try {
       patch({ birthdate });
       await saveProfile({ birthdate });
-      go('bio');
+      go('gender');
     } catch (err) {
       setError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
     } finally {

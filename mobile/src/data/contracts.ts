@@ -57,7 +57,27 @@ export interface OwnProfile {
   photoPath: string | null;
   /** A short self-chosen list, at most `MAX_INTERESTS`. */
   interests: string[];
+  /** Self-described. Required before onboarding can be finished. */
+  gender: string | null;
+  /** Off by default: answering is required, publishing is not. */
+  showGender: boolean;
+  /** At most `MAX_ORIENTATIONS`, and optional. */
+  orientations: string[];
+  showOrientation: boolean;
+  /**
+   * Who this person wants shown to them. Private: it shapes their own feed and
+   * is never returned to anybody else.
+   */
+  showMe: ShowMe | null;
+  /**
+   * When the server accepted the profile as finished, or null while it is
+   * still a draft. A draft is invisible to everyone but its owner.
+   */
+  onboardingCompletedAt: number | null;
 }
+
+/** The three answers discovery understands. */
+export type ShowMe = 'WOMEN' | 'MEN' | 'EVERYONE';
 
 /**
  * Note what cannot be written here: a photo. Setting a profile photo is its own
@@ -71,9 +91,16 @@ export interface ProfileInput {
   bio?: string | null;
   /**
    * Omitted means "leave them as they are", not "clear them". A form that does
-   * not ask about interests must not be able to delete them.
+   * not ask about interests must not be able to delete them. The same is true
+   * of every optional field below — each onboarding step writes only its own
+   * answer, so none of them can wipe another's.
    */
   interests?: string[];
+  gender?: string;
+  showGender?: boolean;
+  orientations?: string[];
+  showOrientation?: boolean;
+  showMe?: ShowMe;
 }
 
 /** A hotel as the client may see it. Coordinates are deliberately absent. */
@@ -158,10 +185,16 @@ export interface CandidateCard {
   bio: string | null;
   photoPath: string | null;
   interests: string[];
+  /** Present only when its owner published it; `null` otherwise. */
+  gender: string | null;
+  /** Empty unless its owner published them. Never a filter — only ever read. */
+  orientations: string[];
 }
 
 /** Five, matching `profiles_interests_count`. Said out loud in the UI. */
 export const MAX_INTERESTS = 5;
+/** Three, matching `profiles_orientations_count`. */
+export const MAX_ORIENTATIONS = 3;
 
 export interface VocationApi {
   /* auth */
@@ -190,6 +223,12 @@ export interface VocationApi {
   /* profile */
   getOwnProfile(): Promise<OwnProfile | null>;
   saveOwnProfile(input: ProfileInput): Promise<OwnProfile>;
+  /**
+   * Marks the profile finished, once every required answer is present.
+   * Idempotent, because a retry after a dropped response must not read as a
+   * failure. The client cannot set the flag any other way.
+   */
+  completeOnboarding(): Promise<OwnProfile>;
 
   /* photos */
   /**

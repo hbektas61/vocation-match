@@ -312,6 +312,43 @@ export function Field(
   );
 }
 
+/**
+ * A labelled checkbox.
+ *
+ * The box is drawn rather than imported so the checked state is a mark and a
+ * fill, not a tint — the brand colour cannot carry a state on its own, and a
+ * checkbox whose only "on" signal is a pale lavender square is one a lot of
+ * people would read as off.
+ */
+export function Checkbox({
+  label,
+  checked,
+  onChange,
+  testID,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  testID?: string;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
+      accessibilityLabel={label}
+      onPress={() => onChange(!checked)}
+      hitSlop={8}
+      style={styles.checkboxRow}
+      testID={testID}
+    >
+      <View style={[styles.checkboxBox, checked && styles.checkboxBoxOn]}>
+        {checked ? <Text style={styles.checkboxMark}>✓</Text> : null}
+      </View>
+      <Text style={styles.checkboxLabel}>{label}</Text>
+    </Pressable>
+  );
+}
+
 export function Card({
   children,
   style,
@@ -785,6 +822,29 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: spacing.xs + 2,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: MIN_TOUCH,
+  },
+  checkboxBox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: color.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxBoxOn: { backgroundColor: color.accent, borderColor: color.accentDeep },
+  checkboxMark: { color: color.ink, fontSize: 14, lineHeight: 16, fontWeight: '900' },
+  checkboxLabel: {
+    flex: 1,
+    fontFamily: fontFamily.body,
+    fontSize: font.body,
+    color: color.ink,
   },
   badgeOpen: { borderWidth: 1.5, borderColor: color.border },
   badgeText: {

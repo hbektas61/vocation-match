@@ -59,6 +59,7 @@ export function OnboardingScaffold({
   actionBusy = false,
   onAction,
   error,
+  footer,
   testID,
   actionTestID = 'onboarding-continue',
   errorTestID = 'onboarding-error',
@@ -77,6 +78,8 @@ export function OnboardingScaffold({
   actionBusy?: boolean;
   onAction: () => void;
   error?: string | null;
+  /** Sits above the action, inside the safe area — a toggle the answer belongs to. */
+  footer?: React.ReactNode;
   testID?: string;
   /** Lets a step give its primary action a stable, purpose-specific test id. */
   actionTestID?: string;
@@ -142,6 +145,7 @@ export function OnboardingScaffold({
         </ScrollView>
 
         <View style={styles.footer}>
+          {footer}
           <Button
             label={actionLabel}
             onPress={onAction}
@@ -205,6 +209,7 @@ const styles = StyleSheet.create({
     color: color.inkMuted,
   },
   footer: {
+    gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,

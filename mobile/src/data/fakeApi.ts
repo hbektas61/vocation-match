@@ -43,8 +43,11 @@ import {
   type SwipeResult,
   type UpcomingStay,
   type VocationApi,
+  MAX_INTERESTS,
+  MAX_ORIENTATIONS,
+  type ShowMe,
 } from './contracts';
-import { MAX_INTERESTS } from './contracts';
+
 import { buildPhotoPath, isProfilePhotoPath, photoExtensionFor } from './photos';
 import { isE164Phone, normalizePhone } from './phone';
 
@@ -73,6 +76,12 @@ interface StoredProfile {
   bio: string | null;
   photoPath: string | null;
   interests: string[];
+  gender: string | null;
+  showGender: boolean;
+  orientations: string[];
+  showOrientation: boolean;
+  showMe: ShowMe | null;
+  onboardingCompletedAt: number | null;
 }
 
 export interface FakeApiOptions {
@@ -255,21 +264,48 @@ export class FakeApi implements VocationApi {
     if (!isAdult(input.birthdate, todayIsoDate(new Date(this.now())))) {
       throw new ApiError('UNDER_AGE', 'Vocation Match is 18+ only.');
     }
+    // Every optional field follows the same rule: omitted means "leave it as
+    // it is". Each onboarding step writes only its own answer, so none of them
+    // can wipe another's — the trap `photoPath` was already built to avoid.
+    const previous = this.profiles.get(userId);
     const stored: StoredProfile = {
       id: userId,
       displayName,
       birthdate: input.birthdate,
       bio: input.bio?.trim() || null,
-      // Saving the rest of the profile never touches the photo — or the
-      // interests, unless this caller supplied a list of them.
-      photoPath: this.profiles.get(userId)?.photoPath ?? null,
-      interests: (input.interests ?? this.profiles.get(userId)?.interests ?? []).slice(
+      photoPath: previous?.photoPath ?? null,
+      interests: (input.interests ?? previous?.interests ?? []).slice(0, MAX_INTERESTS),
+      gender: input.gender ?? previous?.gender ?? null,
+      showGender: input.showGender ?? previous?.showGender ?? false,
+      orientations: (input.orientations ?? previous?.orientations ?? []).slice(
         0,
-        MAX_INTERESTS,
+        MAX_ORIENTATIONS,
       ),
+      showOrientation: input.showOrientation ?? previous?.showOrientation ?? false,
+      showMe: input.showMe ?? previous?.showMe ?? null,
+      onboardingCompletedAt: previous?.onboardingCompletedAt ?? null,
     };
     this.profiles.set(userId, stored);
     return this.toOwnProfile(stored);
+  }
+
+  async completeOnboarding(): Promise<OwnProfile> {
+    const userId = await this.requireUserId();
+    const stored = this.profiles.get(userId);
+    if (!stored) {
+      throw new ApiError('NOT_FOUND', 'Finish your profile first.');
+    }
+    // Idempotent, and the moment does not move: a retry after a dropped
+    // response must not read as a failure.
+    if (stored.onboardingCompletedAt !== null) {
+      return this.toOwnProfile(stored);
+    }
+    if (!stored.gender || !stored.showMe) {
+      throw new ApiError('INVALID_INPUT', 'Some answers are still missing.');
+    }
+    const finished = { ...stored, onboardingCompletedAt: this.now() };
+    this.profiles.set(userId, finished);
+    return this.toOwnProfile(finished);
   }
 
   /* ----------------------------------------------------------------- photos */
@@ -484,8 +520,17 @@ export class FakeApi implements VocationApi {
     if (!status?.eligible) {
       throw new ApiError('FORBIDDEN', 'You do not have access to this room yet.');
     }
+    // Mirrors `discovery_feed`: both directions of show_me, and a card carries
+    // gender or orientation only when its owner published it. Parity here is
+    // the point — a fake that is more permissive than the server hides exactly
+    // the bugs these tests exist to catch.
+    const self = this.profiles.get(userId);
     return CANDIDATES.filter(
-      (candidate) => candidate.hotelId === hotelId && candidate.rooms.includes(room),
+      (candidate) =>
+        candidate.hotelId === hotelId &&
+        candidate.rooms.includes(room) &&
+        showMeMatches(self?.showMe ?? null, candidate.gender) &&
+        showMeMatches('EVERYONE', self?.gender ?? null),
     )
       .slice(0, Math.min(Math.max(limit, 1), 50))
       .map((candidate) => ({
@@ -495,6 +540,8 @@ export class FakeApi implements VocationApi {
         bio: candidate.bio,
         photoPath: null,
         interests: candidate.interests,
+        gender: candidate.showGender ? candidate.gender : null,
+        orientations: candidate.showOrientation ? candidate.orientations : [],
       }));
   }
 
@@ -737,6 +784,18 @@ export class FakeApi implements VocationApi {
       age: ageYears(stored.birthdate, todayIsoDate(new Date(this.now()))) ?? 0,
     };
   }
+}
+
+/**
+ * The same rule as `app.show_me_matches`: WOMEN and MEN are the only two
+ * values the filter knows, so a gender outside them is reachable only by
+ * someone asking to see everyone (D-023).
+ */
+function showMeMatches(showMe: ShowMe | null, gender: string | null): boolean {
+  if (showMe === null || showMe === 'EVERYONE') return true;
+  if (showMe === 'WOMEN') return gender === 'WOMAN';
+  if (showMe === 'MEN') return gender === 'MAN';
+  return false;
 }
 
 /** A stable, valid UUID per fake account, so ids look like the server's. */

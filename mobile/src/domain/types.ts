@@ -26,6 +26,12 @@ export interface Profile {
   bio: string;
   interests: string[];
   /**
+   * When the server accepted the profile as finished, or null while it is a
+   * draft. The navigator reads this rather than "does a row exist", because a
+   * row exists from the birthdate step onward.
+   */
+  onboardingCompletedAt?: number | null;
+  /**
    * Object path in the private photo bucket, never a URL (D-014). Undefined on
    * a `Candidate`, whose photo arrives on the card instead.
    */
@@ -42,6 +48,11 @@ export interface Profile {
 export interface Candidate extends Profile {
   hotelId: string;
   rooms: RoomKey[];
+  /** Self-described, and only on the card when its owner published it. */
+  gender: string;
+  showGender: boolean;
+  orientations: string[];
+  showOrientation: boolean;
   /** Fixture flag: this candidate has already liked the current user. */
   likesYou: boolean;
 }

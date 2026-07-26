@@ -22,10 +22,17 @@ select tests.create_user('omar@example.test', '00000000-0000-0000-0000-000000000
 
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000e1');
 select lives_ok(
-  $$insert into public.profiles (id, display_name, birthdate, bio)
+  $$insert into public.profiles (id, display_name, birthdate, bio,
+                                 gender_identity, show_me)
     values ('00000000-0000-0000-0000-0000000000e1', 'Mila',
-            (current_date - interval '29 years')::date, 'Here for the sea.')$$,
+            (current_date - interval '29 years')::date, 'Here for the sea.',
+            'WOMAN', 'EVERYONE')$$,
   'step 1: a new user creates their own profile'
+);
+
+select lives_ok(
+  $$select public.complete_onboarding()$$,
+  'step 1: and the server marks it finished'
 );
 
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000e2');
@@ -37,10 +44,25 @@ select throws_ok(
 );
 
 select lives_ok(
-  $$insert into public.profiles (id, display_name, birthdate)
+  $$insert into public.profiles (id, display_name, birthdate,
+                                 gender_identity, show_me)
     values ('00000000-0000-0000-0000-0000000000e2', 'Omar',
-            (current_date - interval '34 years')::date)$$,
+            (current_date - interval '34 years')::date,
+            'MAN', 'EVERYONE')$$,
   'step 1: the second user creates a profile too'
+);
+
+select lives_ok(
+  $$select public.complete_onboarding()$$,
+  'step 1: and finishes it as well'
+);
+
+-- Called twice after a dropped response, it must not look like a failure.
+select is(
+  (select public.complete_onboarding()),
+  (select onboarding_completed_at from public.profiles
+    where id = '00000000-0000-0000-0000-0000000000e2'),
+  'step 1: finishing twice returns the same moment rather than erroring'
 );
 
 -- Step 2 — both pick the same hotel.

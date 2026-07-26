@@ -94,6 +94,10 @@ describe('discoveryPool', () => {
     hotelId: 'hotel-a',
     rooms: ['UPCOMING'],
     likesYou: false,
+    gender: 'WOMAN',
+    showGender: false,
+    orientations: [],
+    showOrientation: false,
   };
   const candidates: Candidate[] = [
     { ...base, id: 'a' },

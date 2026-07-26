@@ -52,13 +52,28 @@ export const COPY = {
       headline: 'When were you born?',
       body: 'Only your age is shown. The date itself is never shared with anyone.',
     },
-    bio: {
-      headline: 'Say something about yourself.',
-      body: 'A sentence is plenty. You can change it later.',
+    gender: {
+      headline: 'I am a',
+      body: 'However you describe yourself. You choose separately whether it appears on your card.',
+      more: 'More',
+      moreHeadline: 'How do you describe yourself?',
+      showOnProfile: 'Show my gender on my profile',
+    },
+    orientation: {
+      headline: 'My sexual orientation is',
+      limit: (max: number) => `Select up to ${max}`,
+      showOnProfile: 'Show my orientation on my profile',
+      // Said plainly, because the opposite assumption is the common one.
+      notAFilter: 'This is never used to decide who you are shown.',
+    },
+    showMe: {
+      headline: 'Show me',
+      body: 'This shapes your own feed. It is never shown on your profile.',
     },
     interests: {
-      headline: 'What are you into?',
-      body: 'A few things worth reading on your card.',
+      headline: 'Passions',
+      body: 'Let everyone know what you are passionate about, by adding it to your profile.',
+      counter: (chosen: number, max: number) => `Continue ${chosen}/${max}`,
       limit: (max: number) => `Pick up to ${max}. Tap again to remove one.`,
       atLimit: (max: number) => `That is ${max} — remove one to choose another.`,
     },
@@ -67,6 +82,7 @@ export const COPY = {
       body:
         'It is stored privately. Only people in a room with you right now, or matched with you, can see it.',
       skip: 'Skip for now',
+      done: 'Done',
     },
     hotel: {
       headline: 'Which hotel are you at?',

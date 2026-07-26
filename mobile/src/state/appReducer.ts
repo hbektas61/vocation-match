@@ -25,6 +25,7 @@ export function toDomainProfile(remote: OwnProfile): Profile {
     interests: remote.interests,
     birthdate: remote.birthdate,
     photoPath: remote.photoPath,
+    onboardingCompletedAt: remote.onboardingCompletedAt,
   };
 }
 
@@ -57,7 +58,6 @@ export interface AppState {
    * this false, so an account that already has a profile and a hotel goes
    * straight into the app.
    */
-  teachingPending: boolean;
 }
 
 export type AppAction =
@@ -84,9 +84,7 @@ export type AppAction =
   | { type: 'CLEAR_LAST_MATCH' }
   | { type: 'BLOCKED_USERS_LOADED'; blockedUsers: BlockedUser[] }
   | { type: 'USER_BLOCKED'; blockedUser: BlockedUser }
-  | { type: 'USER_UNBLOCKED'; userId: string }
-  | { type: 'ONBOARDING_TEACHING_REQUIRED' }
-  | { type: 'ONBOARDING_FINISHED' };
+  | { type: 'USER_UNBLOCKED'; userId: string };
 
 export function initialAppState(): AppState {
   return {
@@ -102,17 +100,11 @@ export function initialAppState(): AppState {
     matches: [],
     lastMatchId: null,
     blockedUsers: [],
-    teachingPending: false,
   };
 }
 
 export function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
-    case 'ONBOARDING_TEACHING_REQUIRED':
-      return { ...state, teachingPending: true };
-
-    case 'ONBOARDING_FINISHED':
-      return { ...state, teachingPending: false };
 
     case 'CONFIRM_AGE':
       return { ...state, ageConfirmed: true };

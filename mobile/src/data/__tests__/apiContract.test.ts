@@ -282,7 +282,9 @@ describe('VocationApi contract (in-memory implementation)', () => {
           'age',
           'bio',
           'displayName',
+          'gender',
           'interests',
+          'orientations',
           'photoPath',
           'userId',
         ]);

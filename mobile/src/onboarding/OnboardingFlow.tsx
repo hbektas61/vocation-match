@@ -19,20 +19,20 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, BackHandler, Easing, StyleSheet, View } from 'react-native';
 
-import { getApi, type OwnProfile } from '../data';
+import { getApi, type OwnProfile, type ShowMe } from '../data';
 import { toDomainProfile } from '../state/appReducer';
 import { useAppStore } from '../state/AppStore';
 import { color } from '../theme';
 import { BirthdateStep } from './steps/BirthdateStep';
-import { BioStep } from './steps/BioStep';
-import { HotelStep } from './steps/HotelStep';
+import { GenderStep } from './steps/GenderStep';
+import { OrientationStep } from './steps/OrientationStep';
+import { ShowMeStep } from './steps/ShowMeStep';
 import { InterestsStep } from './steps/InterestsStep';
 import { NameStep } from './steps/NameStep';
 import { OtpStep } from './steps/OtpStep';
 import { PhoneStep } from './steps/PhoneStep';
 import { PhotoStep } from './steps/PhotoStep';
 import { PromiseStep } from './steps/PromiseStep';
-import { TeachingStep } from './steps/TeachingStep';
 import { WelcomeStep } from './steps/WelcomeStep';
 
 export type OnboardingStep =
@@ -42,31 +42,36 @@ export type OnboardingStep =
   | 'otp'
   | 'name'
   | 'birthdate'
-  | 'bio'
+  | 'gender'
+  | 'orientation'
+  | 'showMe'
   | 'interests'
-  | 'photo'
-  | 'hotel'
-  | 'teaching';
+  | 'photo';
 
-/** Only the steps that show a progress bar; welcome and teaching bracket it. */
+/** Only the steps that show a progress bar; welcome brackets it. */
 const COUNTED: OnboardingStep[] = [
   'promise',
   'phone',
   'otp',
   'name',
   'birthdate',
-  'bio',
+  'gender',
+  'orientation',
+  'showMe',
   'interests',
   'photo',
-  'hotel',
 ];
 
 export interface OnboardingDraft {
   phone: string;
   displayName: string;
   birthdate: string;
-  bio: string;
   interests: string[];
+  gender: string;
+  showGender: boolean;
+  orientations: string[];
+  showOrientation: boolean;
+  showMe: ShowMe | '';
   /** Set after the server accepts an SMS request; cleared when phone changes. */
   otpRequested: boolean;
   /** Keeps the resend boundary stable across back/forward navigation. */
@@ -79,8 +84,12 @@ const EMPTY_DRAFT: OnboardingDraft = {
   phone: '',
   displayName: '',
   birthdate: '',
-  bio: '',
   interests: [],
+  gender: '',
+  showGender: false,
+  orientations: [],
+  showOrientation: false,
+  showMe: '',
   otpRequested: false,
   otpRequestedAt: null,
   otpRequestUncertain: false,
@@ -91,16 +100,7 @@ export function OnboardingFlow() {
   const [draft, setDraft] = useState<OnboardingDraft>(EMPTY_DRAFT);
   /** The step somebody has actually walked to, when they have walked anywhere. */
   const [manual, setManual] = useState<OnboardingStep | null>(null);
-  const [profile, setProfile] = useState<OwnProfile | null>(() =>
-    state.profile?.birthdate
-      ? {
-          ...state.profile,
-          birthdate: state.profile.birthdate,
-          bio: state.profile.bio || null,
-          photoPath: state.profile.photoPath ?? null,
-        }
-      : null,
-  );
+  const [profile, setProfile] = useState<OwnProfile | null>(null);
 
   const patch = (next: Partial<OnboardingDraft>) => setDraft((d) => ({ ...d, ...next }));
 
@@ -110,14 +110,17 @@ export function OnboardingFlow() {
     if (!state.ageConfirmed) return 'welcome';
     if (!state.session) return draft.otpRequested ? 'otp' : 'phone';
     if (!state.profile) return 'name';
-    // Profile creation happens at the required birthdate step. If the app is
-    // interrupted before the optional profile steps finish, the server cannot
-    // distinguish that from somebody who deliberately skipped them. Resuming
-    // at bio is conservative: it may repeat an optional step, but it never
-    // silently drops bio, interests, and photo from the wizard.
-    if (!state.activeHotel) return 'bio';
-    return 'teaching';
-  }, [state.ageConfirmed, state.session, state.profile, state.activeHotel, draft.otpRequested]);
+    // A profile row exists from the birthdate step onward, so "has a profile"
+    // no longer means "finished". The two required answers the server checks
+    // for are gender and show-me, and resuming at the first one still missing
+    // is the only reading that cannot silently skip a question.
+    if (!profile?.gender) return 'gender';
+    if (!profile.showMe) return 'showMe';
+    // Everything after this point is optional, and the server cannot tell an
+    // interrupted run from a deliberate skip. Landing on interests may repeat
+    // a step somebody meant to pass; it never drops one.
+    return 'interests';
+  }, [state.ageConfirmed, state.session, state.profile, profile, draft.otpRequested]);
 
   /**
    * The derived step is where to *resume*, not a running override. Saving the
@@ -181,15 +184,44 @@ export function OnboardingFlow() {
     return () => sub.remove();
   }, [target, goBack]);
 
+  /**
+   * Writes only what the calling step answered.
+   *
+   * Every optional field is omitted unless it was supplied, and omitted means
+   * "leave it alone" all the way down to the upsert. That is what stops the
+   * gender step from clearing the interests behind it.
+   */
   const saveProfile = async (overrides: Partial<OnboardingDraft>): Promise<void> => {
     const merged = { ...draft, ...overrides };
     const saved = await getApi().saveOwnProfile({
       displayName: merged.displayName,
       birthdate: merged.birthdate,
-      bio: merged.bio.trim() || null,
-      interests: merged.interests,
+      ...(overrides.interests !== undefined ? { interests: merged.interests } : {}),
+      ...(overrides.gender !== undefined ? { gender: merged.gender } : {}),
+      ...(overrides.showGender !== undefined ? { showGender: merged.showGender } : {}),
+      ...(overrides.orientations !== undefined ? { orientations: merged.orientations } : {}),
+      ...(overrides.showOrientation !== undefined
+        ? { showOrientation: merged.showOrientation }
+        : {}),
+      ...(merged.showMe !== '' && overrides.showMe !== undefined
+        ? { showMe: merged.showMe }
+        : {}),
     });
     setProfile(saved);
+    dispatch({ type: 'SAVE_PROFILE', profile: toDomainProfile(saved) });
+  };
+
+  /**
+   * The last step calls this instead of navigating anywhere. Until it returns,
+   * the profile is a draft and nobody can see it; once it does, the navigator
+   * has what it needs and the wizard simply stops being rendered.
+   */
+  const finish = async (): Promise<void> => {
+    const saved = await getApi().completeOnboarding();
+    setProfile(saved);
+    // The saved profile now carries `onboardingCompletedAt`, which is the only
+    // thing the navigator gates on — there is no separate "finished" flag to
+    // keep in step with it.
     dispatch({ type: 'SAVE_PROFILE', profile: toDomainProfile(saved) });
   };
 
@@ -217,16 +249,16 @@ export function OnboardingFlow() {
         return <NameStep {...shared} />;
       case 'birthdate':
         return <BirthdateStep {...shared} saveProfile={saveProfile} />;
-      case 'bio':
-        return <BioStep {...shared} saveProfile={saveProfile} />;
+      case 'gender':
+        return <GenderStep {...shared} saveProfile={saveProfile} />;
+      case 'orientation':
+        return <OrientationStep {...shared} saveProfile={saveProfile} />;
+      case 'showMe':
+        return <ShowMeStep {...shared} saveProfile={saveProfile} />;
       case 'interests':
         return <InterestsStep {...shared} saveProfile={saveProfile} />;
       case 'photo':
-        return <PhotoStep {...shared} />;
-      case 'hotel':
-        return <HotelStep {...shared} />;
-      case 'teaching':
-        return <TeachingStep {...shared} />;
+        return <PhotoStep {...shared} finish={finish} />;
     }
   })();
 
@@ -255,17 +287,18 @@ function backTarget(step: OnboardingStep): OnboardingStep | null {
       return 'phone';
     case 'birthdate':
       return 'name';
-    case 'bio':
+    case 'gender':
       return 'birthdate';
+    case 'orientation':
+      return 'gender';
+    case 'showMe':
+      return 'orientation';
     case 'interests':
-      return 'bio';
+      return 'showMe';
     case 'photo':
       return 'interests';
-    case 'hotel':
-      return 'photo';
     case 'welcome':
     case 'name':
-    case 'teaching':
       return null;
   }
 }
@@ -296,11 +329,11 @@ const ORDER: OnboardingStep[] = [
   'otp',
   'name',
   'birthdate',
-  'bio',
+  'gender',
+  'orientation',
+  'showMe',
   'interests',
   'photo',
-  'hotel',
-  'teaching',
 ];
 
 /**

@@ -11,7 +11,7 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { AppState } from 'react-native';
 
 import { FakeApi, getApi, setApi } from '../data';
-import { onboard, onboardToSettings } from '../testSupport/onboarding';
+import { onboardWithHotel, onboardToSettings } from '../testSupport/onboarding';
 
 let clock = Date.parse('2026-07-25T10:00:00Z');
 let foregroundListeners: ((state: string) => void)[];
@@ -44,7 +44,7 @@ async function returnToForeground() {
 
 describe('coming back to a session that has gone', () => {
   it('signs out rather than showing tabs whose every request fails', async () => {
-    await onboard();
+    await onboardWithHotel();
     expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
 
     // An hour passes with the app in the background: the session lapses.
@@ -59,7 +59,7 @@ describe('coming back to a session that has gone', () => {
   });
 
   it('stays put when the session is still good', async () => {
-    await onboard();
+    await onboardWithHotel();
     expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
 
     clock += 60 * 1000;
@@ -71,7 +71,7 @@ describe('coming back to a session that has gone', () => {
   });
 
   it('does not sign anyone out because a check failed', async () => {
-    await onboard();
+    await onboardWithHotel();
     expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
     jest
       .spyOn(getApi(), 'currentSession')

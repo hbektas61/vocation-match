@@ -23,6 +23,7 @@ import {
   type PhotoUpload,
   type PresenceAnswer,
   type ProfileInput,
+  type ShowMe,
   type ReportInput,
   type RoomKey,
   type RoomStatus,
@@ -128,6 +129,12 @@ interface ProfileRow {
   bio: string | null;
   photo_path: string | null;
   interests: string[] | null;
+  gender_identity: string | null;
+  show_gender: boolean | null;
+  orientations: string[] | null;
+  show_orientation: boolean | null;
+  show_me: ShowMe | null;
+  onboarding_completed_at: string | null;
 }
 
 /**
@@ -291,7 +298,7 @@ export class SupabaseApi implements VocationApi {
   async getOwnProfile(): Promise<OwnProfile | null> {
     const { data, error } = await this.client
       .from('profiles')
-      .select('id, display_name, birthdate, bio, photo_path, interests')
+      .select('id, display_name, birthdate, bio, photo_path, interests, gender_identity, show_gender, orientations, show_orientation, show_me, onboarding_completed_at')
       .maybeSingle();
     if (error) {
       throw toApiError(error, 'Could not load your profile.');
@@ -317,15 +324,36 @@ export class SupabaseApi implements VocationApi {
           birthdate: input.birthdate,
           bio: input.bio?.trim() || null,
           ...(input.interests ? { interests: input.interests } : {}),
+          ...(input.gender !== undefined ? { gender_identity: input.gender } : {}),
+          ...(input.showGender !== undefined ? { show_gender: input.showGender } : {}),
+          ...(input.orientations ? { orientations: input.orientations } : {}),
+          ...(input.showOrientation !== undefined
+            ? { show_orientation: input.showOrientation }
+            : {}),
+          ...(input.showMe !== undefined ? { show_me: input.showMe } : {}),
         },
         { onConflict: 'id' },
       )
-      .select('id, display_name, birthdate, bio, photo_path, interests')
+      .select('id, display_name, birthdate, bio, photo_path, interests, gender_identity, show_gender, orientations, show_orientation, show_me, onboarding_completed_at')
       .single();
     if (error || !data) {
       throw toApiError(error, 'Could not save your profile.');
     }
     return toOwnProfile(data as ProfileRow);
+  }
+
+  async completeOnboarding(): Promise<OwnProfile> {
+    // The flag is server-set on purpose: `onboarding_completed_at` is absent
+    // from the client's column grants, so this RPC is the only way it moves.
+    const { error } = await this.client.rpc('complete_onboarding');
+    if (error) {
+      throw toApiError(error, 'Could not finish your profile.');
+    }
+    const profile = await this.getOwnProfile();
+    if (!profile) {
+      throw new ApiError('NOT_FOUND', 'Finish your profile first.');
+    }
+    return profile;
   }
 
   /* ----------------------------------------------------------------- photos */
@@ -878,5 +906,13 @@ function toOwnProfile(row: ProfileRow): OwnProfile {
     bio: row.bio,
     photoPath: row.photo_path,
     interests: row.interests ?? [],
+    gender: row.gender_identity,
+    showGender: row.show_gender ?? false,
+    orientations: row.orientations ?? [],
+    showOrientation: row.show_orientation ?? false,
+    showMe: row.show_me,
+    onboardingCompletedAt: row.onboarding_completed_at
+      ? Date.parse(row.onboarding_completed_at)
+      : null,
   };
 }

@@ -15,7 +15,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { COPY } from '../copy';
 import { ApiError, FakeApi, getApi, setApi } from '../data';
-import { onboard, onboardToSettings } from '../testSupport/onboarding';
+import { onboardWithHotel, onboardToSettings } from '../testSupport/onboarding';
 
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
 
@@ -92,8 +92,8 @@ describe('editing a profile after onboarding', () => {
 
 describe('the stay you declared', () => {
   async function openUpcoming() {
-    await onboard();
-    await fireEvent.press(await screen.findByText('Rooms'));
+    await onboardWithHotel();
+    await fireEvent.press(await screen.findByRole('button', { name: 'Rooms' }));
     await fireEvent.press(await screen.findByTestId('open-upcoming'));
   }
 
@@ -156,8 +156,8 @@ describe('the stay you declared', () => {
 describe('a match that vanishes mid-conversation', () => {
   /** Onboard, open a room, match with the fixture who likes back, open chat. */
   async function reachChat() {
-    await onboard();
-    await fireEvent.press(await screen.findByText('Rooms'));
+    await onboardWithHotel();
+    await fireEvent.press(await screen.findByRole('button', { name: 'Rooms' }));
     await fireEvent.press(await screen.findByTestId('open-here-now'));
     await fireEvent.press(await screen.findByTestId('simulate-near'));
     await fireEvent.press(await screen.findByTestId('here-now-done'));

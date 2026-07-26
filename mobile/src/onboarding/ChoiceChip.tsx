@@ -18,6 +18,54 @@ export function ChoiceChip({
   label,
   selected,
   disabled = false,
+  wide = false,
+  trailing,
+  onPress,
+  testID,
+}: {
+  label: string;
+  selected: boolean;
+  disabled?: boolean;
+  /** A full-width pill: one decision per line, as the reference lays them out. */
+  wide?: boolean;
+  /** A glyph at the trailing edge, for a choice that opens more choices. */
+  trailing?: string;
+  onPress: () => void;
+  testID?: string;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected, disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      testID={testID}
+      style={({ pressed }) => [
+        styles.chip,
+        wide && styles.chipWide,
+        selected ? styles.chipSelected : styles.chipIdle,
+        disabled && !selected && styles.chipDisabled,
+        pressed && styles.chipPressed,
+      ]}
+    >
+      <Text style={[styles.chipLabel, selected && styles.chipLabelSelected]}>{label}</Text>
+      {trailing ? <Text style={styles.chipTrailing}>{trailing}</Text> : null}
+    </Pressable>
+  );
+}
+
+/**
+ * A choice as a plain list row rather than a pill.
+ *
+ * The reference uses this shape wherever the list is long enough that pills
+ * would wrap into an unreadable block. Selection is carried by a tick and a
+ * weight change as well as colour, for the same reason it is everywhere else.
+ */
+export function ChoiceRow({
+  label,
+  selected,
+  disabled = false,
   onPress,
   testID,
 }: {
@@ -36,13 +84,13 @@ export function ChoiceChip({
       onPress={onPress}
       testID={testID}
       style={({ pressed }) => [
-        styles.chip,
-        selected ? styles.chipSelected : styles.chipIdle,
+        styles.row,
         disabled && !selected && styles.chipDisabled,
         pressed && styles.chipPressed,
       ]}
     >
-      <Text style={[styles.chipLabel, selected && styles.chipLabelSelected]}>{label}</Text>
+      <Text style={[styles.rowLabel, selected && styles.rowLabelSelected]}>{label}</Text>
+      {selected ? <Text style={styles.rowTick}>✓</Text> : null}
     </Pressable>
   );
 }
@@ -86,6 +134,32 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radius.pill,
     borderWidth: 1.5,
+  },
+  chipWide: { alignSelf: 'stretch', flexDirection: 'row', justifyContent: 'center' },
+  chipTrailing: {
+    position: 'absolute',
+    right: spacing.md,
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.heading,
+    color: color.inkMuted,
+  },
+  row: {
+    minHeight: MIN_TOUCH,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+  },
+  rowLabel: {
+    fontFamily: fontFamily.body,
+    fontSize: font.heading,
+    color: color.ink,
+  },
+  rowLabelSelected: { fontFamily: fontFamily.bodySemi, color: color.accentDeep },
+  rowTick: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.heading,
+    color: color.accentDeep,
   },
   chipIdle: { backgroundColor: color.surface, borderColor: color.border },
   chipSelected: { backgroundColor: color.accentSoft, borderColor: color.accentDeep },

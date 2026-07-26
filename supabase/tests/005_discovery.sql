@@ -99,8 +99,9 @@ select bag_eq(
       join pg_namespace n on n.oid = p.pronamespace
       join unnest(p.proargnames, p.proargmodes) as a(attname, mode) on true
      where n.nspname = 'public' and p.proname = 'discovery_feed' and a.mode = 't'$$,
-  $$values ('user_id'::text),('display_name'),('age'),('bio'),('photo_path'),('interests')$$,
-  'the feed returns exactly the card fields — no birthdate, no email, no location'
+  $$values ('user_id'::text),('display_name'),('age'),('bio'),('photo_path'),('interests'),
+           ('gender'),('orientations')$$,
+  'the feed returns exactly the card fields — no birthdate, no email, no location, no show_me'
 );
 
 -- ---------------------------------------------------------------- here now
@@ -211,6 +212,141 @@ select is(
     where f.display_name = 'Dev'),
   0,
   'a guest at another hotel never appears in this hotel`s room'
+);
+
+-- ------------------------------------------- drafts, show-me, and toggles
+--
+-- Everyone above is a finished profile who wants to see everyone, which is why
+-- none of this was in the way. Each block below changes exactly one of those
+-- facts.
+
+-- A draft: every required answer present except the server's own mark.
+select tests.create_member('eve@example.test', '00000000-0000-0000-0000-0000000000e9', 'Eve',
+                           null, 'WOMAN', 'EVERYONE', false);
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000e9');
+select public.set_active_hotel((select one from h));
+select public.declare_upcoming_stay(current_date + 1, current_date + 4);
+
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
+select is(
+  (select count(*)::int from public.discovery_feed('UPCOMING') f
+    where f.display_name = 'Eve'),
+  0,
+  'an unfinished profile is in the room but not in the feed'
+);
+
+-- Every change below is made by its own owner. Updating somebody else's row
+-- is not a shortcut here — RLS turns it into a silent no-op, which would make
+-- these assertions pass for the wrong reason.
+-- Bo asks to see men. Ada, Cam and Eve are women, so the room empties out.
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
+update public.profiles
+   set gender_identity = 'WOMAN', show_me = 'MEN',
+       show_gender = false, show_orientation = false, orientations = '{}'
+ where id = '00000000-0000-0000-0000-0000000000b1';
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
+select is(
+  (select count(*)::int from public.discovery_feed('UPCOMING')),
+  0,
+  'show_me filters the feed server-side rather than being collected and ignored'
+);
+
+-- And it runs both ways: Cam wanting only women does not override Bo being a man.
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000c1');
+update public.profiles
+   set gender_identity = 'WOMAN', show_me = 'WOMEN',
+       show_gender = false, show_orientation = false, orientations = '{}'
+ where id = '00000000-0000-0000-0000-0000000000c1';
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
+update public.profiles
+   set gender_identity = 'MAN', show_me = 'EVERYONE',
+       show_gender = false, show_orientation = false, orientations = '{}'
+ where id = '00000000-0000-0000-0000-0000000000b1';
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
+select is(
+  (select count(*)::int from public.discovery_feed('UPCOMING') f
+    where f.display_name = 'Cam'),
+  0,
+  'the other person''s show_me is honoured too, so neither preference wins'
+);
+
+-- A gender outside the two discovery can filter on is reachable only by
+-- someone asking for everyone. That is a real limit of the model, and it is
+-- asserted so that changing it has to be deliberate (D-023).
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
+update public.profiles
+   set gender_identity = 'NON-BINARY', show_me = 'EVERYONE',
+       show_gender = false, show_orientation = false, orientations = '{}'
+ where id = '00000000-0000-0000-0000-0000000000a1';
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
+select is(
+  (select count(*)::int from public.discovery_feed('UPCOMING') f
+    where f.display_name = 'Ada'),
+  1,
+  'someone outside WOMAN and MAN is visible to a viewer asking for everyone'
+);
+
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
+update public.profiles
+   set gender_identity = 'MAN', show_me = 'WOMEN',
+       show_gender = false, show_orientation = false, orientations = '{}'
+ where id = '00000000-0000-0000-0000-0000000000b1';
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
+select is(
+  (select count(*)::int from public.discovery_feed('UPCOMING') f
+    where f.display_name = 'Ada'),
+  0,
+  'and not to a viewer who asked for one of the two the filter knows'
+);
+
+-- The toggles. Answering is required; publishing is not, and both default off.
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
+update public.profiles
+   set gender_identity = 'MAN', show_me = 'EVERYONE',
+       show_gender = false, show_orientation = false, orientations = '{}'
+ where id = '00000000-0000-0000-0000-0000000000b1';
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
+update public.profiles
+   set gender_identity = 'WOMAN', show_me = 'EVERYONE',
+       show_gender = false, show_orientation = false, orientations = array['Queer']
+ where id = '00000000-0000-0000-0000-0000000000a1';
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
+
+select is(
+  (select f.gender from public.discovery_feed('UPCOMING') f where f.display_name = 'Ada'),
+  null,
+  'a card carries no gender while its owner has not published one'
+);
+select is(
+  (select f.orientations from public.discovery_feed('UPCOMING') f where f.display_name = 'Ada'),
+  '{}'::text[],
+  'and no orientation either'
+);
+
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
+update public.profiles
+   set gender_identity = 'WOMAN', show_me = 'EVERYONE',
+       show_gender = true, show_orientation = true, orientations = array['Queer']
+ where id = '00000000-0000-0000-0000-0000000000a1';
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
+select is(
+  (select f.gender from public.discovery_feed('UPCOMING') f where f.display_name = 'Ada'),
+  'WOMAN',
+  'turning the toggle on is what puts it on the card'
+);
+select is(
+  (select f.orientations from public.discovery_feed('UPCOMING') f where f.display_name = 'Ada'),
+  array['Queer'],
+  'and the same for orientation'
+);
+
+-- show_me is a preference, not a profile field, and never leaves its own row.
+select is(
+  (select count(*)::int
+     from information_schema.columns
+    where table_name = 'discovery_feed' and column_name = 'show_me'),
+  0,
+  'show_me is never returned to anybody else'
 );
 
 select * from finish(true);
