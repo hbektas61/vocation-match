@@ -14,6 +14,14 @@ import { SupabaseApi } from './supabaseApi';
 export * from './contracts';
 export { FAKE_PHONE_OTP, FakeApi } from './fakeApi';
 export { isE164Phone, maskPhone, normalizePhone } from './phone';
+export {
+  formatNationalTr,
+  isValidNationalTr,
+  nationalTrProblem,
+  toE164Tr,
+  toNationalDigits,
+  type PhoneProblem,
+} from './phoneTr';
 export { hasBackendConfig, isFakeApiEnabled, readBackendConfig } from './config';
 export {
   deviceLocation,

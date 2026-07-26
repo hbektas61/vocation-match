@@ -454,7 +454,15 @@ describe('waiting for an SMS code', () => {
     await fireEvent.press(screen.getByLabelText(COPY.common.back));
 
     expect(await screen.findByTestId('screen-onboarding-phone')).toBeTruthy();
-    expect(screen.getByTestId('auth-phone').props.value).toBe(phone);
+    // Same number, shown the way the field shows numbers: the country code is
+    // the fixed prefix beside the box, and the rest is grouped as it is read.
+    expect(screen.getByTestId('auth-phone').props.value).toBe('555 111 00 20');
+    // Hidden from the screen reader on purpose — the field's accessible name
+    // already says "Turkey, country code plus 90", and reading the glyphs
+    // again would be the same fact twice.
+    expect(
+      screen.getByTestId('phone-prefix', { includeHiddenElements: true }),
+    ).toHaveTextContent('+90');
   });
 
   it('does not request another SMS when back and forward happen during the cooldown', async () => {

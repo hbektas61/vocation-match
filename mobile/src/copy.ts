@@ -117,7 +117,14 @@ export const COPY = {
 
   phoneAuth: {
     phoneLabel: 'Phone number',
-    phonePlaceholder: '+90 555 111 22 33',
+    // The country code is drawn beside the box and is not editable, so the
+    // placeholder shows only the part somebody actually types.
+    phonePlaceholder: '555 111 22 33',
+    countryPrefix: '+90',
+    /** Read out as the field's accessible name, since "+90" is not spoken by the box. */
+    phoneAccessibleLabel: 'Phone number, Turkey, country code plus 90',
+    incomplete: 'That number is not finished yet — a Turkish mobile number has 10 digits.',
+    notMobile: 'That does not look like a mobile number. Turkish mobile numbers start with 5.',
     sendCode: 'Send code',
     sending: 'Sending…',
     codeLabel: 'Six-digit SMS code',
