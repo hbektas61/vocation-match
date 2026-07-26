@@ -40,7 +40,11 @@ import { color, font, fontFamily, radius, spacing } from '../theme';
 
 const COLUMNS = 3;
 const ROWS = 3;
-const GAP = spacing.sm;
+// Wider than the usual small step on purpose: a dashed empty slot carries its
+// own visual air, but two full-bleed photographs with a thin seam read as one
+// picture cut in half. The owner asked for the photos to breathe the way the
+// skeletons appear to.
+const GAP = spacing.sm + 4;
 /** Matches the reference's portrait tiles. */
 const TILE_RATIO = 0.78;
 /** How long a finger rests on a photo before it lifts. */
@@ -527,7 +531,7 @@ const styles = StyleSheet.create({
   slot: {
     // Before the first layout pass the percentage keeps the grid's shape; the
     // measured width takes over immediately after.
-    width: `${(100 - 8) / COLUMNS}%`,
+    width: '30%',
     aspectRatio: TILE_RATIO,
     borderRadius: radius.md,
     overflow: 'hidden',
