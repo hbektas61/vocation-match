@@ -1,12 +1,60 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Body, Button, Caption, Card, DoorPlate, EmptyState, Field, Gap, Heading, Notice, Screen, StateChip, Title } from '../components/ui';
+import { DestinationCard } from '../components/DestinationCard';
+import { HotelBuilding, SearchScene } from '../components/HotelIllustrations';
 import { nowMs } from '../clock';
 import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
 import { ApiError, getApi, type HotelCard, type RoomHeadcount, type RoomStatus } from '../data';
 import { useAppStore } from '../state/AppStore';
-import { color, radius, spacing } from '../theme';
+import { color, font, fontFamily, radius, spacing } from '../theme';
+
+/**
+ * The designer's popular destinations. Names are proper nouns (no i18n);
+ * the gradients stand in for photographs we hold no rights to, and the
+ * reference's hotel counts are omitted because the catalogue fills lazily —
+ * any number would be an invention. A card is a pre-typed query.
+ */
+const DESTINATIONS: { name: string; query: string; colors: readonly [string, string] }[] = [
+  { name: 'İstanbul', query: 'İstanbul', colors: ['#8E6BC7', '#54366E'] },
+  { name: 'Antalya', query: 'Antalya', colors: ['#A98BDE', '#6C55B4'] },
+  { name: 'Kapadokya', query: 'Nevşehir', colors: ['#C9A3E8', '#8A63B8'] },
+];
+
+const QUICK_CITIES = ['İstanbul', 'Antalya'];
+
+const MagnifierIcon = () => (
+  <View style={{ marginRight: spacing.sm }}>
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color.inkMuted} strokeWidth={2.2} strokeLinecap="round">
+      <Circle cx={11} cy={11} r={7} />
+      <Path d="M21 21l-4.5-4.5" />
+    </Svg>
+  </View>
+);
+
+const InfoIcon = () => (
+  <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round">
+    <Circle cx={12} cy={12} r={9} />
+    <Path d="M12 16v-4M12 8h.01" />
+  </Svg>
+);
+
+const ClockIcon = () => (
+  <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Circle cx={12} cy={12} r={9} />
+    <Path d="M12 7v5l3 2" />
+  </Svg>
+);
+
+const CityIcon = () => (
+  <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M10 12h4m-4-4h4m0 13v-3a2 2 0 0 0-4 0v3" />
+    <Path d="M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2" />
+    <Path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" />
+  </Svg>
+);
 
 /** Two characters before anything is fetched. */
 const MIN_QUERY = 2;
@@ -38,6 +86,8 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
    * here" points at a person.
    */
   const [roomCounts, setRoomCounts] = useState<RoomHeadcount[] | null>(null);
+  /** What "Son arama" re-runs: the last query that actually searched. */
+  const [lastQuery, setLastQuery] = useState<string | null>(null);
 
   const activeHotel = state.hotels.find((h) => h.id === state.activeHotel?.hotelId) ?? null;
 
@@ -105,6 +155,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       if (ticket !== sequence.current) return;
       dispatch({ type: 'HOTELS_LOADED', hotels });
       setResults(hotels);
+      setLastQuery(text);
     } catch (err) {
       if (ticket !== sequence.current) return;
       setSearchError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
@@ -217,13 +268,21 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           </View>
         </View>
       ) : (
-        /* The first thing a new account sees here, so it is an invitation
-           rather than a report of absence: a hollow key card waiting for its
-           hotel, and the search directly beneath it. */
-        <View style={styles.emptyKey} testID="hotel-empty-state">
-          <View style={styles.emptyStripe} />
-          <Heading>{COPY.hotel.emptyTitle}</Heading>
-          <Body>{COPY.hotel.emptyBody}</Body>
+        /* The designer's nothing-chosen card (2026-07-27): the little hotel
+           in its pale disc, the invitation beside it, and the requirement
+           worn as a quiet badge rather than an error. */
+        <View style={styles.emptyCard} testID="hotel-empty-state">
+          <View style={styles.emptyDisc}>
+            <HotelBuilding />
+          </View>
+          <View style={styles.emptyText}>
+            <Heading>{COPY.hotel.emptyTitle}</Heading>
+            <Body>{COPY.hotel.emptyBody}</Body>
+            <View style={styles.emptyBadge}>
+              <InfoIcon />
+              <Text style={styles.emptyBadgeText}>{COPY.hotel.emptyBadge}</Text>
+            </View>
+          </View>
         </View>
       )}
 
@@ -256,6 +315,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         value={query}
         onChangeText={changeQuery}
         placeholder={COPY.hotel.searchPlaceholder}
+        prefix={<MagnifierIcon />}
         testID="hotel-search"
       />
       {/* An ODbL licence term: the stored hotel data has to say where it is
@@ -277,7 +337,54 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           collapsing any two of them makes the screen look broken in the case
           it collapsed. */}
       {searchError ? null : !searchable(query) ? (
-        <EmptyState message={COPY.hotel.searchPrompt} testID="hotel-search-prompt" />
+        /* Idle is not empty (designer, 2026-07-27): quick queries, the
+           popular destinations, and only then the type-to-search drawing. */
+        <View style={styles.idle} testID="hotel-search-prompt">
+          <Text style={styles.sectionTitle}>{COPY.hotel.quickOptions}</Text>
+          <View style={styles.chipRow}>
+            {QUICK_CITIES.map((city) => (
+              <Pressable
+                key={city}
+                accessibilityRole="button"
+                accessibilityLabel={city}
+                onPress={() => changeQuery(city)}
+                style={({ pressed }) => [styles.quickChip, pressed && styles.resultPressed]}
+                testID={`quick-${city}`}
+              >
+                <CityIcon />
+                <Text style={styles.quickChipLabel}>{city}</Text>
+              </Pressable>
+            ))}
+            {lastQuery && !QUICK_CITIES.includes(lastQuery) ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${COPY.hotel.lastSearch}: ${lastQuery}`}
+                onPress={() => changeQuery(lastQuery)}
+                style={({ pressed }) => [styles.quickChip, pressed && styles.resultPressed]}
+                testID="quick-last-search"
+              >
+                <ClockIcon />
+                <Text style={styles.quickChipLabel}>{COPY.hotel.lastSearch}</Text>
+              </Pressable>
+            ) : null}
+          </View>
+          <Text style={styles.sectionTitle}>{COPY.hotel.popularTitle}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.destinationRow}>
+            {DESTINATIONS.map((destination) => (
+              <DestinationCard
+                key={destination.name}
+                name={destination.name}
+                colors={destination.colors}
+                onPress={() => changeQuery(destination.query)}
+                testID={`destination-${destination.name}`}
+              />
+            ))}
+          </ScrollView>
+          <View style={styles.promptScene}>
+            <SearchScene />
+            <Body>{COPY.hotel.searchPrompt}</Body>
+          </View>
+        </View>
       ) : results === null ? (
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="hotel-loading" />
       ) : results.length === 0 ? (
@@ -350,22 +457,64 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   roomState: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  /** A hollow key card: the shape of what is missing, waiting to be filled. */
-  emptyKey: {
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: color.border,
-    borderRadius: radius.md,
+  emptyCard: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    alignItems: 'center',
+    backgroundColor: 'rgba(123, 79, 168, 0.05)',
+    borderRadius: radius.lg,
     padding: spacing.md,
-    gap: spacing.sm,
   },
-  emptyStripe: {
-    height: 14,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: color.accent,
-    borderRadius: 3,
-    marginBottom: spacing.xs,
+  emptyDisc: {
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    backgroundColor: 'rgba(123, 79, 168, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  emptyText: { flex: 1, gap: spacing.xs },
+  emptyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: color.veil,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm + 4,
+    paddingVertical: 6,
+    marginTop: spacing.xs,
+  },
+  emptyBadgeText: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: font.caption,
+    color: color.accentDeep,
+  },
+  idle: { gap: spacing.sm },
+  sectionTitle: {
+    fontFamily: fontFamily.display,
+    fontSize: font.heading,
+    color: color.ink,
+    marginTop: spacing.sm,
+  },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  quickChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(123, 79, 168, 0.25)',
+    backgroundColor: 'rgba(123, 79, 168, 0.04)',
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+  },
+  quickChipLabel: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: font.body,
+    color: color.ink,
+  },
+  destinationRow: { gap: spacing.sm, paddingVertical: spacing.xs },
+  promptScene: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
   resultPressed: { opacity: 0.8 },
 });

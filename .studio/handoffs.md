@@ -1820,3 +1820,34 @@ the middle of the orbit in its own deeper pool of lavender, and an empty
 armchair waits in a white bubble on a low stage at the disc's foot. Same
 component (OrbitEmpty), same screen wiring, same tests — only the drawing
 changed. Verified by TR browser walk screenshot; 397 jest tests green.
+
+## 2026-07-27 — the hotel screen's idle state (designer screen 4)
+
+The reference: a warm nothing-chosen card, quick queries, destination
+cards, and a search that looks like a place to start rather than a form.
+Shipped, with the translation rules applied and two honesty lines drawn:
+
+- **Nothing-chosen card**: the little SVG hotel in its pale disc, the
+  designer's own Turkish ("Henüz bir otel seçmedin"), and the requirement
+  worn as a quiet info badge, not an error.
+- **Search field** gains the magnifier prefix (same Field, same testID).
+- **Idle is not empty**: quick chips (İstanbul, Antalya, plus "Son arama"
+  once a different query has run — session-scoped on purpose, a stored
+  search history would be a retention decision) and three gradient
+  destination cards (İstanbul/Antalya/Kapadokya) that are just pre-typed
+  queries. The type-to-search prompt keeps its testID but became the
+  magnifier-over-hills drawing.
+- **Not adopted, deliberately**: the reference's hotel counts ("2.734
+  otel") — the catalogue fills lazily from OSM, so any count would be an
+  invention; and "Yakınımdakiler" + the pin button — both need location,
+  and location is currently asked only at the proximity check with the
+  reason on screen. Widening that is an owner privacy decision, parked in
+  the open list. Destination photos became brand-family gradients (no
+  rights to photographs; expo-linear-gradient came in for this).
+- En route: fixture city "Istanbul" corrected to "İstanbul" — ASCII I
+  lowercases to ı in Turkish, so the İstanbul chip matched nothing in the
+  fake. The tab-bar restyle in the reference (floating pill) is a separate
+  all-tabs slice, not done here.
+
+Verified: TR browser walk (idle state, İstanbul chip → Bosphorus Garden
+result), 397 jest tests, full mobile gate green.

@@ -13,7 +13,7 @@ export const HOTELS: Hotel[] = [
   {
     id: 'hotel-bosphorus-garden',
     name: 'Bosphorus Garden Hotel',
-    city: 'Istanbul',
+    city: 'İstanbul',
     country: 'Türkiye',
     latitude: 41.0433,
     longitude: 29.0031,
