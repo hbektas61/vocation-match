@@ -1,3 +1,4 @@
+import type { DateProblem } from './domain/dateInput';
 import type { ApiErrorCode, ReportReason, RoomKey, RoomStatus } from './data';
 
 /**
@@ -147,9 +148,11 @@ export const COPY = {
     namePlaceholder: 'How should we show you?',
     nameError: 'Your name needs at least 2 characters.',
     birthdateLabel: 'Date of birth',
-    birthdateHint: 'Use the format YYYY-MM-DD, for example 1994-03-01.',
-    birthdatePlaceholder: 'YYYY-MM-DD',
-    invalidBirthdate: 'Enter your date of birth as YYYY-MM-DD.',
+    birthdateHint: 'Day, month, year — for example 01/03/1994.',
+    birthdatePlaceholder: 'DD/MM/YYYY',
+    invalidBirthdate: 'That is not a date on the calendar. Check the day and the month.',
+    incompleteBirthdate: 'That date is not finished yet.',
+    futureBirthdate: 'That date has not happened yet.',
     underAge: 'Vocation Match is 18+ only.',
     bioLabel: 'Bio',
     bioPlaceholder: 'A sentence about you',
@@ -403,6 +406,25 @@ export const COPY_FOR = {
 } as const;
 
 /** Maps a typed `ApiError.code` onto reviewed, trust-copy-safe user text. */
+/**
+ * Why a birthdate was refused, in words that name the part to look at.
+ *
+ * Shared by onboarding and profile editing, because the two screens asking the
+ * same question and answering it differently is how copy drifts.
+ */
+export function birthdateMessage(problem: DateProblem | null): string {
+  switch (problem) {
+    case 'INVALID':
+      return COPY.profileSetup.invalidBirthdate;
+    case 'FUTURE':
+      return COPY.profileSetup.futureBirthdate;
+    case 'UNDERAGE':
+      return COPY.profileSetup.underAge;
+    default:
+      return COPY.profileSetup.incompleteBirthdate;
+  }
+}
+
 export function apiErrorMessage(code: ApiErrorCode): string {
   switch (code) {
     case 'UNAUTHENTICATED':

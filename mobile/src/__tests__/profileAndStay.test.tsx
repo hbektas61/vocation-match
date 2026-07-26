@@ -33,7 +33,9 @@ describe('editing a profile after onboarding', () => {
     // The birthdate has to come from the server: the cached domain profile is
     // the shape other people see, and a form that prefilled an empty date and
     // saved it would be worse than no form.
-    expect(screen.getByTestId('edit-profile-birthdate').props.value).toBe('1994-03-01');
+    // Shown the way it is typed. What the server holds is still ISO; this is
+    // the one place the two forms are allowed to differ.
+    expect(screen.getByTestId('edit-profile-birthdate').props.value).toBe('01/03/1994');
   });
 
   it('saves a corrected name and shows it everywhere', async () => {
@@ -59,7 +61,7 @@ describe('editing a profile after onboarding', () => {
     const recentYear = new Date(FIXED).getFullYear() - 5;
     await fireEvent.changeText(
       await screen.findByTestId('edit-profile-birthdate'),
-      `${recentYear}-01-01`,
+      `01/01/${recentYear}`,
     );
     await fireEvent.press(screen.getByTestId('save-edit-profile'));
 

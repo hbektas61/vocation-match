@@ -15,7 +15,10 @@ import React from 'react';
 import App from '../../App';
 import { FAKE_PHONE_OTP } from '../data';
 
+/** What the server stores. */
 export const ADULT_BIRTHDATE = '1994-03-01';
+/** The same date as somebody types it, which is the only form the field takes. */
+export const ADULT_BIRTHDATE_TYPED = '01/03/1994';
 export const PILOT_HOTEL = 'hotel-lara-shore';
 export const DEFAULT_PHONE = '+905551110001';
 
@@ -62,7 +65,7 @@ export async function onboardToTeaching(
   await type('profile-name', name);
   await press('onboarding-continue');
 
-  await type('profile-birthdate', ADULT_BIRTHDATE);
+  await type('profile-birthdate', ADULT_BIRTHDATE_TYPED);
   await press('onboarding-continue');
 
   await press('onboarding-skip'); // bio

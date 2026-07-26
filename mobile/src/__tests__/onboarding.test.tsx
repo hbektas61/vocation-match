@@ -81,7 +81,7 @@ describe('moving through the wizard', () => {
 
     await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
-    await fireEvent.changeText(await screen.findByTestId('profile-birthdate'), '1994-03-01');
+    await fireEvent.changeText(await screen.findByTestId('profile-birthdate'), '01/03/1994');
     // The birthdate is not optional: it is what the 18+ rule is checked against.
     expect(screen.queryByTestId('onboarding-skip')).toBeNull();
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
@@ -172,12 +172,44 @@ describe('the Android back button', () => {
   });
 });
 
+describe('the birthdate', () => {
+  it('is typed and shown as DD/MM/YYYY, and stored as ISO', async () => {
+    await authenticateWithPhone('+905551119901');
+    await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+
+    const field = await screen.findByTestId('profile-birthdate');
+    // Typed without separators; the field supplies them.
+    await fireEvent.changeText(field, '01031994');
+    expect(screen.getByTestId('profile-birthdate').props.value).toBe('01/03/1994');
+
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await screen.findByTestId('screen-onboarding-bio');
+
+    // The boundary: the day/month order is a display decision and the stored
+    // form is the one that sorts and compares.
+    expect((await getApi().getOwnProfile())?.birthdate).toBe('1994-03-01');
+  });
+
+  it('will not continue on a date the calendar does not have', async () => {
+    await authenticateWithPhone('+905551119902');
+    await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+
+    await fireEvent.changeText(await screen.findByTestId('profile-birthdate'), '31/02/1994');
+
+    // Nothing to say yet beyond the format the field already shows, so the
+    // action simply stays inactive rather than arguing.
+    expect(screen.getByTestId('onboarding-continue').props.accessibilityState.disabled).toBe(true);
+  });
+});
+
 describe('interests', () => {
   async function reachInterests() {
     await authenticateWithPhone('+905551110016');
     await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
-    await fireEvent.changeText(await screen.findByTestId('profile-birthdate'), '1994-03-01');
+    await fireEvent.changeText(await screen.findByTestId('profile-birthdate'), '01/03/1994');
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
     await fireEvent.press(await screen.findByTestId('onboarding-skip')); // bio
     expect(await screen.findByTestId('interest-choices')).toBeTruthy();

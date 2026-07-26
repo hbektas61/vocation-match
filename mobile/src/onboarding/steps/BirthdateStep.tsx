@@ -2,9 +2,15 @@ import React, { useState } from 'react';
 
 import { Field } from '../../components/ui';
 import { todayIsoDate } from '../../clock';
-import { apiErrorMessage, COPY } from '../../copy';
+import { apiErrorMessage, birthdateMessage, COPY } from '../../copy';
 import { ApiError } from '../../data';
-import { isAdult, parseIsoDate } from '../../domain/age';
+import {
+  dateDigitsFromIso,
+  dateProblem,
+  formatDateInput,
+  isoFromDateDigits,
+  toDateDigits,
+} from '../../domain/dateInput';
 import { OnboardingScaffold } from '../OnboardingScaffold';
 import type { SavingStepProps } from './types';
 
@@ -26,18 +32,27 @@ export function BirthdateStep({
   onBack,
   saveProfile,
 }: SavingStepProps) {
-  const [birthdate, setBirthdate] = useState(draft.birthdate || profile?.birthdate || '');
+  // Digits, not a date. The field shows `DD/MM/YYYY` and the server is given
+  // ISO; keeping the digits as the state means neither form has to be parsed
+  // back out of the other on every keystroke.
+  const [digits, setDigits] = useState(() =>
+    dateDigitsFromIso(draft.birthdate || profile?.birthdate || ''),
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const today = todayIsoDate();
+  const problem = dateProblem(digits, today);
+
   const submit = async () => {
     if (busy) return;
-    if (!parseIsoDate(birthdate)) {
-      setError(COPY.profileSetup.invalidBirthdate);
+    if (problem !== null) {
+      setError(birthdateMessage(problem));
       return;
     }
-    if (!isAdult(birthdate, todayIsoDate())) {
-      setError(COPY.profileSetup.underAge);
+    const birthdate = isoFromDateDigits(digits);
+    if (!birthdate) {
+      setError(COPY.profileSetup.invalidBirthdate);
       return;
     }
     setError(null);
@@ -61,7 +76,11 @@ export function BirthdateStep({
       body={COPY.onboarding.birthdate.body}
       onBack={onBack}
       actionLabel={COPY.onboarding.continueButton}
-      actionEnabled={birthdate.trim().length > 0 && !busy}
+      // Live as soon as the answer is a real date, not only once it is an
+      // allowed one. A date that is refused has a reason worth hearing, and a
+      // disabled button cannot give one — it just leaves somebody retyping a
+      // birthday that will never be accepted.
+      actionEnabled={isoFromDateDigits(digits) !== null && !busy}
       actionBusy={busy}
       onAction={submit}
       error={error}
@@ -71,10 +90,13 @@ export function BirthdateStep({
         label={COPY.profileSetup.birthdateLabel}
         hideLabel
         hint={COPY.profileSetup.birthdateHint}
-        value={birthdate}
-        onChangeText={setBirthdate}
+        invalid={error !== null}
+        value={formatDateInput(digits)}
+        onChangeText={(text) => setDigits(toDateDigits(text))}
         placeholder={COPY.profileSetup.birthdatePlaceholder}
-        keyboardType="numbers-and-punctuation"
+        // The separators are added for them, so the punctuation keys are only
+        // a way to get the date wrong.
+        keyboardType="number-pad"
         autoFocus
         editable={!busy}
         testID="profile-birthdate"
@@ -82,3 +104,4 @@ export function BirthdateStep({
     </OnboardingScaffold>
   );
 }
+

@@ -11,9 +11,15 @@ import React, { useState } from 'react';
 
 import { Body, Button, Caption, Field, Gap, Notice } from './ui';
 import { todayIsoDate } from '../clock';
-import { apiErrorMessage, COPY } from '../copy';
+import { apiErrorMessage, birthdateMessage, COPY } from '../copy';
 import { ApiError, getApi, MAX_INTERESTS, type OwnProfile } from '../data';
-import { isAdult, parseIsoDate } from '../domain/age';
+import {
+  dateDigitsFromIso,
+  dateProblem,
+  formatDateInput,
+  isoFromDateDigits,
+  toDateDigits,
+} from '../domain/dateInput';
 import { INTEREST_CHOICES } from '../fixtures/interests';
 import { ChoiceChip, ChoiceGroup } from '../onboarding/ChoiceChip';
 
@@ -32,7 +38,11 @@ export function ProfileForm({
   testIDPrefix?: string;
 }) {
   const [displayName, setDisplayName] = useState(initial?.displayName ?? '');
-  const [birthdate, setBirthdate] = useState(initial?.birthdate ?? '');
+  // The same digits-in, ISO-out arrangement the onboarding step uses, so a
+  // date is written and read the one way everywhere in the app.
+  const [birthdateDigits, setBirthdateDigits] = useState(() =>
+    dateDigitsFromIso(initial?.birthdate ?? ''),
+  );
   const [bio, setBio] = useState(initial?.bio ?? '');
   const [interests, setInterests] = useState<string[]>(initial?.interests ?? []);
   const [submitting, setSubmitting] = useState(false);
@@ -45,15 +55,13 @@ export function ProfileForm({
       setError(COPY.profileSetup.nameError);
       return;
     }
-    if (!parseIsoDate(birthdate)) {
-      setError(COPY.profileSetup.invalidBirthdate);
-      return;
-    }
     // Fast client-side feedback only — the database trigger
     // `app.enforce_adult_profile` is the real enforcement point, and it runs on
     // an update as well as an insert, so editing cannot get round it either.
-    if (!isAdult(birthdate, todayIsoDate())) {
-      setError(COPY.profileSetup.underAge);
+    const problem = dateProblem(birthdateDigits, todayIsoDate());
+    const birthdate = isoFromDateDigits(birthdateDigits);
+    if (problem !== null || !birthdate) {
+      setError(birthdateMessage(problem));
       return;
     }
     setError(null);
@@ -86,10 +94,10 @@ export function ProfileForm({
       <Field
         label={COPY.profileSetup.birthdateLabel}
         hint={COPY.profileSetup.birthdateHint}
-        value={birthdate}
-        onChangeText={setBirthdate}
+        value={formatDateInput(birthdateDigits)}
+        onChangeText={(text) => setBirthdateDigits(toDateDigits(text))}
         placeholder={COPY.profileSetup.birthdatePlaceholder}
-        keyboardType="numbers-and-punctuation"
+        keyboardType="number-pad"
         editable={!submitting}
         testID={`${testIDPrefix}-birthdate`}
       />

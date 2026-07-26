@@ -299,7 +299,7 @@ describe('authentication and profile', () => {
     const recentYear = new Date().getFullYear() - 5;
     await fireEvent.changeText(
       await screen.findByTestId('profile-birthdate'),
-      `${recentYear}-01-01`,
+      `01/01/${recentYear}`,
     );
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
 
