@@ -1731,3 +1731,23 @@ both cases the phone box must not exist. En route, the test-support helpers
 now return their render handle so a test can close and reopen the app
 (RNTL's cleanup() mid-test breaks; unmount() is the working path). 396 jest
 tests green.
+
+## 2026-07-26 — the red screen after the first onboarding
+
+The first device run crashed with "tried to access a native module that
+doesn't exist" out of PushNotificationIOS the moment onboarding completed.
+Nobody imports PushNotificationIOS — the trigger was `await
+import('react-native')` inside push registration: Metro's dynamic import
+materialises the namespace with `importAll`, which executes every lazy
+getter on the react-native index, including the PushNotificationIOS one,
+whose native module Expo Go does not have. A static `import { Platform }`
+touches only the one property and is safe.
+
+Two changes: the static import, and an execution-environment guard — in
+Expo Go (`Constants.executionEnvironment === StoreClient`) push
+registration returns before anything notification-shaped loads, because
+Expo Go cannot receive remote pushes since SDK 53 anyway. Real pushes on a
+device therefore still require the dev build (already on the open list).
+Full gate green, 396 tests.
+
+Rule worth keeping: never `import('react-native')` dynamically, anywhere.

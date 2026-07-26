@@ -13,17 +13,31 @@
  * works without pushes. That is also why the import is dynamic and every step
  * is caught: jest and the web build load this file and must not explode.
  */
+import Constants, { ExecutionEnvironment } from 'expo-constants';
+import { Platform } from 'react-native';
+
 import type { VocationApi } from '../data';
 
 let registeredToken: string | null = null;
 
 export async function registerForPush(api: VocationApi, locale: string): Promise<void> {
+  // Expo Go cannot receive remote pushes since SDK 53, so nothing that
+  // follows can succeed there — and the attempt is what crashed the first
+  // device run. Skipped before anything notification-shaped is even loaded.
+  if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
+    return;
+  }
+  if (Platform.OS !== 'ios' && Platform.OS !== 'android') {
+    return;
+  }
   try {
+    // Still dynamic: jest and the web export load this file, and neither
+    // should pay for (or choke on) the notifications module. Never
+    // `import('react-native')`, though — Metro's dynamic import builds the
+    // namespace with importAll, which runs every lazy getter on the RN index,
+    // including PushNotificationIOS's, whose native module does not exist in
+    // Expo Go. That one evaluation was the whole red screen.
     const Notifications = await import('expo-notifications');
-    const { Platform } = await import('react-native');
-    if (Platform.OS !== 'ios' && Platform.OS !== 'android') {
-      return;
-    }
 
     // Foreground presentation: a banner, quietly — the user is already here.
     Notifications.setNotificationHandler({
