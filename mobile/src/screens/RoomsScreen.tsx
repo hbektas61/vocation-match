@@ -1,29 +1,118 @@
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, type NavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import {
-  Body,
-  Button,
-  Caption,
-  DoorPlate,
-  KeyCard,
-  Notice,
-  Screen,
-  StateChip,
-  Title,
-} from '../components/ui';
+import { Body, Button, Caption, Notice, Screen, StateChip, Title } from '../components/ui';
+import { CalendarIllustration, PinScene } from '../components/RoomIllustrations';
 import { nowMs } from '../clock';
 import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation } from '../copy';
-import { ApiError, getApi, type RoomStatus } from '../data';
-import type { RootStackParamList } from '../navigation/types';
+import { ApiError, getApi, type RoomKey, type RoomStatus } from '../data';
+import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { earliestRoomExpiry } from '../state/roomSchedule';
 import { useAppStore } from '../state/AppStore';
+import { color, font, fontFamily, radius, spacing } from '../theme';
+
+/** The small icons beside each card's status line, and the footer shield. */
+const CalendarIcon = () => (
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Rect x={3} y={5} width={18} height={16} rx={2} />
+    <Path d="M8 3v4M16 3v4M3 11h18" />
+  </Svg>
+);
+
+const PinIcon = () => (
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+    <Circle cx={12} cy={10} r={3} />
+  </Svg>
+);
+
+const ShieldIcon = () => (
+  <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+    <Path d="M13 9l-3 4h4l-3 4" strokeWidth={1.8} />
+  </Svg>
+);
+
+/**
+ * One room, as the designer's card (2026-07-27): the tracked plate and the
+ * state chip on the head row, the drawing beside the claim and its trust
+ * sentence, the server's status line under a hairline, and the door's one
+ * action as a full-width button.
+ */
+function RoomCard({
+  room,
+  status,
+  lead,
+  body,
+  illustration,
+  icon,
+  buttonLabel,
+  onOpen,
+  extra,
+  testID,
+  buttonTestID,
+}: {
+  room: RoomKey;
+  status: RoomStatus | null;
+  lead: string;
+  body: string;
+  illustration: React.ReactNode;
+  icon: React.ReactNode;
+  buttonLabel: string;
+  onOpen: () => void;
+  extra?: React.ReactNode;
+  testID: string;
+  buttonTestID: string;
+}) {
+  const open = status?.eligible === true;
+  return (
+    <View style={styles.roomCard} testID={testID}>
+      <View style={styles.cardHead}>
+        <View style={styles.platePill}>
+          <Text style={styles.platePillText}>
+            {room === 'UPCOMING' ? COPY.rooms.upcomingPlate : COPY.rooms.hereNowPlate}
+          </Text>
+        </View>
+        <StateChip
+          open={open}
+          label={open ? COPY.rooms.openChip : COPY.rooms.closedChip}
+          testID={`${testID}-state`}
+        />
+      </View>
+      <View style={styles.cardBodyRow}>
+        <View style={styles.cardArt}>{illustration}</View>
+        <View style={styles.cardWords}>
+          <Text style={styles.cardLead}>{lead}</Text>
+          <Body>{body}</Body>
+        </View>
+      </View>
+      <View style={styles.hairline} />
+      {status ? (
+        <View style={styles.statusRow}>
+          {icon}
+          <View style={styles.statusText}>
+            <Caption>{roomStatusExplanation(room, status)}</Caption>
+          </View>
+        </View>
+      ) : null}
+      {extra}
+      <Button
+        label={buttonLabel}
+        variant={open ? 'secondary' : 'primary'}
+        onPress={onOpen}
+        testID={buttonTestID}
+      />
+    </View>
+  );
+}
 
 export function RoomsScreen() {
   const { state, dispatch } = useAppStore();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const tabNavigation = useNavigation<NavigationProp<TabParamList>>();
   const [rooms, setRooms] = useState<RoomStatus[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -109,69 +198,125 @@ export function RoomsScreen() {
   }
 
   const upcomingOpen = upcomingStatus?.eligible === true;
-  const hereNowOpen = hereNowStatus?.eligible === true;
 
   return (
     <Screen safeTop testID="screen-rooms">
       <Title>{COPY_FOR.roomsTitle(hotelName)}</Title>
+      <Body>{COPY.rooms.subtitle}</Body>
 
-      {/* The two rooms as key cards: the product's own object, and the state
-          readable from across the pool — the band and the chip both say it,
-          and the chip says it in a word. */}
-      <KeyCard open={upcomingOpen} testID="room-upcoming">
-        <View style={styles.cardHead}>
-          <DoorPlate>{COPY.rooms.upcomingPlate}</DoorPlate>
-          <StateChip
-            open={upcomingOpen}
-            label={upcomingOpen ? COPY.rooms.openChip : COPY.rooms.closedChip}
-            testID="room-upcoming-state"
-          />
+      <RoomCard
+        room="UPCOMING"
+        status={upcomingStatus}
+        lead={COPY.rooms.upcomingLead}
+        body={COPY.rooms.upcomingBody}
+        illustration={<CalendarIllustration />}
+        icon={<CalendarIcon />}
+        buttonLabel={upcomingOpen ? COPY.upcoming.updateButton : COPY.upcoming.saveButton}
+        onOpen={() => navigation.navigate('Upcoming')}
+        testID="room-upcoming"
+        buttonTestID="open-upcoming"
+      />
+
+      <RoomCard
+        room="HERE_NOW"
+        status={hereNowStatus}
+        lead={COPY.rooms.hereNowLead}
+        body={COPY.rooms.hereNowBody}
+        illustration={<PinScene />}
+        icon={<PinIcon />}
+        buttonLabel={COPY.hereNow.checkButton}
+        onOpen={() => navigation.navigate('HereNow')}
+        extra={
+          state.locationPermission === 'denied' ? (
+            <Notice message={COPY.hereNow.permissionDenied} tone="error" />
+          ) : null
+        }
+        testID="room-here-now"
+        buttonTestID="open-here-now"
+      />
+
+      {/* The trust caption grown into the designer's footer: what is true
+          about location and deletion, and the way to the controls. */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${COPY.rooms.privacyTitle}. ${COPY.rooms.privacyBody}`}
+        onPress={() => tabNavigation.navigate('Settings')}
+        style={({ pressed }) => [styles.privacyCard, pressed && styles.privacyPressed]}
+        testID="rooms-privacy"
+      >
+        <ShieldIcon />
+        <View style={styles.privacyWords}>
+          <Text style={styles.privacyTitle}>{COPY.rooms.privacyTitle}</Text>
+          <Caption>{COPY.rooms.privacyBody}</Caption>
         </View>
-        <Body>{COPY.upcoming.explainer}</Body>
-        {upcomingStatus ? (
-          <Caption>{roomStatusExplanation('UPCOMING', upcomingStatus)}</Caption>
-        ) : null}
-        <Button
-          label={upcomingOpen ? COPY.upcoming.updateButton : COPY.upcoming.saveButton}
-          variant={upcomingOpen ? 'secondary' : 'primary'}
-          onPress={() => navigation.navigate('Upcoming')}
-          testID="open-upcoming"
-        />
-      </KeyCard>
-
-      <KeyCard open={hereNowOpen} testID="room-here-now">
-        <View style={styles.cardHead}>
-          <DoorPlate>{COPY.rooms.hereNowPlate}</DoorPlate>
-          <StateChip
-            open={hereNowOpen}
-            label={hereNowOpen ? COPY.rooms.openChip : COPY.rooms.closedChip}
-            testID="room-here-now-state"
-          />
-        </View>
-        <Body>{COPY.hereNow.explainer}</Body>
-        {hereNowStatus ? (
-          <Caption>{roomStatusExplanation('HERE_NOW', hereNowStatus)}</Caption>
-        ) : null}
-        {state.locationPermission === 'denied' ? (
-          <Notice message={COPY.hereNow.permissionDenied} tone="error" />
-        ) : null}
-        <Button
-          label={COPY.hereNow.checkButton}
-          variant={hereNowOpen ? 'secondary' : 'primary'}
-          onPress={() => navigation.navigate('HereNow')}
-          testID="open-here-now"
-        />
-      </KeyCard>
-
-      <Caption>{COPY.trust.noExactLocation}</Caption>
+        <Text style={styles.privacyChevron}>›</Text>
+      </Pressable>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  roomCard: {
+    backgroundColor: color.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: color.border,
+    padding: spacing.md,
+    gap: spacing.md,
+    shadowColor: color.ink,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
   cardHead: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  platePill: {
+    backgroundColor: color.veil,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm + 4,
+    paddingVertical: 5,
+  },
+  platePillText: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.label,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: color.accentDeep,
+  },
+  cardBodyRow: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
+  cardArt: { width: 96 },
+  cardWords: { flex: 1, gap: spacing.xs },
+  cardLead: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.body + 1,
+    lineHeight: (font.body + 1) * 1.35,
+    color: color.ink,
+  },
+  hairline: { height: 1, backgroundColor: color.border },
+  statusRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
+  statusText: { flex: 1 },
+  privacyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: 'rgba(123, 79, 168, 0.05)',
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  privacyPressed: { opacity: 0.8 },
+  privacyWords: { flex: 1, gap: 2 },
+  privacyTitle: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.body,
+    color: color.ink,
+  },
+  privacyChevron: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.heading,
+    color: color.inkMuted,
   },
 });

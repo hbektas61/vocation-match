@@ -443,10 +443,17 @@ export const tr: Copy = {
 
   rooms: {
     plainTitle: 'Odalar',
+    subtitle: 'Odaya katılmak için bir yöntem seç',
     openChip: 'Açık',
     closedChip: 'Kapalı',
     upcomingPlate: 'Yaklaşan',
     hereNowPlate: 'Şu an burada',
+    upcomingLead: 'Konaklama tarihlerini sen beyan edersin.',
+    upcomingBody: 'Kimseden rezervasyon, rezervasyon numarası ya da kimlik istenmez — senden de istenmez.',
+    hereNowLead: 'Şu An Burada, uygulama açıkken yapılan hızlı bir konum kontrolüyle açılır.',
+    hereNowBody: 'Yalnız otele 500 m içinde olduğunu doğrular — tam konumun asla gösterilmez ve saklanmaz.',
+    privacyTitle: 'Gizliliğin bizim için önemli',
+    privacyBody: 'Tam konumun asla gösterilmez ve saklanmaz. Hesabını ve verilerini istediğin an silebilirsin.',
   },
 
   errors: {

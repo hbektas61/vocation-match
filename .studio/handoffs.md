@@ -1851,3 +1851,30 @@ Shipped, with the translation rules applied and two honesty lines drawn:
 
 Verified: TR browser walk (idle state, İstanbul chip → Bosphorus Garden
 result), 397 jest tests, full mobile gate green.
+
+## 2026-07-27 — the designer's Rooms screen (screen 5)
+
+The two rooms as full story-cards: tracked plate pill and state chip on the
+head row, a flat-SVG drawing (ring-bound calendar with a check; a pin
+dropped between the palm and the town — the reference's 3D renders
+translated into the app's flat language), the claim in bold with its trust
+sentence under it, the server's status line beneath a hairline with a small
+icon, and the door's one action as a full-width button. The designer's card
+texts turned out to be our own reviewed explainers split in two, so the new
+`rooms.upcomingLead/Body` keys are that split — and the trust-copy audit
+proved its worth by flagging the split denial sentence in both languages
+until it was deliberately allowlisted (`rooms.upcomingBody` in MAY_DENY and
+TR_MAY_DENY).
+
+The old "no exact location" caption grew into the reference's privacy
+footer — shield, "Gizliliğin bizim için önemli", chevron into Settings —
+but with an honest body: the reference's "bilgilerin yalnızca konaklaman
+süresince kullanılır" is a retention claim the product does not make
+(chats and profiles outlive the trip; that expiry is an open owner
+decision), so the footer says what is true instead: exact location never
+shown or stored, account and data deletable any time.
+
+All flows and testIDs preserved (open-upcoming, open-here-now,
+rooms-choose-hotel, R-003 expiry refresh, permission-denied notice).
+Verified by TR browser walk over both cards and the footer; 397 jest
+tests, full mobile gate green.

@@ -457,10 +457,21 @@ export const en = {
 
   rooms: {
     plainTitle: 'Rooms',
+    subtitle: 'Choose a way to join a room',
     openChip: 'Open',
     closedChip: 'Closed',
     upcomingPlate: 'Upcoming',
     hereNowPlate: 'Here now',
+    /**
+     * The designer's card texts (2026-07-27) are the reviewed explainers
+     * split in two: the claim in bold, the trust sentence under it.
+     */
+    upcomingLead: 'Your stay dates are self-declared.',
+    upcomingBody: 'Nobody is asked for a reservation, a booking number, or an ID — and neither are you.',
+    hereNowLead: 'Here Now opens with a quick location check made while the app is open.',
+    hereNowBody: 'It only confirms you are within 500 m of the hotel — your exact location is never shown or stored.',
+    privacyTitle: 'Your privacy matters here',
+    privacyBody: 'Your exact location is never shown or stored. You can delete your account and data at any time.',
   },
 
   errors: {
