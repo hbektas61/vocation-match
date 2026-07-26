@@ -44,12 +44,19 @@ export async function requestPhoneCode(phone = DEFAULT_PHONE): Promise<void> {
   await press('onboarding-continue');
 }
 
-/** The universal phone flow: it creates a new account or restores an existing one. */
-export async function authenticateWithPhone(phone = DEFAULT_PHONE): Promise<void> {
-  render(<App />);
+/**
+ * The universal phone flow: it creates a new account or restores an existing
+ * one. Returns the render handle so a test can unmount the tree — closing the
+ * app, from the component tree's point of view — and mount it again.
+ */
+export async function authenticateWithPhone(
+  phone = DEFAULT_PHONE,
+): Promise<ReturnType<typeof render>> {
+  const view = render(<App />);
   await requestPhoneCode(phone);
   await type('auth-otp', FAKE_PHONE_OTP);
   await press('onboarding-continue');
+  return view;
 }
 
 /**
@@ -60,8 +67,8 @@ export async function authenticateWithPhone(phone = DEFAULT_PHONE): Promise<void
 export async function onboard(
   name = 'Deniz',
   phone = DEFAULT_PHONE,
-): Promise<void> {
-  await authenticateWithPhone(phone);
+): Promise<ReturnType<typeof render>> {
+  const view = await authenticateWithPhone(phone);
 
   await type('profile-name', name);
   await press('onboarding-continue');
@@ -79,6 +86,7 @@ export async function onboard(
 
   await press('onboarding-skip'); // passions
   await press('onboarding-continue'); // Done, with no photo
+  return view;
 }
 
 /** Onboards, then opens the Settings tab. */

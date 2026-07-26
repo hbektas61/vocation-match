@@ -1716,3 +1716,18 @@ assertions green.
 
 Lesson recorded once more: the container proves the SQL, only the hosted
 project proves the *client's* SQL.
+
+## 2026-07-26 — closing the app is not signing out (owner's question, pinned)
+
+The owner asked whether reopening the app asks for the phone number again.
+It does not, by design that was already in place: the session lives in the
+device keychain (expo-secure-store, chunked past the 2 KB limit), supabase-js
+restores and refreshes it, and the onboarding wizard derives its step from
+what the server knows rather than anything stored locally. What was missing
+was proof — nothing pinned the restart behaviour. Two tests now do
+(coldStart.test.tsx): a finished account reopens straight into the rooms,
+and a half-finished profile reopens at its first unanswered question — in
+both cases the phone box must not exist. En route, the test-support helpers
+now return their render handle so a test can close and reopen the app
+(RNTL's cleanup() mid-test breaks; unmount() is the working path). 396 jest
+tests green.
