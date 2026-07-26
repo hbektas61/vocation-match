@@ -38,6 +38,7 @@
   },
   "scripts": {
     "start": "expo start",
+    "start:preview": "EXPO_NO_DOTENV=1 EXPO_PUBLIC_USE_FAKE_API=true expo start --clear --lan",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",

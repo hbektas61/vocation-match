@@ -1,10 +1,14 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import React from 'react';
 
 import App from '../../App';
 import { COPY } from '../copy';
 import { ApiError, FakeApi, getApi, setApi } from '../data';
-import { onboard, signUpAndSignIn, startSignIn, startSignUp } from '../testSupport/onboarding';
+import {
+  authenticateWithPhone,
+  onboard,
+  requestPhoneCode,
+} from '../testSupport/onboarding';
 
 // A fixed clock keeps session lifetimes and age math deterministic across runs.
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
@@ -19,9 +23,8 @@ afterEach(() => {
 
 /**
  * Shared path: the whole onboarding wizard, which now ends at the hotel rather
- * than dropping someone into the app to find it themselves. The confirmation
- * step is not decoration: a project with `enable_confirmations = true` returns
- * no session from a sign-up, so this is the real entry path.
+ * than dropping someone into the app to find it themselves. Phone OTP is the
+ * only way into the account, whether it already exists or is new.
  */
 async function onboardAndActivateHotel() {
   await onboard('Deniz');
@@ -211,44 +214,84 @@ describe('the inbox for someone who cannot see it', () => {
 });
 
 describe('authentication and profile', () => {
-  it('shows an error for a failed sign-in', async () => {
-    await render(<App />);
-    await startSignIn('nobody@example.test', 'whatever1');
+  it('offers code entry when an SMS response is lost after an uncertain request', async () => {
+    (getApi() as FakeApi).failNextOtpRequestWith(
+      new ApiError('NETWORK', 'No connection. Try again.'),
+    );
+    render(<App />);
 
-    expect(await screen.findByText('Email or password is incorrect.')).toBeTruthy();
-    // The user stays on the password step and can try again.
-    expect(screen.getByTestId('screen-onboarding-password')).toBeTruthy();
-  });
+    await fireEvent.press(await screen.findByTestId('welcome-phone'));
+    await fireEvent.press(await screen.findByTestId('onboarding-continue'));
+    await fireEvent.changeText(await screen.findByTestId('auth-phone'), '+90 555 111 00 11');
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
 
-  it('waits for a confirmed email rather than signing a new account straight in', async () => {
-    await render(<App />);
-    await startSignUp('new@example.test');
-
-    // The bug this replaced: a sessionless sign-up was treated as an error, so
-    // a correctly configured project failed on its own happy path.
-    expect(await screen.findByTestId('screen-confirm-email')).toBeTruthy();
-    expect(screen.queryByTestId('onboarding-error')).toBeNull();
+    expect(await screen.findByTestId('screen-onboarding-otp')).toBeTruthy();
+    expect(screen.getByText(COPY.phoneAuth.requestUncertain)).toBeTruthy();
     expect(await getApi().currentSession()).toBeNull();
   });
 
-  it('tells someone who has not confirmed yet, instead of blaming their password', async () => {
-    const api = getApi();
-    await api.signUp('waiting@example.test', 'correct horse');
+  it('does not open a session until the SMS code is confirmed', async () => {
+    render(<App />);
+    await requestPhoneCode('+905551110012');
 
-    await render(<App />);
-    await startSignIn('waiting@example.test');
-
-    expect(await screen.findByTestId('screen-confirm-email')).toBeTruthy();
-    expect(screen.getByTestId('confirm-resend')).toBeTruthy();
+    expect(await screen.findByTestId('screen-onboarding-otp')).toBeTruthy();
+    expect(screen.queryByTestId('otp-error')).toBeNull();
+    expect(await getApi().currentSession()).toBeNull();
   });
 
-  it('signs in once the address is confirmed', async () => {
-    await signUpAndSignIn('confirmed@example.test');
+  it('rejects an incorrect SMS code without leaving the code step', async () => {
+    render(<App />);
+    await requestPhoneCode('+905551110013');
+    await fireEvent.changeText(await screen.findByTestId('auth-otp'), '000000');
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+
+    expect(await screen.findByText(COPY.errors.otpInvalid)).toBeTruthy();
+    expect(screen.getByTestId('screen-onboarding-otp')).toBeTruthy();
+  });
+
+  it('signs in once the SMS code is confirmed', async () => {
+    await authenticateWithPhone('+905551110014');
     expect(await screen.findByTestId('screen-onboarding-name')).toBeTruthy();
   });
 
+  it('keeps a valid OTP session when profile hydration fails, then retries it', async () => {
+    const api = getApi();
+    const profile = jest.spyOn(api, 'getOwnProfile').mockRejectedValue(new Error('fetch failed'));
+    render(<App />);
+    await requestPhoneCode('+905551110024');
+    await fireEvent.changeText(await screen.findByTestId('auth-otp'), '123456');
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+
+    expect(await screen.findByTestId('screen-account-load-error')).toBeTruthy();
+    expect(await api.currentSession()).not.toBeNull();
+
+    profile.mockRestore();
+    await fireEvent.press(screen.getByTestId('account-load-retry'));
+    expect(await screen.findByTestId('screen-onboarding-name')).toBeTruthy();
+  });
+
+  it('keeps a returning session when active-hotel hydration fails, then retries it', async () => {
+    const phone = '+905551110025';
+    await onboard('Already', phone);
+    await fireEvent.press(await screen.findByText('Settings'));
+    await fireEvent.press(await screen.findByTestId('sign-out'));
+
+    const api = getApi();
+    const hotel = jest.spyOn(api, 'getActiveHotel').mockRejectedValue(new Error('fetch failed'));
+    await requestPhoneCode(phone);
+    await fireEvent.changeText(await screen.findByTestId('auth-otp'), '123456');
+    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+
+    expect(await screen.findByTestId('screen-account-load-error')).toBeTruthy();
+    expect(await api.currentSession()).not.toBeNull();
+
+    hotel.mockRestore();
+    await fireEvent.press(screen.getByTestId('account-load-retry'));
+    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
+  });
+
   it('refuses an underage birthdate with the 18+ message', async () => {
-    await signUpAndSignIn('young@example.test');
+    await authenticateWithPhone('+905551110015');
 
     await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Kid');
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
@@ -265,7 +308,7 @@ describe('authentication and profile', () => {
   });
 
   it('completes the whole entry path and reaches the main tabs', async () => {
-    await onboard('Deniz', 'brandnew@example.test');
+    await onboard('Deniz', '+905551110016');
     expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
   });
 
@@ -301,60 +344,128 @@ describe('authentication and profile', () => {
 });
 
 /**
- * The confirmation screen is the one place a person can be stuck: they have not
- * confirmed, so they cannot sign in, and if the screen has no way out and no
- * way to try again they are simply stopped. These are the three exits.
+ * The OTP screen is the one place a person can be stuck: the code may not
+ * arrive, may expire, or may be typed incorrectly. These tests cover its ways
+ * forward and back.
  */
-describe('waiting for a confirmation email', () => {
-  async function reachConfirmScreen(email = 'waiting@example.test') {
-    await render(<App />);
-    await startSignUp(email);
-    expect(await screen.findByTestId('screen-confirm-email')).toBeTruthy();
+describe('waiting for an SMS code', () => {
+  async function reachOtpScreen(phone = '+905551110017') {
+    render(<App />);
+    await requestPhoneCode(phone);
+    expect(await screen.findByTestId('screen-onboarding-otp')).toBeTruthy();
   }
 
-  it('confirms the email was sent again', async () => {
-    await reachConfirmScreen();
+  it('keeps resend disabled during the cooldown', async () => {
+    const phone = '+905551110017';
+    await reachOtpScreen(phone);
 
-    await fireEvent.press(screen.getByTestId('confirm-resend'));
-
-    expect(await screen.findByTestId('confirm-resent')).toBeTruthy();
-    expect(screen.queryByTestId('confirm-error')).toBeNull();
+    expect(screen.getByTestId('otp-resend').props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByText('Send a new code in 60s')).toBeTruthy();
+    expect(screen.queryByText(phone)).toBeNull();
+    expect(screen.getByText(COPY.phoneAuth.destination('+••••••0017'))).toBeTruthy();
   });
 
-  it('says so when the resend fails, rather than looking like it worked', async () => {
-    await reachConfirmScreen();
-    (getApi() as FakeApi).failNextResendWith(
+  it('does not verify a code while a resend request is in flight', async () => {
+    await reachOtpScreen('+905551110027');
+    await fireEvent.changeText(screen.getByTestId('auth-otp'), '123456');
+
+    const startedAt = Date.now();
+    jest.spyOn(Date, 'now').mockReturnValue(startedAt + 61_000);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1_100));
+    });
+
+    let finishResend: (() => void) | undefined;
+    jest.spyOn(getApi(), 'requestPhoneOtp').mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finishResend = resolve;
+        }),
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('otp-resend'));
+    });
+
+    expect(screen.getByTestId('onboarding-continue').props.accessibilityState.disabled).toBe(true);
+
+    await act(async () => {
+      finishResend?.();
+      await Promise.resolve();
+    });
+  });
+
+  it('says so when resend fails, rather than looking like it worked', async () => {
+    await reachOtpScreen('+905551110018');
+    const startedAt = Date.now();
+    jest.spyOn(Date, 'now').mockReturnValue(startedAt + 61_000);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1_100));
+    });
+    (getApi() as FakeApi).failNextOtpRequestWith(
       new ApiError('RATE_LIMITED', 'You are doing that too often.'),
     );
 
-    await fireEvent.press(screen.getByTestId('confirm-resend'));
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('otp-resend'));
+    });
 
-    expect(await screen.findByTestId('confirm-error')).toBeTruthy();
-    expect(screen.queryByTestId('confirm-resent')).toBeNull();
-    // And the button is usable again rather than stuck on "Sending…".
-    expect(screen.getByLabelText(COPY.confirmEmail.resendButton)).toBeTruthy();
+    expect(screen.getByTestId('otp-error')).toBeTruthy();
+    expect(screen.queryByTestId('otp-resent')).toBeNull();
+    expect(screen.getByTestId('otp-resend')).toBeTruthy();
   });
 
-  it('lets someone go back and sign in instead', async () => {
-    // The case that reaches this screen by accident: an existing, already
-    // confirmed account tapping "create one". The server will not say the
-    // address is taken — that would tell a stranger who has an account here —
-    // so the way out has to be a button rather than an error message.
-    await onboard('Already', 'already@example.test');
+  it('starts a new cooldown when a resend response is lost', async () => {
+    await reachOtpScreen('+905551110028');
+    const startedAt = Date.now();
+    jest.spyOn(Date, 'now').mockReturnValue(startedAt + 61_000);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1_100));
+    });
+    (getApi() as FakeApi).failNextOtpRequestWith(
+      new ApiError('NETWORK', 'No connection. Try again.'),
+    );
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('otp-resend'));
+    });
+
+    expect(screen.getByText(COPY.phoneAuth.requestUncertain)).toBeTruthy();
+    expect(screen.getByTestId('otp-resend').props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByText('Send a new code in 60s')).toBeTruthy();
+  });
+
+  it('opens an existing account after the same phone completes OTP again', async () => {
+    const phone = '+905551110019';
+    await onboard('Already', phone);
     await fireEvent.press(await screen.findByText('Settings'));
     await fireEvent.press(await screen.findByTestId('sign-out'));
 
-    await startSignUp('already@example.test');
-    expect(await screen.findByTestId('screen-confirm-email')).toBeTruthy();
-
-    await fireEvent.press(screen.getByTestId('confirm-back'));
-    expect(await screen.findByTestId('screen-onboarding-email')).toBeTruthy();
-
-    await fireEvent.changeText(screen.getByTestId('auth-email'), 'already@example.test');
+    await requestPhoneCode(phone);
+    await fireEvent.changeText(await screen.findByTestId('auth-otp'), '123456');
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
-    await fireEvent.changeText(await screen.findByTestId('auth-password'), 'correct horse');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
-    // Straight to the app: this account was complete all along.
+
     expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
+  });
+
+  it('goes back to the same phone number', async () => {
+    const phone = '+905551110020';
+    await reachOtpScreen(phone);
+
+    await fireEvent.press(screen.getByLabelText(COPY.common.back));
+
+    expect(await screen.findByTestId('screen-onboarding-phone')).toBeTruthy();
+    expect(screen.getByTestId('auth-phone').props.value).toBe(phone);
+  });
+
+  it('does not request another SMS when back and forward happen during the cooldown', async () => {
+    const request = jest.spyOn(getApi(), 'requestPhoneOtp');
+    await reachOtpScreen('+905551110026');
+    expect(request).toHaveBeenCalledTimes(1);
+
+    await fireEvent.press(screen.getByLabelText(COPY.common.back));
+    await fireEvent.press(await screen.findByTestId('onboarding-continue'));
+
+    expect(await screen.findByTestId('screen-onboarding-otp')).toBeTruthy();
+    expect(request).toHaveBeenCalledTimes(1);
   });
 });

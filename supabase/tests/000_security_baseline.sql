@@ -80,6 +80,28 @@ select is(
   'no payment or entitlement tables exist yet'
 );
 
+-- 5b. Phone is an authentication credential, not profile or discovery data
+-- (D-019). Supabase Auth owns it; nothing in the public schema may copy it.
+select is(
+  (select count(*)::int
+    from information_schema.columns
+    where table_schema = 'public'
+      and column_name ~* '(phone|telephone|mobile|msisdn|subscriber)'),
+  0,
+  'no public table stores a phone number'
+);
+
+select is(
+  (select count(*)::int
+     from pg_proc p
+     join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.prokind = 'f'
+      and pg_get_function_result(p.oid) ~* '(phone|telephone|mobile|msisdn|subscriber)'),
+  0,
+  'no public function returns a phone number'
+);
+
 -- 6. Coordinates live only on the public hotel catalog — never on a user row (D-005).
 select is(
   (select count(*)::int

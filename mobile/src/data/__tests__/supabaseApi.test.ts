@@ -14,7 +14,7 @@
  * The network is stubbed at `fetch`. Nothing here proves the server behaviour;
  * that is `supabase/tests/012_account_deletion.sql`.
  */
-import { FakeApi } from '../fakeApi';
+import { FAKE_PHONE_OTP, FakeApi } from '../fakeApi';
 import { SupabaseApi } from '../supabaseApi';
 import { createMemoryStorage } from '../secureStorage';
 
@@ -36,7 +36,7 @@ function storedSession() {
       id: USER_ID,
       aud: 'authenticated',
       role: 'authenticated',
-      email: 'deniz@example.test',
+      phone: '+905551110001',
       app_metadata: {},
       user_metadata: {},
       created_at: new Date().toISOString(),
@@ -82,6 +82,70 @@ async function apiWithSession(rpcHandler: () => Response) {
 const originalFetch = global.fetch;
 afterEach(() => {
   global.fetch = originalFetch;
+});
+
+describe('SupabaseApi phone OTP', () => {
+  function otpApi(handler: (url: string, init?: RequestInit) => Response) {
+    const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
+      handler(String(input), init),
+    );
+    global.fetch = fetchMock as unknown as typeof fetch;
+    return {
+      api: new SupabaseApi({ url: URL, anonKey: ANON_KEY }, createMemoryStorage()),
+      fetchMock,
+    };
+  }
+
+  it('requests one SMS for a normalized E.164 number and allows account creation', async () => {
+    const { api, fetchMock } = otpApi(() => jsonResponse({}));
+
+    await api.requestPhoneOtp('+90 (555) 111-00-21');
+
+    const call = fetchMock.mock.calls.find(([input]) => String(input).includes('/auth/v1/otp'));
+    expect(call).toBeDefined();
+    expect(JSON.parse((call?.[1] as RequestInit).body as string)).toMatchObject({
+      phone: '+905551110021',
+      create_user: true,
+    });
+  });
+
+  it('confirms a six-digit SMS code with the sms verification type', async () => {
+    const session = JSON.parse(storedSession());
+    const { api, fetchMock } = otpApi((url) =>
+      url.includes('/auth/v1/verify')
+        ? jsonResponse(session)
+        : jsonResponse({ message: 'unexpected call' }, 500),
+    );
+
+    await expect(api.verifyPhoneOtp('+905551110021', '123456')).resolves.toMatchObject({
+      userId: USER_ID,
+    });
+
+    const call = fetchMock.mock.calls.find(([input]) => String(input).includes('/auth/v1/verify'));
+    expect(call).toBeDefined();
+    expect(JSON.parse((call?.[1] as RequestInit).body as string)).toMatchObject({
+      phone: '+905551110021',
+      token: '123456',
+      type: 'sms',
+    });
+  });
+
+  it('reports a rejected code as OTP_INVALID even when GoTrue returns a generic 401', async () => {
+    const { api } = otpApi(() => jsonResponse({ message: 'Invalid login credentials' }, 401));
+
+    await expect(api.verifyPhoneOtp('+905551110021', '000000')).rejects.toMatchObject({
+      code: 'OTP_INVALID',
+    });
+  });
+
+  it('rejects malformed numbers before making a network request', async () => {
+    const { api, fetchMock } = otpApi(() => jsonResponse({}));
+
+    await expect(api.requestPhoneOtp('0555 111 00 21')).rejects.toMatchObject({
+      code: 'INVALID_INPUT',
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });
 
 describe('SupabaseApi.deleteAccount', () => {
@@ -132,10 +196,9 @@ describe('SupabaseApi.deleteAccount', () => {
 describe('FakeApi.deleteAccount', () => {
   const ADULT_BIRTHDATE = '1994-03-01';
 
-  async function signedIn(api = new FakeApi(), email = 'deniz@example.test'): Promise<FakeApi> {
-    await api.signUp(email, 'correct horse');
-    api.confirmEmail(email);
-    await api.signIn(email, 'correct horse');
+  async function signedIn(api = new FakeApi(), phone = '+905551110001'): Promise<FakeApi> {
+    await api.requestPhoneOtp(phone);
+    await api.verifyPhoneOtp(phone, FAKE_PHONE_OTP);
     await api.saveOwnProfile({ displayName: 'Deniz', birthdate: ADULT_BIRTHDATE });
     return api;
   }
@@ -160,8 +223,8 @@ describe('FakeApi.deleteAccount', () => {
     // not anything was actually removed.
     expect(api.recordsFor(before)).toBe(0);
     expect(await api.currentSession()).toBeNull();
-    await expect(api.signIn('deniz@example.test', 'correct horse')).rejects.toMatchObject({
-      code: 'UNAUTHENTICATED',
+    await expect(api.verifyPhoneOtp('+905551110001', FAKE_PHONE_OTP)).rejects.toMatchObject({
+      code: 'OTP_INVALID',
     });
   });
 
@@ -170,16 +233,16 @@ describe('FakeApi.deleteAccount', () => {
     await api.setActiveHotel('hotel-lara-shore');
     await api.signOut();
 
-    await signedIn(api, 'other@example.test');
+    await signedIn(api, '+905551110002');
     await api.setActiveHotel('hotel-lara-shore');
     await api.declareUpcomingStay('2026-08-01', '2026-08-08');
     const survivor = (await api.getOwnProfile())!.id;
     await api.signOut();
 
-    await api.signIn('deniz@example.test', 'correct horse');
+    await api.verifyPhoneOtp('+905551110001', FAKE_PHONE_OTP);
     await api.deleteAccount();
 
-    await api.signIn('other@example.test', 'correct horse');
+    await api.verifyPhoneOtp('+905551110002', FAKE_PHONE_OTP);
     expect(api.recordsFor(survivor)).toBeGreaterThan(3);
     expect((await api.getActiveHotel())?.hotelId).toBe('hotel-lara-shore');
   });

@@ -23,7 +23,7 @@ export function PromiseStep({ step, total, go, onBack }: StepProps) {
       onBack={onBack}
       actionLabel={COPY.onboarding.promise.accept}
       actionEnabled
-      onAction={() => go('email')}
+      onAction={() => go('phone')}
       testID="screen-onboarding-promise"
     >
       <View style={styles.points}>

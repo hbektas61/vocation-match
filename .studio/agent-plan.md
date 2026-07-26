@@ -15,6 +15,11 @@ The previous program (`VOCATION_MVP_SYSTEM_COMPLETE`) is closed. Its record is
 kept below under **Closed program — MVP systems build** so the P0–P5 evidence
 is not lost.
 
+**2026-07-26 product amendment:** D-019 supersedes the completed H3 email
+confirmation surface. Current account entry is phone-only SMS OTP; email
+sign-up is disabled. H-301–H-304 below remain as historical evidence of the
+program that ran, not as the current auth design.
+
 ### What this program does *not* change
 
 The real-device pass stays externally deferred under **D-015**. This machine has

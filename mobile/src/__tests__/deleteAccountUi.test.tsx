@@ -65,8 +65,8 @@ describe('deleting an account', () => {
     await waitFor(async () => {
       expect(await api.currentSession()).toBeNull();
     });
-    await expect(api.signIn('deniz@example.test', 'correct horse')).rejects.toMatchObject({
-      code: 'UNAUTHENTICATED',
+    await expect(api.verifyPhoneOtp('+905551110001', '123456')).rejects.toMatchObject({
+      code: 'OTP_INVALID',
     });
   });
 

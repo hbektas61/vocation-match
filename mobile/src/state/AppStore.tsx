@@ -20,40 +20,52 @@ const AppStoreContext = createContext<AppStoreValue | null>(null);
 export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, undefined, initialAppState);
 
-  // App start: restore a device session (if any) and its saved profile, so a
-  // returning signed-in user lands in the main tabs instead of onboarding.
+  // App start restores only the device session. Profile and hotel hydration is
+  // a separate retryable state below: a network failure must not discard a
+  // valid local session and force another paid SMS.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const api = getApi();
       let session = null;
-      let profile = null;
-      let activeHotel = null;
       try {
-        session = await api.currentSession();
-        const remoteProfile = session ? await api.getOwnProfile() : null;
-        profile = remoteProfile ? toDomainProfile(remoteProfile) : null;
-        // Without this a returning account looks like it never chose a hotel
-        // and gets asked for one again on every launch.
-        activeHotel = session && profile ? await api.getActiveHotel() : null;
+        session = await getApi().currentSession();
       } catch {
-        // Restoring the session is best-effort: any failure here falls back
-        // to a signed-out start rather than blocking the app from loading.
+        // Session storage is local. A malformed/unreadable value cannot be
+        // trusted as authentication state.
         session = null;
-        profile = null;
-        activeHotel = null;
       }
       if (!cancelled) {
-        dispatch({ type: 'BOOTSTRAP_RESOLVED', session, profile });
-        if (activeHotel) {
-          dispatch({ type: 'ACTIVE_HOTEL_LOADED', activeHotel });
-        }
+        dispatch({ type: 'BOOTSTRAP_RESOLVED', session, profile: null });
       }
     })();
     return () => {
       cancelled = true;
     };
   }, []);
+
+  // Once an OTP or local storage yields a session, load the account around it.
+  // Failure keeps that session and presents a retry screen; it is never
+  // mislabeled as a bad/expired OTP.
+  useEffect(() => {
+    if (!state.session || state.accountLoadStatus !== 'loading') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const api = getApi();
+        const remoteProfile = await api.getOwnProfile();
+        const profile = remoteProfile ? toDomainProfile(remoteProfile) : null;
+        const activeHotel = profile ? await api.getActiveHotel() : null;
+        if (!cancelled) {
+          dispatch({ type: 'ACCOUNT_HYDRATED', profile, activeHotel });
+        }
+      } catch {
+        if (!cancelled) dispatch({ type: 'ACCOUNT_HYDRATION_FAILED' });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [state.session, state.accountLoadStatus]);
 
   // A session can lapse, or its account be deleted from another device, while
   // the app sits in the background trusting the answer it got at start-up.

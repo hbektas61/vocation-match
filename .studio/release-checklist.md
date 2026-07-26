@@ -66,20 +66,26 @@ named. Everything still unticked is unticked on purpose.
       is negative-controlled, so five of them go red if it is weakened.
       **Not verified:** that the native encoder really emits metadata-free
       bytes. That needs a GPS-tagged photo on a device (D-015).*
-- [x] Email addresses are confirmed before an account can be used.
-      *`enable_confirmations = true`, `scripts/verify-auth-config.js` fails the
-      build if it is turned off, and the client handles the unconfirmed states
-      rather than throwing on the happy path. **The hosted project keeps its
-      own copy of this setting and nothing here can check it** —
-      `docs/hosted-setup.md`. **Since done for staging**: the owner provisioned
-      `vocation-match-staging` on 2026-07-25 with confirmation on, the redirect
-      URL set, an 8-character minimum, refresh-token rotation on, and hosted
-      mail limited to 2/hour — tighter than the 30 this repository's check
-      allows. CAPTCHA is still off; it needs a provider account. Production has
-      no project at all.*
-- [x] The sign-up form does not reveal who already has an account.
-      *A duplicate sign-up gets the same answer as a fresh one, in both the
-      real client and the fake; `apiContract.test.ts`.*
+- [x] Account entry requires proof of the phone number through SMS OTP.
+      *The app has no email/password surface. `scripts/verify-auth-config.js`
+      requires phone sign-up and confirmation, disables email sign-up, bounds
+      SMS sends and verification attempts, and rejects a committed fixed OTP.
+      The phone stays in Auth rather than any public profile/discovery table.
+      The OTP screen masks it and a root privacy shield covers the app outside
+      the foreground. Client and in-memory contract tests cover request, wrong
+      code, successful confirmation, lost responses and that shield.*
+- [ ] Hosted SMS provider and real delivery are configured and verified.
+      ***External owner action and security gate.** The staging project
+      predates D-019 and its SMS provider must remain off until an Expo
+      hCaptcha/Turnstile flow supplies `captchaToken` on initial send and
+      resend. The repository gate rejects both built-in providers and a Send
+      SMS Hook before that point. Then configure provider secrets, a 10-minute
+      OTP expiry, spend and geographic limits, and dashboard rate limits
+      without committing them; receive/use a real code on iOS and Android.
+      `docs/hosted-setup.md`.*
+- [x] The account entry form does not reveal who already has an account.
+      *New and returning numbers use the same `signInWithOtp` request and code
+      screen, with `shouldCreateUser` enabled; `apiContract.test.ts`.*
 
 ## Quality
 

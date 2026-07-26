@@ -187,7 +187,7 @@ client work; the server already allowed every one of them.
 ## Onboarding and visual direction (completed 2026-07-26)
 
 - [x] O-001 One onboarding wizard replacing the age gate, auth screen and
-      profile setup: twelve steps, one question each, a progress line, a back
+      profile setup: eleven steps, one question each, a progress line, a back
       and a skip only where skipping is real, and a single wide action pinned
       above the keyboard. The step is derived from server state (D-017), so a
       finished onboarding cannot reappear and a half-finished one resumes where
@@ -214,7 +214,7 @@ client work; the server already allowed every one of them.
 - [x] O-006 Signing back in restores the active hotel, so a returning account
       is no longer asked to choose a hotel it already has.
 - [x] O-007 Android's back button walks back through the wizard instead of
-      closing the app. Twelve steps live inside one navigator screen, so there
+      closing the app. Eleven steps live inside one navigator screen, so there
       was nothing for React Navigation to pop and back left the app from step
       four, taking the whole draft with it. Where back goes is now one table
       read by both the arrow and the button, so the two cannot drift.
@@ -223,9 +223,9 @@ client work; the server already allowed every one of them.
       leaves the press unclaimed.
 - [x] O-008 Every onboarding step announces itself. A step swaps in place and a
       swap does not move the screen-reader cursor the way a push does, so
-      eleven of the twelve steps and two of the three teaching cards arrived in
+      most steps and two of the three teaching cards originally arrived in
       silence — the same defect H-404 fixed elsewhere, in the one flow where it
-      repeats twelve times. The announcement is in the scaffold, so no step can
+      repeats throughout. The announcement is in the scaffold, so no step can
       forget it.
       Evidence: `mobile/src/__tests__/announcements.test.tsx`.
 - [x] O-009 Integrate the onboarding work onto the Expo SDK 54 baseline.
@@ -236,6 +236,16 @@ client work; the server already allowed every one of them.
       Evidence: `scripts/check.sh` — 346 pgTAP assertions, concurrency,
       migration replay, contract and storage checks, typecheck, zero-warning
       lint, 251 Jest tests, and the SDK 54 web bundle.
+- [x] O-010 Replace email/password entry with phone-only SMS OTP. New and
+      returning users share one non-enumerating flow; E.164 validation happens
+      before the network; no session exists until the six-digit code succeeds;
+      resend has a 60-second cooldown, including lost responses; and phone
+      numbers remain in Supabase Auth rather than profiles/discovery. The OTP
+      screen masks the number and a root privacy shield covers app-switcher
+      snapshots. Email sign-up is disabled; missing backend configuration fails
+      closed; and the config gate rejects committed fixed OTPs, provider
+      secrets, providers and Send SMS Hooks before CAPTCHA. Hosted CAPTCHA,
+      provider setup and a real-device delivery pass remain external.
 
 ## Later — monetization
 

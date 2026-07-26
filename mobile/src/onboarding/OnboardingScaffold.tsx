@@ -78,14 +78,11 @@ export function OnboardingScaffold({
   onAction: () => void;
   error?: string | null;
   testID?: string;
-  /**
-   * A step whose action is not "continue" — resending a confirmation email is
-   * the one — keeps the name its own tests already know it by.
-   */
+  /** Lets a step give its primary action a stable, purpose-specific test id. */
   actionTestID?: string;
   errorTestID?: string;
 }) {
-  // Twelve steps swap in place inside one navigator screen, and a swap does not
+  // Eleven steps swap in place inside one navigator screen, and a swap does not
   // move the screen-reader cursor the way a push does. Without this, tapping
   // Continue hands somebody a new question in silence, pointing at whatever now
   // occupies the old position. It lives here so no step can forget it.

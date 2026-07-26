@@ -3,14 +3,14 @@
  *
  * The step is *derived* from real state rather than stored, which is what makes
  * it survive a restart with nothing extra written down: an account with no
- * session is on the email step, a session with no profile is on the name step,
+ * session is on the phone step, a session with no profile is on the name step,
  * a profile with no hotel is on the hotel step, and someone with all three is
  * not in the wizard at all. Nothing has to remember where they were, and
  * nothing can disagree with the server about it.
  *
  * The draft is held here so going back does not lose what was typed. It is
- * deliberately in memory: it holds an email and a password on their way to
- * being an account, and those have no business on disk.
+ * deliberately in memory: it holds a phone number and whether an OTP was
+ * requested on the way to a session. Neither becomes profile data.
  *
  * Location is not asked for anywhere in here. The permission prompt belongs at
  * the moment somebody actually runs a Here Now check, where the reason for it
@@ -25,12 +25,11 @@ import { useAppStore } from '../state/AppStore';
 import { color } from '../theme';
 import { BirthdateStep } from './steps/BirthdateStep';
 import { BioStep } from './steps/BioStep';
-import { ConfirmEmailStep } from './steps/ConfirmEmailStep';
-import { EmailStep } from './steps/EmailStep';
 import { HotelStep } from './steps/HotelStep';
 import { InterestsStep } from './steps/InterestsStep';
 import { NameStep } from './steps/NameStep';
-import { PasswordStep } from './steps/PasswordStep';
+import { OtpStep } from './steps/OtpStep';
+import { PhoneStep } from './steps/PhoneStep';
 import { PhotoStep } from './steps/PhotoStep';
 import { PromiseStep } from './steps/PromiseStep';
 import { TeachingStep } from './steps/TeachingStep';
@@ -39,9 +38,8 @@ import { WelcomeStep } from './steps/WelcomeStep';
 export type OnboardingStep =
   | 'welcome'
   | 'promise'
-  | 'email'
-  | 'password'
-  | 'confirmEmail'
+  | 'phone'
+  | 'otp'
   | 'name'
   | 'birthdate'
   | 'bio'
@@ -53,9 +51,8 @@ export type OnboardingStep =
 /** Only the steps that show a progress bar; welcome and teaching bracket it. */
 const COUNTED: OnboardingStep[] = [
   'promise',
-  'email',
-  'password',
-  'confirmEmail',
+  'phone',
+  'otp',
   'name',
   'birthdate',
   'bio',
@@ -65,34 +62,28 @@ const COUNTED: OnboardingStep[] = [
 ];
 
 export interface OnboardingDraft {
-  email: string;
-  password: string;
+  phone: string;
   displayName: string;
   birthdate: string;
   bio: string;
   interests: string[];
-  /** Set once sign-up has been made and the address is waiting on its link. */
-  awaitingConfirmation: boolean;
-  /**
-   * Which of the two ways the confirmation screen was reached. A refused
-   * sign-in sent nothing, and saying "we sent a link" there costs somebody an
-   * hour of watching an inbox for mail that does not exist.
-   */
-  confirmReason: 'signed-up' | 'not-confirmed';
-  /** Reached the sign-in form from the welcome screen rather than sign-up. */
-  returning: boolean;
+  /** Set after the server accepts an SMS request; cleared when phone changes. */
+  otpRequested: boolean;
+  /** Keeps the resend boundary stable across back/forward navigation. */
+  otpRequestedAt: number | null;
+  /** A timeout may have happened after the provider accepted the SMS. */
+  otpRequestUncertain: boolean;
 }
 
 const EMPTY_DRAFT: OnboardingDraft = {
-  email: '',
-  password: '',
+  phone: '',
   displayName: '',
   birthdate: '',
   bio: '',
   interests: [],
-  awaitingConfirmation: false,
-  confirmReason: 'signed-up',
-  returning: false,
+  otpRequested: false,
+  otpRequestedAt: null,
+  otpRequestUncertain: false,
 };
 
 export function OnboardingFlow() {
@@ -117,7 +108,7 @@ export function OnboardingFlow() {
   // resumes without anything having been written down.
   const derived: OnboardingStep = useMemo(() => {
     if (!state.ageConfirmed) return 'welcome';
-    if (!state.session) return draft.awaitingConfirmation ? 'confirmEmail' : 'email';
+    if (!state.session) return draft.otpRequested ? 'otp' : 'phone';
     if (!state.profile) return 'name';
     // Profile creation happens at the required birthdate step. If the app is
     // interrupted before the optional profile steps finish, the server cannot
@@ -126,7 +117,7 @@ export function OnboardingFlow() {
     // silently drops bio, interests, and photo from the wizard.
     if (!state.activeHotel) return 'bio';
     return 'teaching';
-  }, [state.ageConfirmed, state.session, state.profile, state.activeHotel, draft.awaitingConfirmation]);
+  }, [state.ageConfirmed, state.session, state.profile, state.activeHotel, draft.otpRequested]);
 
   /**
    * The derived step is where to *resume*, not a running override. Saving the
@@ -165,15 +156,12 @@ export function OnboardingFlow() {
   // Where back goes, in one place, because two things need the same answer:
   // the arrow in the corner and the Android back button. Written separately
   // they drift, and the one that drifts is the one nobody can see.
-  const target = backTarget(step, draft.returning);
+  const target = backTarget(step);
 
   const goBack = useCallback(() => {
     if (!target) return;
-    // Leaving the confirmation screen means signing in rather than signing up
-    // again: the account exists, only the link is missing. `setDraft` rather
-    // than `patch` so this stays stable across renders.
-    if (step === 'confirmEmail') {
-      setDraft((d) => ({ ...d, awaitingConfirmation: false, returning: true }));
+    if (step === 'otp') {
+      setDraft((d) => ({ ...d, otpRequested: false }));
     }
     setManual(target);
   }, [step, target]);
@@ -221,12 +209,10 @@ export function OnboardingFlow() {
         return <WelcomeStep {...shared} />;
       case 'promise':
         return <PromiseStep {...shared} />;
-      case 'email':
-        return <EmailStep {...shared} />;
-      case 'password':
-        return <PasswordStep {...shared} />;
-      case 'confirmEmail':
-        return <ConfirmEmailStep {...shared} />;
+      case 'phone':
+        return <PhoneStep {...shared} />;
+      case 'otp':
+        return <OtpStep {...shared} />;
       case 'name':
         return <NameStep {...shared} />;
       case 'birthdate':
@@ -259,16 +245,14 @@ export function OnboardingFlow() {
  * and the hotel is chosen — so offering a way back there would offer to undo
  * something it cannot.
  */
-function backTarget(step: OnboardingStep, returning: boolean): OnboardingStep | null {
+function backTarget(step: OnboardingStep): OnboardingStep | null {
   switch (step) {
     case 'promise':
       return 'welcome';
-    case 'email':
-      return returning ? 'welcome' : 'promise';
-    case 'password':
-      return 'email';
-    case 'confirmEmail':
-      return 'email';
+    case 'phone':
+      return 'promise';
+    case 'otp':
+      return 'phone';
     case 'birthdate':
       return 'name';
     case 'bio':
@@ -297,9 +281,8 @@ function impossible(step: OnboardingStep, state: { session: unknown; ageConfirme
     case 'welcome':
     case 'promise':
       return state.ageConfirmed && step === 'promise' ? false : state.session !== null;
-    case 'email':
-    case 'password':
-    case 'confirmEmail':
+    case 'phone':
+    case 'otp':
       return state.session !== null;
     default:
       return state.session === null;
@@ -309,9 +292,8 @@ function impossible(step: OnboardingStep, state: { session: unknown; ageConfirme
 const ORDER: OnboardingStep[] = [
   'welcome',
   'promise',
-  'email',
-  'password',
-  'confirmEmail',
+  'phone',
+  'otp',
   'name',
   'birthdate',
   'bio',

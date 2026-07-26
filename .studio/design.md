@@ -21,9 +21,9 @@ because a long form would not fit.
 
 What is deliberately **not** taken from anyone: a logo, an illustration set,
 photography, or a sentence of copy. Those are theirs. And nothing is asked for
-that the product does not store — no phone number, no gender, no orientation,
-because none of those exist in the schema and a question whose answer is thrown
-away is worse than no question.
+that the product does not use — no gender or orientation. The phone number is
+the sole account credential, kept by the authentication system and never copied
+into a profile or discovery response.
 
 ## The direction
 
@@ -88,14 +88,14 @@ accessibility audit (R-004) found real failures that nobody had written down.
 
 ## The way in
 
-Twelve steps, in `mobile/src/onboarding/`: welcome, the 18+ promise, email,
-password, the confirmation wait, name, birthdate, bio, interests, one photo,
-hotel, and three teaching cards.
+Eleven steps, in `mobile/src/onboarding/`: welcome, the 18+ promise, phone
+number, six-digit SMS code, name, birthdate, bio, interests, one photo, hotel,
+and three teaching cards.
 
 Three things about it are decisions rather than layout:
 
 - **The step is derived from server state, not stored.** No session means the
-  email step; a session with no profile means the name step; a profile with no
+  phone/code entry; a session with no profile means the name step; a profile with no
   hotel means the hotel step. Nothing has to remember where somebody got to,
   nothing can disagree with the server, and a finished onboarding cannot come
   back on the next launch. A step someone has walked to stands until it becomes

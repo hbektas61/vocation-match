@@ -6,8 +6,7 @@
  * looking at the app:
  *
  *   * the token expires — the app is left showing tabs whose every request
- *     fails, and the failures are reported as "email or password is incorrect",
- *     which is written for a login form and means nothing here;
+ *     fails even though it still looks signed in;
  *   * the account is deleted from another device, which is the same shape;
  *   * the app is backgrounded for long enough that both of the above happen
  *     while nothing is running to notice.

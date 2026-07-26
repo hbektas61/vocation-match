@@ -13,10 +13,10 @@
 
 export type ApiErrorCode =
   | 'UNAUTHENTICATED'
+  | 'OTP_INVALID'
   | 'FORBIDDEN'
   | 'SUSPENDED'
   | 'UNDER_AGE'
-  | 'EMAIL_NOT_CONFIRMED'
   | 'INVALID_INPUT'
   | 'NOT_FOUND'
   | 'CONFLICT'
@@ -33,18 +33,6 @@ export class ApiError extends Error {
     this.code = code;
   }
 }
-
-/**
- * The two things a sign-up can legitimately produce.
- *
- * A project that confirms email addresses — which every real one must — answers
- * a successful sign-up with a user and *no session*. Treating that as a failure
- * is a hard error on the happy path, which is what the client used to do. The
- * shape is a union so a caller cannot forget the second case.
- */
-export type SignUpResult =
-  | { status: 'SIGNED_IN'; session: AuthSession }
-  | { status: 'CONFIRMATION_REQUIRED'; email: string };
 
 export interface AuthSession {
   userId: string;
@@ -178,14 +166,14 @@ export const MAX_INTERESTS = 5;
 export interface VocationApi {
   /* auth */
   /**
-   * Creates an account. Returns a session only if the project is configured
-   * not to confirm addresses; otherwise the caller has to wait for the link.
+   * Sends a one-time SMS code. The same call serves new and returning users,
+   * and deliberately does not reveal whether the phone already has an account.
+   * Phone numbers cross the auth boundary only; profiles and discovery never
+   * expose them.
    */
-  signUp(email: string, password: string): Promise<SignUpResult>;
-  /** Raises `EMAIL_NOT_CONFIRMED` when the address has not been confirmed yet. */
-  signIn(email: string, password: string): Promise<AuthSession>;
-  /** Sends the confirmation link again. Safe to call for an unknown address. */
-  resendConfirmationEmail(email: string): Promise<void>;
+  requestPhoneOtp(phone: string): Promise<void>;
+  /** Verifies the six-digit SMS code and creates/restores the session. */
+  verifyPhoneOtp(phone: string, code: string): Promise<AuthSession>;
   signOut(): Promise<void>;
   /** Session restored from device storage, or null when signed out. */
   currentSession(): Promise<AuthSession | null>;

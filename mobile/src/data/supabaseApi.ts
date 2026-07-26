@@ -26,13 +26,13 @@ import {
   type ReportInput,
   type RoomKey,
   type RoomStatus,
-  type SignUpResult,
   type SwipeDirection,
   type SwipeResult,
   type UpcomingStay,
   type VocationApi,
 } from './contracts';
 import type { BackendConfig } from './config';
+import { isE164Phone, normalizePhone } from './phone';
 import {
   buildPhotoPath,
   isProfilePhotoPath,
@@ -56,7 +56,13 @@ export function toApiError(error: PostgresLikeError | null | undefined, fallback
   if (code === '23514' && /18\+/.test(message)) {
     return new ApiError('UNDER_AGE', 'Vocation Match is 18+ only.');
   }
-  if (code === '23514' || code === '23502' || code === '22007' || code === '22008') {
+  if (
+    code === '23514' ||
+    code === '23502' ||
+    code === '22007' ||
+    code === '22008' ||
+    code === 'validation_failed'
+  ) {
     return new ApiError('INVALID_INPUT', message);
   }
   if (code === '23505') {
@@ -81,24 +87,32 @@ export function toApiError(error: PostgresLikeError | null | undefined, fallback
   if (code === '42501' || code === 'PGRST301') {
     return new ApiError('FORBIDDEN', message);
   }
-  // An account that exists but has not confirmed its address. Distinct from
-  // wrong credentials, because the answer is completely different: nothing is
-  // wrong with what they typed, and no amount of retrying will help.
-  if (code === 'email_not_confirmed' || /email not confirmed/i.test(message)) {
-    return new ApiError('EMAIL_NOT_CONFIRMED', 'Confirm your email address first.');
+  if (
+    code === 'otp_expired' ||
+    code === 'invalid_otp' ||
+    /token.*(?:invalid|expired)|invalid.*token|otp.*expired|invalid.*(?:otp|code)|(?:otp|code).*invalid/i.test(
+      message,
+    )
+  ) {
+    return new ApiError('OTP_INVALID', 'The code is incorrect or expired.');
   }
   // 28000 is the server saying "not signed in", which is a different thing
   // from "signed in and not allowed" — the client shows a login screen for one
   // and an explanation for the other.
   if (code === '28000' || error?.status === 401 || /invalid login credentials/i.test(message)) {
-    return new ApiError('UNAUTHENTICATED', 'Email or password is incorrect.');
+    return new ApiError('UNAUTHENTICATED', 'Sign in again to continue.');
   }
   if (error?.status === 422 || /already registered/i.test(message)) {
     return new ApiError('CONFLICT', message);
   }
   // Doing something too often is worth telling apart from a failure: the user
   // should wait, not retry immediately or assume something is broken.
-  if (code === '54000' || error?.status === 429) {
+  if (
+    code === '54000' ||
+    code === 'over_sms_send_rate_limit' ||
+    code === 'over_request_rate_limit' ||
+    error?.status === 429
+  ) {
     return new ApiError('RATE_LIMITED', message);
   }
   if (/network|fetch failed|timed out|timeout|aborted/i.test(message)) {
@@ -185,36 +199,37 @@ export class SupabaseApi implements VocationApi {
     });
   }
 
-  async signUp(email: string, password: string): Promise<SignUpResult> {
-    const { data, error } = await this.client.auth.signUp({ email, password });
-    if (error) {
-      throw toApiError(error as PostgresLikeError, 'Could not create the account.');
+  async requestPhoneOtp(phone: string): Promise<void> {
+    if (!isE164Phone(phone)) {
+      throw new ApiError('INVALID_INPUT', 'Enter a phone number with its country code.');
     }
-    if (data.session) {
-      return { status: 'SIGNED_IN', session: toSession(data.session) };
-    }
-    // No session and no error is what a project that confirms addresses answers
-    // on every successful sign-up. Treating it as a failure — which this used
-    // to do — is a hard error on the happy path of a correctly configured
-    // project.
-    //
-    // It is also what GoTrue answers when the address is already registered,
-    // deliberately, so that a stranger cannot use the sign-up form to find out
-    // who has an account here. Saying "check your email" to both is the point.
-    return { status: 'CONFIRMATION_REQUIRED', email: email.trim() };
-  }
-
-  async resendConfirmationEmail(email: string): Promise<void> {
-    const { error } = await this.client.auth.resend({ type: 'signup', email: email.trim() });
+    const { error } = await this.client.auth.signInWithOtp({
+      phone: normalizePhone(phone),
+      options: { shouldCreateUser: true },
+    });
     if (error) {
-      throw toApiError(error as PostgresLikeError, 'Could not send that email again.');
+      throw toApiError(error as PostgresLikeError, 'Could not send the verification code.');
     }
   }
 
-  async signIn(email: string, password: string): Promise<AuthSession> {
-    const { data, error } = await this.client.auth.signInWithPassword({ email, password });
+  async verifyPhoneOtp(phone: string, code: string): Promise<AuthSession> {
+    if (!isE164Phone(phone) || !/^\d{6}$/.test(code.trim())) {
+      throw new ApiError('INVALID_INPUT', 'Enter the phone number and six-digit code.');
+    }
+    const { data, error } = await this.client.auth.verifyOtp({
+      phone: normalizePhone(phone),
+      token: code.trim(),
+      type: 'sms',
+    });
     if (error || !data.session) {
-      throw toApiError(error as PostgresLikeError, 'Could not sign in.');
+      const mapped = toApiError(error as PostgresLikeError, 'Could not confirm the code.');
+      // Some GoTrue versions describe a rejected OTP as a generic 401. At
+      // this endpoint that means the submitted proof failed, not that an
+      // existing app session expired.
+      if (mapped.code === 'UNAUTHENTICATED') {
+        throw new ApiError('OTP_INVALID', 'The code is incorrect or expired.');
+      }
+      throw mapped;
     }
     return toSession(data.session);
   }

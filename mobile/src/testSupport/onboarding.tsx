@@ -13,9 +13,11 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import React from 'react';
 
 import App from '../../App';
+import { FAKE_PHONE_OTP } from '../data';
 
 export const ADULT_BIRTHDATE = '1994-03-01';
 export const PILOT_HOTEL = 'hotel-lara-shore';
+export const DEFAULT_PHONE = '+905551110001';
 
 const press = async (testID: string) => {
   const target = await screen.findByTestId(testID);
@@ -31,47 +33,20 @@ const type = async (testID: string, value: string) => {
   });
 };
 
-/** Welcome → the promise → email → password, stopping wherever that lands. */
-export async function startSignUp(
-  email = 'deniz@example.test',
-  password = 'correct horse',
-): Promise<void> {
-  await press('welcome-create-account');
+/** Welcome → 18+ promise → phone → requested SMS, stopping on the code step. */
+export async function requestPhoneCode(phone = DEFAULT_PHONE): Promise<void> {
+  await press('welcome-phone');
   await press('onboarding-continue'); // the 18+ promise
-  await type('auth-email', email);
-  await press('onboarding-continue');
-  await type('auth-password', password);
+  await type('auth-phone', phone);
   await press('onboarding-continue');
 }
 
-/** Welcome → sign in → email → password, stopping wherever that lands. */
-export async function startSignIn(
-  email = 'deniz@example.test',
-  password = 'correct horse',
-): Promise<void> {
-  await press('welcome-sign-in');
-  await type('auth-email', email);
-  await press('onboarding-continue');
-  await type('auth-password', password);
-  await press('onboarding-continue');
-}
-
-/** Welcome → the promise → an account → the confirmation link → signed in. */
-export async function signUpAndSignIn(
-  email = 'deniz@example.test',
-  password = 'correct horse',
-): Promise<void> {
+/** The universal phone flow: it creates a new account or restores an existing one. */
+export async function authenticateWithPhone(phone = DEFAULT_PHONE): Promise<void> {
   render(<App />);
-  await startSignUp(email, password);
-
-  // Stands in for opening the link; there is no mailbox behind the fake.
-  await press('simulate-confirm-email');
-
-  await type('auth-email', email);
+  await requestPhoneCode(phone);
+  await type('auth-otp', FAKE_PHONE_OTP);
   await press('onboarding-continue');
-  await type('auth-password', password);
-  await press('onboarding-continue');
-
 }
 
 /**
@@ -80,10 +55,9 @@ export async function signUpAndSignIn(
  */
 export async function onboardToTeaching(
   name = 'Deniz',
-  email = 'deniz@example.test',
-  password = 'correct horse',
+  phone = DEFAULT_PHONE,
 ): Promise<void> {
-  await signUpAndSignIn(email, password);
+  await authenticateWithPhone(phone);
 
   await type('profile-name', name);
   await press('onboarding-continue');
@@ -103,10 +77,9 @@ export async function onboardToTeaching(
 /** All of it, through the three teaching cards and into the app. */
 export async function onboard(
   name = 'Deniz',
-  email = 'deniz@example.test',
-  password = 'correct horse',
+  phone = DEFAULT_PHONE,
 ): Promise<void> {
-  await onboardToTeaching(name, email, password);
+  await onboardToTeaching(name, phone);
 
   // The three teaching cards, which only appear straight after onboarding.
   await press('teaching-next');

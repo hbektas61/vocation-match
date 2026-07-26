@@ -2,17 +2,19 @@
  * Chooses the backend implementation.
  *
  * With `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` set the
- * app talks to a real project; without them it runs on the in-memory fake so
- * the build stays usable and testable with no credentials present.
+ * app talks to a real project. The in-memory backend is deliberately opt-in:
+ * a missing production/staging configuration must fail closed instead of
+ * quietly exposing the preview build's universal OTP.
  */
-import { readBackendConfig } from './config';
+import { isFakeApiEnabled, readBackendConfig } from './config';
 import type { VocationApi } from './contracts';
 import { FakeApi } from './fakeApi';
 import { SupabaseApi } from './supabaseApi';
 
 export * from './contracts';
-export { FakeApi } from './fakeApi';
-export { hasBackendConfig, readBackendConfig } from './config';
+export { FAKE_PHONE_OTP, FakeApi } from './fakeApi';
+export { isE164Phone, maskPhone, normalizePhone } from './phone';
+export { hasBackendConfig, isFakeApiEnabled, readBackendConfig } from './config';
 export {
   deviceLocation,
   deniedLocation,
@@ -28,8 +30,12 @@ export function getApi(): VocationApi {
     const config = readBackendConfig();
     if (config) {
       instance = new SupabaseApi(config);
-    } else {
+    } else if (isFakeApiEnabled()) {
       instance = new FakeApi();
+    } else {
+      throw new Error(
+        'Backend configuration is missing. Use an explicit preview build to enable FakeApi.',
+      );
     }
   }
   return instance;

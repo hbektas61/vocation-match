@@ -6,7 +6,7 @@
  * file is for is the shape of a path, and the two failure paths a user actually
  * meets — an upload that does not complete, and a photo that will not resolve.
  */
-import { ApiError, FakeApi } from '..';
+import { ApiError, FAKE_PHONE_OTP, FakeApi } from '..';
 import { buildPhotoPath, isProfilePhotoPath, photoExtensionFor } from '../photos';
 
 const ADULT_BIRTHDATE = '1994-03-01';
@@ -14,11 +14,8 @@ const JPEG = { uri: 'file:///tmp/pick.jpg', mimeType: 'image/jpeg' };
 
 async function signedInWithProfile(): Promise<FakeApi> {
   const api = new FakeApi();
-  // Sign-up no longer returns a session: the address has to be confirmed
-  // first, exactly as it does against a project with confirmations on.
-  await api.signUp('ada@example.test', 'correct-horse');
-  api.confirmEmail('ada@example.test');
-  await api.signIn('ada@example.test', 'correct-horse');
+  await api.requestPhoneOtp('+905551110001');
+  await api.verifyPhoneOtp('+905551110001', FAKE_PHONE_OTP);
   await api.saveOwnProfile({ displayName: 'Ada', birthdate: ADULT_BIRTHDATE });
   return api;
 }

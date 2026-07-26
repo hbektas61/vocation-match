@@ -24,9 +24,9 @@ the checklist below but do not complete any device item by themselves.
 ## Walked in a real browser
 
 The exported web bundle was served and driven end to end: welcome → the 18+
-promise → an account → the confirmation wait → sign-in → name → birthdate → the
-three optional steps → hotel → the teaching cards, landing in the app with
-**zero console errors**. Every one of the twelve steps was screenshotted at
+promise → phone → preview SMS code → name → birthdate → the three optional
+steps → hotel → the teaching cards, landing in the app with
+**zero console errors**. Every one of the eleven steps was screenshotted at
 375×667, which is where the layout fails first. That is more
 than "it compiles" — the navigation, the store, the typed API boundary, and the
 in-memory implementation all actually run.
@@ -72,6 +72,21 @@ Location and permission — the part with the most ways to go wrong:
 
 Session and lifecycle:
 
+- [ ] Request and receive a real SMS on both iOS and Android against staging;
+      enter the six-digit code and land on profile setup.
+- [ ] Complete the CAPTCHA challenge on both platforms; confirm initial send
+      and resend each carry a fresh token. Do not enable the SMS provider before
+      this passes.
+- [ ] Wrong and expired SMS codes stay on the code screen with the generic
+      incorrect/expired message; a number is never told whether an account
+      exists.
+- [ ] Resend stays unavailable for 60 seconds, sends once afterwards, and
+      behaves sensibly after backgrounding and resuming.
+- [ ] iOS one-time-code AutoFill and Android SMS OTP autofill offer the code
+      without exposing it in logs or another field.
+- [ ] Put the app in the iOS and Android app switchers from phone entry, OTP,
+      profile and chat. Confirm the root privacy shield replaces every preview
+      before any phone number, photo or message is captured.
 - [ ] Cold start with a stored session lands in the tabs, not onboarding.
 - [ ] Token refresh after the access token expires.
 - [ ] Sign out clears the keychain entry; the next cold start is signed out.
@@ -191,15 +206,18 @@ has Command Line Tools without Xcode and no Android SDK.
   and its messages cascade away; confirm their app does not show a ghost row or
   crash on a match that vanished underneath it.
 
-**Email confirmation (H3)**
+**Phone OTP (D-019)**
 
-- Send and open a real confirmation link, end to end, against a hosted project.
-  Nothing here has ever sent one; the local configuration points at Inbucket.
+- Integrate and verify CAPTCHA first; only then configure a funded SMS provider
+  in staging, receive a real code, and complete the flow end to end. No provider
+  credential belongs in the app or repository.
 - Confirm the hosted project's own settings, which do not travel with the
-  migrations: confirmation on, the mail rate limit bounded, CAPTCHA on sign-up.
-  `docs/hosted-setup.md` lists them.
-- Sign in with an unconfirmed address on a device and confirm the "check your
-  email" state appears rather than "email or password is incorrect".
+  migrations: phone sign-up/confirmation on, email sign-up off, per-number and
+  project-wide SMS limits bounded, CAPTCHA on. `docs/hosted-setup.md` lists
+  them.
+- Confirm only the masked last four digits appear on the OTP screen and the full
+  number is absent from profile, discovery, app-switcher snapshots, logs and
+  analytics; only the authentication provider should retain it.
 
 **Photos (H1)**
 
@@ -223,9 +241,9 @@ has Command Line Tools without Xcode and no Android SDK.
 **Accessibility (H4–H404)**
 
 - VoiceOver and TalkBack over the photo card, the delete-account confirmation,
-  and the confirm-email screen. The announcements are made; whether they are
+  and the SMS-code screen. The announcements are made; whether they are
   audible, and where the cursor lands after a screen replaces itself, is
   device behaviour.
-- Largest Dynamic Type sizes on the new Settings cards and the confirm-email
+- Largest Dynamic Type sizes on the new Settings cards and the SMS-code
   screen.
 - Switch Control and an external keyboard: focus order and visible focus.

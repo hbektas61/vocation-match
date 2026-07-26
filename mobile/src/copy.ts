@@ -19,8 +19,7 @@ export const COPY = {
       headline: 'Meet the people already at your hotel.',
       body:
         'One hotel at a time. You say when you are staying — nobody asks for a reservation, a document, or an ID.',
-      create: 'Create account',
-      signIn: 'I already have an account',
+      continueWithPhone: 'Continue with phone',
     },
 
     promise: {
@@ -35,10 +34,14 @@ export const COPY = {
       accept: 'I agree',
     },
 
-    email: { headline: 'What is your email address?', body: 'You will confirm it in a moment.' },
-    password: {
-      headline: 'Create a password.',
-      body: 'At least 8 characters. Long beats complicated.',
+    phone: {
+      headline: 'What is your phone number?',
+      body:
+        'Include the country code. We only use it to sign you in and never show it on your profile.',
+    },
+    otp: {
+      headline: 'Enter the six-digit code.',
+      body: 'We sent it by SMS. The same code flow creates a new account or opens your existing one.',
     },
     name: {
       headline: 'What should we call you?',
@@ -101,6 +104,8 @@ export const COPY = {
 
   bootstrap: {
     loading: 'Loading your account…',
+    accountLoadError:
+      'You are signed in, but your profile could not be loaded. Check your connection and try again.',
   },
 
   common: {
@@ -110,41 +115,22 @@ export const COPY = {
     cancel: 'Cancel',
   },
 
-  auth: {
-    signInTitle: 'Sign in',
-    signInBody: 'Welcome back. Sign in with your email and password.',
-    signUpTitle: 'Create your account',
-    signUpBody: 'Use an email and password to get started.',
-    emailLabel: 'Email',
-    emailPlaceholder: 'you@example.com',
-    passwordLabel: 'Password',
-    passwordPlaceholder: 'At least 8 characters',
-    signInButton: 'Sign in',
-    signInSubmitting: 'Signing in…',
-    signUpButton: 'Create account',
-    signUpSubmitting: 'Creating account…',
-    switchToSignUp: "Don't have an account? Create one",
-    switchToSignIn: 'Already have an account? Sign in',
-  },
-
-  confirmEmail: {
-    title: 'Check your email',
-    // Says nothing about whether the address was already registered. That
-    // answer would turn the sign-up form into a way to find out who has an
-    // account here, so the server does not give it and neither does this.
-    body: 'We sent a link to confirm your address. Open it, then come back and sign in.',
-    notConfirmedYet:
-      'This account has not confirmed its email address yet. Open the link we sent, then sign in.',
-    resendButton: 'Send the email again',
-    resending: 'Sending…',
-    resent: 'Sent. It can take a minute to arrive — check your spam folder too.',
-    resendError: 'Could not send that email again. Try again in a moment.',
-    backButton: 'Back to sign in',
-    // Preview build only, and labelled as such — the same honesty as the
-    // simulated location reads on Here Now.
-    simulateIntro:
-      'Preview build: there is no real mailbox here, so this stands in for opening the link.',
-    simulateButton: 'Simulate: I confirmed my email',
+  phoneAuth: {
+    phoneLabel: 'Phone number',
+    phonePlaceholder: '+90 555 111 22 33',
+    sendCode: 'Send code',
+    sending: 'Sending…',
+    codeLabel: 'Six-digit SMS code',
+    codePlaceholder: '123456',
+    verify: 'Confirm code',
+    verifying: 'Confirming…',
+    resend: 'Send a new code',
+    resendIn: (seconds: number) => `Send a new code in ${seconds}s`,
+    resent: 'A new code was sent.',
+    destination: (maskedPhone: string) => `Code sent to ${maskedPhone}`,
+    requestUncertain:
+      'The request response did not arrive. If an SMS reaches you, enter its code here. Otherwise wait and send a new one.',
+    previewCode: (code: string) => `Preview build code: ${code}`,
   },
 
   profileSetup: {
@@ -384,12 +370,13 @@ export const COPY = {
   },
 
   errors: {
-    unauthenticated: 'Email or password is incorrect.',
+    unauthenticated: 'Sign in again to continue.',
+    otpInvalid: 'That code is incorrect or expired. Request a new one and try again.',
     forbidden: "You don't have access to do that.",
     underAge: 'Vocation Match is 18+ only.',
     invalidInput: 'Please check the details you entered.',
     notFound: 'We could not find that.',
-    conflict: 'That email is already registered.',
+    conflict: 'That account could not be opened.',
     rateLimited: 'You are doing that too often. Wait a moment and try again.',
     network: 'No connection. Try again.',
     suspended: 'Your account is suspended. You can still block, report, and read your conversations.',
@@ -413,12 +400,12 @@ export function apiErrorMessage(code: ApiErrorCode): string {
   switch (code) {
     case 'UNAUTHENTICATED':
       return COPY.errors.unauthenticated;
+    case 'OTP_INVALID':
+      return COPY.errors.otpInvalid;
     case 'SUSPENDED':
       return COPY.errors.suspended;
     case 'FORBIDDEN':
       return COPY.errors.forbidden;
-    case 'EMAIL_NOT_CONFIRMED':
-      return COPY.confirmEmail.notConfirmedYet;
     case 'UNDER_AGE':
       return COPY.errors.underAge;
     case 'INVALID_INPUT':

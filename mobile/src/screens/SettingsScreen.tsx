@@ -32,8 +32,8 @@ import { useAppStore } from '../state/AppStore';
  */
 function deletionFailureMessage(error: unknown): string {
   if (error instanceof ApiError && error.code !== 'NETWORK' && error.code !== 'UNKNOWN') {
-    // `apiErrorMessage` is written for sign-in and says "email or password is
-    // incorrect" for UNAUTHENTICATED, which is nonsense on this screen.
+    // The ordinary UNAUTHENTICATED copy asks the person to sign in, but a
+    // deletion with a lost/expired session has an uncertain server outcome.
     return error.code === 'UNAUTHENTICATED'
       ? COPY.deleteAccount.unconfirmed
       : COPY.deleteAccount.refused;

@@ -44,25 +44,10 @@ enable_signup = true
 minimum_password_length = 8
 
 [auth.email]
-enable_signup = true
-# On, everywhere, including locally.
-#
-# It used to be off here "for local development only", which meant every local
-# run exercised a sign-up flow no real project would ever have: one that returns
-# a session immediately. The client was written against that, and threw on the
-# happy path of a project that confirms addresses — a hard failure on sign-up
-# that no test could have caught, because no test ever ran against the real
-# configuration.
-#
-# `scripts/verify-auth-config.js` fails the build if this is ever turned back
-# off. The hosted project has its own copy of this setting, which does not
-# travel with the migrations; the steps for it are in `docs/hosted-setup.md`
-# (backlog S-003).
-enable_confirmations = true
-# Local mail goes to Inbucket rather than anywhere real.
+enable_signup = false
+enable_confirmations = false
 double_confirm_changes = true
 secure_password_change = true
-# Keep hosted defaults explicit so `supabase config push` cannot weaken them.
 max_frequency = "1m"
 otp_length = 8
 otp_expiry = 3600
@@ -72,24 +57,27 @@ enroll_enabled = true
 verify_enabled = true
 
 [inbucket]
-enabled = true
+enabled = false
 port = 54324
 
 [auth.rate_limit]
-# Turning confirmation on means the sign-up and resend endpoints now send mail
-# to an address the caller types in. Both are public — the anon key is meant to
-# ship in a client — so without a bound, a script can point them at somebody
-# else's inbox and keep going. That is harassment, cheap, and needs no account.
-#
-# These are the local numbers. The hosted project keeps its own, which do not
-# travel with this file; `docs/hosted-setup.md` says so and says what to set.
-email_sent = 10
+# SMS sending is public and costs money. Keep both the project-wide send bucket
+# and per-number frequency bounded; the hosted project has its own settings.
+sms_sent = 10
 sign_in_sign_ups = 30
 token_refresh = 150
 token_verifications = 30
 
 [auth.sms]
-enable_signup = false
+enable_signup = true
+enable_confirmations = true
+template = "Your Vocation Match code is {{ .Code }}"
+max_frequency = "60s"
+# Deliberately no enabled provider table here. The native app does not yet
+# produce CAPTCHA tokens, so enabling Twilio/MessageBird/TextLocal/Vonage would
+# expose a public, billable SMS endpoint and a trivial global-quota DoS.
+# `scripts/verify-auth-config.js` rejects any enabled provider until that gate
+# is implemented and verified on devices.
 
 [storage]
 enabled = true

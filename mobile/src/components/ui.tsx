@@ -451,7 +451,7 @@ export function EmptyState({ message }: { message: string }) {
  * here rather than at each call site so no screen can forget it.
  *
  * `success` announces for the same reason `error` does, and it exists because
- * the reverse gap is just as bad: tapping "send the email again", hearing
+ * the reverse gap is just as bad: tapping "send a new code", hearing
  * "Sending…", and then hearing nothing at all is indistinguishable from the
  * button having done nothing. `info` stays silent — it is for standing text
  * that was already there when the screen appeared.
@@ -493,7 +493,7 @@ export function Notice({
  * Speaks a sentence when a screen replaces its own content in place.
  *
  * A navigation push resets the screen-reader cursor; a conditional re-render
- * does not. So swapping the sign-up form for "check your email" leaves a
+ * does not. So swapping the phone form for "enter the code" leaves a
  * VoiceOver user pointing at whatever now occupies that position, with nothing
  * said — they have to re-explore the screen to find out the tap worked. This is
  * the same mechanism `Notice` uses for errors, exposed for the case where the

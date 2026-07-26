@@ -24,6 +24,7 @@ These decisions are owner-approved and must not be silently changed.
 
 | D-017 | 2026-07-26 | The way into the app is one onboarding wizard whose current step is *derived* from real state — session, profile, active hotel — rather than stored anywhere. Only the "show the teaching cards" flag lives in memory, and a cold start begins with it false. A profile without an active hotel resumes conservatively at bio: repeating optional steps is preferable to silently dropping them. | Storing a cursor means two sources of truth about where somebody is, and the one on the device is the one that can be wrong. Deriving it also gives the requirement "a finished onboarding must not reappear" for free, with nothing written to disk. | A step is ever added that the server has no way to observe. |
 | D-018 | 2026-07-26 | `profiles.interests` exists: up to five self-chosen entries of 1–24 characters, readable on a discovery card and never used as a filter. Omitting the field from a profile write means "leave it alone", not "clear it". | The domain model has carried `interests` since the first milestone with nothing behind it, and the onboarding step that asks for them would otherwise throw the answer away. Bounded because the column is free text, and an unbounded array of unbounded strings is a place to put a payload. Not searchable, because something to read on a card is not the same as a facet to be targeted with. | Interests are ever wanted as a matching signal — that is a different privacy question. |
+| D-019 | 2026-07-26 | Account entry is phone-only SMS OTP. The same six-digit code flow creates or restores an account; email/password UI and email sign-up are removed. Phone numbers stay in Supabase Auth and are never copied into profiles, discovery, analytics, or logs. | The owner expects people to use the app while travelling and explicitly chose the lower-friction phone path. One flow also avoids account enumeration and removes password handling from the app. | A reviewed identity migration or an additional sign-in method is explicitly approved. |
 
 ## Open owner decisions
 
@@ -34,17 +35,17 @@ These decisions are owner-approved and must not be silently changed.
   and pool density is the thing most likely to make the first hotel feel dead.
   Left broad on purpose; one `where` clause in `app.room_eligible` changes it.
 - **Suspension is per account, not per person.** A suspended user can sign up
-  again with another email — and, since H2, can delete the suspended account
-  first, so nothing is even left behind. Closing that needs device or phone
-  signals, which is a bigger privacy decision than the MVP should make on its
-  own. Worth sizing honestly before the pilot: at one hotel with tens of
-  people, the friction to come back is "use a different email", which is close
-  to none.
+  again with another phone number — and, since H2, can delete the suspended
+  account first, so nothing is even left behind. Closing that needs device or
+  stronger identity signals, which is a bigger privacy decision than the MVP
+  should make on its own. Worth sizing honestly before the pilot.
 - **A coordinated pile-on can force a moderation flag.** Three distinct
   reporters raise a `FLAGGED` row automatically (D-013), and three disposable
   addresses are not hard to get. What it cannot do is suspend anyone —
   `resolve_report` is service_role only, so a human still stands between the
-  flag and any consequence. The flag is queue priority, not a ban. Whoever
+  flag and any consequence. Disposable phone numbers cost more than disposable
+  email addresses but do not eliminate this risk. The flag is queue priority,
+  not a ban. Whoever
   watches the queue during the pilot should know it is a lever.
 - Final brand: Vocation Match or Vacation Match.
 - First pilot city and hotels.

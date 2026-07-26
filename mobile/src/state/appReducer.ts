@@ -13,6 +13,7 @@ export type LocationPermission = 'unknown' | 'granted' | 'denied';
 
 /** `loading` only while the app start session/profile restore is in flight. */
 export type BootstrapStatus = 'loading' | 'ready';
+export type AccountLoadStatus = 'idle' | 'loading' | 'error';
 
 /** Maps the server's own-profile shape onto the pure domain `Profile`. */
 export function toDomainProfile(remote: OwnProfile): Profile {
@@ -29,6 +30,8 @@ export function toDomainProfile(remote: OwnProfile): Profile {
 
 export interface AppState {
   bootstrapStatus: BootstrapStatus;
+  /** Profile/hotel hydration after a session is found or newly created. */
+  accountLoadStatus: AccountLoadStatus;
   ageConfirmed: boolean;
   session: AuthSession | null;
   profile: Profile | null;
@@ -61,6 +64,13 @@ export type AppAction =
   | { type: 'CONFIRM_AGE' }
   | { type: 'BOOTSTRAP_RESOLVED'; session: AuthSession | null; profile: Profile | null }
   | { type: 'AUTH_SUCCESS'; session: AuthSession; profile: Profile | null }
+  | {
+      type: 'ACCOUNT_HYDRATED';
+      profile: Profile | null;
+      activeHotel: ActiveHotel | null;
+    }
+  | { type: 'ACCOUNT_HYDRATION_FAILED' }
+  | { type: 'RETRY_ACCOUNT_HYDRATION' }
   | { type: 'SIGN_OUT' }
   | { type: 'SAVE_PROFILE'; profile: Profile }
   | { type: 'HOTELS_LOADED'; hotels: HotelCard[] }
@@ -81,6 +91,7 @@ export type AppAction =
 export function initialAppState(): AppState {
   return {
     bootstrapStatus: 'loading',
+    accountLoadStatus: 'idle',
     ageConfirmed: false,
     session: null,
     profile: null,
@@ -112,6 +123,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         bootstrapStatus: 'ready',
         session: action.session,
         profile: action.profile,
+        accountLoadStatus: action.session && !action.profile ? 'loading' : 'idle',
         // A restored session already passed the age gate on a prior run.
         ageConfirmed: state.ageConfirmed || action.session !== null,
       };
@@ -119,7 +131,28 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case 'AUTH_SUCCESS':
       // Signing in at all means the age gate was passed when the account was
       // made; without this a returning sign-in falls back to the welcome step.
-      return { ...state, session: action.session, profile: action.profile, ageConfirmed: true };
+      return {
+        ...state,
+        session: action.session,
+        profile: action.profile,
+        activeHotel: null,
+        accountLoadStatus: action.profile ? 'idle' : 'loading',
+        ageConfirmed: true,
+      };
+
+    case 'ACCOUNT_HYDRATED':
+      return {
+        ...state,
+        profile: action.profile,
+        activeHotel: action.activeHotel,
+        accountLoadStatus: 'idle',
+      };
+
+    case 'ACCOUNT_HYDRATION_FAILED':
+      return { ...state, accountLoadStatus: 'error' };
+
+    case 'RETRY_ACCOUNT_HYDRATION':
+      return state.session ? { ...state, accountLoadStatus: 'loading' } : state;
 
     case 'SIGN_OUT':
       // Signing out clears every piece of this user's state from the device.

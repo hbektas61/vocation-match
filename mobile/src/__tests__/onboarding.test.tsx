@@ -20,7 +20,7 @@ import App from '../../App';
 import { COPY } from '../copy';
 import { FakeApi, getApi, MAX_INTERESTS, setApi } from '../data';
 import { INTEREST_CHOICES } from '../fixtures/interests';
-import { onboard, onboardToTeaching, signUpAndSignIn } from '../testSupport/onboarding';
+import { onboard, onboardToTeaching, authenticateWithPhone } from '../testSupport/onboarding';
 
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
 
@@ -50,7 +50,7 @@ async function relaunch(): Promise<void> {
 
 describe('moving through the wizard', () => {
   it('keeps what was typed when you go back and come forward again', async () => {
-    await signUpAndSignIn('drafts@example.test');
+    await authenticateWithPhone('+905551110011');
 
     await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
@@ -64,7 +64,7 @@ describe('moving through the wizard', () => {
   });
 
   it('offers no way past a step whose answer is required', async () => {
-    await signUpAndSignIn('required@example.test');
+    await authenticateWithPhone('+905551110012');
 
     // The action stays on screen and stays disabled, rather than disappearing
     // and leaving somebody looking for the way on.
@@ -77,7 +77,7 @@ describe('moving through the wizard', () => {
   });
 
   it('offers a skip only on the steps that are genuinely optional', async () => {
-    await signUpAndSignIn('optional@example.test');
+    await authenticateWithPhone('+905551110013');
 
     await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
@@ -101,7 +101,7 @@ describe('moving through the wizard', () => {
 });
 
 /**
- * The wizard is one navigator screen with twelve steps inside it, so React
+ * The wizard is one navigator screen with eleven steps inside it, so React
  * Navigation has nothing to pop: without a handler of its own, Android's back
  * button leaves the app from step four and takes everything typed with it.
  *
@@ -145,7 +145,7 @@ describe('the Android back button', () => {
   });
 
   it('goes back a step, and keeps the answer, instead of leaving the app', async () => {
-    await signUpAndSignIn('androidback@example.test');
+    await authenticateWithPhone('+905551110014');
 
     await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
@@ -161,7 +161,7 @@ describe('the Android back button', () => {
   });
 
   it('leaves the press alone on a step that has nowhere to go back to', async () => {
-    await signUpAndSignIn('nowhereback@example.test');
+    await authenticateWithPhone('+905551110015');
 
     // The name step shows no back arrow: the account is made, and walking
     // backwards cannot un-make it. Back has to mean what the arrow means, and
@@ -174,7 +174,7 @@ describe('the Android back button', () => {
 
 describe('interests', () => {
   async function reachInterests() {
-    await signUpAndSignIn('interests@example.test');
+    await authenticateWithPhone('+905551110016');
     await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
     await fireEvent.changeText(await screen.findByTestId('profile-birthdate'), '1994-03-01');
@@ -235,7 +235,7 @@ describe('interests', () => {
 
 describe('a finished onboarding', () => {
   it('does not come back on the next launch', async () => {
-    await onboard('Deniz', 'returning@example.test');
+    await onboard('Deniz', '+905551110017');
     expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
 
     // A cold start against the same backend: same session, same profile, same
@@ -249,7 +249,7 @@ describe('a finished onboarding', () => {
   });
 
   it('shows the three teaching cards once, and only after finishing', async () => {
-    await onboardToTeaching('Deniz', 'teaching@example.test');
+    await onboardToTeaching('Deniz', '+905551110018');
 
     expect(await screen.findByText(COPY.onboarding.teaching.upcoming.title)).toBeTruthy();
     await fireEvent.press(screen.getByTestId('teaching-next'));

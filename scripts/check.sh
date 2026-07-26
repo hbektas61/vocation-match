@@ -37,6 +37,7 @@ run() { # run <label> <command...>
 # Needs nothing at all, so it runs whichever half was asked for: the settings it
 # checks live in a file no migration and no test would otherwise read.
 run "auth configuration" node "$ROOT/scripts/verify-auth-config.js"
+run "auth configuration negative controls" node "$ROOT/scripts/verify-auth-config-tests.js"
 run "dependency health"   node "$ROOT/scripts/check-dependencies.js"
 
 if [ "$RUN_DB" = "1" ]; then

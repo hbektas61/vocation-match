@@ -39,7 +39,6 @@ import {
   type ReportInput,
   type RoomKey,
   type RoomStatus,
-  type SignUpResult,
   type SwipeDirection,
   type SwipeResult,
   type UpcomingStay,
@@ -47,22 +46,15 @@ import {
 } from './contracts';
 import { MAX_INTERESTS } from './contracts';
 import { buildPhotoPath, isProfilePhotoPath, photoExtensionFor } from './photos';
+import { isE164Phone, normalizePhone } from './phone';
 
 const SESSION_LIFETIME_MS = 60 * 60 * 1000;
-const MIN_PASSWORD_LENGTH = 8;
+export const FAKE_PHONE_OTP = '123456';
 const MAX_DECLARATION_YEARS_AHEAD = 2;
 
 interface FakeUser {
   id: string;
-  email: string;
-  password: string;
-  /**
-   * Mirrors `[auth.email] enable_confirmations = true`. The fake requires it
-   * for the same reason the real project does: a fake that signed people in
-   * immediately would let every component test pass against a flow no real
-   * project has.
-   */
-  confirmed: boolean;
+  phone: string;
 }
 
 interface StoredMatch {
@@ -104,7 +96,7 @@ export class FakeApi implements VocationApi {
   private readonly objects = new Map<string, string>();
   private uploadFailure: ApiError | null = null;
   private deleteFailure: ApiError | null = null;
-  private resendFailure: ApiError | null = null;
+  private otpRequestFailure: ApiError | null = null;
   private session: AuthSession | null = null;
   private nextId = 1;
   private readonly now: () => number;
@@ -113,70 +105,42 @@ export class FakeApi implements VocationApi {
     this.now = options.now ?? Date.now;
   }
 
-  async signUp(email: string, password: string): Promise<SignUpResult> {
-    const key = normalizeEmail(email);
-    if (!key.includes('@')) {
-      throw new ApiError('INVALID_INPUT', 'Enter a valid email address.');
+  async requestPhoneOtp(phone: string): Promise<void> {
+    if (!isE164Phone(phone)) {
+      throw new ApiError('INVALID_INPUT', 'Enter a phone number with its country code.');
     }
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      throw new ApiError('INVALID_INPUT', 'Use at least 8 characters for your password.');
-    }
-    if (this.users.has(key)) {
-      // The same answer as a fresh sign-up, on purpose: telling a stranger
-      // "that email is already registered" turns the sign-up form into a way
-      // to find out who has an account here. GoTrue does the same.
-      return { status: 'CONFIRMATION_REQUIRED', email: key };
-    }
-    // A UUID rather than `user-1`: the server's ids are UUIDs, and a photo path
-    // has to begin with one, so a fake that handed out anything else would let
-    // a broken path through here and fail only against the real database.
-    const user: FakeUser = {
-      id: fakeUserId(this.nextId++),
-      email: key,
-      password,
-      confirmed: false,
-    };
-    this.users.set(key, user);
-    return { status: 'CONFIRMATION_REQUIRED', email: key };
-  }
-
-  async resendConfirmationEmail(email: string): Promise<void> {
-    if (this.resendFailure) {
-      const failure = this.resendFailure;
-      this.resendFailure = null;
+    const key = normalizePhone(phone);
+    if (this.otpRequestFailure) {
+      const failure = this.otpRequestFailure;
+      this.otpRequestFailure = null;
       throw failure;
     }
-    // Deliberately silent about whether the address exists, for the same
-    // reason sign-up is.
-    void normalizeEmail(email);
+    if (!this.users.has(key)) {
+      // A UUID rather than `user-1`: the server's ids are UUIDs, and a photo
+      // path has to begin with one, so the fake must use the same shape.
+      this.users.set(key, {
+        id: fakeUserId(this.nextId++),
+        phone: key,
+      });
+    }
   }
 
-  /** Test seam: makes the next resend fail the way a refused request would. */
-  failNextResendWith(error: ApiError | null): void {
-    this.resendFailure = error;
+  /** Test seam: makes the next SMS request fail the way a refused request would. */
+  failNextOtpRequestWith(error: ApiError | null): void {
+    this.otpRequestFailure = error;
   }
 
   /**
-   * Stands in for following the link in the confirmation email.
-   *
-   * Not part of `VocationApi`: there is no such call against a real project,
-   * where confirming happens out of band. The preview build exposes it the same
-   * way it exposes the simulated location reads.
+   * The preview backend cannot send an SMS. Its fixed code is exported and
+   * named as a test value so it cannot be mistaken for a production bypass.
    */
-  confirmEmail(email: string): void {
-    const user = this.users.get(normalizeEmail(email));
-    if (user) {
-      user.confirmed = true;
+  async verifyPhoneOtp(phone: string, code: string): Promise<AuthSession> {
+    if (!isE164Phone(phone) || !/^\d{6}$/.test(code.trim())) {
+      throw new ApiError('INVALID_INPUT', 'Enter the phone number and six-digit code.');
     }
-  }
-
-  async signIn(email: string, password: string): Promise<AuthSession> {
-    const user = this.users.get(normalizeEmail(email));
-    if (!user || user.password !== password) {
-      throw new ApiError('UNAUTHENTICATED', 'Email or password is incorrect.');
-    }
-    if (!user.confirmed) {
-      throw new ApiError('EMAIL_NOT_CONFIRMED', 'Confirm your email address first.');
+    const user = this.users.get(normalizePhone(phone));
+    if (!user || code.trim() !== FAKE_PHONE_OTP) {
+      throw new ApiError('OTP_INVALID', 'The code is incorrect or expired.');
     }
     return this.openSession(user);
   }
@@ -202,8 +166,8 @@ export class FakeApi implements VocationApi {
       throw failure;
     }
 
-    for (const [email, user] of this.users) {
-      if (user.id === userId) this.users.delete(email);
+    for (const [phone, user] of this.users) {
+      if (user.id === userId) this.users.delete(phone);
     }
     this.profiles.delete(userId);
     this.activeHotels.delete(userId);
@@ -773,10 +737,6 @@ export class FakeApi implements VocationApi {
       age: ageYears(stored.birthdate, todayIsoDate(new Date(this.now()))) ?? 0,
     };
   }
-}
-
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
 }
 
 /** A stable, valid UUID per fake account, so ids look like the server's. */

@@ -9,11 +9,11 @@ import { color, font, fontFamily, spacing } from '../../theme';
 import type { StepProps } from './types';
 
 /**
- * The only screen with two ways out, because "I already have an account" is a
- * different journey rather than a step in this one. It carries no progress bar:
- * nothing has been asked yet, and a bar at zero is a promise of work.
+ * Phone OTP deliberately has no separate sign-up and sign-in journeys: the
+ * same number/code exchange creates or restores the account without revealing
+ * which one happened.
  */
-export function WelcomeStep({ go, patch }: StepProps) {
+export function WelcomeStep({ go }: StepProps) {
   const { dispatch } = useAppStore();
 
   return (
@@ -32,23 +32,12 @@ export function WelcomeStep({ go, patch }: StepProps) {
       </View>
       <View style={styles.footer}>
         <Button
-          label={COPY.onboarding.welcome.create}
+          label={COPY.onboarding.welcome.continueWithPhone}
           onPress={() => {
             dispatch({ type: 'CONFIRM_AGE' });
-            patch({ returning: false });
             go('promise');
           }}
-          testID="welcome-create-account"
-        />
-        <Button
-          label={COPY.onboarding.welcome.signIn}
-          variant="secondary"
-          onPress={() => {
-            dispatch({ type: 'CONFIRM_AGE' });
-            patch({ returning: true });
-            go('email');
-          }}
-          testID="welcome-sign-in"
+          testID="welcome-phone"
         />
       </View>
     </SafeAreaView>

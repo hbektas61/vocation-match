@@ -4,7 +4,7 @@
  * `supabase/tests/001_profiles.sql`.
  */
 import { ApiError } from '../contracts';
-import { FakeApi } from '../fakeApi';
+import { FAKE_PHONE_OTP, FakeApi } from '../fakeApi';
 
 const NOW = Date.parse('2026-07-25T10:00:00Z');
 const ADULT_BIRTHDATE = '1994-03-01';
@@ -22,15 +22,9 @@ describe('VocationApi contract (in-memory implementation)', () => {
     api = new FakeApi({ now: () => NOW });
   });
 
-  /**
-   * Sign up, follow the confirmation link, sign in — the whole entry path, now
-   * that a sign-up no longer hands back a session. `confirmEmail` stands in for
-   * the link; there is no such call against a real project.
-   */
-  async function register(email = 'ada@example.test', password = 'correct horse') {
-    await api.signUp(email, password);
-    api.confirmEmail(email);
-    return api.signIn(email, password);
+  async function register(phone = '+905551110001') {
+    await api.requestPhoneOtp(phone);
+    return api.verifyPhoneOtp(phone, FAKE_PHONE_OTP);
   }
 
   describe('auth', () => {
@@ -38,63 +32,40 @@ describe('VocationApi contract (in-memory implementation)', () => {
       await expect(api.currentSession()).resolves.toBeNull();
     });
 
-    it('does not sign anyone in until the address is confirmed', async () => {
-      const result = await api.signUp('ada@example.test', 'correct horse');
-
-      expect(result).toEqual({ status: 'CONFIRMATION_REQUIRED', email: 'ada@example.test' });
-      // The bug this replaced: the client treated a sessionless sign-up as a
-      // failure, which is what a correctly configured project answers every
-      // time.
+    it('does not sign anyone in merely because an SMS was requested', async () => {
+      await api.requestPhoneOtp('+905551110001');
       await expect(api.currentSession()).resolves.toBeNull();
     });
 
-    it('refuses a sign-in until then, with its own error rather than "wrong password"', async () => {
-      await api.signUp('ada@example.test', 'correct horse');
-      await api.signIn('ada@example.test', 'correct horse').then(
+    it('refuses a wrong or expired code with an OTP-specific error', async () => {
+      await api.requestPhoneOtp('+905551110001');
+      await api.verifyPhoneOtp('+905551110001', '000000').then(
         () => {
-          throw new Error('expected the confirmation gate to refuse this');
+          throw new Error('expected the OTP gate to refuse this');
         },
-        (error) => expectApiError(error, 'EMAIL_NOT_CONFIRMED'),
+        (error) => expectApiError(error, 'OTP_INVALID'),
       );
     });
 
-    it('signs in once the address is confirmed', async () => {
+    it('creates or restores a session after the six-digit code is confirmed', async () => {
       const session = await register();
       expect(session.userId).toBeTruthy();
       await expect(api.currentSession()).resolves.toMatchObject({ userId: session.userId });
     });
 
-    it('rejects a short password', async () => {
-      await api.signUp('ada@example.test', 'correct horse').catch(() => undefined);
-      await expect(api.signUp('bo@example.test', 'short')).rejects.toBeInstanceOf(ApiError);
+    it('rejects a phone number without its country code', async () => {
+      await expect(api.requestPhoneOtp('0555 111 22 33')).rejects.toMatchObject({
+        code: 'INVALID_INPUT',
+      });
     });
 
-    it('will not say whether an email is already registered', async () => {
-      await register();
+    it('will not say whether a phone number is already registered', async () => {
+      const first = await register();
       await api.signOut();
 
-      // Identical to a fresh sign-up, and no password is changed. Answering
-      // "that email is taken" would turn this form into a way to find out who
-      // has an account here.
-      await expect(api.signUp('ada@example.test', 'another one')).resolves.toEqual({
-        status: 'CONFIRMATION_REQUIRED',
-        email: 'ada@example.test',
-      });
-      await expect(api.signIn('ada@example.test', 'another one')).rejects.toMatchObject({
-        code: 'UNAUTHENTICATED',
-      });
-      await expect(api.signIn('ada@example.test', 'correct horse')).resolves.toBeTruthy();
-    });
-
-    it('refuses a wrong password', async () => {
-      await register();
-      await api.signOut();
-      await api.signIn('ada@example.test', 'wrong').then(
-        () => {
-          throw new Error('expected an auth failure');
-        },
-        (error) => expectApiError(error, 'UNAUTHENTICATED'),
-      );
+      await expect(api.requestPhoneOtp('+90 (555) 111-00-01')).resolves.toBeUndefined();
+      const restored = await api.verifyPhoneOtp('+905551110001', FAKE_PHONE_OTP);
+      expect(restored.userId).toBe(first.userId);
     });
 
     it('clears the session on sign out', async () => {
@@ -149,7 +120,7 @@ describe('VocationApi contract (in-memory implementation)', () => {
     it('keeps profiles separate per user', async () => {
       await api.saveOwnProfile({ displayName: 'Ada', birthdate: ADULT_BIRTHDATE });
       await api.signOut();
-      await register('bo@example.test');
+      await register('+905551110002');
       await expect(api.getOwnProfile()).resolves.toBeNull();
     });
   });
@@ -506,9 +477,8 @@ describe('a decision already made', () => {
 
   beforeEach(async () => {
     api = new FakeApi({ now: () => NOW });
-    await api.signUp('ada@example.test', 'correct horse');
-    api.confirmEmail('ada@example.test');
-    await api.signIn('ada@example.test', 'correct horse');
+    await api.requestPhoneOtp('+905551110001');
+    await api.verifyPhoneOtp('+905551110001', FAKE_PHONE_OTP);
     await api.saveOwnProfile({ displayName: 'Ada', birthdate: ADULT_BIRTHDATE });
     await api.setActiveHotel(LARA);
     await api.recordPresenceCheck(...NEAR);

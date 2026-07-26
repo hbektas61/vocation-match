@@ -992,3 +992,44 @@ Handoff:
   D-015. React 19 emits non-failing `act()` warnings in several older tests;
   the suite is green, but those tests should migrate to async helpers over time.
 - Recommended next agent: mobile-qa-release for the D-015 device matrix.
+
+## 2026-07-26 — phone-only account entry on the SDK 54 baseline
+
+Handoff:
+- Owner direction: remove email and make a phone number plus SMS code the only
+  way into the app for both new and returning travellers. D-019 records that
+  product decision; Expo remains `~54.0.0`, React 19.1 and React Native 0.81.5.
+- Mobile: the onboarding account steps are now phone → six-digit OTP.
+  Supabase uses `signInWithOtp({ phone })` and
+  `verifyOtp({ phone, token, type: 'sms' })`; FakeApi preview uses the plainly
+  labelled `123456`. E.164 validation happens before the network, resend is
+  locked for 60 seconds, lost initial/resend responses are treated as possibly
+  accepted, and verify/resend cannot race.
+- Lifecycle: a successful OTP stores the session immediately. Profile and
+  active-hotel hydration is a separate retryable state, so a dropped profile
+  request cannot consume the OTP and throw the person back to sign-in.
+- Privacy: phone numbers stay in Supabase Auth and are absent from the public
+  database contract. The OTP screen shows only the last four digits, clears
+  phone/code state after verification, and the root privacy shield covers the
+  whole UI on inactive/background app-state transitions.
+- Fail closed: FakeApi is available only with
+  `EXPO_PUBLIC_USE_FAKE_API=true`; missing/partial backend configuration throws.
+  The config gate rejects email sign-up, fixed OTPs, common provider secrets,
+  any built-in SMS provider and the Send SMS Hook before CAPTCHA. Six negative
+  mutations prove those failures.
+- Reviews: independent code and security re-reviews reported no
+  critical/high findings. Their session-hydration, ambiguous resend, provider
+  hook and app-switcher privacy findings were repaired. Hosted dashboard drift
+  remains a manual release check because repository checks cannot read it.
+- Verification: `scripts/check.sh` passed end to end — auth gate and six
+  negative controls; 348 pgTAP assertions plus concurrency/performance;
+  client/database contract; migration replay; storage drain; TypeScript;
+  zero-warning ESLint; 279 Jest tests; Expo SDK 54 web export.
+- External security/release gate: real SMS is intentionally not pilot-ready.
+  Keep the hosted provider and Send SMS Hook off until a native CAPTCHA flow
+  supplies a fresh token on initial send and resend. Then set hosted OTP expiry
+  to 600 seconds, bound cost/geography/rates, audit hosted settings, and complete
+  real-SMS, CAPTCHA, autofill and app-switcher passes on iOS and Android.
+- Existing email-only Auth users are not automatically migrated. Preserving a
+  real account UID would require a separately reviewed, phone-verified identity
+  migration; staging fixtures can instead be reset by an explicit owner action.

@@ -46,11 +46,33 @@ describe('toApiError', () => {
     );
   });
 
+  it('maps an expired SMS code to OTP_INVALID', () => {
+    expect(
+      toApiError({ code: 'otp_expired', message: 'Token has expired or is invalid' }, 'x').code,
+    ).toBe('OTP_INVALID');
+  });
+
+  it('does not describe a disabled OTP service as a mistyped code', () => {
+    expect(toApiError({ code: 'otp_disabled', message: 'OTP signups are disabled' }, 'x').code).toBe(
+      'UNKNOWN',
+    );
+  });
+
   it('tells "too often" apart from "broken"', () => {
     expect(
       toApiError({ code: '54000', message: 'You are doing that too often. Try again later.' }, 'x')
         .code,
     ).toBe('RATE_LIMITED');
+    expect(
+      toApiError({ code: 'over_sms_send_rate_limit', message: 'SMS send rate exceeded' }, 'x')
+        .code,
+    ).toBe('RATE_LIMITED');
+  });
+
+  it('maps provider-side phone validation to INVALID_INPUT', () => {
+    expect(
+      toApiError({ code: 'validation_failed', message: 'Phone number is invalid' }, 'x').code,
+    ).toBe('INVALID_INPUT');
   });
 
   it('maps transport failures to NETWORK', () => {

@@ -3,19 +3,19 @@
  * Checks the auth settings that decide whether an account is real.
  *
  * These live in `supabase/config.toml`, not in a migration, which is exactly
- * why they need a check: nothing else in the suite reads them, so turning email
- * confirmation off would pass every test in the project and only show up as
- * strangers signing up as each other's addresses. That is also the reason the
- * hosted project needs its own pass — this file does not travel to it, and
- * `docs/hosted-setup.md` says so.
+ * why they need a check: nothing else in the suite reads them. The app uses
+ * phone OTP only, so enabling email sign-up or disabling SMS sign-up would
+ * silently put the client and hosted project on different auth products.
  *
  * Usage: node scripts/verify-auth-config.js
  * Needs nothing: no container, no key, no network.
  */
 const { readFileSync } = require('node:fs');
-const { join } = require('node:path');
+const { join, resolve } = require('node:path');
 
-const CONFIG = join(__dirname, '..', 'supabase', 'config.toml');
+const CONFIG = process.argv[2]
+  ? resolve(process.argv[2])
+  : join(__dirname, '..', 'supabase', 'config.toml');
 const source = readFileSync(CONFIG, 'utf8');
 
 /**
@@ -57,6 +57,32 @@ function readConfig(text) {
 const { values: config, duplicates } = readConfig(source);
 const problems = [...duplicates];
 
+if (/\[auth\.sms\.test_otp\]/.test(source)) {
+  problems.push(
+    'auth.sms.test_otp must not be committed; config push could turn a local fixed code into a hosted auth bypass',
+  );
+}
+
+if (
+  /auth\.sms\.(?:twilio|twilio_verify|messagebird|textlocal|vonage)\.enabled/.test(
+    [...config.keys()].join('\n'),
+  )
+) {
+  for (const provider of ['twilio', 'twilio_verify', 'messagebird', 'textlocal', 'vonage']) {
+    if (config.get(`auth.sms.${provider}.enabled`) === 'true') {
+      problems.push(
+        `auth.sms.${provider}.enabled is true; no SMS provider may be enabled until the native CAPTCHA token flow and hosted CAPTCHA are verified`,
+      );
+    }
+  }
+}
+
+if (config.get('auth.hook.send_sms.enabled') === 'true') {
+  problems.push(
+    'auth.hook.send_sms.enabled is true; no Send SMS Hook may be enabled until the native CAPTCHA token flow and hosted CAPTCHA are verified',
+  );
+}
+
 function require_(key, expected, why) {
   const actual = config.get(key);
   if (actual === undefined) {
@@ -67,10 +93,27 @@ function require_(key, expected, why) {
 }
 
 require_(
-  'auth.email.enable_confirmations',
+  'auth.email.enable_signup',
+  'false',
+  'the app has no email or password flow',
+);
+
+require_(
+  'auth.sms.enable_signup',
   'true',
-  'without it anyone can sign up as any address, including someone else’s, and a ' +
-    'sign-up returns a session the client would otherwise never see refused',
+  'phone OTP is the only account entry path',
+);
+
+require_(
+  'auth.sms.enable_confirmations',
+  'true',
+  'a phone must prove access to its SMS code before it receives a session',
+);
+
+require_(
+  'auth.sms.max_frequency',
+  '"60s"',
+  'the UI and provider both allow at most one SMS per number per minute',
 );
 
 require_(
@@ -79,26 +122,18 @@ require_(
   'a stolen refresh token is otherwise valid forever',
 );
 
-// Eight is the floor, not a target; more is fine.
-const minimum = Number(config.get('auth.minimum_password_length') ?? 0);
-if (!Number.isInteger(minimum) || minimum < 8) {
-  problems.push(
-    `auth.minimum_password_length is ${config.get('auth.minimum_password_length')}, must be at least 8`,
-  );
-}
-
-// Sending mail is the one thing this configuration lets an unauthenticated
-// caller make the server do to a third party, so it has to be bounded.
+// Sending SMS is the one thing this configuration lets an unauthenticated
+// caller make the server do to a third party, and each one costs money.
 for (const [key, ceiling] of [
-  ['auth.rate_limit.email_sent', 30],
+  ['auth.rate_limit.sms_sent', 30],
   ['auth.rate_limit.sign_in_sign_ups', 60],
+  ['auth.rate_limit.token_verifications', 60],
 ]) {
   const value = Number(config.get(key) ?? NaN);
   if (!Number.isInteger(value) || value < 1 || value > ceiling) {
     problems.push(
       `${key} is ${config.get(key)}, must be an integer between 1 and ${ceiling} — ` +
-        'the sign-up and resend endpoints are public and send mail to an address ' +
-        'the caller types in',
+        'phone OTP endpoints are public and can spend SMS quota',
     );
   }
 }
@@ -113,7 +148,11 @@ if (/\bapp\b/.test(schemas)) {
   problems.push('api.schemas exposes the private `app` schema over the API');
 }
 
-if (/(?:anon_key|service_role_key|jwt_secret|password)\s*=\s*"[^"]{8,}"/.test(source)) {
+if (
+  /(?:anon_key|service_role_key|jwt_secret|password|account_sid|message_service_sid|content_sid|auth_token|api_key|access_key|api_secret)\s*=\s*"(?!env\()[^"]{8,}"/.test(
+    source,
+  )
+) {
   problems.push('config.toml appears to contain a secret; secrets belong in the environment');
 }
 
@@ -127,5 +166,5 @@ if (problems.length) {
 }
 
 console.log(
-  '  email confirmation is on, mail sending is bounded, tokens rotate, and `app` is not exposed over the API',
+  '  email sign-up is off, phone OTP is on, providers stay gated for CAPTCHA, SMS limits are bounded, tokens rotate, and `app` is not exposed over the API',
 );

@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { PrivacyShield } from './src/components/PrivacyShield';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { AppStoreProvider } from './src/state/AppStore';
 
@@ -30,6 +31,7 @@ export default function App() {
         </NavigationContainer>
       </AppStoreProvider>
       <StatusBar style="dark" />
+      <PrivacyShield />
     </SafeAreaProvider>
   );
 }

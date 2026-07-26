@@ -28,6 +28,7 @@ describe('appReducer auth lifecycle', () => {
     expect(state.ageConfirmed).toBe(true);
     expect(state.session).not.toBeNull();
     expect(state.profile).toBeNull();
+    expect(state.accountLoadStatus).toBe('loading');
   });
 
   it('a restored session with a saved profile is ready for the main tabs', () => {
@@ -39,6 +40,42 @@ describe('appReducer auth lifecycle', () => {
     });
     expect(state.ageConfirmed).toBe(true);
     expect(state.profile).toEqual(profile);
+    expect(state.accountLoadStatus).toBe('idle');
+  });
+
+  it('keeps a valid session through account hydration failure and retry', () => {
+    const session = { userId: SELF_ID, expiresAt: NOW + 60_000 };
+    let state = appReducer(initialAppState(), {
+      type: 'AUTH_SUCCESS',
+      session,
+      profile: null,
+    });
+    state = appReducer(state, { type: 'ACCOUNT_HYDRATION_FAILED' });
+
+    expect(state.session).toEqual(session);
+    expect(state.accountLoadStatus).toBe('error');
+
+    state = appReducer(state, { type: 'RETRY_ACCOUNT_HYDRATION' });
+    expect(state.session).toEqual(session);
+    expect(state.accountLoadStatus).toBe('loading');
+  });
+
+  it('hydrates the profile and hotel around an existing session', () => {
+    const profile = { id: SELF_ID, displayName: 'Test', age: 30, bio: '', interests: [] };
+    let state = appReducer(initialAppState(), {
+      type: 'AUTH_SUCCESS',
+      session: { userId: SELF_ID, expiresAt: NOW + 60_000 },
+      profile: null,
+    });
+    state = appReducer(state, {
+      type: 'ACCOUNT_HYDRATED',
+      profile,
+      activeHotel: { hotelId: 'hotel-lara-shore', activatedAt: NOW },
+    });
+
+    expect(state.profile).toEqual(profile);
+    expect(state.activeHotel).toEqual({ hotelId: 'hotel-lara-shore', activatedAt: NOW });
+    expect(state.accountLoadStatus).toBe('idle');
   });
 
   it('no session at bootstrap leaves the age gate in front of onboarding', () => {

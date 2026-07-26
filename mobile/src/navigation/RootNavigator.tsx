@@ -4,7 +4,7 @@ import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Body, Screen } from '../components/ui';
+import { Body, Button, Notice, Screen } from '../components/ui';
 import { COPY } from '../copy';
 import { ChatScreen } from '../screens/ChatScreen';
 import { DiscoveryScreen } from '../screens/DiscoveryScreen';
@@ -64,6 +64,20 @@ function BootstrapScreen() {
   );
 }
 
+function AccountLoadErrorScreen() {
+  const { dispatch } = useAppStore();
+  return (
+    <Screen testID="screen-account-load-error">
+      <Notice message={COPY.bootstrap.accountLoadError} tone="error" />
+      <Button
+        label={COPY.common.retry}
+        onPress={() => dispatch({ type: 'RETRY_ACCOUNT_HYDRATION' })}
+        testID="account-load-retry"
+      />
+    </Screen>
+  );
+}
+
 function MainTabs() {
   const insets = useSafeAreaInsets();
   return (
@@ -117,7 +131,7 @@ function MainTabs() {
  * Onboarding is enforced by conditional screen registration: the main app
  * screens do not exist in the navigator until the age gate, real sign-in,
  * and the profile are complete. A restored session with a saved profile
- * (see `AppStoreProvider`'s bootstrap effect) skips straight to the tabs.
+ * skips straight to the tabs after its retryable account hydration completes.
  */
 export function RootNavigator() {
   const { state } = useAppStore();
@@ -126,6 +140,20 @@ export function RootNavigator() {
     return (
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Bootstrap" component={BootstrapScreen} />
+      </Stack.Navigator>
+    );
+  }
+  if (state.accountLoadStatus === 'loading') {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Bootstrap" component={BootstrapScreen} />
+      </Stack.Navigator>
+    );
+  }
+  if (state.accountLoadStatus === 'error') {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Bootstrap" component={AccountLoadErrorScreen} />
       </Stack.Navigator>
     );
   }

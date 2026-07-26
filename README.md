@@ -45,6 +45,10 @@ screen:
   likes, matches and conversations with it. Reports filed about you, or by you,
   survive with your name removed: deleting an account is not a way to erase the
   record that a report was made.
+- Account entry is phone-only: one six-digit SMS code creates a new account or
+  restores an existing one. Email and passwords are not collected by the app,
+  and the phone number stays inside the authentication system rather than the
+  public profile/discovery schema.
 
 ## Layout
 
@@ -77,9 +81,10 @@ when applied to an empty database fails there rather than in production.
 Two of the checks need neither Docker nor the network:
 
 - `scripts/verify-auth-config.js` reads `supabase/config.toml` and fails if
-  email confirmation is off, if the endpoints that send mail are unbounded, or
-  if the private `app` schema is exposed over the API. Those settings are not
-  in any migration, so nothing else in the suite would ever look at them.
+  email sign-up is on, phone OTP is off, SMS endpoints are unbounded, a fixed
+  test OTP is committed, or the private `app` schema is exposed over the API.
+  Those settings are not in any migration, so nothing else in the suite would
+  ever look at them.
 - `scripts/check-dependencies.js` fails on any high or critical advisory that
   is not on an explicit list with a written reason.
 
@@ -91,11 +96,21 @@ No hosted project, key, or secret is involved in any of it.
 cd mobile && npm install && npx expo start
 ```
 
-With no `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` set, the
-app runs against the in-memory implementation in `src/data/fakeApi.ts` — every
-flow works, nothing leaves the device, and no credential is needed. Copy
+The in-memory implementation is available only through the explicit preview
+command below — every flow works, nothing leaves the device, and the preview
+SMS code is `123456`. A build with missing backend variables otherwise fails
+closed instead of silently shipping a universal code. Copy
 `mobile/.env.example` to `mobile/.env.local` and fill it in to point at a real
-Supabase project.
+Supabase project. A configured project also needs an enabled/funded SMS
+provider; see `docs/hosted-setup.md`.
+
+To force the credential-free preview even when `.env.local` exists:
+
+```bash
+cd mobile && npm run start:preview
+```
+
+Open it in Expo Go and use `123456` on the SMS-code screen.
 
 ## Where the rules actually live
 

@@ -12,7 +12,7 @@
  * where the cursor lands afterwards. Both need a device, and both are in
  * `.studio/device-readiness.md`.
  */
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import React from 'react';
 import { AccessibilityInfo } from 'react-native';
 
@@ -20,10 +20,10 @@ import App from '../../App';
 import { COPY } from '../copy';
 import { FakeApi, setApi } from '../data';
 import {
+  authenticateWithPhone,
   onboardToSettings,
   onboardToTeaching,
-  startSignIn,
-  startSignUp,
+  requestPhoneCode,
 } from '../testSupport/onboarding';
 
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
@@ -46,59 +46,45 @@ afterEach(() => {
 const spoken = () => announced.join(' | ');
 
 describe('what gets announced', () => {
-  it('says the sign-up worked and is waiting on an email', async () => {
-    await render(<App />);
-    await startSignUp('new@example.test');
+  it('announces that the SMS code is expected', async () => {
+    render(<App />);
+    await requestPhoneCode('+905551110021');
 
     // The step is replaced in place, not pushed, so nothing resets the cursor.
-    expect(await screen.findByTestId('screen-confirm-email')).toBeTruthy();
-    expect(spoken()).toContain(COPY.confirmEmail.title);
-    expect(spoken()).toContain(COPY.confirmEmail.body);
+    expect(await screen.findByTestId('screen-onboarding-otp')).toBeTruthy();
+    expect(spoken()).toContain(COPY.onboarding.otp.headline);
+    expect(spoken()).toContain(COPY.onboarding.otp.body);
   });
 
-  it('distinguishes "we just sent one" from "you never confirmed"', async () => {
-    const api = new FakeApi({ now: () => FIXED });
-    setApi(api);
-    await api.signUp('waiting@example.test', 'correct horse');
-
-    await render(<App />);
-    await startSignIn('waiting@example.test');
-
-    expect(await screen.findByTestId('screen-confirm-email')).toBeTruthy();
-    // Nothing was sent on this path, and saying otherwise costs someone an
-    // hour of watching an inbox.
-    expect(spoken()).toContain(COPY.confirmEmail.notConfirmedYet);
-    expect(screen.getByText(COPY.confirmEmail.notConfirmedYet)).toBeTruthy();
-  });
-
-  it('says the email went out again, instead of going quiet', async () => {
-    await render(<App />);
-    await startSignUp('new@example.test');
-    await screen.findByTestId('confirm-resend');
+  it('says a new SMS code was sent, instead of going quiet', async () => {
+    render(<App />);
+    await requestPhoneCode('+905551110022');
+    await screen.findByTestId('otp-resend');
     announced = [];
 
-    await fireEvent.press(screen.getByTestId('confirm-resend'));
+    const startedAt = Date.now();
+    jest.spyOn(Date, 'now').mockReturnValue(startedAt + 61_000);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1_100));
+    });
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('otp-resend'));
+    });
 
-    expect(await screen.findByTestId('confirm-resent')).toBeTruthy();
+    expect(screen.getByTestId('otp-resent')).toBeTruthy();
     // Silence here is indistinguishable from the button doing nothing.
-    expect(spoken()).toContain(COPY.confirmEmail.resent);
+    expect(spoken()).toContain(COPY.phoneAuth.resent);
   });
 
   it('names each onboarding step, which nothing else does', async () => {
-    await render(<App />);
-    await startSignUp('stepper@example.test');
-    await fireEvent.press(await screen.findByTestId('simulate-confirm-email'));
-    await fireEvent.changeText(await screen.findByTestId('auth-email'), 'stepper@example.test');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
-    await fireEvent.changeText(await screen.findByTestId('auth-password'), 'correct horse');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await authenticateWithPhone('+905551110023');
     await screen.findByTestId('profile-name');
     announced = [];
 
     await fireEvent.changeText(screen.getByTestId('profile-name'), 'Deniz');
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
 
-    // Twelve steps swap in place inside one navigator screen, so nothing resets
+    // Eleven steps swap in place inside one navigator screen, so nothing resets
     // the cursor between them. Without this a VoiceOver user taps "Continue"
     // and is given a new question in total silence.
     expect(await screen.findByTestId('screen-onboarding-birthdate')).toBeTruthy();
