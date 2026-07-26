@@ -1,28 +1,14 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import {
-  ActionButton,
-  Body,
-  Button,
-  Display,
-  EmptyState,
-  Gap,
-  Notice,
-  PhotoFrame,
-  RoomRibbon,
-  Rule,
-  Screen,
-  SectionLabel,
-  Title,
-} from '../components/ui';
+import { Button, Notice, RoomRibbon, Screen, Title } from '../components/ui';
 import { nowMs } from '../clock';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type CandidateCard, type RoomKey, type RoomStatus } from '../data';
 import type { RootStackParamList } from '../navigation/types';
-import { color, font, fontFamily, radius, spacing } from '../theme';
+import { color, fontFamily, palette, radius, spacing } from '../theme';
 import { earliestRoomExpiry } from '../state/roomSchedule';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
@@ -188,150 +174,219 @@ export function DiscoveryScreen() {
   };
 
   return (
-    <Screen safeTop testID="screen-discovery" bleed>
-      {/* The photo runs to the edges and the name sits on it, so the first
-          thing on screen is a person rather than a page header. */}
-      <PhotoFrame
-        url={candidate && candidate.photoPath ? photoUrls[candidate.photoPath] ?? null : null}
-        name={candidate?.displayName ?? ''}
-        testID={candidate ? `candidate-photo-${candidate.userId}` : 'deck-empty-photo'}
-      >
-        {candidate ? (
-          <>
+    <Screen safeTop testID="screen-discovery" bleed scroll={false}>
+      {/* The room switch stays above the card: which door you are browsing is
+          a real choice, and the reference has no equivalent for it. */}
+      {eligibleRooms.length > 1 ? (
+        <View style={styles.roomSwitch}>
+          {eligibleRooms.map((r) => (
+            <View key={r} style={styles.roomSwitchItem}>
+              <Button
+                label={ROOM_LABEL[r]}
+                variant={r === room ? 'primary' : 'secondary'}
+                compact
+                onPress={() => setRoom(r)}
+                testID={`room-${r}`}
+              />
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      {deckError ? <Notice message={deckError} tone="error" testID="discovery-error" /> : null}
+      {actionError ? (
+        <Notice message={actionError} tone="error" testID="discovery-action-error" />
+      ) : null}
+
+      {deck === null ? (
+        <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="deck-loading" />
+      ) : candidate ? (
+        /* The whole person is one screen (owner decision): a full-bleed photo
+           card with the name on it, the one fact this app can print — the
+           room · hotel bond — as its only tag, and the three actions floating
+           at its foot. No sections to scroll; the decision is made here. */
+        <View style={styles.card} testID={`candidate-${candidate.userId}`}>
+          {candidate.photoPath && photoUrls[candidate.photoPath] ? (
+            <Image
+              source={{ uri: photoUrls[candidate.photoPath] }}
+              style={styles.cardPhoto}
+              resizeMode="cover"
+              accessibilityLabel={`Photo of ${candidate.displayName}`}
+              testID={`candidate-photo-${candidate.userId}`}
+            />
+          ) : (
+            <View style={styles.cardNoPhoto} testID={`candidate-photo-${candidate.userId}`}>
+              <Text style={styles.cardInitial}>{candidate.displayName.slice(0, 1)}</Text>
+            </View>
+          )}
+
+          {/* Name at the top over its own scrim, the way the reference sets
+              it — light weight, because the photo is the loud one here. */}
+          <View style={styles.cardTop} pointerEvents="none">
+            <Text style={styles.cardName}>
+              {`${candidate.displayName}, ${candidate.age}`}
+            </Text>
             <RoomRibbon room={room} hotelName={hotelName} onPhoto testID="candidate-room" />
-            <Display tone="onPhoto">{`${candidate.displayName}, ${candidate.age}`}</Display>
-            {/* The reference lays interests over the photo's foot as small
-                tags, and it is right: they are the fastest read on a card and
-                the photo is where the eye already is. */}
-            {candidate.interests.length > 0 ? (
-              <View style={styles.tagRow} pointerEvents="none">
-                {candidate.interests.map((interest) => (
-                  <View key={interest} style={styles.tag}>
-                    <Text style={styles.tagText}>{interest}</Text>
-                  </View>
-                ))}
-              </View>
-            ) : null}
-          </>
-        ) : null}
-      </PhotoFrame>
-
-      <View style={styles.body}>
-        {eligibleRooms.length > 1 ? (
-          <View style={styles.roomSwitch}>
-            {eligibleRooms.map((r) => (
-              <View key={r} style={styles.roomSwitchItem}>
-                <Button
-                  label={ROOM_LABEL[r]}
-                  variant={r === room ? 'primary' : 'secondary'}
-                  onPress={() => setRoom(r)}
-                  testID={`room-${r}`}
-                />
-              </View>
-            ))}
           </View>
-        ) : null}
 
-        {deckError ? <Notice message={deckError} tone="error" testID="discovery-error" /> : null}
-        {actionError ? (
-          <Notice message={actionError} tone="error" testID="discovery-action-error" />
-        ) : null}
-
-        {deck === null ? (
-          <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="deck-loading" />
-        ) : candidate ? (
-          <View style={styles.profile} testID={`candidate-${candidate.userId}`}>
-            {candidate.bio ? (
-              <View style={styles.section}>
-                <SectionLabel>{COPY.discovery.aboutLabel}</SectionLabel>
-                <Body>{candidate.bio}</Body>
-              </View>
-            ) : null}
-
-            <Rule />
-
-            {/* The section no other dating app has, and the reason this one
-                exists: what the two of you actually have in common right now. */}
-            <View style={styles.section}>
-              <SectionLabel>{COPY.discovery.overlapLabel}</SectionLabel>
-              <Body>
-                {room === 'HERE_NOW'
-                  ? COPY.discovery.overlapHereNow
-                  : COPY.discovery.overlapUpcoming}
-              </Body>
-            </View>
-
-            <Gap size="sm" />
-
-            {/* Bumble's mechanic, and the right one: the decision waits until
-                the end of the profile instead of floating over it. */}
-            <View style={styles.actions}>
-              <ActionButton
-                label={COPY.discovery.passButton}
-                glyph="✕"
-                tone="pass"
-                onPress={() => swipe('PASS')}
-                disabled={busy}
-                testID="swipe-pass"
-              />
-              <ActionButton
-                label={`Like ${candidate.displayName}`}
-                glyph="♥"
-                tone="like"
-                onPress={() => swipe('LIKE')}
-                disabled={busy}
-                testID="swipe-like"
-              />
-            </View>
-
-            {/* D-008: report/block must be reachable before any match exists. */}
-            <Button
-              label={COPY.discovery.reportBlockButton}
-              variant="danger"
+          {/* The three actions, floating on the photo's foot: pass, the one
+              purple pill for like, and safety — which the reference gives to
+              chat, but chat does not exist before a match and report/block
+              must be reachable from the deck (D-008). */}
+          <View style={styles.cardActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={COPY.discovery.passButton}
+              accessibilityState={{ disabled: busy }}
+              disabled={busy}
+              onPress={() => swipe('PASS')}
+              style={styles.actionCircle}
+              testID="swipe-pass"
+            >
+              <Text style={styles.actionGlyph}>✕</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${COPY.discovery.likeButton} ${candidate.displayName}`}
+              accessibilityState={{ disabled: busy }}
+              disabled={busy}
+              onPress={() => swipe('LIKE')}
+              style={styles.actionPill}
+              testID="swipe-like"
+            >
+              <Text style={styles.actionPillGlyph}>♥</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={COPY.discovery.reportBlockButton}
+              accessibilityState={{ disabled: busy }}
+              disabled={busy}
               onPress={() =>
                 navigation.navigate('ReportBlock', {
                   userId: candidate.userId,
                   displayName: candidate.displayName,
                 })
               }
-              disabled={busy}
+              style={styles.actionCircle}
               testID="discovery-report-block"
-            />
+            >
+              <Text style={styles.actionGlyph}>⚑</Text>
+            </Pressable>
           </View>
-        ) : (
-          <EmptyState message={COPY.discovery.emptyDeck} />
-        )}
-      </View>
+        </View>
+      ) : (
+        <View style={styles.card}>
+          <View style={styles.cardNoPhoto}>
+            <Text style={styles.cardInitial}>?</Text>
+          </View>
+          <View style={styles.cardTop} pointerEvents="none">
+            <Text style={styles.cardName}>{COPY.discovery.emptyDeck}</Text>
+          </View>
+        </View>
+      )}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  body: { paddingHorizontal: spacing.md, gap: spacing.md },
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  /**
-   * Translucent over the scrim rather than opaque chips: they have to sit on
-   * an unknown photograph without becoming the loudest thing on it.
-   */
-  tag: {
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(20, 22, 26, 0.55)',
+  roomSwitch: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
   },
-  tagText: {
+  roomSwitchItem: { flex: 1 },
+  /** The card is the screen: everything else stands on the photograph. */
+  card: {
+    flex: 1,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    backgroundColor: color.veil,
+    shadowColor: color.ink,
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+  cardPhoto: { ...StyleSheet.absoluteFillObject },
+  cardNoPhoto: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardInitial: {
+    fontFamily: fontFamily.display,
+    fontSize: 128,
+    lineHeight: 140,
+    color: palette.placeholder,
+  },
+  cardTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    padding: spacing.md,
+    paddingBottom: spacing.xl,
+    gap: spacing.sm,
+    backgroundColor: 'rgba(20, 22, 26, 0.30)',
+  },
+  /**
+   * Light, not display-bold: the reference sets the name quietly and lets the
+   * photograph carry the screen.
+   */
+  cardName: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: font.caption,
+    fontSize: 30,
+    lineHeight: 36,
     color: color.onPhoto,
   },
-  roomSwitch: { flexDirection: 'row', gap: spacing.sm },
-  roomSwitchItem: { flex: 1 },
-  profile: { gap: spacing.md },
-  section: { gap: spacing.sm },
-  actions: {
+  cardActions: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: spacing.lg,
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xl,
-    paddingVertical: spacing.sm,
+    gap: spacing.md,
+  },
+  actionCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: color.surface,
+    shadowColor: color.ink,
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  actionGlyph: {
+    fontSize: 24,
+    lineHeight: 28,
+    color: color.accentDeep,
+  },
+  /** The one loud thing on the screen, exactly as the reference has it. */
+  actionPill: {
+    width: 120,
+    height: 64,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: color.accentDeep,
+    shadowColor: color.ink,
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  actionPillGlyph: {
+    fontSize: 28,
+    lineHeight: 32,
+    color: '#FFFFFF',
   },
 });

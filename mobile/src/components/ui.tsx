@@ -22,7 +22,6 @@ import {
   font,
   fontFamily,
   MIN_TOUCH,
-  palette,
   radius,
   roomTone,
   spacing,
@@ -510,60 +509,6 @@ export function RoomRibbon({
   );
 }
 
-/**
- * A profile photo at the size the product actually uses it.
- *
- * The missing-photo case is designed rather than handled: on the first day of a
- * pilot almost nobody has uploaded one, so a broken frame would be the normal
- * experience. An initial set enormous in the fill colour reads as a decision.
- */
-export function PhotoFrame({
-  url,
-  name,
-  children,
-  testID,
-}: {
-  url: string | null;
-  name: string;
-  /** Overlaid at the foot of the photo, over the scrim. */
-  children?: React.ReactNode;
-  testID?: string;
-}) {
-  const [failedUrl, setFailedUrl] = useState<string | null>(null);
-  const showImage = url !== null && url !== failedUrl;
-
-  return (
-    <View style={styles.photoFrame} testID={testID}>
-      <View
-        style={styles.photoFill}
-        accessible
-        accessibilityRole="image"
-        accessibilityLabel={showImage ? `Photo of ${name}` : `${name} has no photo`}
-      >
-        {showImage ? (
-          <Image
-            source={{ uri: url }}
-            style={styles.photoImage}
-            resizeMode="cover"
-            onError={() => setFailedUrl(url)}
-          />
-        ) : (
-          <Text style={styles.photoInitial}>{initialOf(name)}</Text>
-        )}
-      </View>
-      {children ? (
-        // The band is what makes white text and pale chips readable on an
-        // unknown photograph. It is drawn even over the no-photo wash so the
-        // card keeps one shape whether or not there is a picture.
-        <View style={styles.photoScrim} pointerEvents="box-none">
-          <View style={styles.photoOverlay} pointerEvents="box-none">
-            {children}
-          </View>
-        </View>
-      ) : null}
-    </View>
-  );
-}
 
 /**
  * A profile photo, or the initial that stands in for one.
@@ -996,6 +941,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
 
+  displayOnPhoto: { color: color.onPhoto },
   ribbon: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1026,53 +972,6 @@ const styles = StyleSheet.create({
   },
   ribbonTextOnPhoto: { color: color.onPhoto },
 
-  /**
-   * The profile as a card: inset, rounded on every corner, one shape whether
-   * or not there is a photo — the old version squashed to 4:3 with a photo
-   * missing, which made the no-photo state read as a broken layout rather
-   * than a person without a picture.
-   */
-  photoFrame: {
-    marginHorizontal: spacing.md,
-    aspectRatio: 4 / 5,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    backgroundColor: color.veil,
-    shadowColor: color.ink,
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
-  },
-  photoFill: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoImage: { width: '100%', height: '100%' },
-  photoInitial: {
-    fontFamily: fontFamily.display,
-    fontSize: 128,
-    lineHeight: 140,
-    // 3.32:1 on the lavender-soft fill. Quiet, but a person can actually see
-    // it — white on the fill read as a rendering failure rather than a
-    // placeholder.
-    color: palette.placeholder,
-  },
-  photoScrim: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingTop: spacing.xl,
-    backgroundColor: 'rgba(20, 22, 26, 0.38)',
-  },
-  photoOverlay: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
-    gap: spacing.sm,
-  },
-  displayOnPhoto: { color: color.onPhoto },
 
   avatar: {
     alignItems: 'center',
