@@ -1,7 +1,7 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import {
   ActionButton,
@@ -22,7 +22,7 @@ import { nowMs } from '../clock';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type CandidateCard, type RoomKey, type RoomStatus } from '../data';
 import type { RootStackParamList } from '../navigation/types';
-import { spacing } from '../theme';
+import { color, font, fontFamily, radius, spacing } from '../theme';
 import { earliestRoomExpiry } from '../state/roomSchedule';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
@@ -199,7 +199,19 @@ export function DiscoveryScreen() {
         {candidate ? (
           <>
             <RoomRibbon room={room} hotelName={hotelName} onPhoto testID="candidate-room" />
-            <Display>{`${candidate.displayName}, ${candidate.age}`}</Display>
+            <Display tone="onPhoto">{`${candidate.displayName}, ${candidate.age}`}</Display>
+            {/* The reference lays interests over the photo's foot as small
+                tags, and it is right: they are the fastest read on a card and
+                the photo is where the eye already is. */}
+            {candidate.interests.length > 0 ? (
+              <View style={styles.tagRow} pointerEvents="none">
+                {candidate.interests.map((interest) => (
+                  <View key={interest} style={styles.tag}>
+                    <Text style={styles.tagText}>{interest}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
           </>
         ) : null}
       </PhotoFrame>
@@ -296,6 +308,22 @@ export function DiscoveryScreen() {
 
 const styles = StyleSheet.create({
   body: { paddingHorizontal: spacing.md, gap: spacing.md },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  /**
+   * Translucent over the scrim rather than opaque chips: they have to sit on
+   * an unknown photograph without becoming the loudest thing on it.
+   */
+  tag: {
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(20, 22, 26, 0.55)',
+  },
+  tagText: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: font.caption,
+    color: color.onPhoto,
+  },
   roomSwitch: { flexDirection: 'row', gap: spacing.sm },
   roomSwitchItem: { flex: 1 },
   profile: { gap: spacing.md },

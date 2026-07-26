@@ -407,7 +407,16 @@ export class FakeApi implements VocationApi {
       if (!path.startsWith(`${userId}/`)) {
         continue;
       }
-      urls[path] = `signed://${path}`;
+      // The local file the upload came from — a URI a real <Image> can load.
+      // This used to be a made-up `signed://` scheme, which was fine in jest
+      // and a red screen on a phone: React Native handed it to the network
+      // stack, which has no handler for it. The fake's bucket has always been
+      // "path -> local uri", so the honest stand-in for a signed URL is the
+      // uri it already holds.
+      const local = this.objects.get(path);
+      if (local) {
+        urls[path] = local;
+      }
     }
     return urls;
   }

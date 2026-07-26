@@ -135,7 +135,18 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1.5,
   },
-  chipWide: { alignSelf: 'stretch', flexDirection: 'row', justifyContent: 'center' },
+  /**
+   * One decision per line, sized like the reference's pills: tall enough to
+   * feel like the main event on the screen rather than a tag that escaped the
+   * passions grid.
+   */
+  chipWide: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    minHeight: 56,
+    borderWidth: 2,
+  },
   chipTrailing: {
     position: 'absolute',
     right: spacing.md,

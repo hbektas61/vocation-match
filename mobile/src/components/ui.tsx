@@ -56,9 +56,16 @@ export function Screen({
 }
 
 /** The largest thing on a screen: a name, or the screen's own subject. */
-export function Display({ children }: { children: React.ReactNode }) {
+export function Display({
+  children,
+  tone = 'ink',
+}: {
+  children: React.ReactNode;
+  /** `onPhoto` when the text sits on a photograph, over the scrim. */
+  tone?: 'ink' | 'onPhoto';
+}) {
   return (
-    <Text accessibilityRole="header" style={styles.display}>
+    <Text accessibilityRole="header" style={[styles.display, tone === 'onPhoto' && styles.displayOnPhoto]}>
       {children}
     </Text>
   );
@@ -448,7 +455,7 @@ export function PhotoFrame({
   const showImage = url !== null && url !== failedUrl;
 
   return (
-    <View style={[styles.photoFrame, !showImage && styles.photoFrameEmpty]} testID={testID}>
+    <View style={styles.photoFrame} testID={testID}>
       <View
         style={styles.photoFill}
         accessible
@@ -467,8 +474,13 @@ export function PhotoFrame({
         )}
       </View>
       {children ? (
-        <View style={styles.photoOverlay} pointerEvents="box-none">
-          {children}
+        // The band is what makes white text and pale chips readable on an
+        // unknown photograph. It is drawn even over the no-photo wash so the
+        // card keeps one shape whether or not there is a picture.
+        <View style={styles.photoScrim} pointerEvents="box-none">
+          <View style={styles.photoOverlay} pointerEvents="box-none">
+            {children}
+          </View>
         </View>
       ) : null}
     </View>
@@ -879,17 +891,23 @@ const styles = StyleSheet.create({
   },
   ribbonTextOnPhoto: { color: color.onPhoto },
 
+  /**
+   * The profile as a card: inset, rounded on every corner, one shape whether
+   * or not there is a photo — the old version squashed to 4:3 with a photo
+   * missing, which made the no-photo state read as a broken layout rather
+   * than a person without a picture.
+   */
   photoFrame: {
-    width: '100%',
+    marginHorizontal: spacing.md,
     aspectRatio: 4 / 5,
-  },
-  photoFrameEmpty: {
-    width: '100%',
-    aspectRatio: 4 / 3,
-    borderBottomLeftRadius: radius.lg,
-    borderBottomRightRadius: radius.lg,
+    borderRadius: radius.lg,
     overflow: 'hidden',
     backgroundColor: color.veil,
+    shadowColor: color.ink,
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
   photoFill: {
     ...StyleSheet.absoluteFillObject,
@@ -906,13 +924,20 @@ const styles = StyleSheet.create({
     // placeholder.
     color: palette.placeholder,
   },
-  photoOverlay: {
+  photoScrim: {
     position: 'absolute',
-    left: spacing.md,
-    right: spacing.md,
-    bottom: spacing.md,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingTop: spacing.xl,
+    backgroundColor: 'rgba(20, 22, 26, 0.38)',
+  },
+  photoOverlay: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
     gap: spacing.sm,
   },
+  displayOnPhoto: { color: color.onPhoto },
 
   avatar: {
     alignItems: 'center',

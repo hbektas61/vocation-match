@@ -1353,3 +1353,36 @@ a never-seeded catalogue — both fixed and both now written into
 Still true: Nominatim's policy is one request a second with a real
 User-Agent. Debounce, the two-character minimum and cache-first keep a pilot
 under that comfortably; past a pilot, the function is where a queue goes.
+
+
+## 2026-07-26 — the phone found what the suite could not
+
+Three reports from the owner's hands-on run, all against the preview (FakeApi)
+build — which turned out to be the point.
+
+**The photo red screen.** `FakeApi.getPhotoUrls` returned `signed://<path>`, a
+made-up scheme. Every jest test was happy because jest never hands a URL to a
+real image loader; the phone's `<Image>` handed it to the network stack, which
+has no handler for `signed://`, and iOS put up a red screen. The fake's bucket
+has always been "path → local uri", so it now returns the uri it already holds
+and the picked photo actually renders in preview. Lesson twin to the earlier
+sweep bug: the fake can pass where only a runtime fails.
+
+**The discovery card.** The owner sent the reference the brief was adapted
+from and the card did not survive the comparison: full-bleed square frame, no
+scrim, ink-on-photo name, a giant top-anchored initial when there is no photo,
+interests below the fold. It is now a proper card — inset, rounded, one shape
+with or without a photo — with a scrim band carrying the ribbon, a white
+name, and the interests as translucent tags on the photo's foot, which is
+where the reference puts them and where the eye already is.
+
+**The focus fill** was re-reported from the phone and had already been
+removed; the phone was running the older bundle.
+
+Verified the way the complaint arrived: scripted the entire way in — welcome →
+phone → OTP → profile → hotel gate → upcoming stay → discovery — in a browser
+at 375×667 against the preview build, measured the card's inset/radius/fill
+from the live DOM, and screenshotted it. Zero console errors on the walk. One
+process note for next time: two of the styling edits silently missed (an
+unasserted string replace), and only the screenshot caught it — every replace
+in that pass now asserts, and the visual check stays part of the loop.
