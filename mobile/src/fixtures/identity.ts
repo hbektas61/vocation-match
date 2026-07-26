@@ -1,3 +1,5 @@
+import { COPY } from '../copy';
+
 /**
  * The answers offered for gender and orientation.
  *
@@ -22,14 +24,16 @@ export const MORE_GENDERS = [
   'Prefer to self-describe',
 ] as const;
 
-/** What a person picked, shown back to them in their own words. */
-export const GENDER_LABELS: Record<string, string> = {
-  WOMAN: 'Woman',
-  MAN: 'Man',
-};
-
+/**
+ * What a person picked, in the viewer's language. The stored value is
+ * canonical; the label is copy, so it lives with the rest of the copy.
+ */
 export function genderLabel(value: string): string {
-  return GENDER_LABELS[value] ?? value;
+  return COPY.identity.genders[value] ?? value;
+}
+
+export function orientationLabel(value: string): string {
+  return COPY.identity.orientations[value] ?? value;
 }
 
 export const ORIENTATIONS = [
@@ -44,9 +48,5 @@ export const ORIENTATIONS = [
   'Questioning',
 ] as const;
 
-/** Matches `profiles_show_me_known`. */
-export const SHOW_ME_OPTIONS = [
-  { value: 'WOMEN', label: 'Women' },
-  { value: 'MEN', label: 'Men' },
-  { value: 'EVERYONE', label: 'Everyone' },
-] as const;
+/** Matches `profiles_show_me_known`. Labels come from copy at render time. */
+export const SHOW_ME_VALUES = ['WOMEN', 'MEN', 'EVERYONE'] as const;

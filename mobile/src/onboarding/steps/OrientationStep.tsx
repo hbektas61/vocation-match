@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { Caption, Checkbox } from '../../components/ui';
 import { apiErrorMessage, COPY } from '../../copy';
 import { ApiError, MAX_ORIENTATIONS } from '../../data';
-import { ORIENTATIONS } from '../../fixtures/identity';
+import { ORIENTATIONS, orientationLabel } from '../../fixtures/identity';
 import { spacing } from '../../theme';
 import { ChoiceRow } from '../ChoiceChip';
 import { OnboardingScaffold } from '../OnboardingScaffold';
@@ -91,7 +91,7 @@ export function OrientationStep({
           return (
             <ChoiceRow
               key={value}
-              label={value}
+              label={orientationLabel(value)}
               selected={selected}
               disabled={!selected && full}
               onPress={() => toggle(value)}

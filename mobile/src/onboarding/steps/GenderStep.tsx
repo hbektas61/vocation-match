@@ -25,7 +25,6 @@ import type { SavingStepProps } from './types';
 export function GenderStep({ step, total, draft, patch, go, onBack, saveProfile }: SavingStepProps) {
   const [chosen, setChosen] = useState(draft.gender);
   const [show, setShow] = useState(draft.showGender);
-  const [expanded, setExpanded] = useState(() => isMore(draft.gender));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,7 +47,7 @@ export function GenderStep({ step, total, draft, patch, go, onBack, saveProfile 
     <OnboardingScaffold
       step={step}
       total={total}
-      headline={expanded ? COPY.onboarding.gender.moreHeadline : COPY.onboarding.gender.headline}
+      headline={COPY.onboarding.gender.headline}
       body={COPY.onboarding.gender.body}
       onBack={onBack}
       actionLabel={COPY.onboarding.continueButton}
@@ -67,45 +66,25 @@ export function GenderStep({ step, total, draft, patch, go, onBack, saveProfile 
       }
     >
       <View style={styles.options}>
-        {PRIMARY_GENDERS.map((value) => (
+        {/* Every answer, stacked. There used to be a "More" expander hiding
+            most of the list; the owner asked for the whole list, and the
+            expander's implication — that the options behind it are a
+            different kind of answer — was never a good one. */}
+        {[...PRIMARY_GENDERS, ...MORE_GENDERS].map((value) => (
           <ChoiceChip
             key={value}
             label={genderLabel(value)}
             selected={chosen === value}
             wide
             onPress={() => setChosen(value)}
-            testID={`gender-${value.toLowerCase()}`}
+            testID={`gender-${value.toLowerCase().replace(/\s+/g, '-')}`}
           />
         ))}
-        {expanded ? (
-          MORE_GENDERS.map((value) => (
-            <ChoiceChip
-              key={value}
-              label={value}
-              selected={chosen === value}
-              wide
-              onPress={() => setChosen(value)}
-              testID={`gender-${value.toLowerCase().replace(/\s+/g, '-')}`}
-            />
-          ))
-        ) : (
-          <ChoiceChip
-            label={COPY.onboarding.gender.more}
-            selected={false}
-            wide
-            trailing="›"
-            onPress={() => setExpanded(true)}
-            testID="gender-more"
-          />
-        )}
       </View>
     </OnboardingScaffold>
   );
 }
 
-function isMore(value: string): boolean {
-  return value !== '' && !PRIMARY_GENDERS.includes(value as (typeof PRIMARY_GENDERS)[number]);
-}
 
 const styles = StyleSheet.create({
   options: { gap: spacing.sm, marginTop: spacing.md },

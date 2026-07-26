@@ -17,6 +17,25 @@ export const en = {
     settings: 'Settings',
   },
 
+  identity: {
+    /**
+     * Labels for the stored identity values. The values themselves are
+     * canonical and never translated — they are what the database holds and
+     * what another user's card carries; these maps are only how each language
+     * reads them out.
+     */
+    genders: {
+      WOMAN: 'Woman',
+      MAN: 'Man',
+    } as Record<string, string>,
+    orientations: {} as Record<string, string>,
+    showMe: {
+      WOMEN: 'Women',
+      MEN: 'Men',
+      EVERYONE: 'Everyone',
+    } as Record<string, string>,
+  },
+
   language: {
     label: 'Language',
     en: 'English',

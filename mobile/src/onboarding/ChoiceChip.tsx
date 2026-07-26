@@ -43,8 +43,11 @@ export function ChoiceChip({
       testID={testID}
       style={({ pressed }) => [
         styles.chip,
-        wide && styles.chipWide,
         selected ? styles.chipSelected : styles.chipIdle,
+        // After the state styles on purpose: the wide pill's thin lavender
+        // border must win over the idle grey, and the array is the cascade.
+        wide && styles.chipWide,
+        wide && selected && styles.chipWideSelected,
         disabled && !selected && styles.chipDisabled,
         pressed && styles.chipPressed,
       ]}
@@ -144,9 +147,19 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     flexDirection: 'row',
     justifyContent: 'center',
+    // Switching to row made justifyContent horizontal and left the vertical
+    // axis to its default — which is why every label sat against the top of
+    // its pill on a real phone.
+    alignItems: 'center',
     minHeight: 56,
-    borderWidth: 2,
+    // The owner's colour, thin. At 1.55:1 the lavender is not the boundary's
+    // only job here: the label inside is the affordance, and the selected
+    // state still changes fill and weight.
+    borderWidth: 1.5,
+    borderColor: color.accent,
   },
+  /** Selected keeps the deeper edge so the state is more than a fill. */
+  chipWideSelected: { borderColor: color.accentDeep },
   chipTrailing: {
     position: 'absolute',
     right: spacing.md,

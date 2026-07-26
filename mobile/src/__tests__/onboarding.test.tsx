@@ -214,9 +214,13 @@ describe('the birthdate', () => {
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
 
     const field = await screen.findByTestId('profile-birthdate');
-    // Typed without separators; the field supplies them.
+    // Typed without separators. The input holds bare digits — the separators
+    // and the remaining template are drawn beside them, so the mask never
+    // disappears under a half-typed date — and what is *shown* is asserted by
+    // the visible mask text rather than the input's value.
     await fireEvent.changeText(field, '01031994');
-    expect(screen.getByTestId('profile-birthdate').props.value).toBe('01/03/1994');
+    expect(screen.getByTestId('profile-birthdate').props.value).toBe('01031994');
+    expect(screen.getByText('01/03/1994')).toBeTruthy();
 
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
     await screen.findByTestId('screen-onboarding-gender');
@@ -337,13 +341,14 @@ describe('gender, orientation and who you are shown', () => {
     expect((await getApi().getOwnProfile())?.showGender).toBe(true);
   });
 
-  it('opens the rest of the list in place rather than going somewhere', async () => {
+  it('offers every answer stacked, with nothing behind an expander', async () => {
     await reachGender('+905551119912');
 
-    expect(screen.queryByTestId('gender-non-binary')).toBeNull();
-    await fireEvent.press(screen.getByTestId('gender-more'));
-
-    await fireEvent.press(await screen.findByTestId('gender-non-binary'));
+    // There used to be a "More" expander hiding most of the list; the owner
+    // asked for the whole list, and its implication — that the answers behind
+    // it were a different kind of answer — was never a good one.
+    expect(screen.queryByTestId('gender-more')).toBeNull();
+    await fireEvent.press(screen.getByTestId('gender-non-binary'));
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
 
     expect((await getApi().getOwnProfile())?.gender).toBe('Non-binary');

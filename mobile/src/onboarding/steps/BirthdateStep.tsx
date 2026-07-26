@@ -1,16 +1,10 @@
 import React, { useState } from 'react';
 
-import { Field } from '../../components/ui';
+import { DateField } from '../../components/DateField';
 import { todayIsoDate } from '../../clock';
 import { apiErrorMessage, birthdateMessage, COPY } from '../../copy';
 import { ApiError } from '../../data';
-import {
-  dateDigitsFromIso,
-  dateProblem,
-  formatDateInput,
-  isoFromDateDigits,
-  toDateDigits,
-} from '../../domain/dateInput';
+import { dateDigitsFromIso, dateProblem, isoFromDateDigits } from '../../domain/dateInput';
 import { OnboardingScaffold } from '../OnboardingScaffold';
 import type { SavingStepProps } from './types';
 
@@ -86,17 +80,12 @@ export function BirthdateStep({
       error={error}
       testID="screen-onboarding-birthdate"
     >
-      <Field
+      <DateField
         label={COPY.profileSetup.birthdateLabel}
-        hideLabel
         hint={COPY.profileSetup.birthdateHint}
         invalid={error !== null}
-        value={formatDateInput(digits)}
-        onChangeText={(text) => setDigits(toDateDigits(text))}
-        placeholder={COPY.profileSetup.birthdatePlaceholder}
-        // The separators are added for them, so the punctuation keys are only
-        // a way to get the date wrong.
-        keyboardType="number-pad"
+        digits={digits}
+        onDigits={setDigits}
         autoFocus
         editable={!busy}
         testID="profile-birthdate"

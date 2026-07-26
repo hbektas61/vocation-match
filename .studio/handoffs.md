@@ -1521,3 +1521,40 @@ Three things worth keeping:
 Verified: full TR walk in a browser at 375×720 — welcome through rooms,
 discovery, and a match, every visible sentence Turkish, zero console errors —
 plus 390 jest tests across 33 suites including the bilingual audit.
+
+
+## 2026-07-26 — five phone findings, and what each one really was
+
+The owner walked the Turkish onboarding on a device and sent five screens.
+
+- **"The labels aren't centred."** They weren't — vertically. Making the wide
+  pill a flex row moved `justifyContent` to the horizontal axis and left the
+  vertical to its default, so every label sat against the top of its pill on a
+  real phone. One `alignItems: 'center'`.
+- **"Why is the border black? It should be my colour, and thin."** Two bugs
+  wearing one complaint: the wide pill *did* set a lavender border, and the
+  idle-state grey overrode it because it came later in the style array — the
+  array is the cascade. Reordered, thinned to 1.5, selected keeps the deeper
+  edge so the state is more than a fill.
+- **"Don't hide the rest behind More — stack them all."** The expander is
+  gone. Its implication — that the answers behind it were a different kind of
+  answer — was never a good one.
+- **"When I type 14 the mask disappears."** True and worth fixing properly: a
+  placeholder dies at the first character, taking the format with it. The date
+  field is now a drawn mask that never leaves: typed digits fill the template
+  from the left in ink, the rest stays in muted — `14/AA/YYYY` — and a real
+  but invisible input owns the keyboard and the digits, so backspace always
+  deletes a digit and never a template letter.
+- **"The phone text isn't centred, and the button label is heavy."** iOS's
+  default vertical padding inside the fixed-height shell, zeroed; button
+  labels dropped from semibold to medium — the fill is already the emphasis.
+
+One thing the walk exposed that the owner had not named yet: the identity
+options were English inside a Turkish flow. The stored values stay canonical
+(they are what the database holds and what another user's card carries); the
+*labels* are copy and now live with the rest of it — Kadın/Erkek, the gender
+list, Heteroseksüel…Sorgulama sürecinde, Kadınlar/Erkekler/Herkes.
+
+Verified on the browser walk in Turkish — the half-typed mask, the stacked
+gender list, the show-me pills, all screenshotted — and 390 jest tests across
+33 suites.

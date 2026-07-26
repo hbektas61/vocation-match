@@ -19,6 +19,35 @@ export const tr: Copy = {
     settings: 'Ayarlar',
   },
 
+  identity: {
+    genders: {
+      WOMAN: 'Kadın',
+      MAN: 'Erkek',
+      'Non-binary': 'Non-binary',
+      Genderfluid: 'Cinsiyet akışkan',
+      Agender: 'Cinsiyetsiz',
+      'Transgender woman': 'Trans kadın',
+      'Transgender man': 'Trans erkek',
+      'Prefer to self-describe': 'Kendim tanımlamayı tercih ederim',
+    } as Record<string, string>,
+    orientations: {
+      Straight: 'Heteroseksüel',
+      Gay: 'Gey',
+      Lesbian: 'Lezbiyen',
+      Bisexual: 'Biseksüel',
+      Asexual: 'Aseksüel',
+      Demisexual: 'Demiseksüel',
+      Pansexual: 'Panseksüel',
+      Queer: 'Queer',
+      Questioning: 'Sorgulama sürecinde',
+    } as Record<string, string>,
+    showMe: {
+      WOMEN: 'Kadınlar',
+      MEN: 'Erkekler',
+      EVERYONE: 'Herkes',
+    } as Record<string, string>,
+  },
+
   language: {
     label: 'Dil',
     en: 'English',

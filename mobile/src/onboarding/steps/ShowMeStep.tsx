@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { apiErrorMessage, COPY } from '../../copy';
 import { ApiError, type ShowMe } from '../../data';
-import { SHOW_ME_OPTIONS } from '../../fixtures/identity';
+import { SHOW_ME_VALUES } from '../../fixtures/identity';
 import { spacing } from '../../theme';
 import { ChoiceChip } from '../ChoiceChip';
 import { OnboardingScaffold } from '../OnboardingScaffold';
@@ -53,14 +53,14 @@ export function ShowMeStep({ step, total, draft, patch, go, onBack, saveProfile 
       testID="screen-onboarding-show-me"
     >
       <View style={styles.options}>
-        {SHOW_ME_OPTIONS.map((option) => (
+        {SHOW_ME_VALUES.map((value) => (
           <ChoiceChip
-            key={option.value}
-            label={option.label}
-            selected={chosen === option.value}
+            key={value}
+            label={COPY.identity.showMe[value] ?? value}
+            selected={chosen === value}
             wide
-            onPress={() => setChosen(option.value)}
-            testID={`show-me-${option.value.toLowerCase()}`}
+            onPress={() => setChosen(value)}
+            testID={`show-me-${value.toLowerCase()}`}
           />
         ))}
       </View>

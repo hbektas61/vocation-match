@@ -791,7 +791,9 @@ const styles = StyleSheet.create({
   actionDisabled: { opacity: 0.45 },
   buttonPressed: { opacity: 0.82 },
   buttonLabel: {
-    fontFamily: fontFamily.bodySemi,
+    // Medium, not semibold: the owner read the heavy black-on-lavender as a
+    // clash, and the pill's fill is already doing the emphasis.
+    fontFamily: fontFamily.bodyMedium,
     fontSize: font.body,
     letterSpacing: 0.2,
   },
@@ -875,9 +877,12 @@ const styles = StyleSheet.create({
     color: color.ink,
     // Android top-aligns inside a fixed-height box and reserves room under the
     // baseline; both are why the text sat against the ceiling. iOS ignores
-    // these and is centred by the shell instead.
+    // these and is centred by the shell instead — once its own default
+    // vertical padding is removed, which is what pushed the phone number off
+    // centre on a real device.
     textAlignVertical: 'center',
     includeFontPadding: false,
+    paddingVertical: 0,
   },
   /** A paragraph reads from the top, however tall the box has grown. */
   inputMultiline: { textAlignVertical: 'top', minHeight: MIN_TOUCH * 2 },

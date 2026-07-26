@@ -9,6 +9,7 @@
  */
 import React, { useState } from 'react';
 
+import { DateField } from './DateField';
 import { Body, Button, Caption, Checkbox, Field, Gap, Notice } from './ui';
 import { todayIsoDate } from '../clock';
 import { apiErrorMessage, birthdateMessage, COPY } from '../copy';
@@ -20,19 +21,14 @@ import {
   type OwnProfile,
   type ShowMe,
 } from '../data';
-import {
-  dateDigitsFromIso,
-  dateProblem,
-  formatDateInput,
-  isoFromDateDigits,
-  toDateDigits,
-} from '../domain/dateInput';
+import { dateDigitsFromIso, dateProblem, isoFromDateDigits } from '../domain/dateInput';
 import {
   genderLabel,
   MORE_GENDERS,
   ORIENTATIONS,
+  orientationLabel,
   PRIMARY_GENDERS,
-  SHOW_ME_OPTIONS,
+  SHOW_ME_VALUES,
 } from '../fixtures/identity';
 import { INTEREST_CHOICES } from '../fixtures/interests';
 import { ChoiceChip, ChoiceGroup, ChoiceRow } from '../onboarding/ChoiceChip';
@@ -117,13 +113,11 @@ export function ProfileForm({
         editable={!submitting}
         testID={`${testIDPrefix}-name`}
       />
-      <Field
+      <DateField
         label={COPY.profileSetup.birthdateLabel}
         hint={COPY.profileSetup.birthdateHint}
-        value={formatDateInput(birthdateDigits)}
-        onChangeText={(text) => setBirthdateDigits(toDateDigits(text))}
-        placeholder={COPY.profileSetup.birthdatePlaceholder}
-        keyboardType="number-pad"
+        digits={birthdateDigits}
+        onDigits={setBirthdateDigits}
         editable={!submitting}
         testID={`${testIDPrefix}-birthdate`}
       />
@@ -200,7 +194,7 @@ export function ProfileForm({
           return (
             <ChoiceRow
               key={value}
-              label={value}
+              label={orientationLabel(value)}
               selected={selected}
               disabled={!selected && orientations.length >= MAX_ORIENTATIONS}
               onPress={() =>
@@ -223,13 +217,13 @@ export function ProfileForm({
 
       <Caption>{COPY.onboarding.showMe.headline}</Caption>
       <ChoiceGroup hint={COPY.onboarding.showMe.body} testID={`${testIDPrefix}-show-me`}>
-        {SHOW_ME_OPTIONS.map((option) => (
+        {SHOW_ME_VALUES.map((value) => (
           <ChoiceChip
-            key={option.value}
-            label={option.label}
-            selected={showMe === option.value}
-            onPress={() => setShowMe(option.value)}
-            testID={`${testIDPrefix}-show-me-${option.value.toLowerCase()}`}
+            key={value}
+            label={COPY.identity.showMe[value] ?? value}
+            selected={showMe === value}
+            onPress={() => setShowMe(value)}
+            testID={`${testIDPrefix}-show-me-${value.toLowerCase()}`}
           />
         ))}
       </ChoiceGroup>
