@@ -99,7 +99,7 @@ export function PhotoGrid({
       COPY.photo.uploadError,
     );
 
-  /** Moves a photo from one slot to another and sends the whole new order. */
+  /** The screen-reader path: one step at a time, no gesture involved. */
   const move = useCallback(
     (fromIndex: number, toIndex: number) => {
       const to = Math.max(0, Math.min(photos.length - 1, toIndex));
@@ -114,6 +114,69 @@ export function PhotoGrid({
         },
         COPY.photo.reorderError,
       );
+    },
+    [photos, run],
+  );
+
+  /**
+   * The live arrangement while a drag is in flight: which tile is held, and
+   * which slot it is currently over. The others move *now*, not on release —
+   * crossing the midpoint of a neighbour is the moment it steps aside, which
+   * is the grammar every platform grid has taught people's hands.
+   *
+   * `sig` pins the arrangement to the order it was computed against. The
+   * commit path re-renders with new indices before this state is cleared, and
+   * without the pin that one frame would apply old offsets to new positions.
+   */
+  const [drag, setDrag] = useState<{ from: number; to: number; sig: string } | null>(null);
+  const sig = photos.map((photo) => photo.path).join('|');
+  const arrangement = drag && drag.sig === sig ? drag : null;
+
+  /** Where tile `i` should stand right now, given the hole the drag opened. */
+  const offsetFor = (i: number): { x: number; y: number } => {
+    if (!arrangement || tileWidth === 0 || i === arrangement.from) return { x: 0, y: 0 };
+    const { from, to } = arrangement;
+    let j = i;
+    if (from < to && i > from && i <= to) j = i - 1;
+    else if (to < from && i >= to && i < from) j = i + 1;
+    if (j === i) return { x: 0, y: 0 };
+    return {
+      x: ((j % COLUMNS) - (i % COLUMNS)) * (tileWidth + GAP),
+      y: (Math.floor(j / COLUMNS) - Math.floor(i / COLUMNS)) * (tileHeight + GAP),
+    };
+  };
+
+  const beginDrag = useCallback(
+    (from: number) => {
+      setDrag({ from, to: from, sig });
+    },
+    [sig],
+  );
+
+  const hoverDrag = useCallback((to: number) => {
+    setDrag((current) => (current && current.to !== to ? { ...current, to } : current));
+  }, []);
+
+  const endDrag = useCallback(
+    (from: number, to: number) => {
+      if (to === from) {
+        setDrag(null);
+        return;
+      }
+      // The arrangement is deliberately NOT cleared here: the tiles are
+      // already standing in the new order, and clearing early would spring
+      // them home only to jump forward when the server's answer lands. It is
+      // cleared once the order actually changes (sig moves), or on failure.
+      void run(
+        from + 1,
+        () => {
+          const paths = photos.map((photo) => photo.path);
+          const [moved] = paths.splice(from, 1);
+          paths.splice(to, 0, moved);
+          return getApi().reorderProfilePhotos(paths);
+        },
+        COPY.photo.reorderError,
+      ).finally(() => setDrag(null));
     },
     [photos, run],
   );
@@ -169,7 +232,11 @@ export function PhotoGrid({
               tileWidth={tileWidth}
               tileHeight={tileHeight}
               disabled={busy !== null}
+              offset={offsetFor(slot - 1)}
               onMove={move}
+              onBegin={beginDrag}
+              onHover={hoverDrag}
+              onEnd={endDrag}
               testID={`${testID}-slot-${slot}`}
             >
               {urls[photo.path] ? (
@@ -233,7 +300,11 @@ function DraggableTile({
   tileWidth,
   tileHeight,
   disabled,
+  offset,
   onMove,
+  onBegin,
+  onHover,
+  onEnd,
   children,
   testID,
 }: {
@@ -242,7 +313,12 @@ function DraggableTile({
   tileWidth: number;
   tileHeight: number;
   disabled: boolean;
+  /** Where the parent wants this tile standing right now, in pixels. */
+  offset: { x: number; y: number };
   onMove: (from: number, to: number) => void;
+  onBegin: (from: number) => void;
+  onHover: (to: number) => void;
+  onEnd: (from: number, to: number) => void;
   children: React.ReactNode;
   testID?: string;
 }) {
@@ -254,8 +330,40 @@ function DraggableTile({
   const held = useRef(false);
   const granted = useRef(false);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const live = useRef({ index, count, tileWidth, tileHeight, disabled, onMove });
-  live.current = { index, count, tileWidth, tileHeight, disabled, onMove };
+  const live = useRef({ index, count, tileWidth, tileHeight, disabled, onMove, onBegin, onHover, onEnd });
+  live.current = { index, count, tileWidth, tileHeight, disabled, onMove, onBegin, onHover, onEnd };
+  /** The slot the drag is currently over, recomputed as the finger moves. */
+  const hoverAt = useRef(index);
+
+  /**
+   * The parent's arrangement, obeyed with a spring. This is the "step aside"
+   * motion: the moment the dragged photo crosses a neighbour's midpoint, the
+   * neighbour's offset changes and it slides — while the finger is still down.
+   */
+  const reflow = useRef(new Animated.ValueXY()).current;
+  const reflowTo = useRef({ x: 0, y: 0 });
+  if (reflowTo.current.x !== offset.x || reflowTo.current.y !== offset.y) {
+    reflowTo.current = offset;
+    Animated.spring(reflow, {
+      toValue: offset,
+      useNativeDriver: true,
+      speed: 24,
+      bounciness: 5,
+    }).start();
+  }
+
+  /**
+   * A commit renders this photo at its new index; the pixels it now earns from
+   * layout are the pixels the animations were holding. Zeroing synchronously
+   * on the same render keeps the picture still through the handover.
+   */
+  const settledIndex = useRef(index);
+  if (settledIndex.current !== index) {
+    settledIndex.current = index;
+    shift.setValue({ x: 0, y: 0 });
+    reflow.setValue({ x: 0, y: 0 });
+    reflowTo.current = { x: 0, y: 0 };
+  }
 
   /**
    * The grab has to be *felt*, not deduced. Three signals at the moment the
@@ -267,6 +375,8 @@ function DraggableTile({
   const lift = () => {
     held.current = true;
     setDragging(true);
+    hoverAt.current = live.current.index;
+    live.current.onBegin(live.current.index);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
     Animated.spring(scale, {
       toValue: 1.07,
@@ -274,6 +384,17 @@ function DraggableTile({
       speed: 40,
       bounciness: 6,
     }).start();
+  };
+
+  /** The slot under the finger: half a tile crossed is the slot changing. */
+  const targetOf = (dx: number, dy: number): number => {
+    const { index: from, count: n, tileWidth: w, tileHeight: h } = live.current;
+    const column = Math.round((from % COLUMNS) + dx / (w + GAP));
+    const row = Math.round(Math.floor(from / COLUMNS) + dy / (h + GAP));
+    const raw =
+      Math.min(Math.max(row, 0), ROWS - 1) * COLUMNS +
+      Math.min(Math.max(column, 0), COLUMNS - 1);
+    return Math.min(raw, n - 1);
   };
 
   const settleHome = () => {
@@ -309,18 +430,45 @@ function DraggableTile({
       onPanResponderTerminationRequest: () => !held.current,
       onPanResponderMove: (_event, gesture) => {
         shift.setValue({ x: gesture.dx, y: gesture.dy });
+        const target = targetOf(gesture.dx, gesture.dy);
+        if (target !== hoverAt.current) {
+          hoverAt.current = target;
+          // The neighbours step aside now, and the hand gets the same tick the
+          // platform's grids give on a crossing.
+          live.current.onHover(target);
+          Haptics.selectionAsync().catch(() => undefined);
+        }
       },
       onPanResponderRelease: (_event, gesture) => {
-        const { index: from, count: n, tileWidth: w, tileHeight: h, onMove: apply } = live.current;
-        const column = Math.round((from % COLUMNS) + gesture.dx / (w + GAP));
-        const row = Math.round(Math.floor(from / COLUMNS) + gesture.dy / (h + GAP));
-        const to =
-          Math.min(Math.max(row, 0), ROWS - 1) * COLUMNS +
-          Math.min(Math.max(column, 0), COLUMNS - 1);
-        settleHome();
-        if (to !== from && to < n) apply(from, to);
+        const { index: from, tileWidth: w, tileHeight: h, onEnd: end } = live.current;
+        const to = targetOf(gesture.dx, gesture.dy);
+        held.current = false;
+        granted.current = false;
+        setDragging(false);
+        if (to !== from) {
+          // Settle onto the slot the eye already believes this photo owns;
+          // layout takes over invisibly once the server's answer lands.
+          Animated.parallel([
+            Animated.spring(shift, {
+              toValue: {
+                x: ((to % COLUMNS) - (from % COLUMNS)) * (w + GAP),
+                y: (Math.floor(to / COLUMNS) - Math.floor(from / COLUMNS)) * (h + GAP),
+              },
+              useNativeDriver: true,
+              speed: 30,
+              bounciness: 4,
+            }),
+            Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 4 }),
+          ]).start();
+        } else {
+          settleHome();
+        }
+        end(from, to);
       },
-      onPanResponderTerminate: settleHome,
+      onPanResponderTerminate: () => {
+        settleHome();
+        live.current.onEnd(live.current.index, live.current.index);
+      },
     }),
   ).current;
 
@@ -358,7 +506,13 @@ function DraggableTile({
         styles.slot,
         tileWidth > 0 && { width: tileWidth, height: tileHeight },
         dragging && styles.slotLifted,
-        { transform: [{ translateX: shift.x }, { translateY: shift.y }, { scale }] },
+        {
+          transform: [
+            { translateX: Animated.add(shift.x, reflow.x) },
+            { translateY: Animated.add(shift.y, reflow.y) },
+            { scale },
+          ],
+        },
       ]}
       testID={testID}
     >

@@ -1429,3 +1429,26 @@ Fixing the feel surfaced a real bug the shadow had been hiding: a hold that
 matured but never moved never granted the responder, so its release arrived
 through no responder callback and the tile stayed floating forever. The
 release path now settles the tile whenever the responder was never granted.
+
+
+## 2026-07-26 — the grid rearranges under the finger
+
+Last drag refinement from the owner: the other photos moved only after
+release; they should step aside the moment the held photo crosses a
+neighbour's midpoint. They do now. The parent grid tracks the arrangement in
+flight — which tile is held, which slot it is over — and every other tile
+springs to where that arrangement puts it, while the finger is still down. A
+crossing also gives the hand the platform's selection tick.
+
+Two details doing quiet work:
+
+- **The arrangement is pinned to the order it was computed against** (a
+  signature of the photo paths). The commit re-renders with new indices before
+  the drag state clears, and without the pin that one frame would apply old
+  offsets to new positions.
+- **On release the held photo settles onto the slot the eye already believes
+  it owns**, not back home; when the server's answer lands, each tile zeroes
+  its animation on the same render its layout position changes, so the
+  handover from animation to layout moves nothing on screen. Clearing the
+  arrangement early was the bug the owner originally reported, in different
+  clothes — tiles springing home only to jump forward when the data arrived.
