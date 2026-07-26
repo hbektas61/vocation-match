@@ -1,13 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
-import { Body, Button, Caption, Card, DoorPlate, EmptyState, Field, Gap, Heading, KeyCard, Notice, Screen, StateChip, Title } from '../components/ui';
-import { HotelCover } from '../components/HotelCover';
+import { Body, Button, Caption, Card, DoorPlate, EmptyState, Field, Gap, Heading, Notice, Screen, StateChip, Title } from '../components/ui';
 import { nowMs } from '../clock';
 import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
 import { ApiError, getApi, type HotelCard, type RoomHeadcount, type RoomStatus } from '../data';
 import { useAppStore } from '../state/AppStore';
-import { color, font, fontFamily, radius, spacing } from '../theme';
+import { color, radius, spacing } from '../theme';
 
 /** Two characters before anything is fetched. */
 const MIN_QUERY = 2;
@@ -177,43 +176,46 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       {loadingActive ? (
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="hotel-loading" />
       ) : activeHotel ? (
-        /* The centre of this product's identity, dressed as its own object:
-           the key you are currently holding. Postcard cover, engraved plate,
-           and the two doors' states at a glance. */
-        <KeyCard open testID="active-hotel-card">
-          <HotelCover name={activeHotel.name} size="lg" />
-          <View style={styles.activeHead}>
+        /* The designer's hotel card (2026-07-27): a plain lavender band
+           where a photo would boast, the tracked eyebrow, the name over the
+           city, the two doors inline, and the one-hotel sentence at the
+           foot. */
+        <View style={styles.hotelCard} testID="active-hotel-card">
+          <View style={styles.hotelCardBand} />
+          <View style={styles.hotelCardBody}>
             <DoorPlate>{COPY.hotel.activePlate}</DoorPlate>
-            <Caption>{`${activeHotel.city}, ${activeHotel.country}`}</Caption>
-          </View>
-          <Heading>{activeHotel.name}</Heading>
-          {roomStates ? (
-            <View style={styles.roomStates}>
-              {roomStates.map((status) => (
-                <View key={status.room} style={styles.roomState}>
-                  <Caption>
-                    {status.room === 'UPCOMING'
-                      ? COPY.rooms.upcomingPlate
-                      : COPY.rooms.hereNowPlate}
-                  </Caption>
-                  <StateChip
-                    open={status.eligible}
-                    label={status.eligible ? COPY.rooms.openChip : COPY.rooms.closedChip}
-                  />
-                  {(() => {
-                    const count = roomCounts?.find((entry) => entry.room === status.room);
-                    return count?.headcount != null ? (
-                      <Caption testID={`room-count-${status.room}`}>
-                        {COPY_FOR.roomHeadcount(count.headcount)}
-                      </Caption>
-                    ) : null;
-                  })()}
-                </View>
-              ))}
+            <View style={styles.hotelCardTitle}>
+              <Heading>{activeHotel.name}</Heading>
+              <Caption>{`${activeHotel.city}, ${activeHotel.country}`}</Caption>
             </View>
-          ) : null}
-          <Caption>{COPY.trust.oneHotel}</Caption>
-        </KeyCard>
+            {roomStates ? (
+              <View style={styles.roomStates}>
+                {roomStates.map((status) => (
+                  <View key={status.room} style={styles.roomState}>
+                    <Caption>
+                      {status.room === 'UPCOMING'
+                        ? COPY.rooms.upcomingPlate
+                        : COPY.rooms.hereNowPlate}
+                    </Caption>
+                    <StateChip
+                      open={status.eligible}
+                      label={status.eligible ? COPY.rooms.openChip : COPY.rooms.closedChip}
+                    />
+                    {(() => {
+                      const count = roomCounts?.find((entry) => entry.room === status.room);
+                      return count?.headcount != null ? (
+                        <Caption testID={`room-count-${status.room}`}>
+                          {COPY_FOR.roomHeadcount(count.headcount)}
+                        </Caption>
+                      ) : null;
+                    })()}
+                  </View>
+                ))}
+              </View>
+            ) : null}
+            <Caption>{COPY.trust.oneHotel}</Caption>
+          </View>
+        </View>
       ) : (
         /* The first thing a new account sees here, so it is an invitation
            rather than a report of absence: a hollow key card waiting for its
@@ -284,6 +286,9 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         results.map((hotel) => {
           const isActive = activeHotel?.id === hotel.id;
           return (
+            /* Results wear the same card as the active hotel — the designer's
+               one card, in two roles — with a slimmer band so the list stays
+               a list. */
             <Pressable
               key={hotel.id}
               accessibilityRole="button"
@@ -293,19 +298,17 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
               accessibilityState={{ disabled: activating || isActive }}
               disabled={activating || isActive}
               onPress={() => requestActivation(hotel)}
-              style={({ pressed }) => [styles.resultRow, pressed && styles.resultPressed]}
+              style={({ pressed }) => [styles.hotelCard, pressed && styles.resultPressed]}
               testID={`activate-${hotel.id}`}
             >
-              <HotelCover name={hotel.name} />
-              <View style={styles.resultText}>
-                <Heading>{hotel.name}</Heading>
-                <Caption>{`${hotel.city}, ${hotel.country}`}</Caption>
+              <View style={styles.resultBand} />
+              <View style={styles.resultBody}>
+                {isActive ? <DoorPlate>{COPY.hotel.activePlate}</DoorPlate> : null}
+                <View style={styles.hotelCardTitle}>
+                  <Heading>{hotel.name}</Heading>
+                  <Caption>{`${hotel.city}, ${hotel.country}`}</Caption>
+                </View>
               </View>
-              {isActive ? (
-                <StateChip open label={COPY.hotel.activePlate} />
-              ) : (
-                <Text style={styles.resultChevron}>›</Text>
-              )}
             </Pressable>
           );
         })
@@ -321,13 +324,32 @@ function mergeHotel(hotels: HotelCard[], hotel: HotelCard): HotelCard[] {
 }
 
 const styles = StyleSheet.create({
-  activeHead: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
+  /** The designer's card shell: hairline edge, soft lift, band on top. */
+  hotelCard: {
+    backgroundColor: color.surface,
+    borderWidth: 1,
+    borderColor: color.border,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    shadowColor: color.ink,
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
   },
-  roomStates: { flexDirection: 'row', gap: spacing.lg },
-  roomState: { gap: spacing.xs },
+  hotelCardBand: { height: 48, backgroundColor: color.accent },
+  hotelCardBody: { padding: spacing.lg, gap: spacing.md },
+  hotelCardTitle: { gap: spacing.xs },
+  resultBand: { height: 20, backgroundColor: color.accent },
+  resultBody: { padding: spacing.md, gap: spacing.xs },
+  roomStates: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  roomState: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   /** A hollow key card: the shape of what is missing, waiting to be filled. */
   emptyKey: {
     borderWidth: 1.5,
@@ -345,17 +367,5 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     marginBottom: spacing.xs,
   },
-  resultRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.sm,
-  },
   resultPressed: { opacity: 0.8 },
-  resultText: { flex: 1, gap: 2 },
-  resultChevron: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.heading,
-    color: color.inkMuted,
-  },
 });

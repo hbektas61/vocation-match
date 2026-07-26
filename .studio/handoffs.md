@@ -1769,3 +1769,28 @@ Copy is the reference's own Turkish, with an English shape to match
 emptyDeck string. "Scan again" refetches the deck for real — pinned by a
 test that counts the server calls. Verified in the TR browser walk against
 an actually empty room (Çeşme's Here Now). 397 jest tests green.
+
+## 2026-07-27 — the designer's hotel cards (second Banani screen)
+
+The owner now works with a designer; screens arrive as Banani exports and
+replace ours piece by piece. This one: the hotel cards.
+
+What shipped, translated rather than transplanted: the card shell (hairline
+border, 16 radius, soft lift, plain lavender band where a photo would
+boast) replaces the KeyCard + generative-postcard treatment on the Hotel
+screen; the HotelCover component died with it — a plain band is the
+designer's call and it is a calmer one. Room states moved inline (label
+beside pill, the two doors sharing one row), and StateChip itself was
+restyled globally to the designer's pair: open = filled lavender with
+accent-deep dot and words, closed = hollow with a solid muted dot. Search
+results wear the same card with a slimmer band, whole card tappable, the
+active one carrying the AKTİF OTEL eyebrow. Copy needed nothing — the
+designer had drawn our own i18n strings back at us. Headcount (D-032) sits
+inline after its pill; the export's tab bar, fonts and wrappers were
+dropped as before. Not adopted: the design's per-result room pills (a
+search result's doors are meaningless before it is yours) and the "BEKLEME"
+eyebrow. Verified by TR browser walk (results + active), 397 jest tests.
+
+Standing note for this collaboration: exports are references, not sources —
+our tokens, our components, our privacy semantics win; the geometry and
+mood are the designer's.

@@ -382,8 +382,10 @@ export function StateChip({ open, label, testID }: { open: boolean; label: strin
       accessibilityLabel={label}
       testID={testID}
     >
-      <View style={[styles.stateDot, !open && styles.stateDotHollow]} />
-      <Text style={styles.stateChipText}>{label}</Text>
+      <View style={[styles.stateDot, open ? styles.stateDotOpen : styles.stateDotClosed]} />
+      <Text style={[styles.stateChipText, open ? styles.stateChipTextOpen : styles.stateChipTextClosed]}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -896,21 +898,22 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: radius.pill,
   },
+  /* The designer's pair (2026-07-27): open is a filled lavender pill whose
+     dot and words are the deep accent; closed is hollow with a muted solid
+     dot — grey but present, a door that exists and is shut. */
   stateChipOpen: { backgroundColor: color.accent },
-  stateChipClosed: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: color.border },
+  stateChipClosed: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: color.inkMuted },
   stateChipText: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
     letterSpacing: 1,
     textTransform: 'uppercase',
-    color: color.ink,
   },
-  stateDot: { width: 7, height: 7, borderRadius: radius.pill, backgroundColor: color.ink },
-  stateDotHollow: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: color.inkMuted,
-  },
+  stateChipTextOpen: { color: color.accentDeep },
+  stateChipTextClosed: { color: color.inkMuted },
+  stateDot: { width: 7, height: 7, borderRadius: radius.pill },
+  stateDotOpen: { backgroundColor: color.accentDeep },
+  stateDotClosed: { backgroundColor: color.inkMuted },
   doorPlate: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
