@@ -399,7 +399,11 @@ export const en = {
     newMatches: 'New matches',
     sayHello: 'Say hello',
     openChatHint: 'Open chat',
-    subtitle: 'Mutual likes and your conversations live here.',
+    subtitle: 'Your matches and your conversations.',
+    searchPlaceholder: 'Search conversations',
+    searchLabel: 'Search conversations',
+    chats: 'Chats',
+    yesterday: 'Yesterday',
     emptyTitle: 'No matches yet',
     emptyBody: 'When you like each other, conversations will start here.',
     startDiscovering: 'Start discovering',
@@ -511,6 +515,7 @@ export const enFor = {
     hotelName ? `Rooms at ${hotelName}` : 'Rooms at your hotel',
   discoveryTitle: (hotelName: string) => `Discovery at ${hotelName}`,
   switchPrompt: (hotelName: string) => `Switch to ${hotelName}?`,
+  daysAgo: (days: number) => `${days}d`,
   /**
    * Shown only when the server sent a number, which it does only at five or
    * more people (D-032). There is no wording for "a few" on purpose: below

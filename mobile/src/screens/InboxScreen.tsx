@@ -9,19 +9,53 @@ import {
   Body,
   Button,
   Caption,
+  Field,
   Heading,
   Notice,
   Screen,
-  SectionLabel,
   Title,
 } from '../components/ui';
 import { InboxIllustration } from '../components/InboxIllustration';
-import { apiErrorMessage, COPY } from '../copy';
+import { LinearGradient } from 'expo-linear-gradient';
+import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
 import { ApiError, getApi, type MatchSummary } from '../data';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
 import { color, font, fontFamily, radius, spacing } from '../theme';
+
+const MagnifierIcon = () => (
+  <View style={{ marginRight: spacing.sm }}>
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color.inkMuted} strokeWidth={2.2} strokeLinecap="round">
+      <Path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.5-4.5" />
+    </Svg>
+  </View>
+);
+
+const HeartBadge = () => (
+  <View style={heartBadgeStyle}>
+    <Svg width={13} height={13} viewBox="0 0 24 24" fill={color.accentDeep}>
+      <Path d="M12 8c0-5-8-5-8 0 0 4.5 5.2 7.6 8 9.6 2.8-2 8-5.1 8-9.6 0-5-8-5-8 0z" />
+    </Svg>
+  </View>
+);
+
+const heartBadgeStyle = {
+  position: 'absolute' as const,
+  bottom: -4,
+  alignSelf: 'center' as const,
+  width: 22,
+  height: 22,
+  borderRadius: 11,
+  backgroundColor: '#FFFFFF',
+  alignItems: 'center' as const,
+  justifyContent: 'center' as const,
+  shadowColor: color.ink,
+  shadowOpacity: 0.15,
+  shadowRadius: 4,
+  shadowOffset: { width: 0, height: 2 },
+  elevation: 3,
+};
 
 const BellIcon = () => (
   <Svg width={20} height={20} viewBox="0 0 24 24" fill={color.accentDeep} stroke={color.accentDeep} strokeWidth={1.5} strokeLinejoin="round">
@@ -47,6 +81,8 @@ export function InboxScreen() {
   const tabNavigation = useNavigation<NavigationProp<TabParamList>>();
   const [matches, setMatches] = useState<MatchSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Client-side only: the list is small, the server never sees the query. */
+  const [query, setQuery] = useState('');
   const photoPaths = useMemo(() => (matches ?? []).map((m) => m.photoPath), [matches]);
   const photoUrls = usePhotoUrls(photoPaths);
 
@@ -76,8 +112,15 @@ export function InboxScreen() {
   // The convention borrowed from the apps that earned it: a face with no
   // conversation yet is an invitation, and it lives in its own strip; a
   // conversation is a row. The split is real information, not decoration.
-  const fresh = (matches ?? []).filter((m) => m.lastMessageAt === null && m.unmatchedAt === null);
-  const talking = (matches ?? []).filter((m) => m.lastMessageAt !== null || m.unmatchedAt !== null);
+  const q = query.trim().toLocaleLowerCase('tr');
+  const visible = (matches ?? []).filter(
+    (m) =>
+      q === '' ||
+      m.displayName.toLocaleLowerCase('tr').includes(q) ||
+      (m.lastMessageBody ?? '').toLocaleLowerCase('tr').includes(q),
+  );
+  const fresh = visible.filter((m) => m.lastMessageAt === null && m.unmatchedAt === null);
+  const talking = visible.filter((m) => m.lastMessageAt !== null || m.unmatchedAt !== null);
 
   return (
     <Screen safeTop testID="screen-inbox">
@@ -123,9 +166,21 @@ export function InboxScreen() {
         </View>
       ) : (
         <>
+          <Field
+            label={COPY.inbox.searchLabel}
+            hideLabel
+            value={query}
+            onChangeText={setQuery}
+            placeholder={COPY.inbox.searchPlaceholder}
+            prefix={<MagnifierIcon />}
+            autoCapitalize="none"
+            testID="inbox-search"
+          />
           {fresh.length > 0 ? (
             <View style={styles.freshBlock}>
-              <SectionLabel>{COPY.inbox.newMatches}</SectionLabel>
+              <Text accessibilityRole="header" style={styles.sectionTitle}>
+                {COPY.inbox.newMatches}
+              </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View style={styles.freshRow}>
                   {fresh.map((match) => (
@@ -137,13 +192,25 @@ export function InboxScreen() {
                       style={styles.freshItem}
                       testID={`inbox-${match.matchId}`}
                     >
-                      <View style={styles.freshRing}>
-                        <Avatar
-                          url={match.photoPath ? photoUrls[match.photoPath] ?? null : null}
-                          name={match.displayName}
-                          size="md"
-                          testID={`inbox-photo-${match.matchId}`}
-                        />
+                      {/* The designer's ring: a gradient collar with the heart
+                          badge resting on its foot. */}
+                      <View>
+                        <LinearGradient
+                          colors={['#C9A3E8', '#7B4FA8']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={styles.freshRing}
+                        >
+                          <View style={styles.freshRingInner}>
+                            <Avatar
+                              url={match.photoPath ? photoUrls[match.photoPath] ?? null : null}
+                              name={match.displayName}
+                              size="md"
+                              testID={`inbox-photo-${match.matchId}`}
+                            />
+                          </View>
+                        </LinearGradient>
+                        <HeartBadge />
                       </View>
                       <Caption>{firstName(match.displayName)}</Caption>
                     </Pressable>
@@ -153,7 +220,12 @@ export function InboxScreen() {
             </View>
           ) : null}
 
-          {talking.map((match, index) => (
+          {talking.length > 0 ? (
+            <Text accessibilityRole="header" style={styles.sectionTitle}>
+              {COPY.inbox.chats}
+            </Text>
+          ) : null}
+          {talking.map((match) => (
             <Pressable
               key={match.matchId}
               accessibilityRole="button"
@@ -165,11 +237,7 @@ export function InboxScreen() {
               testID={`inbox-${match.matchId}`}
             >
               <View
-                style={[
-                  styles.row,
-                  index > 0 && styles.rowRule,
-                  match.unmatchedAt !== null && styles.rowClosed,
-                ]}
+                style={[styles.chatCard, match.unmatchedAt !== null && styles.rowClosed]}
               >
                 <Avatar
                   url={match.photoPath ? photoUrls[match.photoPath] ?? null : null}
@@ -180,7 +248,7 @@ export function InboxScreen() {
                   <View style={styles.rowTop}>
                     <Heading>{match.displayName}</Heading>
                     {match.lastMessageAt !== null ? (
-                      <Caption>{timeAgo(match.lastMessageAt)}</Caption>
+                      <Caption>{formatWhen(match.lastMessageAt)}</Caption>
                     ) : null}
                   </View>
                   {match.unmatchedAt !== null ? (
@@ -199,14 +267,23 @@ export function InboxScreen() {
   );
 }
 
-/** "5m", "3h", "2d" — the inbox convention; a date would be a paragraph. */
-function timeAgo(at: number): string {
-  const minutes = Math.max(0, Math.floor((Date.now() - at) / 60_000));
-  if (minutes < 1) return 'now';
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
+/**
+ * The designer's time column: today reads as a clock time, yesterday as a
+ * word, anything older as days — a date would be a paragraph.
+ */
+function formatWhen(at: number): string {
+  const then = new Date(at);
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  if (at >= startOfToday) {
+    const hh = String(then.getHours()).padStart(2, '0');
+    const mm = String(then.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+  }
+  if (at >= startOfToday - 86_400_000) {
+    return COPY.inbox.yesterday;
+  }
+  return COPY_FOR.daysAgo(Math.floor((startOfToday - at) / 86_400_000) + 1);
 }
 
 function firstName(name: string): string {
@@ -260,23 +337,41 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   bellWords: { flex: 1 },
+  sectionTitle: {
+    fontFamily: fontFamily.display,
+    fontSize: font.heading,
+    color: color.ink,
+    marginTop: spacing.xs,
+  },
   freshBlock: { gap: spacing.sm },
-  freshRow: { flexDirection: 'row', gap: spacing.md, paddingVertical: spacing.xs },
-  freshItem: { alignItems: 'center', gap: spacing.xs },
+  freshRow: { flexDirection: 'row', gap: spacing.md, paddingVertical: spacing.xs, paddingBottom: spacing.sm },
+  freshItem: { alignItems: 'center', gap: spacing.sm },
   /** The ring is the "new" signal, and the word under the face repeats it. */
   freshRing: {
     padding: 3,
     borderRadius: radius.pill,
-    borderWidth: 2,
-    borderColor: color.accentDeep,
   },
-  row: {
+  freshRingInner: {
+    padding: 2,
+    borderRadius: radius.pill,
+    backgroundColor: color.surface,
+  },
+  chatCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    paddingVertical: spacing.sm + 2,
+    backgroundColor: color.surface,
+    borderWidth: 1,
+    borderColor: color.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    shadowColor: color.ink,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  rowRule: { borderTopWidth: 1, borderTopColor: color.rule },
   /** Readable, dimmed: a closed conversation is history, not a mistake. */
   rowClosed: { opacity: 0.55 },
   rowText: { flex: 1, gap: 2 },

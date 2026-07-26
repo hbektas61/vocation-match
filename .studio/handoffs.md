@@ -1919,3 +1919,30 @@ One full-gate flake noted: the R-003 expiry test missed its real-time
 window under parallel load, passed alone and on the gate rerun.
 Verified: TR browser walk (empty state + Rooms navigation), 397 jest
 tests, full mobile gate green.
+
+## 2026-07-27 — the populated inbox and the floating tab bar (designer screens 8–9)
+
+Two pieces in one slice, as the owner asked:
+
+**The floating tab bar**, everywhere: a rounded card standing off the
+bottom edge, five drawn stroke icons (building, door, compass, speech
+bubble, gear), the active tab's icon seated in a filled lavender pill.
+One custom component replaces the platform bar; each item keeps the
+button role, the title and the selected state, so every existing test
+and screen reader sees what it saw before. New per-tab testIDs
+(tab-Hotel … tab-Settings).
+
+**The populated inbox**: subtitle per the reference ("Eşleşmelerin ve
+sohbetlerin."), a working client-side search over names and previews
+(the server never sees the query), "Yeni eşleşmeler" with the gradient
+ring and the heart badge resting on its foot, and conversations as white
+cards with the designer's time column — today as a clock time, yesterday
+as a word, older as days.
+
+Not adopted, deliberately: the green online dots (no presence data
+exists, and inventing "online" is a privacy decision, not a style);
+the unread-count badges (no read state on the server — a real feature,
+parked in the backlog); the filter button and the "Tümünü gör" links
+(nothing behind them yet). Verified: TR browser walk — match made, fresh
+ring seen, message sent, chat card with clock time seen; 397 jest tests,
+full mobile gate green.

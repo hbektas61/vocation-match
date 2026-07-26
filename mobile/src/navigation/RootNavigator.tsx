@@ -1,11 +1,11 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import { ActivityIndicator, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ActivityIndicator } from 'react-native';
 
 import { Body, Button, Notice, Screen } from '../components/ui';
 import { COPY } from '../copy';
+import { FloatingTabBar } from './FloatingTabBar';
 import { ChatScreen } from '../screens/ChatScreen';
 import { ChooseHotelScreen } from '../screens/ChooseHotelScreen';
 import { DiscoveryScreen } from '../screens/DiscoveryScreen';
@@ -22,25 +22,6 @@ import { UpcomingScreen } from '../screens/UpcomingScreen';
 import { useAppStore } from '../state/AppStore';
 import { color, fontFamily } from '../theme';
 import type { RootStackParamList, TabParamList } from './types';
-
-/** The tab's own mark: present when focused, a hairline ring when not. */
-function tabMark({ focused }: { focused: boolean }) {
-  return (
-    <View
-      accessibilityElementsHidden
-      importantForAccessibility="no"
-      style={{
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        marginBottom: 2,
-        backgroundColor: focused ? color.accentDeep : 'transparent',
-        borderWidth: focused ? 0 : 1.5,
-        borderColor: color.border,
-      }}
-    />
-  );
-}
 
 /** The pushed screens share the app's warm ground rather than system white. */
 const stackHeader = {
@@ -80,44 +61,15 @@ function AccountLoadErrorScreen() {
 }
 
 function MainTabs() {
-  const insets = useSafeAreaInsets();
   return (
     <Tabs.Navigator
       // Onboarding ends by choosing a hotel, so opening on the hotel screen
       // asks the same question twice. The rooms are what was just explained.
       initialRouteName="Rooms"
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: color.accentDeep,
-        tabBarInactiveTintColor: color.inkMuted,
-        tabBarStyle: {
-          backgroundColor: color.background,
-          borderTopColor: color.rule,
-          // Explicit, because the default height left the mark and the label
-          // together taller than the bar and clipped every label's descenders.
-          height: 64 + insets.bottom,
-          paddingTop: 8,
-          paddingBottom: insets.bottom + 10,
-        },
-        // A mark from the system rather than five emoji, which read as clip art
-        // next to this type and — in the case of the green heart — argued with
-        // the brand. The slot stays occupied: emptying it pushes the label out
-        // of the bar entirely, which is how this was found.
-        tabBarIcon: tabMark,
-        // The icon slot flexes by default and took the whole item, squeezing
-        // the label's box to 7px — which, with `overflow: hidden`, cut every
-        // label in half. Pinning the slot to the mark's own size gives the
-        // label back its line.
-        tabBarIconStyle: { flex: 0, height: 10 },
-        tabBarLabelStyle: {
-          fontFamily: fontFamily.bodySemi,
-          fontSize: 11,
-          // Explicit: without it the label box collapsed to 7px and the
-          // descenders rendered below the bar.
-          lineHeight: 14,
-          letterSpacing: 0.2,
-        },
-      }}
+      // The designer's floating bar (2026-07-27) replaces the platform bar
+      // wholesale; every option the old bar needed lives in the component.
+      tabBar={(props) => <FloatingTabBar {...props} />}
+      screenOptions={{ headerShown: false }}
     >
       <Tabs.Screen name="Hotel" component={HotelScreen} options={{ title: COPY.tabs.hotel }} />
       <Tabs.Screen name="Rooms" component={RoomsScreen} options={{ title: COPY.tabs.rooms }} />
