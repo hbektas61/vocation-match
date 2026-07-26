@@ -1154,3 +1154,82 @@ device or simulator. Recorded as an external blocker rather than guessed at.
 Also still external: every device line in `.studio/device-readiness.md` — the
 `+90` field with a real keyboard and autofill, the focus ring on a real screen,
 VoiceOver and TalkBack over the new steps, and reduced motion.
+
+
+## 2026-07-26 (final) — the brief, finished
+
+All seven slices are on `main`, each verified by a full `scripts/check.sh`
+before it was committed. The last four, after the earlier note:
+
+6. **Identity is editable after onboarding.** Gender, orientation and show-me
+   were asked once and then unreachable. show_me decides whose cards you are
+   shown, so being wrong about it with no way back leaves somebody with an
+   empty deck and no explanation. All three now go through the same form as the
+   name. A test pins that editing never clears `onboarding_completed_at`, which
+   would take somebody out of discovery silently.
+7. **The hotel gate.** Removing the hotel from onboarding stopped it blocking
+   entry, but reaching for a room still only said "activate a hotel first" —
+   naming the problem and leaving somebody to find the fix. The way out is now
+   on the blocked screen, and choosing hands them back to what they were
+   reaching for. Backing out without choosing is allowed on purpose.
+8. **The teaching cards** are deleted rather than left dead. They stopped
+   rendering when they left the wizard; the figures, copy and a stale comment
+   outlived them. In git if ever re-sited.
+9. **Photos.** The largest, and the one with a real diagnosis in it.
+
+### The upload bug, since this is the part worth writing down
+
+`readLocalFile` was `fetch(uri).then(r => r.arrayBuffer())`. That is the
+version that looks right, and it fails differently on each platform:
+
+- **Android**: `fetch` goes to the network stack, which is OkHttp, and OkHttp
+  has **no handler for the `file` scheme**. Every upload failed with a bare
+  "Network request failed". This never worked, on any build.
+- **iOS**: the request succeeds, and then `arrayBuffer()` routes through React
+  Native's `FileReader`, whose `readAsArrayBuffer` is implemented by asking the
+  native module for a **base64 data URL** and decoding it in JS. A whole extra
+  copy of a multi-megabyte image, in string form, on the JS thread.
+
+Both are fixed by reading the bytes natively: `expo-file-system`'s `File`
+implements `Blob` and has `arrayBuffer()`. Added at `~19.0.23`, the version
+`expo` itself pins for SDK 54 — a dependency, not an SDK change. expo-doctor
+is 18/18 with it.
+
+I could not prove this on a device, so it is a diagnosis from the platform
+source rather than an observed fix, and the device checks in
+`.studio/device-readiness.md` say so.
+
+### Nine photos
+
+`profile_photos`, owner-only, no client write at all — the three RPCs are the
+only way in. `profiles.photo_path` stays and becomes *derived* from slot 1,
+which is what lets the card, the read policy, the cleanup worker and every
+existing test carry on unchanged, and reduces the feature to one invariant.
+Slots stay contiguous. A removed object goes to the cleanup queue rather than
+being orphaned.
+
+Reordering is one statement with a deferred primary key: a CHECK constraint
+cannot be deferred, so shuffling everything out to high numbers first — the
+usual trick — is not available here.
+
+**Reordering is by explicit controls and the screen does not claim a drag
+gesture** (D-027). The brief allowed either; a caption describing a gesture the
+app does not have is a caption for a different app, and explicit controls are
+the only form of reordering a screen reader can operate.
+
+### Verification
+
+`bash scripts/check.sh` entirely green: 378 SQL assertions across 16 SQL
+suites, concurrency, performance smoke, migration replay, storage drain, the
+client/database contract, auth config and its negative controls, dependency
+gate, `tsc`, `eslint --max-warnings 0`, **374 jest tests across 33 suites**,
+and the web bundle. Plus `expo-doctor` 18/18. Expo stayed on `~54.0.0`,
+React 19.1.0, RN 0.81.5 throughout.
+
+### What is left, and it is only the device
+
+Nothing in the brief is unimplemented. What cannot be closed from here is every
+line in `.studio/device-readiness.md`: the photo round trip on a real Android
+device above all, the `+90` field with a real keyboard and autofill, the focus
+ring on a real screen, VoiceOver and TalkBack over the new steps, and reduced
+motion. Those are recorded as external blockers, not as passes.

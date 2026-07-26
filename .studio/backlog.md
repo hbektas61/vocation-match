@@ -247,6 +247,50 @@ client work; the server already allowed every one of them.
       secrets, providers and Send SMS Hooks before CAPTCHA. Hosted CAPTCHA,
       provider setup and a real-device delivery pass remain external.
 
+## The owner's brief — theme, onboarding, photos, hotel (completed 2026-07-26)
+
+- [x] B-001 White ground, one lavender `#E1C4FF`, old ocean/sea/sand tokens
+      removed rather than re-pointed (D-020). The brand colour measures 1.55:1
+      on white, so it is never a boundary, never text on white, and never the
+      only carrier of a state.
+      Evidence: `mobile/src/__tests__/theme.test.ts` computes the ratios from
+      the tokens instead of trusting the comments.
+- [x] B-002 Focus border exactly `#E1C4FF`, joined by weight, fill and a
+      `#7B4FA8` ring (D-021), and `Field` owning its box so a single line
+      centres on both platforms while a composer starts at the top.
+      Evidence: `mobile/src/components/__tests__/Field.test.tsx`.
+- [x] B-003 `+90` as a fixed, non-editable prefix; ten national digits in,
+      E.164 out (D-022).
+      Evidence: `mobile/src/data/__tests__/phoneTr.test.ts` — the four ways
+      people really paste a number.
+- [x] B-004 `DD/MM/YYYY` on the way in and out, ISO at every boundary, with the
+      18+ boundary asserted either side of UTC.
+      Evidence: `mobile/src/domain/__tests__/dateInput.test.ts`.
+- [x] B-005 Bio out of onboarding; order is name, birthdate, gender,
+      orientation, show-me, passions, photos.
+- [x] B-006 Gender, orientation and show-me: schema, RLS, column grants,
+      visibility toggles defaulting off, and mutual server-side filtering
+      (D-023). Orientation is never a filter.
+      Evidence: `supabase/tests/005_discovery.sql`.
+- [x] B-007 `onboarding_completed_at`, server-set only, required by discovery
+      (D-024). A draft profile is invisible to everyone but its owner.
+- [x] B-008 The hotel leaves onboarding (D-025) and is asked for at the point
+      something needs it, with the way out on the blocked screen.
+- [x] B-009 Hotel search asks the server nothing until two characters are
+      typed, discards stale answers by sequence, and has four distinct states.
+      Evidence: `mobile/src/__tests__/hotelSearch.test.tsx`.
+- [x] B-010 Nine ordered photos with a derived primary (D-026), reordering by
+      explicit controls rather than a claimed gesture (D-027).
+      Evidence: `supabase/tests/015_photo_set.sql`,
+      `mobile/src/data/__tests__/photoSet.test.ts`,
+      `mobile/src/__tests__/photoGridUi.test.tsx`.
+- [x] B-011 The upload failure: `fetch('file://…')` reaches OkHttp, which has
+      no `file` handler, so Android never worked; iOS paid a base64 round trip
+      through `FileReader`. Now `expo-file-system`'s `File` (D-028).
+- [x] B-012 Gender, orientation and show-me editable after onboarding — show_me
+      decides whose cards you see, and no way back would leave somebody with an
+      empty deck and no explanation.
+
 ## Later — monetization
 
 - [ ] L-001 Define premium value and price.

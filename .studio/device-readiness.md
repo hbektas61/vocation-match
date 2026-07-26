@@ -128,6 +128,21 @@ The profile questions and the hotel gate:
 - [ ] Hotel search with a real keyboard: two-character threshold, debounce,
       and a genuinely slow network for the stale-answer case.
 
+Photos, which is where the automated suite says least (D-026, D-028):
+
+- [ ] A real photo from a real gallery, on **Android** — this is the platform
+      the old `fetch('file://…')` never worked on, so it has never actually
+      been seen to succeed there.
+- [ ] The same on iOS, with an image large enough that the old base64 round
+      trip would have been noticeable.
+- [ ] HEIC from a real camera roll: the manipulator re-encodes to JPEG, and
+      that is the step that strips EXIF.
+- [ ] Nine photos added, reordered, and removed from the middle; the grid and
+      the discovery card agree afterwards.
+- [ ] A photo uploaded while the network drops between the upload and the
+      attach — the object should end up in the cleanup queue, not attached.
+- [ ] Permission refused, and refused-then-granted from Settings.
+
 Accessibility (backlog R-004):
 
 - [ ] VoiceOver and TalkBack walk the whole onboarding → match → chat path.
