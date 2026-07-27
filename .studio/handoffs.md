@@ -2025,3 +2025,20 @@ purpose (renaming infrastructure buys nothing and risks the pipeline).
 The headline tests learned that the full stop is a heart now. Verified by
 TR browser walk (hero, brand, reveal); 398 jest tests, full gate pending
 this note's commit.
+
+## 2026-07-27 — why "voyage" found no Voyage
+
+The owner searched a brand name and got only the seeded catalogue. Cause,
+found by asking Nominatim directly: a big resort in OSM is several
+objects — the grounds tagged as a park, the buildings, the hotel node —
+and for a bare brand name Nominatim ranks the park polygons on top, which
+our hotel-type filter then rightly discards, leaving nothing. Asking
+"voyage hotel" instead surfaces the actual hotel objects: all six Voyage
+properties, typed `hotel`.
+
+The edge function now asks with " hotel" appended first and falls back to
+the bare query only when the biased one is empty (one extra Nominatim
+call at most, only in the miss case). Verified deployed against staging:
+voyage → 6 hotels, rixos → 6, hilton → 6. Known limit, stated: there is
+no fuzzy matching in Nominatim — a typo like "vyaga" finds nothing, and
+pretending otherwise would need a search service we do not have.

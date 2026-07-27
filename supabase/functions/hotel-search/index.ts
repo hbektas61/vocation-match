@@ -72,7 +72,7 @@ function cityOf(address: Record<string, string> | undefined): string {
   );
 }
 
-async function askNominatim(query: string): Promise<NominatimHit[]> {
+async function askNominatimOnce(query: string): Promise<NominatimHit[]> {
   const url = new URL(NOMINATIM);
   url.searchParams.set("q", query);
   url.searchParams.set("countrycodes", "tr");
@@ -86,6 +86,20 @@ async function askNominatim(query: string): Promise<NominatimHit[]> {
   if (!response.ok) return [];
   const hits = (await response.json()) as NominatimHit[];
   return hits.filter((hit) => HOTEL_TYPES.has(hit.type) && (hit.name ?? "").length > 0);
+}
+
+/**
+ * Ask with "hotel" appended first. A big resort in OSM is several objects —
+ * grounds tagged as a park, buildings, the hotel node — and for a bare brand
+ * name ("voyage") Nominatim ranks the park polygons on top, which the type
+ * filter then rightly discards, leaving nothing. Biasing the query toward
+ * the hotel objects surfaces them; the bare query stays as the fallback for
+ * names where the extra word confuses more than it helps.
+ */
+async function askNominatim(query: string): Promise<NominatimHit[]> {
+  const biased = await askNominatimOnce(`${query} hotel`);
+  if (biased.length > 0) return biased;
+  return askNominatimOnce(query);
 }
 
 Deno.serve(async (req) => {
