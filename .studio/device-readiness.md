@@ -304,7 +304,7 @@ Phone auth is now ENABLED on staging with **test OTP numbers** — no SMS is
 ever sent, no SMS provider is wired, no money moves. The device build
 (`.env.local` → staging) signs in with:
 
-- Numbers: `+90 555 111 00 01` through `…00 05`
+- Numbers: `+90 555 111 00 01` through `…00 05`, plus `+90 555 112 23 33` (owner's pick, added 2026-07-27)
 - Code: always `123456`
 - Valid until 2027-01-01 (auth config `sms_test_otp_valid_until`)
 
