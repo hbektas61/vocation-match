@@ -2296,3 +2296,17 @@ denial one paragraph above it. New body, both languages: "Şu an olduğun
 ya da gideceğin oteli seç; aynı tarihlerde orada olanlarla eşleş. Aynı
 anda tek otel." — both rooms, the overlap rule, and the one-hotel
 constraint in two sentences; the denial stays where the shield is.
+
+## 2026-07-28 — the owner's renders replace the drawings (screens 17–18)
+
+The owner rejected the flat-SVG translations of the two hero empty
+states: they wanted their own 3D renders, exactly. Both are cropped from
+the owner's mocks and bundled (~88 KB and ~71 KB): the arched door with
+the ROOMS sign for Discovery-before-a-room, the lobby with the two chat
+bubbles for the empty inbox. The drawn OrbitEmpty and InboxIllustration
+components died with their jobs. The mocks' hero buttons came with them:
+BigActionButton — a tall pill with a leading icon, centred label and
+trailing chevron, filled in a deep purple with white type or outlined
+with purple — used only on these hero states, and Discovery's primary
+took the mock's label ("Odaları görüntüle"). All testIDs survived.
+144 jest, full mobile gate green.

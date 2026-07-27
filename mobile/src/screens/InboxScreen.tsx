@@ -1,13 +1,12 @@
 import { useFocusEffect, useNavigation, type NavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import {
   Avatar,
   Body,
-  Button,
   Caption,
   Field,
   Heading,
@@ -15,7 +14,7 @@ import {
   Screen,
   Title,
 } from '../components/ui';
-import { InboxIllustration } from '../components/InboxIllustration';
+import { BigActionButton } from '../components/BigActionButton';
 import { LinearGradient } from 'expo-linear-gradient';
 import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
 import { ApiError, getApi, type MatchSummary } from '../data';
@@ -23,6 +22,9 @@ import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
 import { color, font, fontFamily, radius, spacing } from '../theme';
+
+/** The owner's own 3D lobby render (2026-07-28), bundled — not a redrawing. */
+const INBOX_HERO = require('../../assets/inbox-empty.jpg');
 
 const MagnifierIcon = () => (
   <View style={{ marginRight: spacing.sm }}>
@@ -135,7 +137,12 @@ export function InboxScreen() {
            heart, why it is empty in one sentence, and both ways to change
            that — discovery, or the rooms that open it. */
         <View style={styles.empty} testID="inbox-empty">
-          <InboxIllustration />
+          <Image
+            source={INBOX_HERO}
+            style={styles.emptyHero}
+            resizeMode="contain"
+            accessibilityIgnoresInvertColors
+          />
           <View style={styles.emptyWords}>
             <Text accessibilityRole="header" style={styles.emptyTitle}>
               {COPY.inbox.emptyTitle}
@@ -143,14 +150,16 @@ export function InboxScreen() {
             <Text style={styles.emptyBody}>{COPY.inbox.emptyBody}</Text>
           </View>
           <View style={styles.emptyActions}>
-            <Button
+            <BigActionButton
               label={COPY.inbox.startDiscovering}
+              icon="sparkle"
+              filled
               onPress={() => tabNavigation.navigate('Discovery')}
               testID="inbox-start-discovering"
             />
-            <Button
+            <BigActionButton
               label={COPY.inbox.viewRooms}
-              variant="secondary"
+              icon="door"
               onPress={() => tabNavigation.navigate('Rooms')}
               testID="inbox-view-rooms"
             />
@@ -313,7 +322,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     maxWidth: 280,
   },
-  emptyActions: { alignSelf: 'stretch', gap: spacing.sm, maxWidth: 300, width: '100%' },
+  emptyActions: { alignSelf: 'stretch', gap: spacing.sm },
+  emptyHero: { width: 330, height: 248 },
   bellStrip: {
     flexDirection: 'row',
     alignItems: 'center',

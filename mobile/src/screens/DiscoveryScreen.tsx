@@ -7,9 +7,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { Body, Button, Notice, Screen, Title } from '../components/ui';
+import { BigActionButton } from '../components/BigActionButton';
 import { NoHotelCard } from '../components/NoHotelCard';
 import { CompassScene } from '../components/NoHotelIllustrations';
-import { OrbitEmpty } from '../components/OrbitEmpty';
 import { RadarEmpty } from '../components/RadarEmpty';
 import { nowMs } from '../clock';
 import { apiErrorMessage, COPY, upperCase } from '../copy';
@@ -19,6 +19,9 @@ import { color, font, fontFamily, palette, radius, spacing } from '../theme';
 import { earliestRoomExpiry } from '../state/roomSchedule';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
+
+/** The owner's own 3D door render (2026-07-28), bundled — not a redrawing. */
+const DOOR_HERO = require('../../assets/discovery-door.jpg');
 
 const XIcon = () => (
   <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke={'#7B4FA8'} strokeWidth={2.6} strokeLinecap="round">
@@ -220,22 +223,29 @@ export function DiscoveryScreen() {
       <Screen safeTop testID="screen-discovery">
         <Title>{COPY.tabs.discovery}</Title>
         <View style={styles.noRoom} testID="discovery-no-room">
-          <OrbitEmpty size={240} />
+          <Image
+            source={DOOR_HERO}
+            style={styles.noRoomHero}
+            resizeMode="contain"
+            accessibilityIgnoresInvertColors
+          />
           <View style={styles.emptyWords}>
             <Text accessibilityRole="header" style={styles.emptyTitle}>
               {COPY.discovery.noRoomTitle}
             </Text>
             <Text style={styles.emptyBody}>{COPY.discovery.noRoomBody}</Text>
           </View>
-          <View style={styles.emptyAction}>
-            <Button
-              label={COPY.discovery.goToRooms}
+          <View style={styles.emptyActionWide}>
+            <BigActionButton
+              label={COPY.inbox.viewRooms}
+              icon="door"
+              filled
               onPress={() => tabNavigation.navigate('Rooms')}
               testID="discovery-go-rooms"
             />
-            <Button
+            <BigActionButton
               label={COPY.discovery.checkProximity}
-              variant="secondary"
+              icon="compass"
               onPress={() => navigation.navigate('HereNow')}
               testID="discovery-check-proximity"
             />
@@ -495,6 +505,8 @@ const styles = StyleSheet.create({
     maxWidth: 260,
   },
   emptyAction: { alignSelf: 'stretch', maxWidth: 280, width: '100%', gap: spacing.sm },
+  emptyActionWide: { alignSelf: 'stretch', gap: spacing.sm },
+  noRoomHero: { width: 320, height: 292 },
   howBody: {
     fontFamily: fontFamily.body,
     fontSize: font.caption,
