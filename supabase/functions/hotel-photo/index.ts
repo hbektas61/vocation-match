@@ -39,8 +39,12 @@ Deno.serve(async (req) => {
   const key = Deno.env.get("GOOGLE_PLACES_API_KEY");
   if (!key) return new Response(null, { status: 404 });
 
-  const hotelId = new URL(req.url).searchParams.get("hotel") ?? "";
+  const requestUrl = new URL(req.url);
+  const hotelId = requestUrl.searchParams.get("hotel") ?? "";
   if (!/^[0-9a-f-]{36}$/i.test(hotelId)) return new Response(null, { status: 404 });
+  // List thumbnails ask small, the card asks big; both are clamped so a
+  // stranger cannot request a wall-sized bill.
+  const width = Math.min(1600, Math.max(64, Number(requestUrl.searchParams.get("w")) || 1200));
 
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -67,7 +71,7 @@ Deno.serve(async (req) => {
     if (typeof photoName !== "string") return new Response(null, { status: 404 });
 
     const media = await fetch(
-      `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=1200&skipHttpRedirect=true`,
+      `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${width}&skipHttpRedirect=true`,
       { headers: { "X-Goog-Api-Key": key }, signal: AbortSignal.timeout(4_000) },
     );
     if (!media.ok) return new Response(null, { status: 404 });

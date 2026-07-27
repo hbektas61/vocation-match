@@ -94,6 +94,11 @@ const MIN_QUERY = 2;
  * gate satisfied; a Commons URL needs nothing. The anon key is already in
  * the app bundle, so sending it is not a disclosure.
  */
+/** Our proxy takes a width; other sources are already sized. */
+function thumbUrl(url: string): string {
+  return url.includes('/functions/v1/hotel-photo') ? `${url}&w=400` : url;
+}
+
 function photoSource(url: string) {
   const config = readBackendConfig();
   if (config && url.includes('/functions/v1/hotel-photo')) {
@@ -531,7 +536,19 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
               style={({ pressed }) => [styles.hotelCard, pressed && styles.resultPressed]}
               testID={`activate-${hotel.id}`}
             >
-              <View style={styles.resultBand} />
+              {hotel.photoUrl ? (
+                /* A small photo helps tell two same-brand hotels apart before
+                   choosing — asked for at thumbnail size, not card size. */
+                <Image
+                  source={photoSource(thumbUrl(hotel.photoUrl))}
+                  style={styles.resultPhoto}
+                  resizeMode="cover"
+                  accessibilityIgnoresInvertColors
+                  testID={`result-photo-${hotel.id}`}
+                />
+              ) : (
+                <View style={styles.resultBand} />
+              )}
               <View style={styles.resultBody}>
                 {isActive ? <DoorPlate>{COPY.hotel.activePlate}</DoorPlate> : null}
                 <View style={styles.hotelCardTitle}>
@@ -657,6 +674,7 @@ const styles = StyleSheet.create({
   hotelCardBody: { padding: spacing.lg, gap: spacing.md },
   hotelCardTitle: { gap: spacing.xs },
   resultBand: { height: 20, backgroundColor: color.accent },
+  resultPhoto: { width: '100%', height: 110, backgroundColor: color.veil },
   resultBody: { padding: spacing.md, gap: spacing.xs },
   roomStates: {
     flexDirection: 'row',

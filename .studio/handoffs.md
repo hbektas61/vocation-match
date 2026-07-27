@@ -2110,3 +2110,12 @@ endpoint, since a non-JWT in Authorization would be refused at the door.
 Proven live end to end: "voyage" search enriched four hotels with place
 ids and attributions; Voyage Belek's card URL answers 302 to a
 googleusercontent image that downloads as a real 300 KB JPEG.
+
+## 2026-07-27 — photos in the search results too
+
+The owner asked whether result-row photos before choosing would be
+excessive; they are the opposite — a thumbnail is how you tell Voyage
+Torba from Voyage Torba Private. The hotel-photo proxy learned a clamped
+`w` parameter (64–1600), result rows ask at 400 px (a 40 KB JPEG against
+the card's 300 KB), and rows without a photo keep the slim lavender band.
+Verified live; full mobile gate green.
