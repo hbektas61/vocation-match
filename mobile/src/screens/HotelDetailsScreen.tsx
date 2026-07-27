@@ -10,7 +10,7 @@ import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { Body, Caption, Heading, Screen, Title } from '../components/ui';
+import { Body, Caption, Screen, Title } from '../components/ui';
 import { HotelBuilding } from '../components/HotelIllustrations';
 import { COPY, upperCase } from '../copy';
 import { readBackendConfig } from '../data';
