@@ -1946,3 +1946,24 @@ parked in the backlog); the filter button and the "Tümünü gör" links
 (nothing behind them yet). Verified: TR browser walk — match made, fresh
 ring seen, message sent, chat card with clock time seen; 397 jest tests,
 full mobile gate green.
+
+## 2026-07-27 — account deletion vs the hosted storage guard
+
+The owner tried to delete their account to retest from scratch; it failed
+with 42501 — but only on staging, and only for accounts that had ever
+uploaded a photo. Hosted Supabase now refuses direct SQL deletes on
+storage tables, and `app.queue_photo_cleanup`'s DELETE branch did exactly
+that inside the profile-delete cascade. The local container has no such
+guard, which is why 411 green assertions disagreed with reality — the
+third staging-only failure this pilot has caught (SMS provider, PostgREST
+upsert grant, now this).
+
+Fix (migration 20260727000100, staging-applied): the trigger only queues;
+the storage-API worker owns removal of row and bytes together, which was
+already its design. Nothing is readable in the gap — every photo read
+goes through `app.may_view_photo`, which answers false for everyone once
+the profile row is gone, and both pgTAP suites now pin the new contract
+(row waits for the worker; the matched viewer can no longer read it).
+Verified on staging with the owner's real account: delete succeeded,
+re-signing in mints a fresh empty account. 412 SQL assertions, full gate
+green.

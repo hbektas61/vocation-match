@@ -423,16 +423,19 @@ select throws_ok(
   'You are doing that too often. Try again later.',
   'a script is not: the twenty-first change in an hour is refused');
 
--- Deleting the profile is the case where no client is left to call the storage
--- API, so the trigger has to drop the metadata rows itself.
+-- Deleting the profile is the case where no client is left to call the
+-- storage API — and the trigger must NOT drop the metadata rows itself:
+-- hosted Postgres refuses direct deletes from storage tables (this is what
+-- broke the first real account deletion on staging). The rows wait,
+-- unreadable, for the worker's storage-API delete.
 select tests.clear_auth();
 delete from public.profiles where id = '00000000-0000-0000-0000-0000000000b1';
 
 select is(
   (select count(*)::int from storage.objects
     where name like '00000000-0000-0000-0000-0000000000b1/%'),
-  0,
-  'deleting a profile removes every object row under that user''s prefix');
+  1,
+  'the object row waits for the storage-API worker rather than being deleted by SQL');
 
 select is(
   (select reason from public.storage_cleanup_queue

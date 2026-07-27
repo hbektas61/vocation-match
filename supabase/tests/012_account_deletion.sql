@@ -162,11 +162,22 @@ select is(
   0,
   'the rate-limit counters are gone');
 
+-- The object row deliberately survives: hosted Postgres refuses direct
+-- deletes from storage tables, so the row waits for the storage-API worker.
+-- What matters is that nobody can read it in the meantime.
+select is(
+  (select count(*)::int from storage.objects
+    where name like '00000000-0000-0000-0000-0000000000a1/%'),
+  1,
+  'the object row waits for the storage-API worker rather than being deleted by SQL');
+
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
 select is(
   (select count(*)::int from storage.objects
     where name like '00000000-0000-0000-0000-0000000000a1/%'),
   0,
-  'the photo object row is gone, so nothing can read it');
+  'and even the person they matched with can no longer read it');
+select tests.clear_auth();
 
 select is(
   (select reason from public.storage_cleanup_queue
