@@ -2006,3 +2006,22 @@ readable "201" would be a claim about a room nobody has. Both primaries
 keep their old testIDs; the two secondaries are new (rooms-view-hotels,
 discovery-how). Verified by TR browser walk over both screens, the reveal
 and the tab jump; 398 jest tests, full mobile gate green.
+
+## 2026-07-27 — the first screen, and the brand's missing letter (designer screen 12)
+
+The welcome screen is the designer's: the language toggle floating over a
+lavender resort skyline that ends in a soft curve, the app's mark as a
+tile — a hotel doorway holding a speech bubble with a two-tone heart —
+the wordmark under it, the headline whose full stop is a small heart, the
+reviewed one-hotel/no-reservation body, a trust card (shield, "Güvenli ve
+gizli", lock) whose denial sentence joined the trust-audit allowlist in
+both languages, the phone CTA, and a "Nasıl çalışır?" that reveals the
+two-room explainer inline.
+
+And the open brand question is closed: **Vacation Match**, with an a —
+D-033. Every user-visible string, the app display name and both permission
+prompts renamed; repo, slug and staging ref keep the old spelling on
+purpose (renaming infrastructure buys nothing and risks the pipeline).
+The headline tests learned that the full stop is a heart now. Verified by
+TR browser walk (hero, brand, reveal); 398 jest tests, full gate pending
+this note's commit.

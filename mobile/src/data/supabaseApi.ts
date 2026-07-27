@@ -59,7 +59,7 @@ export function toApiError(error: PostgresLikeError | null | undefined, fallback
   const code = error?.code;
 
   if (code === '23514' && /18\+/.test(message)) {
-    return new ApiError('UNDER_AGE', 'Vocation Match is 18+ only.');
+    return new ApiError('UNDER_AGE', 'Vacation Match is 18+ only.');
   }
   if (
     code === '23514' ||

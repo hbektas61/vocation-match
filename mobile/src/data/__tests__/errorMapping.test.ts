@@ -9,7 +9,7 @@ describe('toApiError', () => {
   it('recognises the server-side 18+ trigger', () => {
     const error = toApiError({ code: '23514', message: 'Vocation Match is 18+ only.' }, 'fallback');
     expect(error.code).toBe('UNDER_AGE');
-    expect(error.message).toBe('Vocation Match is 18+ only.');
+    expect(error.message).toBe('Vacation Match is 18+ only.');
   });
 
   it('treats other check violations as invalid input', () => {

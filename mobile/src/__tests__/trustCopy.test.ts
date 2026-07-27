@@ -58,6 +58,9 @@ const MAY_DENY = new Set([
   'upcoming.privacyNote',
   'discovery.overlapUpcoming',
   'onboarding.welcome.body',
+  // The welcome trust card (2026-07-27): names the reservation only to
+  // deny ever asking for one.
+  'onboarding.welcome.trustBody',
 ]);
 const DENIAL = /\b(nobody|no one|never|not|without|no)\b/i;
 
@@ -144,6 +147,7 @@ const TR_MAY_DENY = new Set([
   'upcoming.privacyNote',
   'discovery.overlapUpcoming',
   'onboarding.welcome.body',
+  'onboarding.welcome.trustBody',
   // The delete-account promise names the report record it keeps; the sentence
   // exists to deny that deleting erases it.
   'deleteAccount.whatStays',

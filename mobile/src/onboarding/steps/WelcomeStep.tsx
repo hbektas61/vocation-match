@@ -1,13 +1,33 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 
 import { LanguageSwitch } from '../../components/LanguageSwitch';
-import { Button, Gap } from '../../components/ui';
+import { Button } from '../../components/ui';
 import { COPY } from '../../copy';
 import { useAppStore } from '../../state/AppStore';
-import { color, font, fontFamily, spacing } from '../../theme';
+import { color, font, fontFamily, radius, spacing } from '../../theme';
+import { WelcomeHero } from '../WelcomeHero';
 import type { StepProps } from './types';
+
+const ShieldTile = () => (
+  <View style={styles.shieldTile}>
+    <Svg width={26} height={26} viewBox="0 0 24 24" fill={color.accentDeep} stroke={color.accentDeep} strokeWidth={1.5} strokeLinejoin="round">
+      <Path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+      <Path d="M8.5 11.8l2.6 2.6 4.8-4.8" stroke="#FFFFFF" strokeWidth={2.2} fill="none" strokeLinecap="round" />
+    </Svg>
+  </View>
+);
+
+const LockChip = () => (
+  <View style={styles.lockChip}>
+    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M5 11h14v10H5z" />
+      <Path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </Svg>
+  </View>
+);
 
 /**
  * Phone OTP deliberately has no separate sign-up and sign-in journeys: the
@@ -16,71 +36,163 @@ import type { StepProps } from './types';
  */
 export function WelcomeStep({ go }: StepProps) {
   const { dispatch } = useAppStore();
+  const { width } = useWindowDimensions();
+  const [howOpen, setHowOpen] = useState(false);
+
+  // The wordmark is two-toned per the designer: the first word deep, the
+  // second in the mid accent. Split from the one brand string so a rename
+  // stays a one-line change.
+  const [brandA, ...brandRest] = COPY.appName.split(' ');
+  // The headline's full stop is a small heart in the reference.
+  const headline = COPY.onboarding.welcome.headline.replace(/[.。]\s*$/, '');
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']} testID="screen-welcome">
-      {/* Sea into sand, faintly. The subject is a hotel by water. */}
-      <View style={styles.wash} />
-      {/* The first decision on the first screen: which language the rest of
-          this conversation happens in. */}
-      <View style={styles.languageRow}>
-        <LanguageSwitch testID="welcome-language" />
-      </View>
-      <View style={styles.content}>
-        <Text accessibilityRole="header" style={styles.wordmark}>
-          {COPY.appName}
-        </Text>
-        <Gap size="sm" />
-        <Text accessibilityRole="header" style={styles.headline}>
-          {COPY.onboarding.welcome.headline}
-        </Text>
-        <Text style={styles.body}>{COPY.onboarding.welcome.body}</Text>
-      </View>
-      <View style={styles.footer}>
-        <Button
-          label={COPY.onboarding.welcome.continueWithPhone}
-          onPress={() => {
-            dispatch({ type: 'CONFIRM_AGE' });
-            go('promise');
-          }}
-          testID="welcome-phone"
-        />
-      </View>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.heroWrap}>
+          <WelcomeHero width={width} />
+          {/* The first decision on the first screen: which language the rest
+              of this conversation happens in. Floats over the hero. */}
+          <View style={styles.languageRow}>
+            <LanguageSwitch testID="welcome-language" />
+          </View>
+        </View>
+
+        <View style={styles.content}>
+          <Text accessibilityRole="header" style={styles.wordmark}>
+            <Text style={styles.wordmarkDeep}>{brandA}</Text>
+            {brandRest.length > 0 ? <Text style={styles.wordmarkMid}>{` ${brandRest.join(' ')}`}</Text> : null}
+          </Text>
+          <Text accessibilityRole="header" style={styles.headline}>
+            {headline}
+            <Text style={styles.headlineHeart}> ♥</Text>
+          </Text>
+          <Text style={styles.body}>{COPY.onboarding.welcome.body}</Text>
+
+          <View style={styles.trustCard}>
+            <ShieldTile />
+            <View style={styles.trustWords}>
+              <Text style={styles.trustTitle}>{COPY.onboarding.welcome.trustTitle}</Text>
+              <Text style={styles.trustBody}>{COPY.onboarding.welcome.trustBody}</Text>
+            </View>
+            <LockChip />
+          </View>
+        </View>
+
+        <View style={styles.footer}>
+          <Button
+            label={COPY.onboarding.welcome.continueWithPhone}
+            onPress={() => {
+              dispatch({ type: 'CONFIRM_AGE' });
+              go('promise');
+            }}
+            testID="welcome-phone"
+          />
+          <View style={styles.howRow}>
+            <Button
+              label={COPY.onboarding.welcome.howItWorks}
+              variant="secondary"
+              onPress={() => setHowOpen((open) => !open)}
+              testID="welcome-how"
+            />
+            {howOpen ? (
+              <Text style={styles.howBody} testID="welcome-how-body">
+                {COPY.discovery.howItWorksBody}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.background },
-  wash: {
+  scroll: { flexGrow: 1 },
+  heroWrap: { position: 'relative' },
+  languageRow: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '46%',
-    backgroundColor: color.accentSoft,
-    borderBottomLeftRadius: 120,
+    top: spacing.sm,
+    right: spacing.md,
   },
-  languageRow: { alignItems: 'flex-end', padding: spacing.md },
-  content: { flex: 1, justifyContent: 'flex-end', padding: spacing.md },
+  content: { paddingHorizontal: spacing.md, alignItems: 'center', gap: spacing.sm },
   wordmark: {
     fontFamily: fontFamily.display,
-    fontSize: font.heading,
+    fontSize: font.title,
     letterSpacing: 0.4,
-    color: color.accentDeep,
+    textAlign: 'center',
   },
+  wordmarkDeep: { color: color.accentDeep },
+  wordmarkMid: { color: 'rgba(123, 79, 168, 0.55)' },
   headline: {
     fontFamily: fontFamily.display,
     fontSize: font.display,
     lineHeight: font.display * 1.15,
     color: color.ink,
+    textAlign: 'center',
   },
+  headlineHeart: { color: color.accentDeep, fontSize: font.heading },
   body: {
     fontFamily: fontFamily.body,
     fontSize: font.body,
-    lineHeight: font.body * 1.45,
+    lineHeight: font.body * 1.5,
     color: color.inkMuted,
-    marginTop: spacing.sm,
+    textAlign: 'center',
+    maxWidth: 320,
   },
-  footer: { padding: spacing.md, gap: spacing.sm },
+  trustCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm + 4,
+    alignSelf: 'stretch',
+    backgroundColor: color.surface,
+    borderWidth: 1,
+    borderColor: color.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginTop: spacing.sm,
+    shadowColor: color.ink,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  shieldTile: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: color.veil,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  trustWords: { flex: 1, gap: 2 },
+  trustTitle: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.body,
+    color: color.ink,
+  },
+  trustBody: {
+    fontFamily: fontFamily.body,
+    fontSize: font.caption,
+    lineHeight: font.caption * 1.45,
+    color: color.inkMuted,
+  },
+  lockChip: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(123, 79, 168, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footer: { padding: spacing.md, gap: spacing.sm, marginTop: 'auto' },
+  howRow: { gap: spacing.sm },
+  howBody: {
+    fontFamily: fontFamily.body,
+    fontSize: font.caption,
+    lineHeight: font.caption * 1.55,
+    color: color.inkMuted,
+    paddingHorizontal: spacing.xs,
+  },
 });

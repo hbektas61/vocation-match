@@ -42,7 +42,7 @@ export const en = {
     tr: 'Türkçe',
   },
 
-  appName: 'Vocation Match',
+  appName: 'Vacation Match',
   tagline: 'Meet people connected to your hotel.',
 
   onboarding: {
@@ -55,11 +55,14 @@ export const en = {
       body:
         'One hotel at a time. You say when you are staying — nobody asks for a reservation, a document, or an ID.',
       continueWithPhone: 'Continue with phone',
+      trustTitle: 'Safe and private',
+      trustBody: 'Your identity stays private. No reservation, document, or ID is asked for.',
+      howItWorks: 'How does it work?',
     },
 
     promise: {
       headline: 'Adults only, and a short promise.',
-      body: 'Vocation Match is for people 18 or older. By continuing you confirm you are at least 18.',
+      body: 'Vacation Match is for people 18 or older. By continuing you confirm you are at least 18.',
       points: [
         'Be yourself. The name and photo should be you.',
         'Meet in public first, and tell someone where you are going.',
@@ -128,7 +131,7 @@ export const en = {
 
   ageGate: {
     title: 'Adults only',
-    body: 'Vocation Match is for people 18 or older. By continuing you confirm you are at least 18.',
+    body: 'Vacation Match is for people 18 or older. By continuing you confirm you are at least 18.',
     confirm: 'I am 18 or older',
   },
 
@@ -182,7 +185,7 @@ export const en = {
     invalidBirthdate: 'That is not a date on the calendar. Check the day and the month.',
     incompleteBirthdate: 'That date is not finished yet.',
     futureBirthdate: 'That date has not happened yet.',
-    underAge: 'Vocation Match is 18+ only.',
+    underAge: 'Vacation Match is 18+ only.',
     bioLabel: 'Bio',
     bioPlaceholder: 'A sentence about you',
     birthdateNote:
@@ -446,7 +449,7 @@ export const en = {
     youLabel: 'You',
     locationTitle: 'Location and privacy',
     locationNote:
-      'Vocation Match never tracks you in the background and never shares exact locations.',
+      'Vacation Match never tracks you in the background and never shares exact locations.',
     accountTitle: 'Account',
     signOutButton: 'Sign out',
     blockedTitle: 'Blocked people',
@@ -457,7 +460,7 @@ export const en = {
 
   deleteAccount: {
     title: 'Delete your account',
-    intro: 'This removes your account from Vocation Match. It cannot be undone.',
+    intro: 'This removes your account from Vacation Match. It cannot be undone.',
     startButton: 'Delete my account',
     // Said before the irreversible tap, not after. Both halves are here on
     // purpose: what disappears, and the one thing that does not.
@@ -506,7 +509,7 @@ export const en = {
     unauthenticated: 'Sign in again to continue.',
     otpInvalid: 'That code is incorrect or expired. Request a new one and try again.',
     forbidden: "You don't have access to do that.",
-    underAge: 'Vocation Match is 18+ only.',
+    underAge: 'Vacation Match is 18+ only.',
     invalidInput: 'Please check the details you entered.',
     notFound: 'We could not find that.',
     conflict: 'That account could not be opened.',
