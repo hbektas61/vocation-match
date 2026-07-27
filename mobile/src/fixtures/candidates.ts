@@ -20,6 +20,7 @@ export const CANDIDATES: Candidate[] = [
     hotelId: 'hotel-lara-shore',
     rooms: ['UPCOMING', 'HERE_NOW'],
     likesYou: true,
+    stay: { startDate: '2026-07-20', endDate: '2026-08-20' },
   },
   {
     id: 'cand-mert',
@@ -48,6 +49,7 @@ export const CANDIDATES: Candidate[] = [
     hotelId: 'hotel-lara-shore',
     rooms: ['UPCOMING'],
     likesYou: true,
+    stay: { startDate: '2026-07-25', endDate: '2026-08-25' },
   },
   {
     id: 'cand-arda',
@@ -62,6 +64,7 @@ export const CANDIDATES: Candidate[] = [
     hotelId: 'hotel-bosphorus-garden',
     rooms: ['UPCOMING', 'HERE_NOW'],
     likesYou: true,
+    stay: { startDate: '2026-07-20', endDate: '2026-08-20' },
   },
   {
     id: 'cand-zeynep',
@@ -90,6 +93,7 @@ export const CANDIDATES: Candidate[] = [
     hotelId: 'hotel-cesme-breeze',
     rooms: ['UPCOMING'],
     likesYou: true,
+    stay: { startDate: '2026-07-20', endDate: '2026-08-20' },
   },
   {
     id: 'cand-elif',
@@ -104,6 +108,23 @@ export const CANDIDATES: Candidate[] = [
     hotelId: 'hotel-cappadocia-stone',
     rooms: ['UPCOMING', 'HERE_NOW'],
     likesYou: false,
+    stay: { startDate: '2026-07-20', endDate: '2026-08-20' },
+  },
+  {
+    /** D-035 fixture: at Lara Shore, but long after everyone else has left. */
+    id: 'cand-nur',
+    displayName: 'Nur',
+    gender: 'WOMAN',
+    showGender: true,
+    orientations: [],
+    showOrientation: false,
+    age: 27,
+    bio: 'December person. Quiet season, warm pools.',
+    interests: ['spa', 'reading', 'yoga'],
+    hotelId: 'hotel-lara-shore',
+    rooms: ['UPCOMING'],
+    likesYou: false,
+    stay: { startDate: '2026-12-01', endDate: '2026-12-08' },
   },
 ];
 

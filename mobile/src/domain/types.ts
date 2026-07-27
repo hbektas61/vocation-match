@@ -55,6 +55,12 @@ export interface Candidate extends Profile {
   showOrientation: boolean;
   /** Fixture flag: this candidate has already liked the current user. */
   likesYou: boolean;
+  /**
+   * The candidate's declared window when they are in Upcoming (D-035): the
+   * fake's feed shows them only when it crosses the caller's own dates,
+   * exactly as `discovery_feed` does.
+   */
+  stay?: { startDate: string; endDate: string };
 }
 
 export interface ActiveHotelState {

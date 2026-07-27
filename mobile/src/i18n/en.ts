@@ -349,7 +349,7 @@ export const en = {
     overlapHereNow:
       'You are both within 500 m of this hotel right now. Neither of you can see where the other is.',
     overlapUpcoming:
-      'You have both said you will be staying at this hotel. Nobody was asked for a reservation.',
+      'Your stays at this hotel overlap. Nobody was asked for a reservation.',
     reportBlockButton: 'Report or block',
     /**
      * The empty room, per the owner's reference: a headline, one calm

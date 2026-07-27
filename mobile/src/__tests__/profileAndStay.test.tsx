@@ -147,6 +147,22 @@ describe('the stay you declared', () => {
     expect(screen.queryByTestId('upcoming-withdraw')).toBeNull();
   });
 
+  it('scopes the Upcoming deck to stays that cross yours (D-035)', async () => {
+    await openUpcoming();
+    await fireEvent.changeText(await screen.findByTestId('upcoming-check-in'), '2026-08-01');
+    await fireEvent.changeText(screen.getByTestId('upcoming-check-out'), '2026-08-08');
+    await fireEvent.press(screen.getByTestId('save-upcoming'));
+    await screen.findByTestId('open-upcoming');
+
+    const deck = await getApi().getDiscoveryFeed('UPCOMING');
+    const names = deck.map((c) => c.displayName);
+    // Derya and Selin's windows cross the declared week; Nur is a December
+    // person at the same hotel and must not appear in an August room.
+    expect(names).toContain('Derya');
+    expect(names).toContain('Selin');
+    expect(names).not.toContain('Nur');
+  });
+
   it('shows what you declared when you come back to it', async () => {
     await openUpcoming();
     await fireEvent.changeText(await screen.findByTestId('upcoming-check-in'), '2026-08-01');

@@ -2151,3 +2151,25 @@ parameter; verified live: all three answer JPEGs) with a scrim so the
 name reads on any picture; the fake keeps its gradients. Still out, still
 for the same reasons: the bell, the counts, "Tümünü gör". Full mobile
 gate green (398).
+
+## 2026-07-27 — Upcoming became personal (D-035), and the pool got test swimmers
+
+The owner closed the room's oldest open question: everyone in Upcoming
+declares dates, so everyone meets only the people inside their own
+window. `discovery_feed` gained the overlap clause (inclusive edges — a
+checkout day and a checkin day are one shared day at the pool), and the
+D-032 headcount follows: declared → count your window; undeclared → count
+the room. pgTAP pins the window, the shared edge, the empty
+crossing-nobody case, and the far-future stay that must not enter the
+count (415 SQL assertions). The fake mirrors all of it; fixture
+candidates now carry stay windows, and a new December-person fixture
+(Nur) exists to be correctly absent from August rooms — the UI suite
+asserts exactly that. Staging migrated.
+
+And the pool has swimmers: five dummy accounts (Derin, Baran, Ceren,
+Kaan, Melis — mixed genders, complete profiles, show_me EVERYONE) live at
+the owner's active hotel (Club Voyage Sorgur) with stays 2026-07-27 →
+08-26, each having already LIKEd the owner's account, so a like back is
+an instant match with a chat behind it. Seeded by service SQL; they
+cannot sign in (no test OTP), which is the point — they are scenery with
+consequences.

@@ -105,6 +105,20 @@ select is(
   'people at other hotels are not in the number'
 );
 
+-- D-035: with the caller's own window declared (+2..+5), a person whose
+-- stay starts long after it must not enter the Upcoming number.
+select tests.create_member('faraway@example.test', '00000000-0000-0000-0000-000000000206', 'Faraway');
+select tests.authenticate_as('00000000-0000-0000-0000-000000000206');
+select public.set_active_hotel((select one from h));
+select public.declare_upcoming_stay(current_date + 40, current_date + 43);
+
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
+select is(
+  (select headcount from public.hotel_room_counts() where room = 'UPCOMING'),
+  5,
+  'a stay outside the caller''s window stays outside the count'
+);
+
 -- Suspension removes a person from the count the moment it lands — and the
 -- count falls back to silence rather than to "4".
 select tests.clear_auth();

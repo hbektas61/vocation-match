@@ -31,6 +31,18 @@ select tests.authenticate_as('00000000-0000-0000-0000-0000000000d1');
 select public.set_active_hotel((select two from h));
 select public.declare_upcoming_stay(current_date + 3, current_date + 6);
 
+-- Eda declares at hotel one, but long after everyone leaves (D-035).
+select tests.create_member('eda@example.test', '00000000-0000-0000-0000-0000000000e2', 'Eda');
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000e2');
+select public.set_active_hotel((select one from h));
+select public.declare_upcoming_stay(current_date + 30, current_date + 33);
+
+-- Fer checks in the very day Bo checks out — one shared day at the pool.
+select tests.create_member('fer@example.test', '00000000-0000-0000-0000-0000000000f2', 'Fer');
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000f2');
+select public.set_active_hotel((select one from h));
+select public.declare_upcoming_stay(current_date + 6, current_date + 9);
+
 -- ------------------------------------------------------------- ada's rooms
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
 
@@ -77,7 +89,9 @@ select ok(
 select bag_eq(
   $$select display_name from public.discovery_feed('UPCOMING')$$,
   $$values ('Bo'::text)$$,
-  'Upcoming shows the other declared guest, and only them'
+  -- D-035 is half of this assertion now: Eda (+30..+33) and Fer (+6..+9)
+  -- both declared at this hotel, but neither crosses Ada's +1..+4 window.
+  'Upcoming shows only the declared guests whose stay crosses the caller''s'
 );
 
 select is(
@@ -92,6 +106,25 @@ select is(
   30,
   'the feed carries a whole-year age, not a birthdate'
 );
+
+-- ------------------------------------------------- D-035, the shared edge
+-- Fer arrives the day Bo leaves: one shared day at the pool is an overlap.
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000f2');
+select bag_eq(
+  $$select display_name from public.discovery_feed('UPCOMING')$$,
+  $$values ('Bo'::text)$$,
+  'a checkout day and a checkin day are the same day: the edge counts'
+);
+
+-- Eda's window crosses nobody's; her room is honestly empty.
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000e2');
+select is(
+  (select count(*)::int from public.discovery_feed('UPCOMING')),
+  0,
+  'a stay that crosses no other stay sees an empty room'
+);
+
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
 
 select bag_eq(
   $$select a.attname::text

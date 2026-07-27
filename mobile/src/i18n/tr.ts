@@ -348,7 +348,7 @@ export const tr: Copy = {
     overlapHereNow:
       'İkiniz de şu an bu otelin 500 m yakınındasınız. Hiçbiriniz diğerinin nerede olduğunu göremez.',
     overlapUpcoming:
-      'İkiniz de bu otelde kalacağınızı söylediniz. Kimseden rezervasyon istenmedi.',
+      'Bu oteldeki konaklamalarınız çakışıyor. Kimseden rezervasyon istenmedi.',
     reportBlockButton: 'Bildir veya engelle',
     emptyTitle: 'Henüz kimse yok',
     emptyBody: 'Şu an bu odada seni bekleyen kimse yok. Birazdan tekrar kontrol et.',

@@ -142,11 +142,12 @@ describe('the headcount on the key card (D-032)', () => {
     await fireEvent.press(await screen.findByTestId('activate-hotel-lara-shore'));
     await settle();
 
-    // Lara Shore's fixtures put six people in Upcoming and three in Here
-    // Now. Six is spoken; three is not — and not as "a few people" either,
-    // because below the threshold even "somebody is here" points at a
-    // person. Silence is the design, so the test demands silence.
-    expect(await screen.findByTestId('room-count-UPCOMING')).toHaveTextContent('6 people');
+    // Lara Shore's fixtures put seven people in Upcoming (Nur included —
+    // the caller has no declared window yet, so the whole room counts) and
+    // three in Here Now. Seven is spoken; three is not — and not as "a few
+    // people" either, because below the threshold even "somebody is here"
+    // points at a person. Silence is the design, so the test demands it.
+    expect(await screen.findByTestId('room-count-UPCOMING')).toHaveTextContent('7 people');
     expect(screen.queryByTestId('room-count-HERE_NOW')).toBeNull();
   });
 });

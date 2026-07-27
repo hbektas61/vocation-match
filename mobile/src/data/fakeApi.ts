@@ -590,11 +590,22 @@ export class FakeApi implements VocationApi {
     // hotel is in the number — show_me never filters a headcount — and the
     // number is only spoken at five or more. Below that, null; and null
     // renders as nothing.
+    const myStay = this.stays.get(stayKey(userId, active.hotelId)) ?? null;
     return (['UPCOMING', 'HERE_NOW'] as RoomKey[]).map((room) => {
       const crowd = ROOM_CROWD[active.hotelId]?.[room] ?? 0;
       const visible =
         CANDIDATES.filter(
-          (candidate) => candidate.hotelId === active.hotelId && candidate.rooms.includes(room),
+          (candidate) =>
+            candidate.hotelId === active.hotelId &&
+            candidate.rooms.includes(room) &&
+            // D-035: once the caller has a window, Upcoming counts only the
+            // stays that cross it. The static crowd stands for people whose
+            // dates always overlap.
+            (room !== 'UPCOMING' ||
+              myStay === null ||
+              (candidate.stay !== undefined &&
+                myStay.checkInDate <= candidate.stay.endDate &&
+                candidate.stay.startDate <= myStay.checkOutDate)),
         ).length + crowd;
       return { room, headcount: visible >= ROOM_COUNT_THRESHOLD ? visible : null };
     });
@@ -614,12 +625,21 @@ export class FakeApi implements VocationApi {
     // the point — a fake that is more permissive than the server hides exactly
     // the bugs these tests exist to catch.
     const self = this.profiles.get(userId);
+    const myStay = this.stays.get(stayKey(userId, hotelId)) ?? null;
     return CANDIDATES.filter(
       (candidate) =>
         candidate.hotelId === hotelId &&
         candidate.rooms.includes(room) &&
         showMeMatches(self?.showMe ?? null, candidate.gender) &&
-        showMeMatches('EVERYONE', self?.gender ?? null),
+        showMeMatches('EVERYONE', self?.gender ?? null) &&
+        // D-035, exactly as discovery_feed applies it: in Upcoming you meet
+        // only the people whose declared window crosses yours, edges
+        // inclusive — the checkout day and the checkin day are one day.
+        (room !== 'UPCOMING' ||
+          (myStay !== null &&
+            candidate.stay !== undefined &&
+            myStay.checkInDate <= candidate.stay.endDate &&
+            candidate.stay.startDate <= myStay.checkOutDate)),
     )
       .slice(0, Math.min(Math.max(limit, 1), 50))
       .map((candidate) => ({
