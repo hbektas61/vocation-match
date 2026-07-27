@@ -6,7 +6,7 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 
-import { Body, Button, Caption, Card, DoorPlate, EmptyState, Field, Gap, Heading, Notice, Screen, StateChip, Title } from '../components/ui';
+import { Body, Button, Caption, Card, DoorPlate, EmptyState, Field, Heading, Notice, Screen, StateChip, Title } from '../components/ui';
 import { DestinationCard } from '../components/DestinationCard';
 import { HotelBuilding, SearchScene } from '../components/HotelIllustrations';
 import { nowMs } from '../clock';
@@ -21,11 +21,21 @@ import { color, font, fontFamily, radius, spacing } from '../theme';
  * reference's hotel counts are omitted because the catalogue fills lazily —
  * any number would be an invention. A card is a pre-typed query.
  */
-const DESTINATIONS: { name: string; query: string; colors: readonly [string, string] }[] = [
-  { name: 'İstanbul', query: 'İstanbul', colors: ['#8E6BC7', '#54366E'] },
-  { name: 'Antalya', query: 'Antalya', colors: ['#A98BDE', '#6C55B4'] },
-  { name: 'Kapadokya', query: 'Nevşehir', colors: ['#C9A3E8', '#8A63B8'] },
+const DESTINATIONS: { name: string; query: string; cityKey: string; colors: readonly [string, string] }[] = [
+  { name: 'İstanbul', query: 'İstanbul', cityKey: 'istanbul', colors: ['#8E6BC7', '#54366E'] },
+  { name: 'Antalya', query: 'Antalya', cityKey: 'antalya', colors: ['#A98BDE', '#6C55B4'] },
+  { name: 'Kapadokya', query: 'Nevşehir', cityKey: 'kapadokya', colors: ['#C9A3E8', '#8A63B8'] },
 ];
+
+/** A real photograph of the city through our proxy, or null in fake mode. */
+function destinationSource(cityKey: string) {
+  const config = readBackendConfig();
+  if (!config) return null;
+  return {
+    uri: `${config.url}/functions/v1/hotel-photo?city=${cityKey}&w=600`,
+    headers: { apikey: config.anonKey },
+  };
+}
 
 const QUICK_CITIES = ['İstanbul', 'Antalya'];
 
@@ -253,6 +263,10 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         .then(setRoomCounts)
         .catch(() => undefined);
       setSwitchedNotice(result.previousHotelId !== null && result.previousHotelId !== hotel.id);
+      // Choosing ends the search: clear the query so the screen settles on
+      // the card of the hotel just chosen rather than the list it came from.
+      setQuery('');
+      setResults([]);
       onActivated?.();
     } catch (err) {
       setActivateError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
@@ -276,7 +290,19 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
     // which already has. `onActivated` is exactly the difference between the two.
     <Screen safeTop={!onActivated} testID="screen-hotel">
       <Title>{COPY.hotel.title}</Title>
-      {loadingActive ? (
+      {/* The reference puts the search first: the screen opens ready to be
+          asked. The ODbL line stays beside it — a licence term, not a
+          caption. */}
+      <Field
+        label={COPY.hotel.searchLabel}
+        value={query}
+        onChangeText={changeQuery}
+        placeholder={COPY.hotel.searchPlaceholder}
+        prefix={<MagnifierIcon />}
+        testID="hotel-search"
+      />
+      <Caption>{COPY.hotel.attribution}</Caption>
+      {searchable(query) ? null : loadingActive ? (
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="hotel-loading" />
       ) : activeHotel ? (
         /* The designer's active card (2026-07-27, "resim şart"): a real
@@ -324,11 +350,9 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
                   <Text style={styles.selectedPillText}>{COPY.hotel.selectedActive}</Text>
                 </View>
               </View>
-              {activeHotel.photoUrl ? null : (
-                <View style={styles.activeArtCircle}>
-                  <HotelBuilding size={54} />
-                </View>
-              )}
+              <View style={styles.activeArtCircle}>
+                <HotelBuilding size={54} />
+              </View>
             </View>
             {roomStates ? (
               <View style={styles.roomTiles}>
@@ -359,6 +383,15 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
               </View>
             ) : null}
             <Caption>{COPY.trust.oneHotel}</Caption>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => stackNavigation.navigate('HotelDetails', { hotelId: activeHotel.id })}
+              style={({ pressed }) => [styles.detailsRow, pressed && styles.resultPressed]}
+              testID="hotel-details"
+            >
+              <Text style={styles.detailsLabel}>{COPY.hotel.detailsCta}</Text>
+              <Text style={styles.detailsChevron}>›</Text>
+            </Pressable>
           </View>
         </View>
       ) : (
@@ -403,20 +436,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         </Card>
       ) : null}
 
-      <Gap size="sm" />
-      <Field
-        label={COPY.hotel.searchLabel}
-        value={query}
-        onChangeText={changeQuery}
-        placeholder={COPY.hotel.searchPlaceholder}
-        prefix={<MagnifierIcon />}
-        testID="hotel-search"
-      />
-      {/* An ODbL licence term: the stored hotel data has to say where it is
-          from, somewhere the person seeing it can read. */}
-      <Caption>{COPY.hotel.searchHint}</Caption>
-      <Caption>{COPY.hotel.attribution}</Caption>
-      {activeHotel ? (
+      {activeHotel && !searchable(query) ? (
         /* The designer's shortcut row: the places this screen's answers are
            used, one tap away. */
         <View style={styles.chipRow}>
@@ -468,6 +488,8 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         /* Idle is not empty (designer, 2026-07-27): quick queries, the
            popular destinations, and only then the type-to-search drawing. */
         <View style={styles.idle} testID="hotel-search-prompt">
+          {activeHotel ? null : (
+            <>
           <Text style={styles.sectionTitle}>{COPY.hotel.quickOptions}</Text>
           <View style={styles.chipRow}>
             {QUICK_CITIES.map((city) => (
@@ -496,6 +518,8 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
               </Pressable>
             ) : null}
           </View>
+            </>
+          )}
           <Text style={styles.sectionTitle}>{COPY.hotel.popularTitle}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.destinationRow}>
             {DESTINATIONS.map((destination) => (
@@ -503,15 +527,18 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
                 key={destination.name}
                 name={destination.name}
                 colors={destination.colors}
+                source={destinationSource(destination.cityKey)}
                 onPress={() => changeQuery(destination.query)}
                 testID={`destination-${destination.name}`}
               />
             ))}
           </ScrollView>
-          <View style={styles.promptScene}>
-            <SearchScene />
-            <Body>{COPY.hotel.searchPrompt}</Body>
-          </View>
+          {activeHotel ? null : (
+            <View style={styles.promptScene}>
+              <SearchScene />
+              <Body>{COPY.hotel.searchPrompt}</Body>
+            </View>
+          )}
         </View>
       ) : results === null ? (
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="hotel-loading" />
@@ -667,6 +694,25 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(123, 79, 168, 0.03)',
   },
   roomTileText: { flex: 1, gap: 4 },
+  detailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(123, 79, 168, 0.05)',
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+  },
+  detailsLabel: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: font.body,
+    color: color.ink,
+  },
+  detailsChevron: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.heading,
+    color: color.inkMuted,
+  },
   hotelCardBody: { padding: spacing.lg, gap: spacing.md },
   hotelCardTitle: { gap: spacing.xs },
   resultBand: { height: 20, backgroundColor: color.accent },

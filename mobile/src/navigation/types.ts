@@ -8,6 +8,7 @@ export type RootStackParamList = {
   Tabs: undefined;
   Upcoming: undefined;
   HereNow: undefined;
+  HotelDetails: { hotelId: string };
   Match: { matchId: string };
   Chat: { matchId: string };
   ReportBlock: { userId: string; displayName?: string; matchId?: string };

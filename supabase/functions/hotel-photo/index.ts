@@ -41,25 +41,60 @@ Deno.serve(async (req) => {
 
   const requestUrl = new URL(req.url);
   const hotelId = requestUrl.searchParams.get("hotel") ?? "";
-  if (!/^[0-9a-f-]{36}$/i.test(hotelId)) return new Response(null, { status: 404 });
+  const city = requestUrl.searchParams.get("city") ?? "";
+  const isCity = city !== "";
+  if (!isCity && !/^[0-9a-f-]{36}$/i.test(hotelId)) return new Response(null, { status: 404 });
   // List thumbnails ask small, the card asks big; both are clamped so a
   // stranger cannot request a wall-sized bill.
   const width = Math.min(1600, Math.max(64, Number(requestUrl.searchParams.get("w")) || 1200));
 
-  const admin = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
-  const { data: row } = await admin
-    .from("hotels")
-    .select("google_place_id")
-    .eq("id", hotelId)
-    .maybeSingle();
-  if (!row?.google_place_id) return new Response(null, { status: 404 });
+  // The destination strip's three covers, resolved the same way a hotel is.
+  // A fixed allowlist: this endpoint photographs our pilot's places, not the
+  // caller's choice of the whole planet.
+  const CITY_QUERIES: Record<string, string> = {
+    istanbul: "İstanbul",
+    antalya: "Antalya",
+    kapadokya: "Göreme Kapadokya",
+  };
+
+  let placeId: string | null = null;
+  if (isCity) {
+    const textQuery = CITY_QUERIES[city];
+    if (!textQuery) return new Response(null, { status: 404 });
+    try {
+      const search = await fetch("https://places.googleapis.com/v1/places:searchText", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": key,
+          "X-Goog-FieldMask": "places.id",
+        },
+        body: JSON.stringify({ textQuery, regionCode: "TR", maxResultCount: 1 }),
+        signal: AbortSignal.timeout(4_000),
+      });
+      if (!search.ok) return new Response(null, { status: 404 });
+      const found = await search.json();
+      placeId = found?.places?.[0]?.id ?? null;
+    } catch {
+      return new Response(null, { status: 404 });
+    }
+  } else {
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const { data: row } = await admin
+      .from("hotels")
+      .select("google_place_id")
+      .eq("id", hotelId)
+      .maybeSingle();
+    placeId = row?.google_place_id ?? null;
+  }
+  if (!placeId) return new Response(null, { status: 404 });
 
   try {
     const details = await fetch(
-      `https://places.googleapis.com/v1/places/${encodeURIComponent(row.google_place_id)}`,
+      `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`,
       {
         headers: { "X-Goog-Api-Key": key, "X-Goog-FieldMask": "photos" },
         signal: AbortSignal.timeout(4_000),

@@ -251,6 +251,9 @@ export const en = {
     searchLabel: 'Search hotels',
     searchHint: 'You can search to choose a different hotel.',
     selectedActive: 'Selected • Active',
+    detailsCta: 'See hotel details',
+    detailsTitle: 'Hotel details',
+    addressLabel: 'Address',
     searchPlaceholder: 'Hotel name or city',
     chooseTitle: 'Choose your hotel',
     // ODbL: storing OSM data requires saying where it came from, where people

@@ -2134,3 +2134,20 @@ colour at last. Secondary buttons and the pass-circle switched to
 lavender outlines to match the designer's own screens; the checkbox keeps
 a muted visible border because an unchecked control has to look
 pressable. Full mobile gate green (398).
+
+## 2026-07-27 — the hotel screen, closed out against the reference
+
+Third pass on the active-hotel screen brought it to the reference's exact
+order: search first (the screen opens ready to be asked; the ODbL line
+rides beside it), then the active card — photo or band, badge, name, pin,
+Seçildi • Aktif pill, the circled drawing now always beside the name, the
+two door tiles, the one-hotel line, and a real "Otel detaylarını gör" row
+into a new HotelDetails screen that shows only what the catalogue truly
+knows (photo with credit, name, place, address, source line). Choosing a
+hotel now clears the query so the screen settles on the card it just
+made. The destination strip carries real photographs of the three pilot
+cities through the same hotel-photo proxy (an allowlisted `city`
+parameter; verified live: all three answer JPEGs) with a scrim so the
+name reads on any picture; the fake keeps its gradients. Still out, still
+for the same reasons: the bell, the counts, "Tümünü gör". Full mobile
+gate green (398).

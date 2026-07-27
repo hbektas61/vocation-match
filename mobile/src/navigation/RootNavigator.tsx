@@ -11,6 +11,7 @@ import { ChooseHotelScreen } from '../screens/ChooseHotelScreen';
 import { DiscoveryScreen } from '../screens/DiscoveryScreen';
 import { EditProfileScreen } from '../screens/EditProfileScreen';
 import { HereNowScreen } from '../screens/HereNowScreen';
+import { HotelDetailsScreen } from '../screens/HotelDetailsScreen';
 import { HotelScreen } from '../screens/HotelScreen';
 import { OnboardingFlow } from '../onboarding/OnboardingFlow';
 import { InboxScreen } from '../screens/InboxScreen';
@@ -134,6 +135,11 @@ export function RootNavigator() {
         // The designer's declare screen (2026-07-27) draws its own back pill
         // and title; a native header on top would print the title twice.
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="HotelDetails"
+        component={HotelDetailsScreen}
+        options={{ title: COPY.hotel.detailsTitle }}
       />
       <Stack.Screen
         name="HereNow"
