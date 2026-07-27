@@ -2119,3 +2119,18 @@ Torba from Voyage Torba Private. The hotel-photo proxy learned a clamped
 `w` parameter (64–1600), result rows ask at 400 px (a 40 KB JPEG against
 the card's 300 KB), and rows without a photo keep the slim lavender band.
 Verified live; full mobile gate green.
+
+## 2026-07-27 — the slate borders died
+
+The owner read the #767C85 card borders as black against the lavender and
+asked for them gone. Every card surface is borderless now — hotel card,
+room cards, date cards, chat cards, trust cards, the no-hotel card, the
+inbox strips, the floating tab bar, the back pill — told apart by lift
+alone, which decorative edges are allowed to do (WCAG 1.4.11 exempts
+them). Operable controls are a different law: the theme's contrast test
+rightly refused a pale hairline on inputs, so `edge` became #9678BE — the
+lightest lavender that clears 3:1 on white (3.67) — and the owner's
+colour at last. Secondary buttons and the pass-circle switched to
+lavender outlines to match the designer's own screens; the checkbox keeps
+a muted visible border because an unchecked control has to look
+pressable. Full mobile gate green (398).

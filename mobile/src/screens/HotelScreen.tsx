@@ -574,8 +574,6 @@ const styles = StyleSheet.create({
   /** The designer's card shell: hairline edge, soft lift, band on top. */
   hotelCard: {
     backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
     borderRadius: radius.md,
     overflow: 'hidden',
     shadowColor: color.ink,
@@ -664,8 +662,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     alignItems: 'flex-start',
-    borderWidth: 1,
-    borderColor: color.border,
     borderRadius: radius.sm,
     padding: spacing.sm + 2,
     backgroundColor: 'rgba(123, 79, 168, 0.03)',

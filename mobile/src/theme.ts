@@ -42,7 +42,12 @@ export const palette = {
    * The edge of an input, a card or a secondary button — often the only thing
    * saying where a control starts, which WCAG 1.4.11 puts at 3:1. 4.21:1.
    */
-  edge: '#767C85',
+  // Was #767C85 — a slate the owner read as black against the lavender.
+  // Cards carry no border at all now (decorative edges are exempt from
+  // WCAG 1.4.11 and shadows do their job); this edge remains only on
+  // operable controls — inputs, pills — where 3:1 on white is the floor.
+  // #9678BE is the lightest lavender that clears it (3.67:1).
+  edge: '#9678BE',
   /** Decorative hairlines only: 1.31:1. A divider between paragraphs, never an edge. */
   rule: '#E4E6EA',
   /** 5.18:1 on white, and white on it is the same. Red stays red. */

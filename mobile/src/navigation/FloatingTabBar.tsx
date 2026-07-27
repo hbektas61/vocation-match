@@ -122,8 +122,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: color.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: color.border,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.xs,
     shadowColor: color.ink,

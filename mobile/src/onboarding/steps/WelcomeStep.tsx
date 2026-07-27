@@ -147,8 +147,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm + 4,
     alignSelf: 'stretch',
     backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
     borderRadius: radius.md,
     padding: spacing.md,
     marginTop: spacing.sm,

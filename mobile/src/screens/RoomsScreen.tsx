@@ -273,8 +273,6 @@ const styles = StyleSheet.create({
   roomCard: {
     backgroundColor: color.surface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: color.border,
     padding: spacing.md,
     gap: spacing.md,
     shadowColor: color.ink,

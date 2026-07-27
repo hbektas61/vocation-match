@@ -723,7 +723,7 @@ const styles = StyleSheet.create({
   buttonSecondary: {
     backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: color.border,
+    borderColor: 'rgba(123, 79, 168, 0.45)',
   },
   buttonDanger: {
     backgroundColor: 'transparent',
@@ -762,7 +762,7 @@ const styles = StyleSheet.create({
   actionPass: {
     backgroundColor: color.background,
     borderWidth: 1.5,
-    borderColor: color.border,
+    borderColor: 'rgba(123, 79, 168, 0.35)',
   },
   actionLike: {
     backgroundColor: color.accent,
@@ -853,8 +853,6 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: color.surface,
     borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: color.rule,
     padding: spacing.md,
     gap: spacing.sm,
     shadowColor: color.ink,
@@ -932,7 +930,9 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: color.border,
+    // A control has to look pressable while unchecked; the hairline tint is
+    // too quiet for that job.
+    borderColor: color.inkMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
