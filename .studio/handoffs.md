@@ -2287,3 +2287,12 @@ at ~210 KB and fading into the ground so the wordmark stands on white.
 The "Nasıl çalışır?" button left the screen at the owner's request; the
 drawn WelcomeHero component was deleted with its job. 144 jest, full
 mobile gate green.
+
+## 2026-07-28 — the welcome body said less, better
+
+The owner found the first screen's body long and unclear, and it did not
+cover the Upcoming room. It also repeated the trust card's no-reservation
+denial one paragraph above it. New body, both languages: "Şu an olduğun
+ya da gideceğin oteli seç; aynı tarihlerde orada olanlarla eşleş. Aynı
+anda tek otel." — both rooms, the overlap rule, and the one-hotel
+constraint in two sentences; the denial stays where the shield is.

@@ -64,7 +64,7 @@ export const tr: Copy = {
     welcome: {
       headline: 'Otelindeki insanlarla şimdi tanış.',
       body:
-        'Aynı anda tek otel. Ne zaman kalacağını sen söylersin — kimse senden rezervasyon, belge ya da kimlik istemez.',
+        'Şu an olduğun ya da gideceğin oteli seç; aynı tarihlerde orada olanlarla eşleş. Aynı anda tek otel.',
       continueWithPhone: 'Telefonla devam et',
       trustTitle: 'Güvenli ve gizli',
       trustBody: 'Kimliğin gizli kalır. Rezervasyon, belge ya da kimlik istenmez.',

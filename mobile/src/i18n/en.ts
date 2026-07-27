@@ -53,7 +53,7 @@ export const en = {
     welcome: {
       headline: 'Meet the people already at your hotel.',
       body:
-        'One hotel at a time. You say when you are staying — nobody asks for a reservation, a document, or an ID.',
+        'Pick the hotel you are at — or the one you are going to — and match with the people there when you are. One hotel at a time.',
       continueWithPhone: 'Continue with phone',
       trustTitle: 'Safe and private',
       trustBody: 'Your identity stays private. No reservation, document, or ID is asked for.',
