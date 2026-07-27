@@ -8,6 +8,8 @@ import {
   Text,
   TextInput,
   View,
+  KeyboardAvoidingView,
+  Platform,
   type StyleProp,
   type TextInputProps,
   type ViewStyle,
@@ -49,15 +51,26 @@ export function Screen({
   safeTop?: boolean;
   testID?: string;
 }) {
+  // The keyboard must never sit on top of what it is for. Scrolling screens
+  // let iOS inset the scroll view so the focused field rides above the
+  // keyboard; fixed screens (the chat, with its composer pinned to the
+  // bottom) get the padding treatment instead. Android resizes the window
+  // itself, which is why both branches are iOS-only.
   const content = scroll ? (
     <ScrollView
       contentContainerStyle={bleed ? styles.screenBleed : styles.screenContent}
       keyboardShouldPersistTaps="handled"
+      automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
     >
       {children}
     </ScrollView>
   ) : (
-    <View style={[bleed ? styles.screenBleed : styles.screenContent, styles.flex]}>{children}</View>
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <View style={[bleed ? styles.screenBleed : styles.screenContent, styles.flex]}>{children}</View>
+    </KeyboardAvoidingView>
   );
   return (
     <SafeAreaView style={styles.screen} edges={safeTop ? ['top', 'bottom'] : ['bottom']} testID={testID}>

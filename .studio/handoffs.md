@@ -2247,3 +2247,16 @@ The owner's test pass surfaced three, all fixed and pinned:
    D-035 test walks back to the tab and demands the OPEN chip.
 
 144 jest, full mobile gate green.
+
+## 2026-07-28 — the keyboard stops sitting on the conversation
+
+The owner could not see what they were typing — in chat, in the date
+fields, anywhere low on a screen. Fixed once, in the shared Screen
+component, the way the platforms each want it: on iOS, scrolling screens
+inset their scroll view (automaticallyAdjustKeyboardInsets) so the
+focused field rides above the keyboard, and fixed screens — the chat,
+with its composer pinned to the bottom — get KeyboardAvoidingView's
+padding; Android resizes the window itself and needs neither. The
+onboarding scaffold already carried its own correct handling. Device
+verification is the owner's next pass — the behaviour is native-only and
+the web preview cannot show it. 144 jest, full mobile gate green.
