@@ -6,6 +6,8 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { Body, Button, Caption, Notice, Screen, StateChip, Title } from '../components/ui';
 import { CalendarIllustration, PinScene } from '../components/RoomIllustrations';
+import { NoHotelCard } from '../components/NoHotelCard';
+import { DoorScene } from '../components/NoHotelIllustrations';
 import { nowMs } from '../clock';
 import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation, upperCase } from '../copy';
 import { ApiError, getApi, type RoomKey, type RoomStatus } from '../data';
@@ -183,15 +185,27 @@ export function RoomsScreen() {
   if (noActiveHotel) {
     // Saying "activate a hotel first" and stopping there tells somebody what is
     // wrong and leaves them to find where to fix it. The way out belongs on the
-    // screen that is blocked.
+    // screen that is blocked — twice, per the designer: the search, and the
+    // hotel tab it lives on.
     return (
       <Screen safeTop testID="screen-rooms">
         <Title>{COPY.rooms.plainTitle}</Title>
-        <Notice message={`${COPY.roomReason.NO_ACTIVE_HOTEL} ${COPY.trust.oneHotel}`} />
-        <Button
-          label={COPY.hotel.chooseCta}
-          onPress={() => navigation.navigate('ChooseHotel')}
-          testID="rooms-choose-hotel"
+        <Body>{`${COPY.roomReason.NO_ACTIVE_HOTEL} ${COPY.trust.oneHotel}`}</Body>
+        <NoHotelCard
+          illustration={<DoorScene />}
+          title={COPY.rooms.noHotelTitle}
+          body={COPY.rooms.noHotelBody}
+          primaryLabel={COPY.hotel.chooseCta}
+          onPrimary={() => navigation.navigate('ChooseHotel')}
+          primaryTestID="rooms-choose-hotel"
+          secondary={
+            <Button
+              label={COPY.rooms.viewHotels}
+              variant="secondary"
+              onPress={() => tabNavigation.navigate('Hotel')}
+              testID="rooms-view-hotels"
+            />
+          }
         />
       </Screen>
     );

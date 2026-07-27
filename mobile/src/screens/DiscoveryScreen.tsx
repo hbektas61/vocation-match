@@ -3,7 +3,9 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Button, Notice, RoomRibbon, Screen, Title } from '../components/ui';
+import { Body, Button, Notice, RoomRibbon, Screen, Title } from '../components/ui';
+import { NoHotelCard } from '../components/NoHotelCard';
+import { CompassScene } from '../components/NoHotelIllustrations';
 import { OrbitEmpty } from '../components/OrbitEmpty';
 import { RadarEmpty } from '../components/RadarEmpty';
 import { nowMs } from '../clock';
@@ -31,6 +33,8 @@ export function DiscoveryScreen() {
   const [deckError, setDeckError] = useState<string | null>(null);
   /** Bumped by "scan again" on the empty room; the deck effect re-runs. */
   const [scan, setScan] = useState(0);
+  /** The no-hotel screen's "how does it work?" reveal. */
+  const [howOpen, setHowOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   /** Which of the candidate's photos is showing; reset per candidate. */
@@ -135,11 +139,29 @@ export function DiscoveryScreen() {
     return (
       <Screen safeTop testID="screen-discovery">
         <Title>{COPY.tabs.discovery}</Title>
-        <Notice message={`${COPY.roomReason.NO_ACTIVE_HOTEL} ${COPY.trust.oneHotel}`} />
-        <Button
-          label={COPY.hotel.chooseCta}
-          onPress={() => navigation.navigate('ChooseHotel')}
-          testID="discovery-choose-hotel"
+        <Body>{`${COPY.roomReason.NO_ACTIVE_HOTEL} ${COPY.trust.oneHotel}`}</Body>
+        <NoHotelCard
+          illustration={<CompassScene />}
+          title={COPY.discovery.noHotelTitle}
+          body={COPY.discovery.noHotelBody}
+          primaryLabel={COPY.hotel.chooseCta}
+          onPrimary={() => navigation.navigate('ChooseHotel')}
+          primaryTestID="discovery-choose-hotel"
+          secondary={
+            <>
+              <Button
+                label={COPY.discovery.howItWorks}
+                variant="secondary"
+                onPress={() => setHowOpen((open) => !open)}
+                testID="discovery-how"
+              />
+              {howOpen ? (
+                <Text style={styles.howBody} testID="discovery-how-body">
+                  {COPY.discovery.howItWorksBody}
+                </Text>
+              ) : null}
+            </>
+          }
         />
       </Screen>
     );
@@ -400,6 +422,13 @@ const styles = StyleSheet.create({
     maxWidth: 260,
   },
   emptyAction: { alignSelf: 'stretch', maxWidth: 280, width: '100%', gap: spacing.sm },
+  howBody: {
+    fontFamily: fontFamily.body,
+    fontSize: font.caption,
+    lineHeight: font.caption * 1.55,
+    color: color.inkMuted,
+    paddingHorizontal: spacing.xs,
+  },
   noRoom: {
     flex: 1,
     alignItems: 'center',

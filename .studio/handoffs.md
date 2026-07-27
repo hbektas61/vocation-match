@@ -1987,3 +1987,22 @@ difference (its blanket "user does not exist" now applies only where the
 user really is gone), and a new unit test pins the exact bug: restored
 session + auth-server 403 → null session, cleared storage. 398 jest
 tests, full mobile gate green.
+
+## 2026-07-27 — the two no-hotel screens (designer screens 10–11)
+
+Rooms and Discovery before any hotel is chosen, from the references: one
+shared card (NoHotelCard) whose slots the two screens fill differently.
+Rooms carries the door scene — the numbered door standing beside the hotel
+that holds it, a plant keeping it company — with "Önce bir otel seç",
+"Otel seç" into the choose-hotel gate, and "Otelleri görüntüle" to the
+Hotel tab. Discovery carries the compass over the ground it would search —
+hotel, hills, a pin, a dashed path — with "Keşfet için önce otel seç" and
+a "Nasıl çalışır?" secondary that actually answers: it reveals a
+three-sentence explainer of the two rooms inline (a control with nothing
+behind it is a small lie, so it got something behind it). The one-hotel
+rule rides both cards as the same quiet info pill, straight from
+trust.oneHotel. The door plate in the drawing stays blank on purpose — a
+readable "201" would be a claim about a room nobody has. Both primaries
+keep their old testIDs; the two secondaries are new (rooms-view-hotels,
+discovery-how). Verified by TR browser walk over both screens, the reveal
+and the tab jump; 398 jest tests, full mobile gate green.

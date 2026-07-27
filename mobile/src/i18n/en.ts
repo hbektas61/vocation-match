@@ -352,6 +352,11 @@ export const en = {
     emptyBody: 'Nobody is waiting in this room right now. Check back in a little while.',
     rescan: 'Scan again',
     /** Discovery before any door is open — the orbit screen's words. */
+    noHotelTitle: 'Choose a hotel to discover',
+    noHotelBody: 'Once you choose a hotel, the rooms and people open to you will show up here.',
+    howItWorks: 'How does it work?',
+    howItWorksBody:
+      'There are two rooms. Upcoming opens when you declare your stay dates; Here Now opens with a one-time check that you are within 500 m of the hotel. The people in a room appear here, in Discovery.',
     noRoomTitle: "You haven't entered a room yet",
     noRoomBody:
       'Join a room or run a proximity check before you start discovering. The rooms open to you will show up here.',
@@ -486,6 +491,9 @@ export const en = {
      * The designer's card texts (2026-07-27) are the reviewed explainers
      * split in two: the claim in bold, the trust sentence under it.
      */
+    noHotelTitle: 'Choose a hotel first',
+    noHotelBody: "You haven't chosen a hotel yet. Once you do, the rooms will be listed here.",
+    viewHotels: 'View hotels',
     upcomingLead: 'Your stay dates are self-declared.',
     upcomingBody: 'Nobody is asked for a reservation, a booking number, or an ID — and neither are you.',
     hereNowLead: 'Here Now opens with a quick location check made while the app is open.',

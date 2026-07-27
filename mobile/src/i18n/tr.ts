@@ -345,6 +345,11 @@ export const tr: Copy = {
     emptyTitle: 'Henüz kimse yok',
     emptyBody: 'Şu an bu odada seni bekleyen kimse yok. Birazdan tekrar kontrol et.',
     rescan: 'Tekrar tara',
+    noHotelTitle: 'Keşfet için önce otel seç',
+    noHotelBody: 'Bir otel seçtikten sonra sana uygun odalar ve kişiler burada görünecek.',
+    howItWorks: 'Nasıl çalışır?',
+    howItWorksBody:
+      'İki oda var. Yaklaşan, konaklama tarihlerini beyan ettiğinde açılır; Şu An Burada ise otele 500 m yakınlıkta yapılan tek seferlik bir kontrolle. Odadaki kişiler burada, Keşfet\'te görünür.',
     noRoomTitle: 'Henüz bir odaya girmedin',
     noRoomBody:
       'Keşfetmeye başlamadan önce bir odaya katıl ya da yakınlık kontrolü yap. Sana uygun odaları burada göreceksin.',
@@ -462,6 +467,9 @@ export const tr: Copy = {
     closedChip: 'Kapalı',
     upcomingPlate: 'Yaklaşan',
     hereNowPlate: 'Şu an burada',
+    noHotelTitle: 'Önce bir otel seç',
+    noHotelBody: 'Henüz bir otel seçmedin. Bir otel seçtikten sonra odalar burada listelenecek.',
+    viewHotels: 'Otelleri görüntüle',
     upcomingLead: 'Konaklama tarihlerini sen beyan edersin.',
     upcomingBody: 'Kimseden rezervasyon, rezervasyon numarası ya da kimlik istenmez — senden de istenmez.',
     hereNowLead: 'Şu An Burada, uygulama açıkken yapılan hızlı bir konum kontrolüyle açılır.',
