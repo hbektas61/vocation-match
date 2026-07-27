@@ -2097,3 +2097,16 @@ the anon key headers only for our own photo endpoint. Everything is
 deployed and goes live the moment the owner sets GOOGLE_PLACES_API_KEY
 as a function secret; without it, every path degrades to the drawing.
 Full mobile gate green (398).
+
+## 2026-07-27 — Places went live
+
+The owner created the key and set the secret; two wrinkles surfaced and
+died on the way. The project uses the new publishable-key format
+(sb_publishable_…), which is not a JWT — the hotel-photo function's role
+gate could not read it and refused its own clients; the gate now defers to
+the platform gateway when the header is not a JWT and still enforces roles
+when it is. The client sends only the apikey header for our photo
+endpoint, since a non-JWT in Authorization would be refused at the door.
+Proven live end to end: "voyage" search enriched four hotels with place
+ids and attributions; Voyage Belek's card URL answers 302 to a
+googleusercontent image that downloads as a real 300 KB JPEG.

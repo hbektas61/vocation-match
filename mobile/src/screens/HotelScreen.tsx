@@ -97,10 +97,9 @@ const MIN_QUERY = 2;
 function photoSource(url: string) {
   const config = readBackendConfig();
   if (config && url.includes('/functions/v1/hotel-photo')) {
-    return {
-      uri: url,
-      headers: { apikey: config.anonKey, Authorization: `Bearer ${config.anonKey}` },
-    };
+    // Only the apikey header: the gateway accepts the publishable key there,
+    // while a non-JWT in Authorization would be refused.
+    return { uri: url, headers: { apikey: config.anonKey } };
   }
   return { uri: url };
 }

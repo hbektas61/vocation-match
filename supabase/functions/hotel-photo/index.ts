@@ -25,8 +25,14 @@ function roleOf(authorization: string): string | null {
 }
 
 Deno.serve(async (req) => {
-  const role = roleOf(req.headers.get("Authorization") ?? "");
-  if (role !== "authenticated" && role !== "service_role" && role !== "anon") {
+  // The platform gateway has already checked the project key before this
+  // code runs, and with the new publishable-key format the Authorization
+  // header is not always a JWT this code could read. When it *is* a JWT,
+  // its role still has to be one of ours; when it is not, the gateway's
+  // check is the check.
+  const authorization = req.headers.get("Authorization") ?? "";
+  const role = roleOf(authorization);
+  if (role !== null && role !== "authenticated" && role !== "service_role" && role !== "anon") {
     return Response.json({ error: "Sign in to continue." }, { status: 401 });
   }
 
