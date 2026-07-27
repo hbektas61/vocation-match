@@ -2042,3 +2042,11 @@ call at most, only in the miss case). Verified deployed against staging:
 voyage → 6 hotels, rixos → 6, hilton → 6. Known limit, stated: there is
 no fuzzy matching in Nominatim — a typo like "vyaga" finds nothing, and
 pretending otherwise would need a search service we do not have.
+
+## 2026-07-27 — the pilot region grew an island (D-034)
+
+Hotel search now asks Nominatim for `countrycodes=tr,cy`: the owner added
+KKTC after Cratos came back empty. Verified against the deployed function:
+cratos → Cratos (Ozanköy), elexus → Elexus (Çatalköy), merit royal →
+Merit Royal (Alsancak). One line in the edge function, deployed; nothing
+client-side changed.

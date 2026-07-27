@@ -75,7 +75,10 @@ function cityOf(address: Record<string, string> | undefined): string {
 async function askNominatimOnce(query: string): Promise<NominatimHit[]> {
   const url = new URL(NOMINATIM);
   url.searchParams.set("q", query);
-  url.searchParams.set("countrycodes", "tr");
+  // Owner decision, 2026-07-27: the pilot region is Türkiye plus Cyprus —
+  // the island carries the KKTC resorts (Cratos, Elexus, Merit…) that a
+  // Turkish holiday audience expects to find.
+  url.searchParams.set("countrycodes", "tr,cy");
   url.searchParams.set("format", "jsonv2");
   url.searchParams.set("limit", "10");
   url.searchParams.set("addressdetails", "1");
