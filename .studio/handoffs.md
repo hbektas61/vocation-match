@@ -2079,3 +2079,21 @@ before). Coverage truth: most OSM hotels carry no wikidata claim, so most
 cards will honestly show the drawing — the design accounts for it.
 Full gate green (398 jest, 412 SQL); one R-003 flake under parallel load
 again, passing alone and on rerun.
+
+## 2026-07-27 — Google Places photos, without storing anything of Google's
+
+The owner approved Places. The architecture honours Google's terms by
+splitting what may rest from what may not: `hotels.google_place_id` is
+stored (explicitly allowed, indefinitely); the photograph never is. The
+`hotel-photo` edge function resolves id → today's photo name → a 302 to
+today's image URL on every request; `hotels.photo_url` points at that
+function, which is our URL to keep. hotel-search enriches up to five
+photo-less rows per answer — cached and fresh alike, so the existing
+catalogue heals lazily — storing the place id and the author attribution.
+A hotel Google was asked about once and had no photo for is not asked
+again (the place-id row is the marker). The Commons/Wikidata road remains
+first: a curated Commons photo wins over a Places lookup. Client sends
+the anon key headers only for our own photo endpoint. Everything is
+deployed and goes live the moment the owner sets GOOGLE_PLACES_API_KEY
+as a function secret; without it, every path degrades to the drawing.
+Full mobile gate green (398).

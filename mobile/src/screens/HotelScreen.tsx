@@ -11,7 +11,7 @@ import { DestinationCard } from '../components/DestinationCard';
 import { HotelBuilding, SearchScene } from '../components/HotelIllustrations';
 import { nowMs } from '../clock';
 import { apiErrorMessage, COPY, COPY_FOR, upperCase } from '../copy';
-import { ApiError, getApi, type HotelCard, type RoomHeadcount, type RoomStatus } from '../data';
+import { ApiError, getApi, readBackendConfig, type HotelCard, type RoomHeadcount, type RoomStatus } from '../data';
 import { useAppStore } from '../state/AppStore';
 import { color, font, fontFamily, radius, spacing } from '../theme';
 
@@ -88,6 +88,22 @@ const CityIcon = () => (
 
 /** Two characters before anything is fetched. */
 const MIN_QUERY = 2;
+
+/**
+ * A photo served by our own hotel-photo function needs the platform's JWT
+ * gate satisfied; a Commons URL needs nothing. The anon key is already in
+ * the app bundle, so sending it is not a disclosure.
+ */
+function photoSource(url: string) {
+  const config = readBackendConfig();
+  if (config && url.includes('/functions/v1/hotel-photo')) {
+    return {
+      uri: url,
+      headers: { apikey: config.anonKey, Authorization: `Bearer ${config.anonKey}` },
+    };
+  }
+  return { uri: url };
+}
 
 /**
  * The hotel, as a tab and as a gate.
@@ -268,7 +284,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           <View>
             {activeHotel.photoUrl ? (
               <Image
-                source={{ uri: activeHotel.photoUrl }}
+                source={photoSource(activeHotel.photoUrl)}
                 style={styles.hotelPhoto}
                 resizeMode="cover"
                 accessibilityIgnoresInvertColors

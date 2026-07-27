@@ -152,6 +152,48 @@ async function commonsPhoto(
   }
 }
 
+/**
+ * Google Places, when the owner's key is present: find the place for a hotel
+ * and keep only its ID — the one thing Google's terms let us store. The
+ * photo itself is served fresh by the hotel-photo function at request time.
+ * Returns the attribution to show beside it, or null when Google does not
+ * know the place or has no photo.
+ */
+async function googlePlace(
+  name: string,
+  city: string,
+): Promise<{ placeId: string; attribution: string } | null> {
+  const key = Deno.env.get("GOOGLE_PLACES_API_KEY");
+  if (!key) return null;
+  try {
+    const response = await fetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": key,
+        "X-Goog-FieldMask": "places.id,places.photos",
+      },
+      body: JSON.stringify({
+        textQuery: `${name} ${city}`,
+        includedType: "lodging",
+        regionCode: "TR",
+        maxResultCount: 1,
+      }),
+      signal: AbortSignal.timeout(4_000),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    const place = data?.places?.[0];
+    const photo = place?.photos?.[0];
+    if (!place?.id || !photo) return null;
+    const author = String(photo.authorAttributions?.[0]?.displayName ?? "").trim();
+    const attribution = author ? `${author} · Google` : "Google";
+    return { placeId: place.id, attribution: attribution.slice(0, 200) };
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   // The same audience the database grants `search_hotels` to. The anon key is
   // a valid JWT and passes the platform's signature check, so the role has to
@@ -226,6 +268,48 @@ Deno.serve(async (req) => {
       const second = await admin.rpc("search_hotels", { p_query: query });
       if (!second.error) hotels = second.data ?? hotels;
     }
+  }
+
+  // Google fills what Commons could not — for the rows this answer is about,
+  // whether they were cached long ago or written a moment ago. The ID is
+  // stored; the photo never is: photo_url points at our own hotel-photo
+  // function, which asks Google fresh each time.
+  if (Deno.env.get("GOOGLE_PLACES_API_KEY")) {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const candidates = (hotels as {
+      id: string;
+      name: string;
+      city: string;
+      photo_url: string | null;
+    }[]).filter((h) => !h.photo_url).slice(0, 5);
+
+    await Promise.all(
+      candidates.map(async (hotel) => {
+        const { data: row } = await admin
+          .from("hotels")
+          .select("google_place_id")
+          .eq("id", hotel.id)
+          .maybeSingle();
+        if (!row || row.google_place_id) return; // looked before; no photo then, none now.
+        const place = await googlePlace(hotel.name, hotel.city);
+        if (!place) return;
+        const photoUrl = `${supabaseUrl}/functions/v1/hotel-photo?hotel=${hotel.id}`;
+        await admin
+          .from("hotels")
+          .update({
+            google_place_id: place.placeId,
+            photo_url: photoUrl,
+            photo_attribution: place.attribution,
+          })
+          .eq("id", hotel.id);
+        const patched = (hotels as { id: string; photo_url: string | null; photo_attribution?: string | null }[])
+          .find((h) => h.id === hotel.id);
+        if (patched) {
+          patched.photo_url = photoUrl;
+          patched.photo_attribution = place.attribution;
+        }
+      }),
+    );
   }
 
   return Response.json({ hotels });
