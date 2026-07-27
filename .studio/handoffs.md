@@ -2193,3 +2193,17 @@ And the pool got a face: the owner's own AI-generated reference art was
 cropped to a clean frame and uploaded as Derin's profile photo on staging
 (storage object + photo row + primary path), so the first card the owner
 swipes looks like the design that asked for it. Full mobile gate green.
+
+## 2026-07-27 — the match moment (designer screen 15)
+
+The celebration is the reference's: the two faces as thick white-collared
+circles overlapping, the deep-lavender heart badge at their meeting
+point, a static confetti field (petals, hearts, sparkles, a moon sliver,
+a faint big heart behind the pair — SVG, hidden from screen readers),
+"Eşleştiniz!" in the display face, the two-line body centred, and the
+bond as one pill: pin, hotel and city, a hairline divider, the room in
+the deep accent. Both actions and all testIDs kept. The copy needed
+nothing — every sentence on the reference was already in the i18n files,
+which is its own kind of compliment to the designer. Verified by TR
+browser walk over a real fake-api match; 144 jest tests, full mobile
+gate green.
