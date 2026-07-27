@@ -2050,3 +2050,32 @@ KKTC after Cratos came back empty. Verified against the deployed function:
 cratos → Cratos (Ozanköy), elexus → Elexus (Çatalköy), merit royal →
 Merit Royal (Alsancak). One line in the edge function, deployed; nothing
 client-side changed.
+
+## 2026-07-27 — the active hotel card, and where a photo may come from (designer screen 13)
+
+The owner's "resim şart" got its honest implementation: a hotel card shows
+a photograph only when it is really a photograph of that hotel. Pipeline,
+end to end: `hotels.photo_url`/`photo_attribution` (migration
+20260727000200, staging-applied; column-granted; the D-014 "no photo_url
+anywhere" guard gained its one named exception with the reasoning inline);
+the edge function resolves OSM's wikidata tag → P18 → a Commons image URL
+plus the credit line the licence requires (author · licence · Wikimedia),
+in parallel, best-effort; the upsert keeps a found photo against later
+passes that did not look. Proven live: Swissotel Büyük Efes came back with
+a real photo credited "akalan68 · CC BY 3.0 · Wikimedia Commons".
+
+The card itself follows the reference: photo cover with the AKTİF OTEL
+badge and the credit on the image — or the lavender band and the circled
+hotel drawing when there is no photo, which the designer's own layout
+anticipates; name, pin+city, the "Seçildi • Aktif" pill, the two doors as
+icon tiles with headcounts, the one-hotel line. Under the search: the
+designer's shortcut chips as real navigation (Odalara git → Rooms,
+Yaklaşan → declare, Şu an burada → check).
+
+Not adopted, and why: the bell (no notification centre exists), "Otel
+detaylarını gör" (no detail screen — worth designing, backlogged),
+destination photos and hotel counts (licensing and invented numbers, as
+before). Coverage truth: most OSM hotels carry no wikidata claim, so most
+cards will honestly show the drawing — the design accounts for it.
+Full gate green (398 jest, 412 SQL); one R-003 flake under parallel load
+again, passing alone and on rerun.

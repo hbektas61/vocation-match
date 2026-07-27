@@ -249,6 +249,8 @@ export const en = {
     switchButton: 'Switch hotel',
     noActiveHotel: 'No active hotel yet.',
     searchLabel: 'Search hotels',
+    searchHint: 'You can search to choose a different hotel.',
+    selectedActive: 'Selected • Active',
     searchPlaceholder: 'Hotel name or city',
     chooseTitle: 'Choose your hotel',
     // ODbL: storing OSM data requires saying where it came from, where people

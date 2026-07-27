@@ -1,12 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useNavigation, type NavigationProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
+
+import type { RootStackParamList, TabParamList } from '../navigation/types';
 
 import { Body, Button, Caption, Card, DoorPlate, EmptyState, Field, Gap, Heading, Notice, Screen, StateChip, Title } from '../components/ui';
 import { DestinationCard } from '../components/DestinationCard';
 import { HotelBuilding, SearchScene } from '../components/HotelIllustrations';
 import { nowMs } from '../clock';
-import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
+import { apiErrorMessage, COPY, COPY_FOR, upperCase } from '../copy';
 import { ApiError, getApi, type HotelCard, type RoomHeadcount, type RoomStatus } from '../data';
 import { useAppStore } from '../state/AppStore';
 import { color, font, fontFamily, radius, spacing } from '../theme';
@@ -41,6 +45,32 @@ const InfoIcon = () => (
   </Svg>
 );
 
+const CheckIcon = () => (
+  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M4 12.5l5.5 5.5L20 6.5" />
+  </Svg>
+);
+
+const PinSmallIcon = () => (
+  <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+    <Circle cx={12} cy={10} r={3} />
+  </Svg>
+);
+
+const CalendarSmallIcon = () => (
+  <Svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Rect x={3} y={5} width={18} height={16} rx={3} />
+    <Path d="M8 3v4M16 3v4M3 11h18" />
+  </Svg>
+);
+
+const DoorSmallIcon = () => (
+  <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M11 20H2m9-15.438v16.157a1 1 0 0 0 1.242.97L19 20V5.562a2 2 0 0 0-1.515-1.94l-4-1A2 2 0 0 0 11 4.561zM11 4H8a2 2 0 0 0-2 2v14m8-8h.01M22 20h-3" />
+  </Svg>
+);
+
 const ClockIcon = () => (
   <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <Circle cx={12} cy={12} r={9} />
@@ -69,6 +99,8 @@ const MIN_QUERY = 2;
  */
 export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) {
   const { state, dispatch } = useAppStore();
+  const stackNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const tabNavigation = useNavigation<NavigationProp<TabParamList>>();
   const [query, setQuery] = useState('');
   // `null` results mean a search is in flight (loading state).
   const [results, setResults] = useState<HotelCard[] | null>(null);
@@ -227,41 +259,83 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       {loadingActive ? (
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="hotel-loading" />
       ) : activeHotel ? (
-        /* The designer's hotel card (2026-07-27): a plain lavender band
-           where a photo would boast, the tracked eyebrow, the name over the
-           city, the two doors inline, and the one-hotel sentence at the
-           foot. */
+        /* The designer's active card (2026-07-27, "resim şart"): a real
+           photograph when the catalogue has one — Commons, credited — and
+           the lavender band when it honestly does not. Under it: the name,
+           the place, the selected pill, the two doors as tiles, the
+           one-hotel line. */
         <View style={styles.hotelCard} testID="active-hotel-card">
-          <View style={styles.hotelCardBand} />
+          <View>
+            {activeHotel.photoUrl ? (
+              <Image
+                source={{ uri: activeHotel.photoUrl }}
+                style={styles.hotelPhoto}
+                resizeMode="cover"
+                accessibilityIgnoresInvertColors
+                testID="active-hotel-photo"
+              />
+            ) : (
+              <View style={styles.hotelCardBand} />
+            )}
+            <View style={styles.activeBadge}>
+              <View style={styles.activeBadgeDot}>
+                <CheckIcon />
+              </View>
+              <Text style={styles.activeBadgeText}>{upperCase(COPY.hotel.activePlate)}</Text>
+            </View>
+            {activeHotel.photoUrl && activeHotel.photoAttribution ? (
+              <Text style={styles.photoCredit} numberOfLines={1}>
+                {activeHotel.photoAttribution}
+              </Text>
+            ) : null}
+          </View>
           <View style={styles.hotelCardBody}>
-            <DoorPlate>{COPY.hotel.activePlate}</DoorPlate>
-            <View style={styles.hotelCardTitle}>
-              <Heading>{activeHotel.name}</Heading>
-              <Caption>{`${activeHotel.city}, ${activeHotel.country}`}</Caption>
+            <View style={styles.activeHeadRow}>
+              <View style={styles.activeHeadText}>
+                <Heading>{activeHotel.name}</Heading>
+                <View style={styles.placeRow}>
+                  <PinSmallIcon />
+                  <Caption>{`${activeHotel.city}, ${activeHotel.country}`}</Caption>
+                </View>
+                <View style={styles.selectedPill}>
+                  <View style={styles.selectedPillDot}>
+                    <CheckIcon />
+                  </View>
+                  <Text style={styles.selectedPillText}>{COPY.hotel.selectedActive}</Text>
+                </View>
+              </View>
+              {activeHotel.photoUrl ? null : (
+                <View style={styles.activeArtCircle}>
+                  <HotelBuilding size={54} />
+                </View>
+              )}
             </View>
             {roomStates ? (
-              <View style={styles.roomStates}>
-                {roomStates.map((status) => (
-                  <View key={status.room} style={styles.roomState}>
-                    <Caption>
-                      {status.room === 'UPCOMING'
-                        ? COPY.rooms.upcomingPlate
-                        : COPY.rooms.hereNowPlate}
-                    </Caption>
-                    <StateChip
-                      open={status.eligible}
-                      label={status.eligible ? COPY.rooms.openChip : COPY.rooms.closedChip}
-                    />
-                    {(() => {
-                      const count = roomCounts?.find((entry) => entry.room === status.room);
-                      return count?.headcount != null ? (
-                        <Caption testID={`room-count-${status.room}`}>
-                          {COPY_FOR.roomHeadcount(count.headcount)}
+              <View style={styles.roomTiles}>
+                {roomStates.map((status) => {
+                  const count = roomCounts?.find((entry) => entry.room === status.room);
+                  return (
+                    <View key={status.room} style={styles.roomTile}>
+                      {status.room === 'UPCOMING' ? <CalendarSmallIcon /> : <PinSmallIcon />}
+                      <View style={styles.roomTileText}>
+                        <Caption>
+                          {status.room === 'UPCOMING'
+                            ? COPY.rooms.upcomingPlate
+                            : COPY.rooms.hereNowPlate}
                         </Caption>
-                      ) : null;
-                    })()}
-                  </View>
-                ))}
+                        <StateChip
+                          open={status.eligible}
+                          label={status.eligible ? COPY.rooms.openChip : COPY.rooms.closedChip}
+                        />
+                        {count?.headcount != null ? (
+                          <Caption testID={`room-count-${status.room}`}>
+                            {COPY_FOR.roomHeadcount(count.headcount)}
+                          </Caption>
+                        ) : null}
+                      </View>
+                    </View>
+                  );
+                })}
               </View>
             ) : null}
             <Caption>{COPY.trust.oneHotel}</Caption>
@@ -320,7 +394,41 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       />
       {/* An ODbL licence term: the stored hotel data has to say where it is
           from, somewhere the person seeing it can read. */}
+      <Caption>{COPY.hotel.searchHint}</Caption>
       <Caption>{COPY.hotel.attribution}</Caption>
+      {activeHotel ? (
+        /* The designer's shortcut row: the places this screen's answers are
+           used, one tap away. */
+        <View style={styles.chipRow}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => tabNavigation.navigate('Rooms')}
+            style={({ pressed }) => [styles.quickChip, pressed && styles.resultPressed]}
+            testID="hotel-go-rooms"
+          >
+            <DoorSmallIcon />
+            <Text style={styles.quickChipLabel}>{COPY.discovery.goToRooms}</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => stackNavigation.navigate('Upcoming')}
+            style={({ pressed }) => [styles.quickChip, pressed && styles.resultPressed]}
+            testID="hotel-go-upcoming"
+          >
+            <CalendarSmallIcon />
+            <Text style={styles.quickChipLabel}>{COPY.rooms.upcomingPlate}</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => stackNavigation.navigate('HereNow')}
+            style={({ pressed }) => [styles.quickChip, pressed && styles.resultPressed]}
+            testID="hotel-go-here-now"
+          >
+            <PinSmallIcon />
+            <Text style={styles.quickChipLabel}>{COPY.rooms.hereNowPlate}</Text>
+          </Pressable>
+        </View>
+      ) : null}
       {searchError ? (
         <>
           <Notice message={searchError} tone="error" testID="hotel-search-error" />
@@ -444,7 +552,93 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 2,
   },
-  hotelCardBand: { height: 48, backgroundColor: color.accent },
+  hotelCardBand: { height: 96, backgroundColor: color.accent },
+  hotelPhoto: { width: '100%', height: 190, backgroundColor: color.veil },
+  activeBadge: {
+    position: 'absolute',
+    top: spacing.sm + 4,
+    left: spacing.sm + 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: color.accentDeep,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm + 4,
+    paddingVertical: 6,
+  },
+  activeBadgeDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeBadgeText: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.label,
+    letterSpacing: 1,
+    color: '#FFFFFF',
+  },
+  /** The licence's half of the bargain, on the photo it pays for. */
+  photoCredit: {
+    position: 'absolute',
+    bottom: 4,
+    right: 8,
+    fontFamily: fontFamily.body,
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.9)',
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowRadius: 3,
+    maxWidth: '80%',
+  },
+  activeHeadRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+  activeHeadText: { flex: 1, gap: spacing.xs },
+  placeRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  selectedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: color.veil,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm + 4,
+    paddingVertical: 6,
+  },
+  selectedPillDot: {
+    width: 15,
+    height: 15,
+    borderRadius: 8,
+    backgroundColor: color.accentDeep,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectedPillText: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.caption,
+    color: color.accentDeep,
+  },
+  activeArtCircle: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: 'rgba(123, 79, 168, 0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roomTiles: { flexDirection: 'row', gap: spacing.sm },
+  roomTile: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    alignItems: 'flex-start',
+    borderWidth: 1,
+    borderColor: color.border,
+    borderRadius: radius.sm,
+    padding: spacing.sm + 2,
+    backgroundColor: 'rgba(123, 79, 168, 0.03)',
+  },
+  roomTileText: { flex: 1, gap: 4 },
   hotelCardBody: { padding: spacing.lg, gap: spacing.md },
   hotelCardTitle: { gap: spacing.xs },
   resultBand: { height: 20, backgroundColor: color.accent },

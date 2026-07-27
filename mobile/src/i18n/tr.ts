@@ -253,6 +253,8 @@ export const tr: Copy = {
     switchButton: 'Oteli değiştir',
     noActiveHotel: 'Henüz aktif otel yok.',
     searchLabel: 'Otel ara',
+    searchHint: 'Farklı bir otel seçmek için arama yapabilirsin.',
+    selectedActive: 'Seçildi • Aktif',
     searchPlaceholder: 'Otel adı veya şehir',
     chooseTitle: 'Otelini seç',
     attribution: 'Otel verileri © OpenStreetMap katkıcıları',

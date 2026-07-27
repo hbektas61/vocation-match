@@ -449,6 +449,8 @@ export class FakeApi implements VocationApi {
       city: hotel.city,
       country: hotel.country,
       address: null,
+      photoUrl: null,
+      photoAttribution: null,
     }));
   }
 

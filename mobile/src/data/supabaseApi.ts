@@ -847,6 +847,8 @@ interface HotelRow {
   city: string;
   country: string;
   address: string | null;
+  photo_url?: string | null;
+  photo_attribution?: string | null;
 }
 
 function toHotelCard(row: HotelRow): HotelCard {
@@ -856,6 +858,8 @@ function toHotelCard(row: HotelRow): HotelCard {
     city: row.city,
     country: row.country,
     address: row.address ?? null,
+    photoUrl: row.photo_url ?? null,
+    photoAttribution: row.photo_attribution ?? null,
   };
 }
 

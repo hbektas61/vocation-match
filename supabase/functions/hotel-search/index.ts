@@ -33,6 +33,7 @@ const THIN = 5;
 const HOTEL_TYPES = new Set(["hotel", "motel", "guest_house", "resort"]);
 
 interface NominatimHit {
+  extratags?: Record<string, string>;
   osm_type: string;
   osm_id: number;
   type: string;
@@ -82,6 +83,7 @@ async function askNominatimOnce(query: string): Promise<NominatimHit[]> {
   url.searchParams.set("format", "jsonv2");
   url.searchParams.set("limit", "10");
   url.searchParams.set("addressdetails", "1");
+  url.searchParams.set("extratags", "1");
   const response = await fetch(url, {
     headers: { "User-Agent": USER_AGENT },
     signal: AbortSignal.timeout(5_000),
@@ -103,6 +105,51 @@ async function askNominatim(query: string): Promise<NominatimHit[]> {
   const biased = await askNominatimOnce(`${query} hotel`);
   if (biased.length > 0) return biased;
   return askNominatimOnce(query);
+}
+
+/** Wikidata P18 → a Commons photo URL and the credit line its licence asks for. */
+async function commonsPhoto(
+  wikidataId: string,
+): Promise<{ url: string; attribution: string } | null> {
+  try {
+    const claimsRes = await fetch(
+      `https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=${encodeURIComponent(wikidataId)}&property=P18&format=json`,
+      { headers: { "User-Agent": USER_AGENT }, signal: AbortSignal.timeout(3_000) },
+    );
+    if (!claimsRes.ok) return null;
+    const claims = await claimsRes.json();
+    const file = claims?.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
+    if (typeof file !== "string" || file.length === 0) return null;
+
+    const url = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file.replaceAll(" ", "_"))}?width=1200`;
+
+    // The licence's half of the bargain: name the author. Best-effort — if
+    // the metadata call fails, the generic credit still names the source.
+    let attribution = "Wikimedia Commons";
+    try {
+      const infoRes = await fetch(
+        `https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(`File:${file}`)}&prop=imageinfo&iiprop=extmetadata&format=json`,
+        { headers: { "User-Agent": USER_AGENT }, signal: AbortSignal.timeout(3_000) },
+      );
+      if (infoRes.ok) {
+        const info = await infoRes.json();
+        const pages = info?.query?.pages ?? {};
+        const first = Object.values(pages)[0] as
+          | { imageinfo?: { extmetadata?: Record<string, { value?: string }> }[] }
+          | undefined;
+        const meta = first?.imageinfo?.[0]?.extmetadata;
+        const artist = String(meta?.Artist?.value ?? "").replace(/<[^>]*>/g, "").trim();
+        const licence = String(meta?.LicenseShortName?.value ?? "").trim();
+        const parts = [artist, licence, "Wikimedia Commons"].filter((part) => part.length > 0);
+        attribution = parts.join(" · ").slice(0, 200);
+      }
+    } catch {
+      // The generic credit stands.
+    }
+    return { url, attribution };
+  } catch {
+    return null;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -146,7 +193,19 @@ Deno.serve(async (req) => {
       // the thin answer is still an answer.
     }
 
-    for (const hit of found) {
+    // The owner's rule for the hotel card is "the photo is a must"; the
+    // honest reading is "a photo only when it is really this hotel". Many
+    // OSM hotels carry a wikidata tag whose P18 is a curated photograph on
+    // Commons — resolved here, in parallel, best-effort, with the credit
+    // line the licence requires. No claim, no photo, no invention.
+    const photos = await Promise.all(
+      found.map((hit) =>
+        hit.extratags?.wikidata ? commonsPhoto(hit.extratags.wikidata) : Promise.resolve(null),
+      ),
+    );
+
+    for (let i = 0; i < found.length; i += 1) {
+      const hit = found[i];
       // The single write boundary. Everything the schema enforces — dedupe on
       // (provider, id), coordinate bounds, is_active — happens in there.
       await admin.rpc("upsert_hotel_from_provider", {
@@ -158,6 +217,8 @@ Deno.serve(async (req) => {
         p_latitude: Number(hit.lat),
         p_longitude: Number(hit.lon),
         p_address: hit.address?.road ?? null,
+        p_photo_url: photos[i]?.url ?? null,
+        p_photo_attribution: photos[i]?.attribution ?? null,
       });
     }
 

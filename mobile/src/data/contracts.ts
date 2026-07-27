@@ -110,6 +110,13 @@ export interface HotelCard {
   city: string;
   country: string;
   address: string | null;
+  /**
+   * A photograph of this hotel (Commons, via its wikidata claim), or null.
+   * Null renders as the drawing — never a stock image of somewhere else.
+   */
+  photoUrl: string | null;
+  /** The credit line the photo's licence requires, shown with the photo. */
+  photoAttribution: string | null;
 }
 
 export interface ActiveHotel {

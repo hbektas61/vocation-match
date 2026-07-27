@@ -39,13 +39,17 @@ select tests.join_upcoming('00000000-0000-0000-0000-0000000000c1', 'Galata Rooms
 select hasnt_column('public', 'profiles', 'photo_url',
   'profiles.photo_url is gone — there is nowhere left to put a URL (D-014)');
 
-select is(
-  (select count(*)::int
+-- One named exception (2026-07-27): hotels.photo_url is a public catalogue
+-- image with a licence credit, not user content — D-014 is about *people's*
+-- photos never living behind a stable URL. Anything else matching is still
+-- a failure.
+select bag_eq(
+  $$select table_name || '.' || column_name
      from information_schema.columns
     where table_schema = 'public'
-      and column_name ~* '(photo_url|image_url|avatar_url|picture_url)'),
-  0,
-  'and no other table grew one');
+      and column_name ~* '(photo_url|image_url|avatar_url|picture_url)'$$,
+  $$values ('hotels.photo_url'::text)$$,
+  'and no table but the hotel catalogue grew one');
 
 -- The client may still write its own row, but not the photo: `photo_path` is
 -- set only through `set_profile_photo`, which checks the object exists.
