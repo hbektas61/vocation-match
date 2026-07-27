@@ -254,7 +254,26 @@ export class SupabaseApi implements VocationApi {
 
   async currentSession(): Promise<AuthSession | null> {
     const { data } = await this.client.auth.getSession();
-    return data.session ? toSession(data.session) : null;
+    if (!data.session) {
+      return null;
+    }
+    // A restored token is only a claim. A JWT stays cryptographically valid
+    // for its whole hour even after the account behind it is deleted from
+    // another device or the dashboard — reads just come back empty, which
+    // strands the person on the name step of an account that cannot save.
+    // One round trip to the auth server settles it. Only a definite auth
+    // answer discards the session: a network failure keeps it, because
+    // signing somebody out for being offline would cost them a paid SMS.
+    try {
+      const { error } = await this.client.auth.getUser();
+      if (error && error.status !== undefined && error.status >= 400 && error.status < 500) {
+        await this.forgetSession();
+        return null;
+      }
+    } catch {
+      // Offline: trust the stored session; every later request re-checks.
+    }
+    return toSession(data.session);
   }
 
   async deleteAccount(): Promise<void> {

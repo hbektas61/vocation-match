@@ -60,10 +60,16 @@ async function apiWithSession(rpcHandler: () => Response) {
   await storage.setItem(STORAGE_KEY, storedSession());
 
   const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    void init;
     const url = String(input);
     if (url.includes('/rpc/delete_my_account')) {
       return rpcHandler();
+    }
+    // `currentSession` validates a restored token against the auth server.
+    // In the refused-deletion scenario the account still exists, so the auth
+    // server must say so — a blanket 401 here would make every scenario read
+    // as "already gone".
+    if (url.includes('/auth/v1/user') && (init?.method ?? 'GET') === 'GET') {
+      return jsonResponse({ id: USER_ID, aud: 'authenticated' }, 200);
     }
     // Anything else the client tries (a token refresh, a server-side sign-out)
     // is answered as if the user is already gone, which is exactly what a real
@@ -237,6 +243,25 @@ describe('SupabaseApi.deleteAccount', () => {
     // shown a login page after a deletion that never happened.
     expect(await storage.getItem(STORAGE_KEY)).not.toBeNull();
     expect(await api.currentSession()).not.toBeNull();
+  });
+
+  it('discards a restored session whose account was deleted elsewhere', async () => {
+    // The owner's actual bug: delete the account from another device or the
+    // dashboard, reopen the app — the JWT is still cryptographically valid
+    // for its hour, reads just come back empty, and the wizard strands you on
+    // the name step of an account that cannot save. The auth server knows the
+    // truth, so a restored session is checked against it once.
+    const storage = createMemoryStorage();
+    await storage.setItem(STORAGE_KEY, storedSession());
+    const fetchMock = jest.fn(async () =>
+      jsonResponse({ message: 'User from sub claim in JWT does not exist' }, 403),
+    );
+    global.fetch = fetchMock as unknown as typeof fetch;
+    const api = new SupabaseApi({ url: URL, anonKey: ANON_KEY }, storage);
+
+    expect(await api.currentSession()).toBeNull();
+    // And the stale token is gone, so the next launch does not re-litigate.
+    expect(await storage.getItem(STORAGE_KEY)).toBeNull();
   });
 });
 

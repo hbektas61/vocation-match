@@ -1967,3 +1967,23 @@ the profile row is gone, and both pgTAP suites now pin the new contract
 Verified on staging with the owner's real account: delete succeeded,
 re-signing in mints a fresh empty account. 412 SQL assertions, full gate
 green.
+
+## 2026-07-27 — a deleted account's ghost session
+
+After the staging deletion, the owner's phone reopened onto the *name*
+step: the keychain still held the old session, and a JWT stays
+cryptographically valid for its whole hour after the account behind it is
+deleted — reads just come back empty, so the wizard read "session, no
+profile" and resumed politely inside a corpse. Manually deleting rows in
+the dashboard has the same shape: the server changes, the device's token
+does not.
+
+Fix: `currentSession` now validates a restored token against the auth
+server once per cold start (`auth.getUser`). A definite 4xx — deleted,
+revoked — clears the keychain and lands on the welcome screen; a network
+failure keeps the session, because signing somebody out for being offline
+would cost them a paid SMS. The deletion suite's mock had to learn the
+difference (its blanket "user does not exist" now applies only where the
+user really is gone), and a new unit test pins the exact bug: restored
+session + auth-server 403 → null session, cleared storage. 398 jest
+tests, full mobile gate green.
