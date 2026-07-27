@@ -2278,3 +2278,12 @@ the web preview cannot show it. 144 jest, full mobile gate green.
 Verified in the web walk for geometry; the scroll reset and the true
 border rendering are device-territory — the owner's pass is the proof.
 144 jest, full mobile gate green.
+
+## 2026-07-28 — the welcome hero became the owner's photograph
+
+The drawn resort scene on the first screen gave way to the owner's own
+AI-generated hero (the couple at the pool in the brand's dusk), bundled
+at ~210 KB and fading into the ground so the wordmark stands on white.
+The "Nasıl çalışır?" button left the screen at the owner's request; the
+drawn WelcomeHero component was deleted with its job. 144 jest, full
+mobile gate green.
