@@ -139,6 +139,18 @@ describe('the stay you declared', () => {
     await fireEvent.press(await screen.findByTestId('open-upcoming'));
   }
 
+
+/**
+ * Drives the native date picker the way a thumb would. The iOS wrapper
+ * reads `nativeEvent.timestamp` and builds the (event, date) pair itself,
+ * so the test speaks the native shape, not the public one.
+ */
+async function pickDate(testID: string, iso: string): Promise<void> {
+  const picker = await screen.findByTestId(testID);
+  const timestamp = new Date(`${iso}T12:00:00`).getTime();
+  await fireEvent(picker, 'onChange', { nativeEvent: { timestamp, utcOffset: 0 } });
+}
+
   it('starts empty, and offers no way to withdraw what does not exist', async () => {
     await openUpcoming();
 
@@ -149,8 +161,8 @@ describe('the stay you declared', () => {
 
   it('scopes the Upcoming deck to stays that cross yours (D-035)', async () => {
     await openUpcoming();
-    await fireEvent.changeText(await screen.findByTestId('upcoming-check-in'), '2026-08-01');
-    await fireEvent.changeText(screen.getByTestId('upcoming-check-out'), '2026-08-08');
+    await pickDate('upcoming-check-in', '2026-08-01');
+    await pickDate('upcoming-check-out', '2026-08-08');
     await fireEvent.press(screen.getByTestId('save-upcoming'));
     await screen.findByTestId('open-upcoming');
 
@@ -171,23 +183,26 @@ describe('the stay you declared', () => {
 
   it('shows what you declared when you come back to it', async () => {
     await openUpcoming();
-    await fireEvent.changeText(await screen.findByTestId('upcoming-check-in'), '2026-08-01');
-    await fireEvent.changeText(screen.getByTestId('upcoming-check-out'), '2026-08-08');
+    await pickDate('upcoming-check-in', '2026-08-01');
+    await pickDate('upcoming-check-out', '2026-08-08');
     await fireEvent.press(screen.getByTestId('save-upcoming'));
 
     await fireEvent.press(await screen.findByTestId('open-upcoming'));
 
     // The dates come back, rather than the form opening blank and leaving
     // "update your stay" as a guess at what you had said.
-    expect((await screen.findByTestId('upcoming-check-in')).props.value).toBe('2026-08-01');
-    expect(screen.getByTestId('upcoming-check-out').props.value).toBe('2026-08-08');
+    // The pickers carry dates now; the calendar day is what must match. The
+    // host component exposes it as `date` (a timestamp or Date, by version).
+    const dayOf = (raw: unknown) => new Date(raw as number).toISOString().slice(0, 10);
+    expect(dayOf((await screen.findByTestId('upcoming-check-in')).props.date)).toBe('2026-08-01');
+    expect(dayOf(screen.getByTestId('upcoming-check-out').props.date)).toBe('2026-08-08');
     expect(screen.getByTestId('upcoming-current')).toBeTruthy();
   });
 
   it('can be withdrawn, and closes the room when it is', async () => {
     await openUpcoming();
-    await fireEvent.changeText(await screen.findByTestId('upcoming-check-in'), '2026-08-01');
-    await fireEvent.changeText(screen.getByTestId('upcoming-check-out'), '2026-08-08');
+    await pickDate('upcoming-check-in', '2026-08-01');
+    await pickDate('upcoming-check-out', '2026-08-08');
     await fireEvent.press(screen.getByTestId('save-upcoming'));
 
     const rooms = await getApi().getRooms();

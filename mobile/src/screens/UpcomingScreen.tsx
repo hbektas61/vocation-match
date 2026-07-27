@@ -1,12 +1,13 @@
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 
 import { Body, Button, Caption, Field, Gap, Heading, Notice, Screen, Title } from '../components/ui';
 import { ShieldLock } from '../components/RoomIllustrations';
 import { todayIsoDate } from '../clock';
-import { apiErrorMessage, COPY } from '../copy';
+import { apiErrorMessage, COPY, upperCase } from '../copy';
 import { ApiError, getApi, type UpcomingStay } from '../data';
 import { validateStayDates } from '../domain/upcoming';
 import type { RootScreenProps } from '../navigation/types';
@@ -19,44 +20,105 @@ const CalendarGlyph = () => (
   </Svg>
 );
 
+/** ISO from local calendar parts — never through UTC, which shifts a day. */
+function toIso(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+/** Noon, so no timezone can nudge the calendar date it represents. */
+function fromIso(value: string): Date {
+  return new Date(`${value}T12:00:00`);
+}
+
 /**
- * One date, as the designer's field card (2026-07-27): the calendar in its
- * pale disc, then the label, the box and the format hint the Field already
- * draws. The format stays ISO on purpose — it is the one the server speaks,
- * and the hint says so in the reader's own words.
+ * One date, as the designer's field card — with the platform's own picker
+ * behind it (owner, 2026-07-28: nobody should type "2026" by hand). iOS
+ * shows its compact calendar control in place; Android opens its dialog
+ * from the pressable value. The web fallback keeps the typed field, since
+ * the community picker has no web half.
  */
 function DateCard({
   label,
   value,
-  onChangeText,
-  placeholder,
+  onChange,
+  minimumDate,
   editable,
   testID,
 }: {
   label: string;
+  /** ISO, YYYY-MM-DD — the only format the server speaks. */
   value: string;
-  onChangeText: (text: string) => void;
-  placeholder: string;
+  onChange: (iso: string) => void;
+  minimumDate?: Date;
   editable: boolean;
   testID: string;
 }) {
+  const [androidOpen, setAndroidOpen] = useState(false);
+  const date = value ? fromIso(value) : new Date();
+
+  const picked = (event: DateTimePickerEvent, selected?: Date) => {
+    setAndroidOpen(false);
+    if (event.type === 'set' && selected) onChange(toIso(selected));
+  };
+
   return (
     <View style={styles.dateCard}>
       <View style={styles.dateDisc}>
         <CalendarGlyph />
       </View>
       <View style={styles.dateField}>
-        <Field
-          label={label}
-          hint={COPY.upcoming.dateHint}
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          keyboardType="numbers-and-punctuation"
-          autoCapitalize="none"
-          editable={editable}
-          testID={testID}
-        />
+        <Text style={styles.dateLabel}>{upperCase(label)}</Text>
+        {Platform.OS === 'web' ? (
+          <Field
+            label={label}
+            hideLabel
+            hint={COPY.upcoming.dateHint}
+            value={value}
+            onChangeText={onChange}
+            placeholder="2026-08-01"
+            keyboardType="numbers-and-punctuation"
+            autoCapitalize="none"
+            editable={editable}
+            testID={testID}
+          />
+        ) : Platform.OS === 'ios' ? (
+          <View style={styles.pickerRow}>
+            <DateTimePicker
+              value={date}
+              mode="date"
+              display="compact"
+              minimumDate={minimumDate}
+              disabled={!editable}
+              onChange={picked}
+              accessibilityLabel={label}
+              testID={testID}
+            />
+          </View>
+        ) : (
+          <>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={label}
+              disabled={!editable}
+              onPress={() => setAndroidOpen(true)}
+              style={({ pressed }) => [styles.androidValue, pressed && styles.pressed]}
+              testID={testID}
+            >
+              <Text style={styles.androidValueText}>
+                {value ? value.split('-').reverse().join('.') : COPY.upcoming.pickDate}
+              </Text>
+            </Pressable>
+            {androidOpen ? (
+              <DateTimePicker
+                value={date}
+                mode="date"
+                display="default"
+                minimumDate={minimumDate}
+                onChange={picked}
+              />
+            ) : null}
+          </>
+        )}
       </View>
     </View>
   );
@@ -84,6 +146,17 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
           if (stay) {
             setCheckIn(stay.startDate);
             setCheckOut(stay.endDate);
+          } else {
+            // The pickers always display a date, so the state has to hold
+            // the one displayed — a shown default that was not committed
+            // would let "save" refuse dates the person can see.
+            setCheckIn((current) => current || todayIsoDate());
+            setCheckOut((current) => {
+              if (current) return current;
+              const week = fromIso(todayIsoDate());
+              week.setDate(week.getDate() + 7);
+              return toIso(week);
+            });
           }
         } catch {
           // Not being able to read it back does not stop somebody declaring
@@ -182,16 +255,16 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
       <DateCard
         label={COPY.upcoming.checkInLabel}
         value={checkIn}
-        onChangeText={setCheckIn}
-        placeholder={COPY.upcoming.checkInPlaceholder}
+        onChange={setCheckIn}
+        minimumDate={fromIso(todayIsoDate())}
         editable={!busy}
         testID="upcoming-check-in"
       />
       <DateCard
         label={COPY.upcoming.checkOutLabel}
         value={checkOut}
-        onChangeText={setCheckOut}
-        placeholder={COPY.upcoming.checkOutPlaceholder}
+        onChange={setCheckOut}
+        minimumDate={checkIn ? fromIso(checkIn) : fromIso(todayIsoDate())}
         editable={!busy}
         testID="upcoming-check-out"
       />
@@ -303,7 +376,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dateField: { flex: 1 },
+  dateField: { flex: 1, gap: 6 },
+  dateLabel: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.label,
+    letterSpacing: 1.2,
+    color: color.inkMuted,
+  },
+  pickerRow: { alignItems: 'flex-start' },
+  androidValue: {
+    minHeight: 48,
+    justifyContent: 'center',
+    borderRadius: radius.sm,
+    borderWidth: 1.5,
+    borderColor: color.border,
+    paddingHorizontal: spacing.md,
+    backgroundColor: color.surface,
+  },
+  androidValueText: {
+    fontFamily: fontFamily.body,
+    fontSize: font.body,
+    color: color.ink,
+  },
   infoStrip: {
     flexDirection: 'row',
     alignItems: 'center',

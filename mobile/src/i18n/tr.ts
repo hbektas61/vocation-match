@@ -286,6 +286,7 @@ export const tr: Copy = {
     updateButton: 'Tarihleri güncelle',
     privacyNote: 'Rezervasyon numarası veya kimlik bilgisi gerekmez, kimseyle paylaşılmaz.',
     updateLater: 'Tarihleri daha sonra güncelleyebilirsin.',
+    pickDate: 'Tarih seç',
     invalidFormat: 'İki tarihi de YYYY-AA-GG biçiminde gir.',
     checkoutNotAfter: 'Çıkış tarihi giriş tarihinden sonra olmalı.',
     stayEnded: 'Bu konaklama çoktan sona erdi. Güncel ya da gelecek bir konaklama gir.',

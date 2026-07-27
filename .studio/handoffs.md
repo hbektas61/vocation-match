@@ -2310,3 +2310,16 @@ trailing chevron, filled in a deep purple with white type or outlined
 with purple — used only on these hero states, and Discovery's primary
 took the mock's label ("Odaları görüntüle"). All testIDs survived.
 144 jest, full mobile gate green.
+
+## 2026-07-28 — the stay dates got a real picker
+
+Nobody types "2026" by hand any more: the declare screen's date cards
+carry the platform's own picker (@react-native-community/datetimepicker,
+Expo Go-safe). iOS shows its compact calendar control in place; Android
+opens its dialog from the pressed value; the web fallback keeps the typed
+ISO field because the community picker has no web half. Dates travel as
+local calendar parts (never through UTC, which shifts a day), check-out's
+minimum follows check-in, and an empty form commits its shown defaults
+(today → +7) so "save" can never refuse dates the person can see. The
+stay tests now drive the picker through its native event shape rather
+than typing. 144 jest, full mobile gate green.

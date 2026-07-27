@@ -284,6 +284,7 @@ export const en = {
     /** The designer's screen furniture (2026-07-27). */
     privacyNote: 'No booking number or ID details are needed, and nothing is shared with anyone.',
     updateLater: 'You can update the dates later.',
+    pickDate: 'Pick a date',
     invalidFormat: 'Enter both dates as YYYY-MM-DD.',
     checkoutNotAfter: 'Check-out must be after check-in.',
     stayEnded: 'That stay has already ended. Enter a current or future stay.',
