@@ -2260,3 +2260,21 @@ padding; Android resizes the window itself and needs neither. The
 onboarding scaffold already carried its own correct handling. Device
 verification is the owner's next pass — the behaviour is native-only and
 the web preview cannot show it. 144 jest, full mobile gate green.
+
+## 2026-07-28 — three more from the owner's phone
+
+1. **Rooms opened mid-scroll after choosing a hotel.** Tabs stay mounted,
+   so a navigated-to screen woke wherever it was left. Screen grew a
+   resetScrollOnFocus prop; Rooms opts in on all four of its states.
+2. **The primary button wore a black-reading outline.** The deep-lavender
+   1.5px border around the lavender fill read as black on a real display;
+   the fill carries a soft lavender lift now and the border is gone.
+   Disabled state drops the lift.
+3. **The orbit's stage drifted on device.** The armchair's stage and
+   bubble were centred through the parent's alignItems, which the phone
+   disagreed with; both are pinned with explicit coordinates now, and the
+   stage shrank to sit under the bubble rather than beside it.
+
+Verified in the web walk for geometry; the scroll reset and the true
+border rendering are device-territory — the owner's pass is the proof.
+144 jest, full mobile gate green.

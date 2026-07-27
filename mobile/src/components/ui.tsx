@@ -14,6 +14,7 @@ import {
   type TextInputProps,
   type ViewStyle,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { COPY, upperCase } from '../copy';
@@ -35,6 +36,11 @@ export function Screen({
   /** Lets a screen run its own content to the edges — a photo, mostly. */
   bleed = false,
   /**
+   * Tabs stay mounted, so a screen navigated *to* opens wherever it was
+   * left. The rooms after choosing a hotel must open at the top instead.
+   */
+  resetScrollOnFocus = false,
+  /**
    * On for every screen that has no native header over it — the five tabs,
    * and bootstrap. A screen under a stack header must leave this off: the
    * header already consumes the status-bar inset, and taking it again pushes
@@ -48,9 +54,16 @@ export function Screen({
   children: React.ReactNode;
   scroll?: boolean;
   bleed?: boolean;
+  resetScrollOnFocus?: boolean;
   safeTop?: boolean;
   testID?: string;
 }) {
+  const scrollRef = React.useRef<ScrollView>(null);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (resetScrollOnFocus) scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, [resetScrollOnFocus]),
+  );
   // The keyboard must never sit on top of what it is for. Scrolling screens
   // let iOS inset the scroll view so the focused field rides above the
   // keyboard; fixed screens (the chat, with its composer pinned to the
@@ -58,6 +71,7 @@ export function Screen({
   // itself, which is why both branches are iOS-only.
   const content = scroll ? (
     <ScrollView
+      ref={scrollRef}
       contentContainerStyle={bleed ? styles.screenBleed : styles.screenContent}
       keyboardShouldPersistTaps="handled"
       automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
@@ -730,8 +744,11 @@ const styles = StyleSheet.create({
    */
   buttonPrimary: {
     backgroundColor: color.accent,
-    borderWidth: 1.5,
-    borderColor: color.accentDeep,
+    shadowColor: color.accentDeep,
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   buttonSecondary: {
     backgroundColor: 'transparent',
@@ -749,7 +766,7 @@ const styles = StyleSheet.create({
    * This is 4.61:1, and it still reads as unavailable because the fill is flat
    * and the label is grey.
    */
-  buttonDisabled: { backgroundColor: color.accentSoft, borderColor: color.border },
+  buttonDisabled: { backgroundColor: color.accentSoft, borderColor: color.border, shadowOpacity: 0, elevation: 0 },
   buttonLabelDisabled: { color: color.inkMuted },
   actionDisabled: { opacity: 0.45 },
   buttonPressed: { opacity: 0.82 },

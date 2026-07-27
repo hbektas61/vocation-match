@@ -166,7 +166,7 @@ export function RoomsScreen() {
 
   if (error) {
     return (
-      <Screen safeTop testID="screen-rooms">
+      <Screen safeTop resetScrollOnFocus testID="screen-rooms">
         <Title>{COPY.rooms.plainTitle}</Title>
         <Notice message={error} tone="error" testID="rooms-error" />
       </Screen>
@@ -175,7 +175,7 @@ export function RoomsScreen() {
 
   if (rooms === null) {
     return (
-      <Screen safeTop testID="screen-rooms">
+      <Screen safeTop resetScrollOnFocus testID="screen-rooms">
         <Title>{COPY.rooms.plainTitle}</Title>
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="rooms-loading" />
       </Screen>
@@ -188,7 +188,7 @@ export function RoomsScreen() {
     // screen that is blocked — twice, per the designer: the search, and the
     // hotel tab it lives on.
     return (
-      <Screen safeTop testID="screen-rooms">
+      <Screen safeTop resetScrollOnFocus testID="screen-rooms">
         <Title>{COPY.rooms.plainTitle}</Title>
         <Body>{`${COPY.roomReason.NO_ACTIVE_HOTEL} ${COPY.trust.oneHotel}`}</Body>
         <NoHotelCard
@@ -214,7 +214,7 @@ export function RoomsScreen() {
   const upcomingOpen = upcomingStatus?.eligible === true;
 
   return (
-    <Screen safeTop testID="screen-rooms">
+    <Screen safeTop resetScrollOnFocus testID="screen-rooms">
       <Title>{COPY_FOR.roomsTitle(hotelName)}</Title>
       <Body>{COPY.rooms.subtitle}</Body>
 

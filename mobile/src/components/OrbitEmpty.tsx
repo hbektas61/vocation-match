@@ -125,10 +125,11 @@ const styles = StyleSheet.create({
   /** The stage at the disc's foot the armchair sits on. */
   stageFloor: {
     position: 'absolute',
-    bottom: 16,
-    width: 190,
-    height: 34,
-    borderRadius: 95,
+    bottom: 18,
+    left: (SIZE - 150) / 2,
+    width: 150,
+    height: 30,
+    borderRadius: 75,
     backgroundColor: color.surface,
     shadowColor: color.accentDeep,
     shadowOpacity: 0.18,
@@ -138,7 +139,8 @@ const styles = StyleSheet.create({
   },
   seatBubble: {
     position: 'absolute',
-    bottom: 26,
+    bottom: 24,
+    left: (SIZE - 56) / 2,
     width: 56,
     height: 56,
     borderRadius: 28,
