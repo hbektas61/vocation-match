@@ -1,14 +1,70 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { nowMs } from '../clock';
-import { Avatar, Body, Button, Field, Heading, Notice, RoomRibbon, Screen } from '../components/ui';
-import { apiErrorMessage, COPY } from '../copy';
+import { Body, Button, Notice, Screen } from '../components/ui';
+import { apiErrorMessage, COPY, upperCase } from '../copy';
 import { ApiError, getApi, type ChatMessage } from '../data';
 import type { RootScreenProps } from '../navigation/types';
 import { color, font, fontFamily, radius, spacing } from '../theme';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
+
+const DEEP = '#7B4FA8';
+
+const BackIcon = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color.ink} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M15 18l-6-6 6-6" />
+  </Svg>
+);
+
+const DotsIcon = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill={color.ink}>
+    <Circle cx={5} cy={12} r={2} />
+    <Circle cx={12} cy={12} r={2} />
+    <Circle cx={19} cy={12} r={2} />
+  </Svg>
+);
+
+const BuildingIcon = () => (
+  <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={color.inkMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Rect x={5} y={3} width={14} height={18} rx={2} />
+    <Path d="M9 8h2m2 0h2M9 12h2m2 0h2M10 21v-4h4v4" />
+  </Svg>
+);
+
+const SendIcon = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M22 2L11 13" />
+    <Path d="M22 2l-7 20-4-9-9-4z" />
+  </Svg>
+);
+
+/** The reference's clock column: HH:MM under each bubble. */
+function timeOf(at: number): string {
+  const d = new Date(at);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+/** Bugün / Dün / a short date — the separators the thread groups under. */
+function dayLabel(at: number): string {
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  if (at >= startOfToday) return COPY.chat.today;
+  if (at >= startOfToday - 86_400_000) return COPY.inbox.yesterday;
+  const d = new Date(at);
+  return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
+}
 
 export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   const { state, dispatch } = useAppStore();
@@ -18,6 +74,7 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   // True once a server lookup for a not-yet-cached match has finished,
   // whichever way it went — gates the "no longer available" fallback.
   const [checkedServer, setCheckedServer] = useState(false);
@@ -39,8 +96,6 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   }, [dispatch]);
 
   // The match may not be cached yet (e.g. a deep link straight into Chat).
-  // Nothing to look up once it is already in the cache — `checkedServer`
-  // is only ever read from the `!match` branch below.
   useEffect(() => {
     if (match) return;
     let cancelled = false;
@@ -86,13 +141,13 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   if (!match) {
     if (!checkedServer) {
       return (
-        <Screen testID="screen-chat">
+        <Screen safeTop testID="screen-chat">
           <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="chat-match-loading" />
         </Screen>
       );
     }
     return (
-      <Screen testID="screen-chat">
+      <Screen safeTop testID="screen-chat">
         <Notice message={COPY.chat.notAvailable} />
         <Button label={COPY.common.back} variant="secondary" onPress={() => navigation.goBack()} />
       </Screen>
@@ -100,6 +155,8 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   }
 
   const closed = match.unmatchedAt != null;
+  const hotel = state.hotels.find((h) => h.id === state.activeHotel?.hotelId) ?? null;
+  const theirPhoto = match.photoPath ? photoUrls[match.photoPath] ?? null : null;
 
   const send = async () => {
     const text = draft.trim();
@@ -111,17 +168,12 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
       setDraft('');
     } catch (err) {
       // A match can disappear underneath an open conversation — the other
-      // person deleting their account takes it and its messages with them — and
-      // the cached copy makes the screen look alive either way. So the server
-      // is asked, and whatever it says wins.
-      //
-      // Both codes are refreshed on, and the refresh is what decides, not the
-      // code: an unmatch also answers FORBIDDEN, and `my_matches` still returns
-      // that match, so the screen stays and shows the closed notice. A block
-      // answers the same way and `my_matches` does not return it, so the screen
-      // goes to "no longer available" — the same place a deleted account leads,
-      // which is the point. Nothing the blocked person sees should tell them
-      // which of the two happened.
+      // person deleting their account takes it and its messages with them —
+      // and the cached copy makes the screen look alive either way. So the
+      // server is asked, and whatever it says wins. Both codes refresh, and
+      // the refresh decides: an unmatch still returns the match (closed
+      // notice); a block or deletion does not ("no longer available") — and
+      // nothing the blocked person sees tells them which one happened.
       if (err instanceof ApiError && (err.code === 'NOT_FOUND' || err.code === 'FORBIDDEN')) {
         await refreshMatches();
       }
@@ -132,6 +184,7 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   };
 
   const unmatch = async () => {
+    setMenuOpen(false);
     try {
       await getApi().unmatch(matchId);
       dispatch({ type: 'MATCH_UNMATCHED', matchId, unmatchedAt: nowMs() });
@@ -143,165 +196,332 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
     }
   };
 
-  const hotel = state.hotels.find((h) => h.id === state.activeHotel?.hotelId) ?? null;
+  /** Consecutive messages grouped under their day's separator. */
+  const grouped: { label: string; items: ChatMessage[] }[] = [];
+  for (const message of messages ?? []) {
+    const label = dayLabel(message.createdAt);
+    const last = grouped[grouped.length - 1];
+    if (last && last.label === label) last.items.push(message);
+    else grouped.push({ label, items: [message] });
+  }
 
   return (
-    <Screen testID="screen-chat" scroll={false}>
-      {/* The bond, kept in view while talking: who this is, and the one fact
-          no other app could print — which room and which hotel you know each
-          other from. It does not scroll away with the messages. */}
-      <View style={styles.bondHeader}>
-        <Avatar
-          url={match.photoPath ? photoUrls[match.photoPath] ?? null : null}
-          name={match.displayName}
-          size="md"
-        />
-        <View style={styles.bondText}>
-          <Heading>{`${match.displayName}, ${match.age}`}</Heading>
-          <RoomRibbon room={match.room} hotelName={hotel?.name ?? null} />
-        </View>
+    <Screen safeTop testID="screen-chat" scroll={false}>
+      {/* The reference's own header: two floating circles, then the person
+          and the bond — who this is, and the room·hotel you know each other
+          from. It does not scroll away with the messages. */}
+      <View style={styles.topRow}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={COPY.common.back}
+          onPress={() => navigation.goBack()}
+          style={({ pressed }) => [styles.roundButton, pressed && styles.pressed]}
+          testID="chat-back"
+        >
+          <BackIcon />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={COPY.chat.moreActions}
+          accessibilityState={{ expanded: menuOpen }}
+          onPress={() => setMenuOpen((open) => !open)}
+          style={({ pressed }) => [styles.roundButton, pressed && styles.pressed]}
+          testID="chat-menu"
+        >
+          <DotsIcon />
+        </Pressable>
       </View>
 
-      {/* The composer stays put and the conversation moves under it. It used
-          to scroll away with the messages, so on a real conversation the box
-          you type into was somewhere down the page. */}
-      <ScrollView contentContainerStyle={styles.thread} keyboardShouldPersistTaps="handled">
-      {loadError ? <Notice message={loadError} tone="error" testID="chat-load-error" /> : null}
-      {messages === null ? (
-        <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="chat-loading" />
-      ) : messages.length === 0 ? (
-        <Body>
-          {COPY.chat.sayHelloTo} {match?.displayName ?? 'your match'}!
-        </Body>
-      ) : (
-        messages.map((message) => (
-          <View
-            key={message.id}
-            style={[
-              styles.bubble,
-              message.senderId === selfId ? styles.bubbleMine : styles.bubbleTheirs,
-            ]}
-            // Without `accessible`, a View is not a stop in the accessibility
-            // tree: the reader drills into the Text and reads the body alone,
-            // so a screen-reader user cannot tell who said what.
-            accessible
-            accessibilityRole="text"
-            accessibilityLabel={`${
-              message.senderId === selfId ? COPY.chat.senderYou : match?.displayName ?? COPY.chat.senderMatch
-            }: ${message.body}`}
-          >
-            <Text style={message.senderId === selfId ? styles.bubbleTextMine : styles.bubbleTextTheirs}>
-              {message.body}
-            </Text>
-          </View>
-        ))
-      )}
+      {menuOpen ? (
+        /* Ending a conversation and reporting someone both live behind the
+           dots — available, and neither the loudest thing on the screen. */
+        <View style={styles.menu} testID="chat-menu-sheet">
+          {!closed ? (
+            <Button
+              label={COPY.chat.unmatchButton}
+              variant="secondary"
+              compact
+              onPress={unmatch}
+              testID="chat-unmatch"
+            />
+          ) : null}
+          <Button
+            label={COPY.chat.reportBlockButton}
+            variant="danger"
+            compact
+            onPress={() => {
+              setMenuOpen(false);
+              navigation.navigate('ReportBlock', {
+                userId: match.otherUserId,
+                displayName: match.displayName,
+                matchId: match.matchId,
+              });
+            }}
+            testID="chat-report-block"
+          />
+        </View>
+      ) : null}
 
+      <View style={styles.bondHeader}>
+        {theirPhoto ? (
+          <Image source={{ uri: theirPhoto }} style={styles.bondPhoto} resizeMode="cover" accessibilityIgnoresInvertColors />
+        ) : (
+          <View style={[styles.bondPhoto, styles.bondPhotoEmpty]}>
+            <Text style={styles.bondInitial}>{upperCase(match.displayName.slice(0, 1))}</Text>
+          </View>
+        )}
+        <View style={styles.bondText}>
+          <View style={styles.bondNameRow}>
+            <Text style={styles.bondName}>{`${match.displayName}, ${match.age}`}</Text>
+            <View style={styles.roomChip} testID="chat-room">
+              <View style={styles.roomChipDot} />
+              <Text style={styles.roomChipText}>
+                {upperCase(match.room === 'UPCOMING' ? COPY.rooms.upcomingPlate : COPY.rooms.hereNowPlate)}
+              </Text>
+            </View>
+          </View>
+          {hotel ? (
+            <View style={styles.bondHotelRow}>
+              <BuildingIcon />
+              <Text style={styles.bondHotelText} numberOfLines={1}>
+                {`${hotel.name}, ${hotel.city}`}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      </View>
+      <View style={styles.headerRule} />
+
+      <ScrollView contentContainerStyle={styles.thread} keyboardShouldPersistTaps="handled">
+        {loadError ? <Notice message={loadError} tone="error" testID="chat-load-error" /> : null}
+        {messages === null ? (
+          <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="chat-loading" />
+        ) : messages.length === 0 ? (
+          <Body>
+            {COPY.chat.sayHelloTo} {match.displayName}!
+          </Body>
+        ) : (
+          grouped.map((group) => (
+            <View key={group.label} style={styles.dayGroup}>
+              <Text style={styles.daySeparator}>{group.label}</Text>
+              {group.items.map((message) => {
+                const mine = message.senderId === selfId;
+                return (
+                  <View key={message.id} style={mine ? styles.rowMine : styles.rowTheirs}>
+                    {!mine ? (
+                      theirPhoto ? (
+                        <Image source={{ uri: theirPhoto }} style={styles.miniAvatar} resizeMode="cover" accessibilityIgnoresInvertColors />
+                      ) : (
+                        <View style={[styles.miniAvatar, styles.miniAvatarEmpty]}>
+                          <Text style={styles.miniInitial}>{upperCase(match.displayName.slice(0, 1))}</Text>
+                        </View>
+                      )
+                    ) : null}
+                    <View style={mine ? styles.bubbleColumnMine : styles.bubbleColumn}>
+                      <View
+                        style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleTheirs]}
+                        accessible
+                        accessibilityRole="text"
+                        accessibilityLabel={`${mine ? COPY.chat.senderYou : match.displayName}: ${message.body}`}
+                      >
+                        <Text style={styles.bubbleText}>{message.body}</Text>
+                      </View>
+                      <Text style={[styles.bubbleTime, mine && styles.bubbleTimeMine]}>
+                        {timeOf(message.createdAt)}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          ))
+        )}
         {closed ? <Notice message={COPY.chat.closedNotice} testID="chat-closed" /> : null}
         {sendError ? <Notice message={sendError} tone="error" testID="chat-send-error" /> : null}
       </ScrollView>
 
-      <View style={styles.footer}>
-        {!closed ? (
-          <View style={styles.composer}>
-            <View style={styles.composerField}>
-              <Field
-                label={`${COPY.chat.messageLabel} ${match.displayName}`}
-                hideLabel
-                value={draft}
-                onChangeText={setDraft}
-                placeholder={COPY.chat.messagePlaceholder}
-                editable={!sending}
-                testID="chat-input"
-              />
-            </View>
-            <Button
-              label={sending ? COPY.chat.sendingButton : COPY.chat.sendButton}
-              busy={sending}
-              onPress={send}
-              disabled={!draft.trim() || sending}
-              testID="chat-send"
-            />
-          </View>
-        ) : null}
-        {/* Ending a conversation and reporting someone are both available and
-            neither is the loudest thing here. */}
-        <View style={styles.footerActions}>
-          {!closed ? (
-            <View style={styles.footerAction}>
-              <Button
-                label={COPY.chat.unmatchButton}
-                variant="secondary"
-                compact
-                onPress={unmatch}
-                testID="chat-unmatch"
-              />
-            </View>
-          ) : null}
-          <View style={styles.footerAction}>
-            <Button
-              label={COPY.chat.reportBlockButton}
-              variant="danger"
-              compact
-              onPress={() =>
-                navigation.navigate('ReportBlock', {
-                  userId: match.otherUserId,
-                  displayName: match.displayName,
-                  matchId: match.matchId,
-                })
-              }
-              testID="chat-report-block"
-            />
-          </View>
+      {!closed ? (
+        /* The reference's composer: the pill and the plane. */
+        <View style={styles.composer}>
+          <TextInput
+            accessibilityLabel={`${COPY.chat.messageLabel} ${match.displayName}`}
+            value={draft}
+            onChangeText={setDraft}
+            placeholder={COPY.chat.messagePlaceholder}
+            placeholderTextColor={color.inkMuted}
+            editable={!sending}
+            style={styles.composerInput}
+            testID="chat-input"
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={COPY.chat.sendButton}
+            accessibilityState={{ disabled: !draft.trim() || sending }}
+            disabled={!draft.trim() || sending}
+            onPress={send}
+            style={({ pressed }) => [
+              styles.sendButton,
+              (!draft.trim() || sending) && styles.sendButtonIdle,
+              pressed && styles.pressed,
+            ]}
+            testID="chat-send"
+          >
+            <SendIcon />
+          </Pressable>
         </View>
-      </View>
+      ) : null}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingBottom: spacing.sm,
+  },
+  roundButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: color.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: color.ink,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  pressed: { opacity: 0.8 },
+  menu: {
+    gap: spacing.sm,
+    backgroundColor: color.surface,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+    shadowColor: color.ink,
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
   bondHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     paddingBottom: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: color.rule,
   },
-  bondText: { flex: 1, gap: spacing.xs },
-  thread: { padding: spacing.md, gap: spacing.sm, flexGrow: 1 },
-  footer: {
-    padding: spacing.md,
-    gap: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: color.rule,
-    backgroundColor: color.background,
+  bondPhoto: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: color.veil,
   },
-  composer: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
-  composerField: { flex: 1 },
-  footerActions: { flexDirection: 'row', gap: spacing.sm },
-  footerAction: { flex: 1 },
+  bondPhotoEmpty: { alignItems: 'center', justifyContent: 'center' },
+  bondInitial: { fontFamily: fontFamily.display, fontSize: 30, color: color.accentDeep },
+  bondText: { flex: 1, gap: 4 },
+  bondNameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
+  bondName: { fontFamily: fontFamily.display, fontSize: font.heading + 2, color: color.ink },
+  roomChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: color.surface,
+    borderWidth: 1,
+    borderColor: 'rgba(123, 79, 168, 0.35)',
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 4,
+  },
+  roomChipDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 2.2,
+    borderColor: DEEP,
+  },
+  roomChipText: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.label,
+    letterSpacing: 0.8,
+    color: DEEP,
+  },
+  bondHotelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  bondHotelText: {
+    fontFamily: fontFamily.body,
+    fontSize: font.body,
+    color: color.inkMuted,
+    flexShrink: 1,
+  },
+  headerRule: { height: 1, backgroundColor: color.rule },
+  thread: { paddingVertical: spacing.md, gap: spacing.md, flexGrow: 1 },
+  dayGroup: { gap: spacing.sm },
+  daySeparator: {
+    fontFamily: fontFamily.body,
+    fontSize: font.caption,
+    color: color.inkMuted,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  rowTheirs: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
+  rowMine: { flexDirection: 'row', justifyContent: 'flex-end' },
+  miniAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: color.veil },
+  miniAvatarEmpty: { alignItems: 'center', justifyContent: 'center' },
+  miniInitial: { fontFamily: fontFamily.bodySemi, fontSize: 15, color: color.accentDeep },
+  bubbleColumn: { maxWidth: '78%', gap: 4 },
+  bubbleColumnMine: { maxWidth: '78%', gap: 4, alignItems: 'flex-end' },
   bubble: {
-    maxWidth: '80%',
-    borderRadius: radius.md,
-    padding: spacing.sm,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 4,
   },
   /**
-   * Mine on the brand fill with ink — the previous pairing was ink on the
-   * *deep* lavender, which measured 3.04:1: a real contrast bug wearing a
-   * brand colour. The straight corner is the messenger convention for "this
-   * side said it", which is how the two voices read apart without colour.
+   * Theirs a touch lighter, mine a touch deeper — both from the brand
+   * family, both carrying ink; the tucked corner says whose voice it is
+   * without leaning on colour alone.
    */
-  bubbleMine: {
-    alignSelf: 'flex-end',
-    backgroundColor: color.accent,
-    borderBottomRightRadius: 4,
+  bubbleTheirs: { backgroundColor: color.veil, borderBottomLeftRadius: 6 },
+  bubbleMine: { backgroundColor: color.accent, borderBottomRightRadius: 6 },
+  bubbleText: {
+    color: color.ink,
+    fontSize: font.body + 1,
+    lineHeight: (font.body + 1) * 1.4,
+    fontFamily: fontFamily.body,
   },
-  bubbleTheirs: {
-    alignSelf: 'flex-start',
-    backgroundColor: color.veil,
-    borderBottomLeftRadius: 4,
+  bubbleTime: { fontFamily: fontFamily.body, fontSize: font.caption, color: color.inkMuted },
+  bubbleTimeMine: { textAlign: 'right' },
+  composer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingTop: spacing.sm,
+    backgroundColor: color.background,
   },
-  bubbleTextMine: { color: color.ink, fontSize: font.body, fontFamily: fontFamily.body },
-  bubbleTextTheirs: { color: color.ink, fontSize: font.body, fontFamily: fontFamily.body },
+  composerInput: {
+    flex: 1,
+    minHeight: 52,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: 'rgba(123, 79, 168, 0.45)',
+    paddingHorizontal: spacing.md + 4,
+    fontFamily: fontFamily.body,
+    fontSize: font.body,
+    color: color.ink,
+    backgroundColor: color.surface,
+  },
+  sendButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: DEEP,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: DEEP,
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  sendButtonIdle: { opacity: 0.45 },
 });

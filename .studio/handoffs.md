@@ -2207,3 +2207,22 @@ nothing — every sentence on the reference was already in the i18n files,
 which is its own kind of compliment to the designer. Verified by TR
 browser walk over a real fake-api match; 144 jest tests, full mobile
 gate green.
+
+## 2026-07-27 — the conversation (designer screen 16)
+
+The chat is the reference's: two floating circles for back and the dots
+(the native header retired; unmatch and report/block moved behind the
+dots as a small sheet, keeping their testIDs), the person and the bond as
+the fixed header — photo, name and age, the room as an outlined chip, the
+hotel line under a hairline — then the thread grouped under day
+separators (Bugün / Dün / a short date), their messages beside a small
+avatar in the lighter bubble, mine in the deeper one, each with its
+HH:MM. The composer is the reference's pill and plane, the plane fading
+while there is nothing to send.
+
+Left out with reasons: the read receipts (no read state exists on the
+server — ticks would be a claim; a real feature for the backlog), the
+presence dot on the avatar (no online tracking), and the + attach button
+(no attachments). Verified by TR browser walk — match → chat → two
+messages sent and timed, menu opened; 144 jest tests, full mobile gate
+green.

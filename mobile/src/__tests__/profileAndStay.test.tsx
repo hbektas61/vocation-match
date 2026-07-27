@@ -294,7 +294,8 @@ describe('a match that vanishes mid-conversation', () => {
       .mockRejectedValue(new ApiError('NOT_FOUND', 'That match is not open.'));
     jest.spyOn(api, 'getMatches').mockResolvedValue([]);
 
-    await fireEvent.press(screen.getByTestId('chat-unmatch'));
+    await fireEvent.press(screen.getByTestId('chat-menu'));
+    await fireEvent.press(await screen.findByTestId('chat-unmatch'));
 
     expect(await screen.findByText(COPY.chat.notAvailable)).toBeTruthy();
     jest.restoreAllMocks();

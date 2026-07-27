@@ -435,6 +435,8 @@ export const en = {
   },
 
   chat: {
+    today: 'Today',
+    moreActions: 'Conversation actions',
     title: 'Chat',
     sayHelloTo: 'Say hello to',
     closedNotice: 'This conversation is closed. You can still read the history.',

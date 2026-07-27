@@ -153,7 +153,13 @@ export function RootNavigator() {
         // above a back arrow made the moment read like a form.
         options={{ headerShown: false, presentation: 'modal' }}
       />
-      <Stack.Screen name="Chat" component={ChatScreen} options={{ title: COPY.chat.title }} />
+      <Stack.Screen
+        name="Chat"
+        component={ChatScreen}
+        // The designer's chat draws its own floating back and menu circles;
+        // a native header on top would double both.
+        options={{ headerShown: false }}
+      />
       <Stack.Screen
         name="EditProfile"
         component={EditProfileScreen}

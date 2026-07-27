@@ -422,6 +422,8 @@ export const tr: Copy = {
   },
 
   chat: {
+    today: 'Bugün',
+    moreActions: 'Konuşma işlemleri',
     title: 'Sohbet',
     sayHelloTo: 'Bir merhaba de:',
     closedNotice: 'Bu konuşma kapandı. Geçmişi yine okuyabilirsin.',
