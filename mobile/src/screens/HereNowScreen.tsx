@@ -59,6 +59,21 @@ export function HereNowScreen({
     );
   }
 
+  // D-036: Here Now is a Premium room. The server refuses the check anyway;
+  // this simply tells a free member the truth instead of offering a button
+  // that can only fail.
+  if (state.profile && !state.profile.isPremium) {
+    return (
+      <Screen testID="screen-here-now">
+        <Title>{COPY.hereNow.roomTitle}</Title>
+        <Body>{COPY.hereNow.explainer}</Body>
+        <Gap size="sm" />
+        <Notice message={COPY.hereNow.premiumOnly} testID="here-now-premium-only" />
+        <Caption>{COPY.trust.noExactLocation}</Caption>
+      </Screen>
+    );
+  }
+
   const runCheck = async (source: ForegroundLocationReader) => {
     setChecking(true);
     setOutcome(null);

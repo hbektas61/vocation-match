@@ -42,6 +42,12 @@ export interface Profile {
    * `Candidate` (which extends `Profile`) leaves this undefined.
    */
   birthdate?: string;
+  /**
+   * Whether Premium is active (D-036). Only meaningful on the signed-in
+   * user's own profile; a `Candidate` leaves it undefined — entitlement is
+   * never shown on anyone's card.
+   */
+  isPremium?: boolean;
 }
 
 /** A candidate shown in discovery. Fixture-only in this milestone. */

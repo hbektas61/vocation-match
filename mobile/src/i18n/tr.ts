@@ -308,6 +308,7 @@ export const tr: Copy = {
     STAY_ENDED: 'Beyan ettiğin konaklama sona erdi. Odayı yeniden açmak için tarihlerini güncelle.',
     NO_RECENT_CHECK: 'Kapalı — girmek için bir yakınlık kontrolü yap.',
     TOO_FAR: 'Bu kontrol seni otelden 500 metreden uzakta buldu. Yaklaştığında tekrar dene.',
+    PREMIUM_ONLY: 'Şu An Burada odası Premium üyelere özel.',
     loadError: 'Odaların yüklenemedi. Tekrar dene.',
   },
 
@@ -332,6 +333,8 @@ export const tr: Copy = {
     permissionDenied:
       'Konum izni reddedildi. Şu An Burada tek seferlik, ön planda bir kontrol ister; arka planda hiçbir şey çalışmaz. Yaklaşan odasını yine kullanabilirsin.',
     expired: 'Yakınlık kontrolünün süresi doldu. Şu An Burada’ya yeniden girmek için yeni bir kontrol yap.',
+    premiumOnly:
+      'Şu An Burada, Premium üyelere özel. Premium ayrıca Yaklaşan odasındaki beğeni sınırını kaldırır. Uygulama içinden Premium satın alma henüz açık değil.',
   },
 
   trust: {
@@ -499,6 +502,8 @@ export const tr: Copy = {
     notFound: 'Bunu bulamadık.',
     conflict: 'Bu hesap açılamadı.',
     rateLimited: 'Bunu çok sık yapıyorsun. Biraz bekleyip tekrar dene.',
+    premiumRequired:
+      'Bunun için Premium gerekli. Ücretsiz üyelikte Yaklaşan odasında 3 beğeni ve 5 geçiş hakkın var.',
     network: 'Bağlantı yok. Tekrar dene.',
     suspended: 'Hesabın askıya alındı. Engelleme, bildirme ve konuşmalarını okuma yine açık.',
     unknown: 'Bir şeyler ters gitti. Tekrar dene.',

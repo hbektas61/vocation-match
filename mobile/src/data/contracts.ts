@@ -21,6 +21,8 @@ export type ApiErrorCode =
   | 'NOT_FOUND'
   | 'CONFLICT'
   | 'RATE_LIMITED'
+  /** The server refused because the action is part of Premium (D-036). */
+  | 'PREMIUM_REQUIRED'
   | 'NETWORK'
   | 'UNKNOWN';
 
@@ -74,6 +76,13 @@ export interface OwnProfile {
    * still a draft. A draft is invisible to everyone but its owner.
    */
   onboardingCompletedAt: number | null;
+  /**
+   * Whether Premium is active right now (D-036). Derived from a server-owned
+   * timestamp the client can read but never write — there is no purchase
+   * flow yet, so entitlement is operator-granted. The server enforces every
+   * premium rule; this flag only decides what the screens explain.
+   */
+  isPremium: boolean;
 }
 
 /** The three answers discovery understands. */
@@ -169,7 +178,9 @@ export type RoomReason =
   | 'NO_DECLARATION'
   | 'STAY_ENDED'
   | 'NO_RECENT_CHECK'
-  | 'TOO_FAR';
+  | 'TOO_FAR'
+  /** Here Now is a Premium room (D-036) and the caller is not premium. */
+  | 'PREMIUM_ONLY';
 
 export interface RoomStatus {
   room: RoomKey;

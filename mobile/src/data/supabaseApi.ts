@@ -84,6 +84,11 @@ export function toApiError(error: PostgresLikeError | null | undefined, fallback
   if (code === 'P0002' || code === 'PGRST116' || code === '23503') {
     return new ApiError('NOT_FOUND', message);
   }
+  // PP001 is this project's own SQLSTATE for "that is part of Premium"
+  // (D-036): the free allowance in Upcoming, or the Here Now door.
+  if (code === 'PP001') {
+    return new ApiError('PREMIUM_REQUIRED', message);
+  }
   // A suspended account is refused like any other forbidden action, but the
   // user needs to be told which of the two it is.
   if (code === '42501' && /suspended/i.test(message)) {
@@ -139,6 +144,7 @@ interface ProfileRow {
   show_orientation: boolean | null;
   show_me: ShowMe | null;
   onboarding_completed_at: string | null;
+  premium_until: string | null;
 }
 
 /**
@@ -321,7 +327,7 @@ export class SupabaseApi implements VocationApi {
   async getOwnProfile(): Promise<OwnProfile | null> {
     const { data, error } = await this.client
       .from('profiles')
-      .select('id, display_name, birthdate, bio, photo_path, interests, gender_identity, show_gender, orientations, show_orientation, show_me, onboarding_completed_at')
+      .select('id, display_name, birthdate, bio, photo_path, interests, gender_identity, show_gender, orientations, show_orientation, show_me, onboarding_completed_at, premium_until')
       .maybeSingle();
     if (error) {
       throw toApiError(error, 'Could not load your profile.');
@@ -357,7 +363,7 @@ export class SupabaseApi implements VocationApi {
         },
         { onConflict: 'id' },
       )
-      .select('id, display_name, birthdate, bio, photo_path, interests, gender_identity, show_gender, orientations, show_orientation, show_me, onboarding_completed_at')
+      .select('id, display_name, birthdate, bio, photo_path, interests, gender_identity, show_gender, orientations, show_orientation, show_me, onboarding_completed_at, premium_until')
       .single();
     if (error || !data) {
       throw toApiError(error, 'Could not save your profile.');
@@ -1005,5 +1011,6 @@ function toOwnProfile(row: ProfileRow): OwnProfile {
     onboardingCompletedAt: row.onboarding_completed_at
       ? Date.parse(row.onboarding_completed_at)
       : null,
+    isPremium: row.premium_until != null && Date.parse(row.premium_until) > Date.now(),
   };
 }

@@ -307,6 +307,7 @@ export const en = {
     STAY_ENDED: 'Your declared stay has ended. Update your dates to reopen this room.',
     NO_RECENT_CHECK: 'Closed — run a presence check to enter.',
     TOO_FAR: 'That check placed you more than 500 m from the hotel. Try again when you are closer.',
+    PREMIUM_ONLY: 'Here Now is for Premium members.',
     loadError: 'Could not load your rooms. Try again.',
   },
 
@@ -331,6 +332,8 @@ export const en = {
     permissionDenied:
       'Location permission was declined. Here Now needs a one-time foreground check; nothing runs in the background. You can still use Upcoming.',
     expired: 'Your presence check expired. Run a new check to re-enter Here Now.',
+    premiumOnly:
+      'Here Now is for Premium members. Premium also removes the like limit in the Upcoming room. Buying Premium inside the app is not open yet.',
   },
 
   trust: {
@@ -524,6 +527,8 @@ export const en = {
     notFound: 'We could not find that.',
     conflict: 'That account could not be opened.',
     rateLimited: 'You are doing that too often. Wait a moment and try again.',
+    premiumRequired:
+      'That needs Premium. Free members get 3 likes and 5 passes in the Upcoming room.',
     network: 'No connection. Try again.',
     suspended: 'Your account is suspended. You can still block, report, and read your conversations.',
     unknown: 'Something went wrong. Try again.',

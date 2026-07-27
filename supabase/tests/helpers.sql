@@ -135,7 +135,39 @@ begin
       v_id);
   end if;
 
+  -- D-036: members are premium by default here, because most suites are
+  -- about presence, discovery or matching and simply need the rooms open —
+  -- the entitlement gates themselves are exercised deliberately, on members
+  -- made free with tests.set_premium, in 018_premium.sql. Same
+  -- both-sides-of-the-migration guard as the identity columns above.
+  if exists (
+    select 1 from information_schema.columns
+     where table_schema = 'public' and table_name = 'profiles'
+       and column_name = 'premium_until'
+  ) then
+    execute format(
+      'update public.profiles set premium_until = now() + interval ''1 year'' where id = %L',
+      v_id);
+  end if;
+
   return v_id;
+end;
+$$;
+
+-- Flip one member's entitlement, in either direction. plpgsql on purpose:
+-- helpers load before the replay harness has applied the migration that adds
+-- premium_until, and a sql-language body would be checked against that older
+-- schema at create time.
+create or replace function tests.set_premium(p_user uuid, p_premium boolean)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  update public.profiles
+     set premium_until = case when p_premium then now() + interval '1 year' end
+   where id = p_user;
 end;
 $$;
 

@@ -2323,3 +2323,25 @@ minimum follows check-in, and an empty form commits its shown defaults
 (today → +7) so "save" can never refuse dates the person can see. The
 stay tests now drive the picker through its native event shape rather
 than typing. 144 jest, full mobile gate green.
+
+## 2026-07-28 — premium became real rules, not a paywall
+
+D-036. `profiles.premium_until` (operator-set, client-readable, never
+client-writable) now decides three things, all in SQL: a free member in
+Upcoming gets 3 likes and 5 passes per hotel (counted from stored
+swipes inside `public.swipe`, after the replay branch so retries are
+free); Here Now is Premium-only, enforced inside `app.room_eligible`
+itself so the feed, the headcount, `my_rooms` and swipe targets can
+never disagree, with `record_presence_check` refusing before it takes a
+location; and a lapsed entitlement closes every one of those doors in
+the same instant. Refusals raise the project-private SQLSTATE `PP001`,
+which the client maps to `PREMIUM_REQUIRED`; the room reason is
+`PREMIUM_ONLY` and the Here Now screen shows the truth instead of a
+button that can only fail. Test stance: SQL helpers make members premium
+by default (the suites are about presence and matching, not
+entitlement); `018_premium.sql` turns it off deliberately and walks
+every gate — 436 SQL assertions. The fake mirrors the rules with the
+same default and a `setPremium` seam; jest covers the mirror. No
+billing, no paywall, no RevenueCat — purchasing is still an open owner
+decision, and the "premium can DM without a match" perk is staged as
+L-005, its own slice.

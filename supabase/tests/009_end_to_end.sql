@@ -80,7 +80,12 @@ select is(
   'step 2: choosing a hotel alone opens no room'
 );
 
--- Step 3 — Mila declares a stay, Omar walks up to the door.
+-- Step 3 — Mila declares a stay, Omar walks up to the door. Here Now is a
+-- Premium room (D-036), and with no purchase flow yet the entitlement is
+-- operator-granted — which is exactly what this does.
+select tests.set_premium('00000000-0000-0000-0000-0000000000e1', true);
+select tests.set_premium('00000000-0000-0000-0000-0000000000e2', true);
+
 select public.declare_upcoming_stay(current_date + 2, current_date + 6);
 select ok(
   (select eligible from public.my_rooms() where room = 'UPCOMING'),

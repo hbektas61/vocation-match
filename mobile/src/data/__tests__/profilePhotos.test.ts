@@ -156,6 +156,7 @@ describe('profile photos through the API', () => {
       'gender',
       'id',
       'interests',
+      'isPremium',
       'onboardingCompletedAt',
       'orientations',
       'photoPath',

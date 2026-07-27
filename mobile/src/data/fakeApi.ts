@@ -86,6 +86,8 @@ interface StoredProfile {
   showOrientation: boolean;
   showMe: ShowMe | null;
   onboardingCompletedAt: number | null;
+  /** Epoch ms, or null for a free member. Mirrors `profiles.premium_until`. */
+  premiumUntil: number | null;
 }
 
 export interface FakeApiOptions {
@@ -99,7 +101,10 @@ export class FakeApi implements VocationApi {
   private readonly activeHotels = new Map<string, ActiveHotel>();
   private readonly stays = new Map<string, UpcomingDeclaration>();
   private readonly presence = new Map<string, HereNowCheck>();
-  private readonly swipes = new Map<string, SwipeDirection>();
+  private readonly swipes = new Map<
+    string,
+    { direction: SwipeDirection; room: RoomKey; hotelId: string }
+  >();
   private readonly matches: StoredMatch[] = [];
   private readonly messages: ChatMessage[] = [];
   private readonly messageListeners = new Map<string, Set<(message: ChatMessage) => void>>();
@@ -292,9 +297,26 @@ export class FakeApi implements VocationApi {
       showOrientation: input.showOrientation ?? previous?.showOrientation ?? false,
       showMe: input.showMe ?? previous?.showMe ?? null,
       onboardingCompletedAt: previous?.onboardingCompletedAt ?? null,
+      // D-036: a fake account starts premium so the credential-free preview
+      // keeps every room walkable. The gates themselves are exercised in
+      // tests, which flip this off with `setPremium(false)` — the same
+      // default-premium stance the SQL test helpers take.
+      premiumUntil: previous?.premiumUntil ?? this.now() + 365 * 24 * 60 * 60 * 1000,
     };
     this.profiles.set(userId, stored);
     return this.toOwnProfile(stored);
+  }
+
+  /** Test seam: flip the signed-in member's entitlement (D-036). */
+  async setPremium(premium: boolean): Promise<void> {
+    const userId = await this.requireUserId();
+    const stored = this.profiles.get(userId);
+    if (stored) {
+      this.profiles.set(userId, {
+        ...stored,
+        premiumUntil: premium ? this.now() + 365 * 24 * 60 * 60 * 1000 : null,
+      });
+    }
   }
 
   async completeOnboarding(): Promise<OwnProfile> {
@@ -529,6 +551,10 @@ export class FakeApi implements VocationApi {
     ) {
       throw new ApiError('INVALID_INPUT', 'That location reading is not usable.');
     }
+    // D-036: a free member's location is never even taken for Here Now.
+    if (!this.isPremiumNow(userId)) {
+      throw new ApiError('PREMIUM_REQUIRED', 'Here Now is for Premium members.');
+    }
     // The reading is consumed here and discarded; only the answer is kept.
     const check = evaluateForegroundCheck(hotel, {
       latitude,
@@ -557,7 +583,8 @@ export class FakeApi implements VocationApi {
     const presence = this.presence.get(userId) ?? null;
 
     const upcomingEligible = isUpcomingEligible(stay, active.hotelId, this.today());
-    const hereNowEligible = isHereNowEligible(presence, active.hotelId, this.now());
+    const premium = this.isPremiumNow(userId);
+    const hereNowEligible = premium && isHereNowEligible(presence, active.hotelId, this.now());
     const presenceIsFresh =
       presence !== null &&
       presence.hotelId === active.hotelId &&
@@ -574,7 +601,15 @@ export class FakeApi implements VocationApi {
       {
         room: 'HERE_NOW',
         eligible: hereNowEligible,
-        reason: hereNowEligible ? 'ELIGIBLE' : presenceIsFresh ? 'TOO_FAR' : 'NO_RECENT_CHECK',
+        // D-036: for a free member the distance story is not the true
+        // reason the door is closed, so PREMIUM_ONLY comes first.
+        reason: hereNowEligible
+          ? 'ELIGIBLE'
+          : !premium
+            ? 'PREMIUM_ONLY'
+            : presenceIsFresh
+              ? 'TOO_FAR'
+              : 'NO_RECENT_CHECK',
         validUntil: hereNowEligible && presence ? presence.checkedAt + HERE_NOW_FRESHNESS_MS : null,
       },
     ];
@@ -686,6 +721,24 @@ export class FakeApi implements VocationApi {
     if (!status?.eligible) {
       throw new ApiError('FORBIDDEN', 'You do not have access to this room yet.');
     }
+    // D-036: the free allowance in Upcoming — 3 likes, 5 passes, per hotel.
+    // Counted from stored swipes, after the replay branch, exactly like
+    // `public.swipe`.
+    if (room === 'UPCOMING' && !this.isPremiumNow(userId)) {
+      const mine = [...this.swipes.entries()].filter(
+        ([entryKey, entry]) =>
+          entryKey.startsWith(`${userId}|`) &&
+          entry.hotelId === hotelId &&
+          entry.room === 'UPCOMING',
+      );
+      const spent = mine.filter(([, entry]) => entry.direction === direction).length;
+      if (direction === 'LIKE' && spent >= 3) {
+        throw new ApiError('PREMIUM_REQUIRED', 'Liking more people here needs Premium.');
+      }
+      if (direction === 'PASS' && spent >= 5) {
+        throw new ApiError('PREMIUM_REQUIRED', 'Passing more people here needs Premium.');
+      }
+    }
     // A block gives the same answer as "not in this room", so nobody learns
     // they have been blocked (mirrors public.swipe).
     const candidate = this.blocks.has(blockKey(userId, targetUserId))
@@ -698,7 +751,7 @@ export class FakeApi implements VocationApi {
       throw new ApiError('FORBIDDEN', 'That person is not in this room.');
     }
 
-    this.swipes.set(key, direction);
+    this.swipes.set(key, { direction, room, hotelId });
 
     // The fixture flag stands in for the other person's stored LIKE.
     if (direction === 'LIKE' && candidate.likesYou) {
@@ -889,10 +942,17 @@ export class FakeApi implements VocationApi {
   }
 
   private toOwnProfile(stored: StoredProfile): OwnProfile {
+    const { premiumUntil, ...rest } = stored;
     return {
-      ...stored,
+      ...rest,
       age: ageYears(stored.birthdate, todayIsoDate(new Date(this.now()))) ?? 0,
+      isPremium: premiumUntil !== null && premiumUntil > this.now(),
     };
+  }
+
+  private isPremiumNow(userId: string): boolean {
+    const stored = this.profiles.get(userId);
+    return stored?.premiumUntil != null && stored.premiumUntil > this.now();
   }
 }
 

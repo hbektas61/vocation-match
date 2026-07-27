@@ -43,6 +43,8 @@ These decisions are owner-approved and must not be silently changed.
 | D-034 | 2026-07-27 | The pilot's hotel-search region is Türkiye plus Cyprus (`countrycodes=tr,cy`). The island carries the KKTC resorts (Cratos, Elexus, Merit…) a Turkish holiday audience expects; searching them returned nothing while the region was tr-only. | Owner: "kktc'yi de ekle, tr,cy yap". | Adding further countries, or narrowing back. |
 | D-035 | 2026-07-27 | The Upcoming room is scoped to the caller's own declared dates: the deck shows only people whose stay crosses yours, inclusive at the edges (a checkout day and a checkin day are one shared day). The D-032 headcount follows: once you have declared, the Upcoming number counts only the people you could actually meet; before you declare, the whole room. This closes the deliberate breadth recorded at the room's birth ("left broad on purpose; one where clause changes it"). | Owner: everyone in this room declares dates, so everyone should meet the people inside their own window. | Widening back, changing edge inclusivity, or scoping Here Now similarly. |
 
+| D-036 | 2026-07-28 | **Premium entitlement exists; billing still does not.** The rules, all server-enforced: a free member in the Upcoming room gets 3 likes and 5 passes, counted per hotel from stored swipes (a new hotel starts a fresh allowance; a replayed swipe never spends one); the Here Now room is Premium-only — the premium test sits inside `app.room_eligible` itself, so feed, headcount, my_rooms and swipe-target checks agree in the same instant, and `record_presence_check` refuses a free member before ever taking a location. Entitlement is one operator-set column, `profiles.premium_until` — readable by its owner, writable by no client — surfaced as `OwnProfile.isPremium`. Refusals travel as the project-private SQLSTATE `PP001` → client `PREMIUM_REQUIRED`; the room reason is `PREMIUM_ONLY`. No paywall, no purchase flow, no RevenueCat: buying Premium is an explicitly open decision. The owner's "premium can message directly without a match" is accepted and staged as its own next slice (it needs a pre-match message model). | Owner (2026-07-28): "kullanıcı premium değilse rezervasyon odasında maksimum 3 like atabilmeli ve anca 5 kişiyi geçebilmeli (toplam), premiumsa hem doğrudan mesaj atabilir hem de sınırsız like atabilir, premium değilse anında odasına giremez, buraya sadece premium kullanıcılar girebilir". | Changing either allowance number or its per-hotel scope, gating anything else behind premium (the D-032 count is still ungated), opening any purchase flow, or building the direct-message perk. |
+
 ## Open owner decisions
 
 - **Should the Upcoming room require overlapping stay dates?** Today it does
@@ -66,4 +68,11 @@ These decisions are owner-approved and must not be silently changed.
   watches the queue during the pilot should know it is a lever.
 - First pilot city and hotels.
 - Whether existing chats expire after the trip.
-- Premium package and price in the next phase.
+- Premium package and price in the next phase. (2026-07-28: the entitlement
+  and its rules exist — D-036 — but purchasing does not; price, package and
+  store billing remain open.)
+- **Premium direct message (D-036 follow-up).** The owner's rule includes
+  "premiumsa doğrudan mesaj atabilir" — chat without a mutual match. That
+  needs its own model (a pre-match conversation the other person can refuse),
+  safety rules, and screens; staged as the next premium slice, not smuggled
+  into this one.

@@ -295,8 +295,14 @@ client work; the server already allowed every one of them.
 
 - [ ] L-001 Define premium value and price.
 - [ ] L-002 Add store products and RevenueCat.
-- [ ] L-003 Decide free versus premium room access.
+- [x] L-003 Decide free versus premium room access. (D-036, 2026-07-28: free =
+      Upcoming with a 3-like/5-pass per-hotel allowance; Here Now and
+      unlimited swiping = Premium. Entitlement is `profiles.premium_until`,
+      operator-set, server-enforced; no purchase flow yet.)
 - [ ] L-004 Purchase restore, webhook, entitlement, and paywall tests.
+- [ ] L-005 Premium direct message: chat without a mutual match (owner rule in
+      D-036). Needs a pre-match conversation model the recipient can refuse,
+      safety rules, and screens — the named next premium slice.
 
 ## Explicitly excluded
 

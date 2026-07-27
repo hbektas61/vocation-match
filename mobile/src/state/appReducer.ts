@@ -27,6 +27,7 @@ export function toDomainProfile(remote: OwnProfile): Profile {
     birthdate: remote.birthdate,
     photoPath: remote.photoPath,
     onboardingCompletedAt: remote.onboardingCompletedAt,
+    isPremium: remote.isPremium,
   };
 }
 
