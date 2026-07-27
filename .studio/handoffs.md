@@ -2226,3 +2226,24 @@ presence dot on the avatar (no online tracking), and the + attach button
 (no attachments). Verified by TR browser walk — match → chat → two
 messages sent and timed, menu opened; 144 jest tests, full mobile gate
 green.
+
+## 2026-07-28 — three device-found bugs
+
+The owner's test pass surfaced three, all fixed and pinned:
+
+1. **Choosing a hotel led nowhere.** From the tab, activation now lands on
+   Rooms — a chosen hotel's next step is its rooms. The gate keeps its
+   own return path. The D-004 switch test now reads the consequence where
+   people do: on the rooms themselves.
+2. **"Yakınlığımı kontrol et" claimed there was no active hotel.** The
+   Here Now screen required the *fixture catalog* to know the hotel — test
+   scenery gating a real feature, so every real hotel (Voyage Sorgur) was
+   told it did not exist. The gate is the store's server-fed activeHotel
+   now; the simulation card alone still needs the fixture and simply
+   stays hidden on a real backend.
+3. **The hotel card lied about room states.** It fetched them on mount
+   only; a tab stays mounted, so a stay declared elsewhere never reached
+   it. The whole resolve-and-fetch effect runs on focus now, and the
+   D-035 test walks back to the tab and demands the OPEN chip.
+
+144 jest, full mobile gate green.

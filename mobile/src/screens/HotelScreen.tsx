@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useNavigation, type NavigationProp } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, type NavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
@@ -157,7 +157,11 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
   // fetched: a list of every hotel presented as though it were a result is an
   // invitation to pick one at random, and the one at the top would be chosen
   // far more often than it deserves. Nothing is shown until somebody asks.
-  useEffect(() => {
+  //
+  // On focus rather than on mount: a tab stays mounted, and the owner
+  // declared a stay in another screen only to come back to a card still
+  // claiming the room was closed.
+  useFocusEffect(useCallback(() => {
     let cancelled = false;
     (async () => {
       try {
@@ -194,7 +198,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
     return () => {
       cancelled = true;
     };
-  }, [dispatch]);
+  }, [dispatch]));
 
   /**
    * Two characters, because one letter matches most of a catalogue and the
@@ -267,7 +271,14 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       // the card of the hotel just chosen rather than the list it came from.
       setQuery('');
       setResults([]);
-      onActivated?.();
+      if (onActivated) {
+        // The gate: choosing finishes the errand it interrupted.
+        onActivated();
+      } else {
+        // The tab: a chosen hotel's next step is its rooms, so go there —
+        // the owner watched people choose and then stand still.
+        tabNavigation.navigate('Rooms');
+      }
     } catch (err) {
       setActivateError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
     } finally {

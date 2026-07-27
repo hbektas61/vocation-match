@@ -141,6 +141,9 @@ describe('the headcount on the key card (D-032)', () => {
     await settle();
     await fireEvent.press(await screen.findByTestId('activate-hotel-lara-shore'));
     await settle();
+    // Activation moves to the rooms; the card being read lives on the tab.
+    await fireEvent.press(screen.getByText('Hotel'));
+    await settle();
 
     // Lara Shore's fixtures put seven people in Upcoming (Nur included —
     // the caller has no declared window yet, so the whole room counts) and

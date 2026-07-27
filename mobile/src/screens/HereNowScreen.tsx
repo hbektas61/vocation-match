@@ -44,9 +44,13 @@ export function HereNowScreen({
   const [checking, setChecking] = useState(false);
 
   const hotel = state.hotels.find((h) => h.id === state.activeHotel?.hotelId) ?? null;
+  // The fixture catalog only knows the fake's hotels; on a real project it
+  // knows nothing, and requiring it here told people with a real active
+  // hotel that they had none. It now gates only the simulation card, which
+  // is the one thing that genuinely needs the fixture's coordinates.
   const simulationSource = getHotelById(state.activeHotel?.hotelId ?? null);
 
-  if (!hotel || !simulationSource) {
+  if (!state.activeHotel) {
     return (
       <Screen testID="screen-here-now">
         <Title>{COPY.hereNow.roomTitle}</Title>
@@ -100,9 +104,14 @@ export function HereNowScreen({
     }
   };
 
-  // Roughly 5.5 km north of the hotel — far outside the 500 m radius.
-  const farAway = fixedLocation(simulationSource.latitude + 0.05, simulationSource.longitude);
-  const atHotel = fixedLocation(simulationSource.latitude, simulationSource.longitude);
+  // Roughly 5.5 km north of the hotel — far outside the 500 m radius. Only
+  // built when the fixture knows the hotel, i.e. in the credential-free run.
+  const farAway = simulationSource
+    ? fixedLocation(simulationSource.latitude + 0.05, simulationSource.longitude)
+    : null;
+  const atHotel = simulationSource
+    ? fixedLocation(simulationSource.latitude, simulationSource.longitude)
+    : null;
 
   return (
     <Screen testID="screen-here-now">
@@ -118,29 +127,31 @@ export function HereNowScreen({
           testID="check-presence"
         />
       </Card>
-      <Card>
-        <Caption>{`${COPY.hereNow.simulateIntroPrefix} ${hotel.name}.`}</Caption>
-        <Button
-          label={COPY.hereNow.simulateAtHotel}
-          onPress={() => runCheck(atHotel)}
-          disabled={checking}
-          testID="simulate-near"
-        />
-        <Button
-          label={COPY.hereNow.simulateFarAway}
-          variant="secondary"
-          onPress={() => runCheck(farAway)}
-          disabled={checking}
-          testID="simulate-far"
-        />
-        <Button
-          label={COPY.hereNow.simulateDeny}
-          variant="secondary"
-          onPress={() => runCheck(deniedLocation())}
-          disabled={checking}
-          testID="simulate-deny"
-        />
-      </Card>
+      {atHotel && farAway ? (
+        <Card>
+          <Caption>{`${COPY.hereNow.simulateIntroPrefix} ${hotel?.name ?? ''}.`}</Caption>
+          <Button
+            label={COPY.hereNow.simulateAtHotel}
+            onPress={() => runCheck(atHotel)}
+            disabled={checking}
+            testID="simulate-near"
+          />
+          <Button
+            label={COPY.hereNow.simulateFarAway}
+            variant="secondary"
+            onPress={() => runCheck(farAway)}
+            disabled={checking}
+            testID="simulate-far"
+          />
+          <Button
+            label={COPY.hereNow.simulateDeny}
+            variant="secondary"
+            onPress={() => runCheck(deniedLocation())}
+            disabled={checking}
+            testID="simulate-deny"
+          />
+        </Card>
+      ) : null}
       {outcome?.kind === 'error' ? (
         <Notice message={outcome.message} tone="error" testID="here-now-error" />
       ) : null}

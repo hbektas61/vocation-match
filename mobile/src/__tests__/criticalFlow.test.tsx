@@ -131,9 +131,9 @@ describe('rooms and hotel switching', () => {
     await fireEvent.changeText(await screen.findByTestId('hotel-search'), 'bosphorus');
     await fireEvent.press(await screen.findByTestId('activate-hotel-bosphorus-garden'));
     await fireEvent.press(await screen.findByTestId('confirm-switch'));
-    expect(await screen.findByText(/Switched hotels/)).toBeTruthy();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Rooms' }));
+    // Choosing lands on the rooms now, where the consequence of the switch
+    // is visible as the state itself: the new hotel's Here Now is closed.
     expect(
       await screen.findByText('Closed — run a presence check to enter.'),
     ).toBeTruthy();

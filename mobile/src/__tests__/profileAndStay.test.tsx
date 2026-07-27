@@ -161,6 +161,12 @@ describe('the stay you declared', () => {
     expect(names).toContain('Derya');
     expect(names).toContain('Selin');
     expect(names).not.toContain('Nur');
+
+    // And the hotel card must know: it refreshes on focus now, because the
+    // owner declared a stay elsewhere and came back to a card still calling
+    // the room closed.
+    await fireEvent.press(screen.getByText('Hotel'));
+    expect(await screen.findAllByText('OPEN')).toBeTruthy();
   });
 
   it('shows what you declared when you come back to it', async () => {
