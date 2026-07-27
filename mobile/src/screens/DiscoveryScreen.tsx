@@ -3,19 +3,55 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Body, Button, Notice, RoomRibbon, Screen, Title } from '../components/ui';
+import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
+
+import { Body, Button, Notice, Screen, Title } from '../components/ui';
 import { NoHotelCard } from '../components/NoHotelCard';
 import { CompassScene } from '../components/NoHotelIllustrations';
 import { OrbitEmpty } from '../components/OrbitEmpty';
 import { RadarEmpty } from '../components/RadarEmpty';
 import { nowMs } from '../clock';
-import { apiErrorMessage, COPY } from '../copy';
+import { apiErrorMessage, COPY, upperCase } from '../copy';
 import { ApiError, getApi, type CandidateCard, type RoomKey, type RoomStatus } from '../data';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { color, font, fontFamily, palette, radius, spacing } from '../theme';
 import { earliestRoomExpiry } from '../state/roomSchedule';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
+
+const XIcon = () => (
+  <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke={'#7B4FA8'} strokeWidth={2.6} strokeLinecap="round">
+    <Path d="M6 6l12 12M18 6L6 18" />
+  </Svg>
+);
+
+const HeartIcon = () => (
+  <Svg width={34} height={34} viewBox="0 0 24 24" fill="#FFFFFF">
+    <Path d="M12 8c0-4.5-7.2-4.5-7.2 0 0 4 4.7 6.8 7.2 8.7 2.5-1.9 7.2-4.7 7.2-8.7 0-4.5-7.2-4.5-7.2 0z" />
+  </Svg>
+);
+
+const FlagIcon = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="#7B4FA8" stroke="#7B4FA8" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M4 21V4c3-2 6 2 9 0s4-1 7 0v11c-3-1-4-2-7 0s-6-2-9 0z" fill="#7B4FA8" />
+    <Path d="M4 22V3" stroke="#7B4FA8" fill="none" />
+  </Svg>
+);
+
+const BuildingTinyIcon = () => (
+  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <Rect x={5} y={3} width={14} height={18} rx={2} />
+    <Path d="M9 8h2m2 0h2M9 12h2m2 0h2M10 21v-4h4v4" />
+  </Svg>
+);
+
+const PinTinyIcon = () => (
+  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+    <Circle cx={12} cy={10} r={3} />
+  </Svg>
+);
 
 const ROOM_LABEL: Record<RoomKey, string> = {
   UPCOMING: COPY.upcoming.roomTitle,
@@ -272,6 +308,7 @@ export function DiscoveryScreen() {
            card with the name on it, the one fact this app can print — the
            room · hotel bond — as its only tag, and the three actions floating
            at its foot. No sections to scroll; the decision is made here. */
+        <>
         <View style={styles.card} testID={`candidate-${candidate.userId}`}>
           {shownPath && photoUrls[shownPath] ? (
             <Image
@@ -288,7 +325,7 @@ export function DiscoveryScreen() {
           )}
 
           {/* Tap left to go back a photo, right to go forward — the grammar
-              every story viewer has taught. Under the actions, over the photo. */}
+              every story viewer has taught. */}
           {cardPaths.length > 1 ? (
             <>
               <Pressable
@@ -308,70 +345,106 @@ export function DiscoveryScreen() {
             </>
           ) : null}
 
-          {/* Name at the top over its own scrim, the way the reference sets
-              it — light weight, because the photo is the loud one here. */}
-          <View style={styles.cardTop} pointerEvents="none">
-            {cardPaths.length > 1 ? (
-              <View style={styles.segments} testID="card-photo-segments">
-                {cardPaths.map((path, index) => (
-                  <View
-                    key={path}
-                    style={[styles.segment, index === photoIndex && styles.segmentActive]}
-                  />
-                ))}
-              </View>
-            ) : null}
-            <Text style={styles.cardName}>
-              {`${candidate.displayName}, ${candidate.age}`}
-            </Text>
-            <RoomRibbon room={room} hotelName={hotelName} onPhoto testID="candidate-room" />
+          {/* The two chips of the reference: the room, white on the photo,
+              and the one bond this product can print — same hotel. */}
+          <View style={styles.chipRowTop} pointerEvents="none">
+            <View style={styles.roomChip} testID="candidate-room">
+              <View style={styles.roomChipDot} />
+              <Text style={styles.roomChipText}>
+                {upperCase(room === 'UPCOMING' ? COPY.rooms.upcomingPlate : COPY.rooms.hereNowPlate)}
+              </Text>
+            </View>
+            <View style={styles.sameHotelChip}>
+              <BuildingTinyIcon />
+              <Text style={styles.sameHotelText}>{COPY.discovery.sameHotel}</Text>
+            </View>
           </View>
 
-          {/* The three actions, floating on the photo's foot: pass, the one
-              purple pill for like, and safety — which the reference gives to
-              chat, but chat does not exist before a match and report/block
-              must be reachable from the deck (D-008). */}
-          <View style={styles.cardActions}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={COPY.discovery.passButton}
-              accessibilityState={{ disabled: busy }}
-              disabled={busy}
-              onPress={() => swipe('PASS')}
-              style={styles.actionCircle}
-              testID="swipe-pass"
-            >
-              <Text style={styles.actionGlyph}>✕</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`${COPY.discovery.likeButton} ${candidate.displayName}`}
-              accessibilityState={{ disabled: busy }}
-              disabled={busy}
-              onPress={() => swipe('LIKE')}
-              style={styles.actionPill}
-              testID="swipe-like"
-            >
-              <Text style={styles.actionPillGlyph}>♥</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={COPY.discovery.reportBlockButton}
-              accessibilityState={{ disabled: busy }}
-              disabled={busy}
-              onPress={() =>
-                navigation.navigate('ReportBlock', {
-                  userId: candidate.userId,
-                  displayName: candidate.displayName,
-                })
-              }
-              style={styles.actionCircle}
-              testID="discovery-report-block"
-            >
-              <Text style={styles.actionGlyph}>⚑</Text>
-            </Pressable>
+          {/* Identity on the photo's foot, on its own scrim: name and age,
+              the bio, and the hotel worn as a pill. */}
+          <LinearGradient
+            colors={['transparent', 'rgba(8, 5, 16, 0.82)']}
+            style={styles.cardScrim}
+            pointerEvents="none"
+          />
+          <View style={styles.cardBottom} pointerEvents="none">
+            <Text style={styles.cardName}>
+              {candidate.displayName}
+              <Text style={styles.cardAge}>{`, ${candidate.age}`}</Text>
+            </Text>
+            {candidate.bio ? (
+              <Text style={styles.cardBio} numberOfLines={2}>
+                {candidate.bio}
+              </Text>
+            ) : null}
+            {hotelName ? (
+              <View style={styles.hotelChip}>
+                <PinTinyIcon />
+                <Text style={styles.hotelChipText} numberOfLines={1}>
+                  {hotel?.city ? `${hotelName}, ${hotel.city}` : hotelName}
+                </Text>
+              </View>
+            ) : null}
           </View>
         </View>
+
+        {/* The photo segments live under the card in the reference. */}
+        {cardPaths.length > 1 ? (
+          <View style={styles.segments} testID="card-photo-segments">
+            {cardPaths.map((path, index) => (
+              <View
+                key={path}
+                style={[styles.segment, index === photoIndex && styles.segmentActive]}
+              />
+            ))}
+          </View>
+        ) : null}
+
+        {/* Pass, the big heart, and safety — three circles on the ground,
+            sized exactly as the reference sizes them. The reference gives
+            the third slot to chat; chat does not exist before a match, and
+            report/block must be reachable from the deck (D-008). */}
+        <View style={styles.cardActions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={COPY.discovery.passButton}
+            accessibilityState={{ disabled: busy }}
+            disabled={busy}
+            onPress={() => swipe('PASS')}
+            style={styles.actionCircle}
+            testID="swipe-pass"
+          >
+            <XIcon />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${COPY.discovery.likeButton} ${candidate.displayName}`}
+            accessibilityState={{ disabled: busy }}
+            disabled={busy}
+            onPress={() => swipe('LIKE')}
+            style={styles.actionHeart}
+            testID="swipe-like"
+          >
+            <HeartIcon />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={COPY.discovery.reportBlockButton}
+            accessibilityState={{ disabled: busy }}
+            disabled={busy}
+            onPress={() =>
+              navigation.navigate('ReportBlock', {
+                userId: candidate.userId,
+                displayName: candidate.displayName,
+              })
+            }
+            style={styles.actionCircle}
+            testID="discovery-report-block"
+          >
+            <FlagIcon />
+          </Pressable>
+        </View>
+        </>
       ) : (
         /* The empty room as a scan still running (owner's reference,
            2026-07-26): rings, a listening dot, one calm sentence, and the
@@ -459,6 +532,144 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   cardPhoto: { ...StyleSheet.absoluteFillObject },
+  chipRowTop: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+    right: spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  roomChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFFFFF',
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm + 6,
+    paddingVertical: 8,
+  },
+  roomChipDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    borderWidth: 2.5,
+    borderColor: color.accentDeep,
+  },
+  roomChipText: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.label,
+    letterSpacing: 1,
+    color: color.accentDeep,
+  },
+  sameHotelChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(40, 36, 50, 0.55)',
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm + 6,
+    paddingVertical: 8,
+  },
+  sameHotelText: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: font.caption,
+    color: '#FFFFFF',
+  },
+  cardScrim: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '42%',
+  },
+  cardBottom: {
+    position: 'absolute',
+    left: spacing.md,
+    right: spacing.md,
+    bottom: spacing.md,
+    gap: spacing.sm,
+  },
+  cardName: {
+    fontFamily: fontFamily.display,
+    fontSize: 36,
+    color: '#FFFFFF',
+  },
+  cardAge: {
+    fontFamily: fontFamily.body,
+    fontSize: 34,
+    color: 'rgba(255,255,255,0.95)',
+  },
+  cardBio: {
+    fontFamily: fontFamily.body,
+    fontSize: font.body,
+    lineHeight: font.body * 1.4,
+    color: 'rgba(255,255,255,0.95)',
+  },
+  hotelChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm + 6,
+    paddingVertical: 8,
+  },
+  hotelChipText: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: font.caption,
+    color: '#FFFFFF',
+  },
+  /** Under the card, as the reference draws them. */
+  segments: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.sm,
+  },
+  segment: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(20, 22, 26, 0.12)',
+  },
+  segmentActive: { backgroundColor: color.accentDeep },
+  /** Three circles on the ground: 64 · 84 · 64, the heart carrying the size. */
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.lg,
+    paddingVertical: spacing.sm + 4,
+  },
+  actionCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: color.ink,
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  actionHeart: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: color.accentDeep,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: color.accentDeep,
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
   cardNoPhoto: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
@@ -470,18 +681,6 @@ const styles = StyleSheet.create({
     lineHeight: 140,
     color: palette.placeholder,
   },
-  segments: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: spacing.xs,
-  },
-  segment: {
-    flex: 1,
-    height: 3,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(255, 255, 255, 0.45)',
-  },
-  segmentActive: { backgroundColor: '#FFFFFF' },
   /** Below the top scrim and the action row, so both stay tappable. */
   tapZoneLeft: {
     position: 'absolute',
@@ -497,71 +696,9 @@ const styles = StyleSheet.create({
     bottom: 120,
     width: '40%',
   },
-  cardTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
-    gap: spacing.sm,
-    backgroundColor: 'rgba(20, 22, 26, 0.30)',
-  },
   /**
    * Light, not display-bold: the reference sets the name quietly and lets the
    * photograph carry the screen.
    */
-  cardName: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: 30,
-    lineHeight: 36,
-    color: color.onPhoto,
-  },
-  cardActions: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-  },
-  actionCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: color.surface,
-    shadowColor: color.ink,
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  actionGlyph: {
-    fontSize: 24,
-    lineHeight: 28,
-    color: color.accentDeep,
-  },
   /** The one loud thing on the screen, exactly as the reference has it. */
-  actionPill: {
-    width: 120,
-    height: 64,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: color.accentDeep,
-    shadowColor: color.ink,
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  actionPillGlyph: {
-    fontSize: 28,
-    lineHeight: 32,
-    color: '#FFFFFF',
-  },
 });

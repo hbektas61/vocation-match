@@ -2173,3 +2173,23 @@ the owner's active hotel (Club Voyage Sorgur) with stays 2026-07-27 →
 an instant match with a chat behind it. Seeded by service SQL; they
 cannot sign in (no test OTP), which is the point — they are scenery with
 consequences.
+
+## 2026-07-27 — the profile card (designer screen 14), and Derin's face
+
+The discovery card is the reference's now: the room as a white pill with
+the hollow dot (top-left), "Aynı otelde" as the dark glass chip
+(top-right), the identity standing on its own scrim at the photo's foot —
+display-weight name with a lighter age, the bio, the hotel worn as a
+translucent pill — the photo segments moved below the card, and the three
+actions as the reference sizes them: 64 · 84 · 64, the big lavender-deep
+heart carrying the middle. All testIDs survived.
+
+Two of the reference's ornaments stayed out, with reasons that are rules:
+the filter button (nothing behind it), and the check-seal beside the name
+— that seal reads "verified", and D-007 exists precisely to forbid this
+product from ever claiming it verified anyone.
+
+And the pool got a face: the owner's own AI-generated reference art was
+cropped to a clean frame and uploaded as Derin's profile photo on staging
+(storage object + photo row + primary path), so the first card the owner
+swipes looks like the design that asked for it. Full mobile gate green.
