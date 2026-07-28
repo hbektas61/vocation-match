@@ -3,7 +3,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Button, Notice, Screen } from '../components/ui';
-import { COPY, upperCase } from '../copy';
+import { COPY, upperCase, roomPlate } from '../copy';
 import type { RootScreenProps } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
@@ -150,7 +150,7 @@ export function MatchScreen({ navigation, route }: RootScreenProps<'Match'>) {
             </Text>
             <View style={styles.bondDivider} />
             <Text style={styles.bondRoom}>
-              {match.room === 'UPCOMING' ? COPY.rooms.upcomingPlate : COPY.rooms.hereNowPlate}
+              {roomPlate(match.room)}
             </Text>
           </View>
         ) : null}

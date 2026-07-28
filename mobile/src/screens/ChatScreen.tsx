@@ -13,7 +13,7 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { nowMs } from '../clock';
 import { Body, Button, Notice, Screen } from '../components/ui';
-import { apiErrorMessage, COPY, upperCase } from '../copy';
+import { apiErrorMessage, COPY, upperCase, roomPlate } from '../copy';
 import { ApiError, getApi, type ChatMessage } from '../data';
 import type { RootScreenProps } from '../navigation/types';
 import { color, font, fontFamily, radius, spacing } from '../theme';
@@ -276,7 +276,7 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
             <View style={styles.roomChip} testID="chat-room">
               <View style={styles.roomChipDot} />
               <Text style={styles.roomChipText}>
-                {upperCase(match.room === 'UPCOMING' ? COPY.rooms.upcomingPlate : COPY.rooms.hereNowPlate)}
+                {upperCase(roomPlate(match.room))}
               </Text>
             </View>
           </View>

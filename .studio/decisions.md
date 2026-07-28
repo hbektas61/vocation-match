@@ -49,6 +49,8 @@ These decisions are owner-approved and must not be silently changed.
 
 | D-038 | 2026-07-28 | **The region pool.** When the own-venue deck has fewer than five unswiped people, discovery continues with real people anchored at venues within 15 km — each card labelled with the neighbour's venue name ("Lara Dunes Club · çevrede"). D-035 date overlap holds across the region; Here Now still needs premium and a fresh in-range check at the person's own venue; the swipe endpoint recognises exactly the same region the deck shows; the room headcount never absorbs the region. One active venue per person and the no-coordinates/no-distance promise are untouched — the single new disclosure is the venue name on the card, which is the honesty of the feature. The invite mechanic was proposed and rejected by the owner ("davet saçma — tatil rezervasyonu davetle olmaz"); this replaces it. | Owner approved the design 2026-07-28 ("tamamdır yap") after rejecting fake profiles: holiday social life happens at the scale of the town, so the pool should too. Radius 15 km and thin-threshold 5 were offered and accepted. | Changing the radius or threshold, labelling region rows any less clearly, extending the region to counts or notifications, or reviving either rejected idea (invites, fake profiles). |
 
+| D-039 | 2026-07-28 | **"Çevremde" — venue check-ins, free for everyone.** The Swarm-shaped feature the owner asked for, built on the lessons of its ancestors: you check in to a *venue* (never a coordinate), verified by a one-time foreground reading within the same 500 m the rooms use; the check-in lasts 3 hours, one per user, replaced not accumulated — no movement history exists; while it lasts you see and are seen by people checked in within 1 km, cards labelled with their venue's name. Mutuality is structural (the "Girls Around Me" lesson): there is no way to scan a street without standing on it, on the record. NEARBY is a third room in the swipe/match vocabulary; matches and chat work unchanged. No premium anywhere in it — this is the free tier's heart; the D-036 allowance deliberately does not apply (global rate limits still do). Requires no active hotel. | Owner (2026-07-28): "swarm foursquare gibi check-in atacak… 1 km etrafında var olanlar gösterilecek, bu bedava olacak her usera" — accepted with the venue-anchor, mutuality and expiry shape offered in review of Happn/Swarm/Girls-Around-Me precedents. | Changing the radius, duration or verification; adding check-in history; showing anyone without a live mutual check-in; adding premium gates or like-limits to NEARBY; extending ROOM_NEW notifications to check-ins. |
+
 ## Open owner decisions
 
 - **Should the Upcoming room require overlapping stay dates?** Today it does
@@ -82,6 +84,12 @@ These decisions are owner-approved and must not be silently changed.
   sales stay closed below a room-density threshold ("founding member" free
   premium until then) and the empty room becomes an invite mechanic. Fake
   profiles are not built and should not be.
+- **Room access pricing after D-039.** The owner floated making both hotel
+  rooms premium-only once Çevremde exists as the free layer. Studio warning,
+  standing: free members are the inventory premium buyers pay to meet —
+  paywalling room *entry* empties the rooms. Current shape (free limited
+  entry, premium lifts limits + Here Now) is the studio recommendation until
+  pricing is decided with L-001.
 - First pilot city and hotels.
 - Whether existing chats expire after the trip.
 - Premium package and price in the next phase. (2026-07-28: the entitlement

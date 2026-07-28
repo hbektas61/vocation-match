@@ -170,7 +170,8 @@ export interface PhotoUpload {
   mimeType: string;
 }
 
-export type RoomKey = 'UPCOMING' | 'HERE_NOW';
+/** The two hotel rooms plus the free check-in street (D-039). */
+export type RoomKey = 'UPCOMING' | 'HERE_NOW' | 'NEARBY';
 
 export type RoomReason =
   | 'ELIGIBLE'
@@ -214,6 +215,23 @@ export interface RoomHeadcount {
    * one person even "somebody is here" is a presence leak.
    */
   headcount: number | null;
+}
+
+/**
+ * D-039 — a venue check-in: present tense only. One per user, three hours,
+ * venue-anchored (never a coordinate), and readable only by its owner.
+ */
+export interface ActiveCheckin {
+  venueId: string;
+  venueName: string;
+  /** Epoch milliseconds. */
+  expiresAt: number;
+}
+
+export interface CheckinAnswer {
+  withinRange: boolean;
+  /** Epoch milliseconds, present only when the check-in was accepted. */
+  expiresAt: number | null;
 }
 
 /** What one user may see about another: a card, and nothing more. */
@@ -353,6 +371,16 @@ export interface VocationApi {
   getRooms(): Promise<RoomStatus[]>;
   /** Thresholded headcounts for the active hotel's rooms (D-032). */
   getRoomCounts(): Promise<RoomHeadcount[]>;
+
+  /* check-ins (D-039) */
+  /**
+   * Checks in to a venue after a one-time foreground reading verifies the
+   * caller is within 500 m of it. Out of range answers false and stores
+   * nothing. Free — no premium involved anywhere in Çevremde.
+   */
+  recordCheckin(venueId: string, latitude: number, longitude: number): Promise<CheckinAnswer>;
+  clearCheckin(): Promise<void>;
+  getCheckin(): Promise<ActiveCheckin | null>;
 
   /* discovery */
   getDiscoveryFeed(room: RoomKey, limit?: number): Promise<CandidateCard[]>;

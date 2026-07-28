@@ -104,10 +104,22 @@ export function apiErrorMessage(code: ApiErrorCode): string {
  * decision D-007 — never claims a reservation or hotel approval).
  */
 export function roomStatusExplanation(room: RoomKey, status: RoomStatus): string {
+  if (room === 'NEARBY') {
+    // Çevremde's status is its own vocabulary (D-039): a check-in clock,
+    // not a stay or a proximity answer.
+    return status.eligible ? COPY.checkin.statusOpen : COPY.checkin.statusClosed;
+  }
   if (status.reason === 'ELIGIBLE') {
     return room === 'UPCOMING' ? COPY.roomReason.ELIGIBLE_UPCOMING : COPY.roomReason.ELIGIBLE_HERE_NOW;
   }
   return COPY.roomReason[status.reason];
+}
+
+/** The plate label for a room, wherever a match or card wears it. */
+export function roomPlate(room: RoomKey): string {
+  if (room === 'UPCOMING') return COPY.rooms.upcomingPlate;
+  if (room === 'HERE_NOW') return COPY.rooms.hereNowPlate;
+  return COPY.rooms.nearbyPlate;
 }
 
 /** Fixed, reviewed labels for the report-reason picker. */

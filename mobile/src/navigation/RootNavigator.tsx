@@ -10,6 +10,7 @@ import { ChatScreen } from '../screens/ChatScreen';
 import { ChooseHotelScreen } from '../screens/ChooseHotelScreen';
 import { DiscoveryScreen } from '../screens/DiscoveryScreen';
 import { EditProfileScreen } from '../screens/EditProfileScreen';
+import { CheckinScreen } from '../screens/CheckinScreen';
 import { HereNowScreen } from '../screens/HereNowScreen';
 import { HotelDetailsScreen } from '../screens/HotelDetailsScreen';
 import { HotelScreen } from '../screens/HotelScreen';
@@ -145,6 +146,11 @@ export function RootNavigator() {
         name="HereNow"
         component={HereNowScreen}
         options={{ title: COPY.hereNow.roomTitle }}
+      />
+      <Stack.Screen
+        name="Checkin"
+        component={CheckinScreen}
+        options={{ title: COPY.checkin.roomTitle }}
       />
       <Stack.Screen
         name="Match"

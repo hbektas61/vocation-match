@@ -7,10 +7,10 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { Body, Button, Caption, Notice, Screen, StateChip, Title } from '../components/ui';
 import { CalendarIllustration, PinScene } from '../components/RoomIllustrations';
 import { NoHotelCard } from '../components/NoHotelCard';
-import { DoorScene } from '../components/NoHotelIllustrations';
+import { CompassScene, DoorScene } from '../components/NoHotelIllustrations';
 import { nowMs } from '../clock';
-import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation, upperCase } from '../copy';
-import { ApiError, getApi, type RoomKey, type RoomStatus } from '../data';
+import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation, upperCase, roomPlate } from '../copy';
+import { ApiError, getApi, type ActiveCheckin, type RoomKey, type RoomStatus } from '../data';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { earliestRoomExpiry } from '../state/roomSchedule';
 import { useAppStore } from '../state/AppStore';
@@ -75,7 +75,7 @@ function RoomCard({
       <View style={styles.cardHead}>
         <View style={styles.platePill}>
           <Text style={styles.platePillText}>
-            {upperCase(room === 'UPCOMING' ? COPY.rooms.upcomingPlate : COPY.rooms.hereNowPlate)}
+            {upperCase(roomPlate(room))}
           </Text>
         </View>
         <StateChip
@@ -116,6 +116,7 @@ export function RoomsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const tabNavigation = useNavigation<NavigationProp<TabParamList>>();
   const [rooms, setRooms] = useState<RoomStatus[] | null>(null);
+  const [checkin, setCheckin] = useState<ActiveCheckin | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Whether there *is* an active hotel is the server's answer, carried in the
@@ -136,9 +137,15 @@ export function RoomsScreen() {
       const load = async () => {
         setError(null);
         try {
-          const fetched = await getApi().getRooms();
+          const [fetched, currentCheckin] = await Promise.all([
+            getApi().getRooms(),
+            // Çevremde (D-039) is venue-anchored, not hotel-anchored: its
+            // card lives here but its state is the check-in clock.
+            getApi().getCheckin().catch(() => null),
+          ]);
           if (cancelled) return;
           setRooms(fetched);
+          setCheckin(currentCheckin);
           dispatch({ type: 'ROOMS_LOADED', rooms: fetched });
           const soonest = earliestRoomExpiry(fetched, nowMs());
           if (soonest !== null) {
@@ -199,12 +206,22 @@ export function RoomsScreen() {
           onPrimary={() => navigation.navigate('ChooseHotel')}
           primaryTestID="rooms-choose-hotel"
           secondary={
-            <Button
-              label={COPY.rooms.viewHotels}
-              variant="secondary"
-              onPress={() => tabNavigation.navigate('Hotel')}
-              testID="rooms-view-hotels"
-            />
+            <>
+              <Button
+                label={COPY.rooms.viewHotels}
+                variant="secondary"
+                onPress={() => tabNavigation.navigate('Hotel')}
+                testID="rooms-view-hotels"
+              />
+              {/* Çevremde needs no hotel at all (D-039): the free door
+                  stays reachable from the blocked screen. */}
+              <Button
+                label={COPY.checkin.openCta}
+                variant="secondary"
+                onPress={() => navigation.navigate('Checkin')}
+                testID="rooms-go-checkin"
+              />
+            </>
           }
         />
       </Screen>
@@ -212,6 +229,12 @@ export function RoomsScreen() {
   }
 
   const upcomingOpen = upcomingStatus?.eligible === true;
+  const nearbyStatus: RoomStatus = {
+    room: 'NEARBY',
+    eligible: checkin !== null,
+    reason: 'ELIGIBLE',
+    validUntil: checkin?.expiresAt ?? null,
+  };
 
   return (
     <Screen safeTop resetScrollOnFocus testID="screen-rooms">
@@ -247,6 +270,32 @@ export function RoomsScreen() {
         }
         testID="room-here-now"
         buttonTestID="open-here-now"
+      />
+
+      <RoomCard
+        room="NEARBY"
+        status={nearbyStatus}
+        lead={COPY.checkin.cardLead}
+        body={COPY.checkin.cardBody}
+        illustration={<CompassScene />}
+        icon={<PinIcon />}
+        buttonLabel={checkin ? COPY.checkin.manageButton : COPY.checkin.openCta}
+        onOpen={() => navigation.navigate('Checkin')}
+        extra={
+          checkin ? (
+            <Caption testID="room-nearby-active">
+              {COPY_FOR.checkinUntil(
+                checkin.venueName,
+                new Date(checkin.expiresAt).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                }),
+              )}
+            </Caption>
+          ) : null
+        }
+        testID="room-nearby"
+        buttonTestID="open-checkin"
       />
 
       {/* The trust caption grown into the designer's footer: what is true

@@ -7,7 +7,9 @@
  *   are collapsed to a boolean + coarse bucket at the evaluation boundary.
  */
 
-export type RoomKey = 'UPCOMING' | 'HERE_NOW';
+/** UPCOMING and HERE_NOW are the hotel rooms; NEARBY is the free
+ * check-in street (D-039). */
+export type RoomKey = 'UPCOMING' | 'HERE_NOW' | 'NEARBY';
 
 export interface Hotel {
   id: string;

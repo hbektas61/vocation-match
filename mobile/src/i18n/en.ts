@@ -504,6 +504,7 @@ export const en = {
     closedChip: 'Closed',
     upcomingPlate: 'Upcoming',
     hereNowPlate: 'Here now',
+    nearbyPlate: 'Nearby',
     /**
      * The designer's card texts (2026-07-27) are the reviewed explainers
      * split in two: the claim in bold, the trust sentence under it.
@@ -517,6 +518,33 @@ export const en = {
     hereNowBody: 'It only confirms you are within 500 m of the hotel — your exact location is never shown or stored.',
     privacyTitle: 'Your privacy matters here',
     privacyBody: 'Your exact location is never shown or stored. You can delete your account and data at any time.',
+  },
+
+  /**
+   * D-039 — "Çevremde": free venue check-ins. Copy promises only what the
+   * feature does: a venue name, a three-hour clock, mutual visibility. No
+   * word about exact locations or distances, because there are none.
+   */
+  checkin: {
+    roomTitle: 'Nearby',
+    openCta: 'Check in',
+    manageButton: 'Manage check-in',
+    cardLead: 'Check in where you are, see who is out nearby.',
+    cardBody:
+      'Free for everyone. A check-in names a place — never your exact location — lasts 3 hours, and you are only visible while you also have one.',
+    statusOpen: 'Open — your check-in is fresh.',
+    statusClosed: 'Closed — check in at a place to enter.',
+    explainer:
+      'Pick the place you are at. A one-time location reading confirms you are within 500 m of it; only the place and a clock are kept.',
+    searchPlaceholder: 'Search the place you are at',
+    verifyIntro: 'Confirm you are at this place with a one-time foreground reading.',
+    verifyButton: 'Check in here',
+    simulateAtVenue: 'Simulate: I am at this place',
+    simulateFar: 'Simulate: I am far away',
+    tooFar: 'That reading placed you more than 500 m from this place. Pick the place you are actually at.',
+    seeNearby: 'See who is nearby',
+    checkOut: 'End check-in',
+    checkedOut: 'Your check-in has ended.',
   },
 
   errors: {
@@ -549,6 +577,8 @@ export const enFor = {
    * the threshold the room says nothing at all.
    */
   roomHeadcount: (count: number) => `${count} people`,
+  /** The active check-in line: the venue, and when it lapses. */
+  checkinUntil: (venueName: string, time: string) => `${venueName} — until ${time}`,
 };
 
 export type Copy = typeof en;

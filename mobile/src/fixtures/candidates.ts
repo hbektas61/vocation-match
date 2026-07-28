@@ -33,7 +33,7 @@ export const CANDIDATES: Candidate[] = [
     bio: 'Here for the food, staying for the pool.',
     interests: ['food', 'diving', 'board games'],
     hotelId: 'hotel-lara-shore',
-    rooms: ['HERE_NOW'],
+    rooms: ['HERE_NOW', 'NEARBY'],
     likesYou: false,
   },
   {
@@ -109,6 +109,21 @@ export const CANDIDATES: Candidate[] = [
     rooms: ['UPCOMING', 'HERE_NOW'],
     likesYou: false,
     stay: { startDate: '2026-07-20', endDate: '2026-08-20' },
+  },
+  {
+    /** D-039 fixture: checked in one street over, visible in Çevremde. */
+    id: 'cand-lale',
+    displayName: 'Lale',
+    gender: 'WOMAN',
+    showGender: true,
+    orientations: [],
+    showOrientation: false,
+    age: 28,
+    bio: 'Marina sunsets and late espresso.',
+    interests: ['sailing', 'coffee', 'dancing'],
+    hotelId: 'hotel-lara-marina',
+    rooms: ['NEARBY'],
+    likesYou: true,
   },
   {
     /** D-038 fixture: anchored 2 km away, reachable through the region pool. */

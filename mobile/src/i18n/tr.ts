@@ -483,6 +483,7 @@ export const tr: Copy = {
     closedChip: 'Kapalı',
     upcomingPlate: 'Yaklaşan',
     hereNowPlate: 'Şu an burada',
+    nearbyPlate: 'Çevremde',
     noHotelTitle: 'Önce bir otel seç',
     noHotelBody: 'Henüz bir otel seçmedin. Bir otel seçtikten sonra odalar burada listelenecek.',
     viewHotels: 'Otelleri görüntüle',
@@ -492,6 +493,28 @@ export const tr: Copy = {
     hereNowBody: 'Yalnız otele 500 m içinde olduğunu doğrular — tam konumun asla gösterilmez ve saklanmaz.',
     privacyTitle: 'Gizliliğin bizim için önemli',
     privacyBody: 'Tam konumun asla gösterilmez ve saklanmaz. Hesabını ve verilerini istediğin an silebilirsin.',
+  },
+
+  checkin: {
+    roomTitle: 'Çevremde',
+    openCta: 'Check-in yap',
+    manageButton: 'Check-in\'i yönet',
+    cardLead: 'Bulunduğun mekâna check-in at, çevrede kimler var gör.',
+    cardBody:
+      'Herkese ücretsiz. Check-in bir mekân adı söyler — asla tam konumunu değil — 3 saat sürer ve sen de check-in\'liyken görünürsün.',
+    statusOpen: 'Açık — check-in\'in taze.',
+    statusClosed: 'Kapalı — girmek için bir mekâna check-in at.',
+    explainer:
+      'Bulunduğun mekânı seç. Tek seferlik bir konum okuması 500 m içinde olduğunu doğrular; yalnız mekân ve bir saat tutulur.',
+    searchPlaceholder: 'Bulunduğun mekânı ara',
+    verifyIntro: 'Tek seferlik, ön planda bir okumayla bu mekânda olduğunu doğrula.',
+    verifyButton: 'Buraya check-in yap',
+    simulateAtVenue: 'Simüle et: bu mekândayım',
+    simulateFar: 'Simüle et: uzaktayım',
+    tooFar: 'Bu okuma seni mekândan 500 metreden uzakta buldu. Gerçekten bulunduğun mekânı seç.',
+    seeNearby: 'Çevremdekileri gör',
+    checkOut: 'Check-in\'i bitir',
+    checkedOut: 'Check-in\'in sona erdi.',
   },
 
   errors: {
@@ -517,5 +540,6 @@ export const trFor: CopyFor = {
   discoveryTitle: (hotelName: string) => `${hotelName} keşfi`,
   switchPrompt: (hotelName: string) => `${hotelName} oteline geçilsin mi?`,
   daysAgo: (days: number) => `${days} gün`,
+  checkinUntil: (venueName: string, time: string) => `${venueName} — ${time}'e kadar`,
   roomHeadcount: (count: number) => `${count} kişi`,
 };

@@ -12,7 +12,7 @@ import { NoHotelCard } from '../components/NoHotelCard';
 import { CompassScene } from '../components/NoHotelIllustrations';
 import { RadarEmpty } from '../components/RadarEmpty';
 import { nowMs } from '../clock';
-import { apiErrorMessage, COPY, upperCase } from '../copy';
+import { apiErrorMessage, COPY, upperCase, roomPlate } from '../copy';
 import { ApiError, getApi, type CandidateCard, type RoomKey, type RoomStatus } from '../data';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { color, font, fontFamily, palette, radius, spacing } from '../theme';
@@ -59,6 +59,7 @@ const PinTinyIcon = () => (
 const ROOM_LABEL: Record<RoomKey, string> = {
   UPCOMING: COPY.upcoming.roomTitle,
   HERE_NOW: COPY.hereNow.roomTitle,
+  NEARBY: COPY.checkin.roomTitle,
 };
 
 export function DiscoveryScreen() {
@@ -95,12 +96,24 @@ export function DiscoveryScreen() {
 
       const load = async () => {
         try {
-          const fetched = await getApi().getRooms();
+          // Çevremde (D-039) joins the room list as a synthetic entry when a
+          // fresh check-in exists: same segments, same deck machinery, same
+          // expiry-driven refresh — its validUntil is the check-in clock.
+          const [fetched, checkin] = await Promise.all([
+            getApi().getRooms(),
+            getApi().getCheckin().catch(() => null),
+          ]);
           if (cancelled) return;
-          setRooms(fetched);
-          const eligible = fetched.filter((r) => r.eligible).map((r) => r.room);
+          const withNearby: RoomStatus[] = checkin
+            ? [
+                ...fetched,
+                { room: 'NEARBY', eligible: true, reason: 'ELIGIBLE', validUntil: checkin.expiresAt },
+              ]
+            : fetched;
+          setRooms(withNearby);
+          const eligible = withNearby.filter((r) => r.eligible).map((r) => r.room);
           setRoom((current) => (current && eligible.includes(current) ? current : eligible[0] ?? null));
-          const soonest = earliestRoomExpiry(fetched, nowMs());
+          const soonest = earliestRoomExpiry(withNearby, nowMs());
           if (soonest !== null) {
             timer = setTimeout(load, soonest - nowMs());
           }
@@ -174,7 +187,18 @@ export function DiscoveryScreen() {
   const shownPath = cardPaths[Math.min(photoIndex, Math.max(cardPaths.length - 1, 0))] ?? null;
   const photoUrls = usePhotoUrls(photoPaths);
 
-  if (!hasHotel) {
+  if (rooms === null) {
+    return (
+      <Screen safeTop testID="screen-discovery">
+        <Title>{COPY.tabs.discovery}</Title>
+        <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="discovery-loading" />
+      </Screen>
+    );
+  }
+
+  const nearbyOpen = rooms.some((r) => r.room === 'NEARBY' && r.eligible);
+
+  if (!hasHotel && !nearbyOpen) {
     return (
       <Screen safeTop testID="screen-discovery">
         <Title>{COPY.tabs.discovery}</Title>
@@ -202,15 +226,6 @@ export function DiscoveryScreen() {
             </>
           }
         />
-      </Screen>
-    );
-  }
-
-  if (rooms === null) {
-    return (
-      <Screen safeTop testID="screen-discovery">
-        <Title>{COPY.tabs.discovery}</Title>
-        <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="discovery-loading" />
       </Screen>
     );
   }
@@ -248,6 +263,12 @@ export function DiscoveryScreen() {
               icon="compass"
               onPress={() => navigation.navigate('HereNow')}
               testID="discovery-check-proximity"
+            />
+            <BigActionButton
+              label={COPY.checkin.openCta}
+              icon="sparkle"
+              onPress={() => navigation.navigate('Checkin')}
+              testID="discovery-go-checkin"
             />
           </View>
         </View>
@@ -362,7 +383,7 @@ export function DiscoveryScreen() {
             <View style={styles.roomChip} testID="candidate-room">
               <View style={styles.roomChipDot} />
               <Text style={styles.roomChipText}>
-                {upperCase(room === 'UPCOMING' ? COPY.rooms.upcomingPlate : COPY.rooms.hereNowPlate)}
+                {upperCase(roomPlate(room))}
               </Text>
             </View>
             <View

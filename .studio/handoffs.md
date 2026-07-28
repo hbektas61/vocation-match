@@ -2385,3 +2385,20 @@ Operator seed so the owner can see D-038 on a device: demo venue
 stay today→+30, already LIKEs the owner's Cab account) anchored there.
 Verified end-to-end as dummy Derin: the Upcoming deck answers four
 own-venue cards then "İrem · Sorgun Beach Club" labelled as region.
+
+## 2026-07-28 — Çevremde: the street joined the building
+
+D-039. New free surface, end to end: `checkins` table (one present-tense
+row per user, venue FK, 3-hour clock, swept on write), `record_checkin`
+(venue + one foreground reading, 500 m, out-of-range answered never
+stored), `clear_checkin`, `my_checkin`; NEARBY as a third value in the
+room vocabulary — `room_eligible`, `discovery_feed` (check-in anchored,
+mutual by construction, 1 km, same-venue first, labelled), `swipe`
+(check-in anchor, street-scoped target rule, D-036 allowance exempt),
+swipes/matches constraints. Client: Checkin screen (venue search →
+verify → active card), third RoomCard, third Discovery segment via a
+synthetic RoomStatus whose validUntil is the check-in clock, roomPlate()
+for NEARBY match/chat labels, fixtures Lara Marina Bar + Lale + Mert.
+020_checkins.sql (17 assertions, 469 total SQL), checkin.test.ts (8,
+419 jest). ROOM_NEW pushes for check-ins deliberately not wired —
+recorded in D-039's reopen list.

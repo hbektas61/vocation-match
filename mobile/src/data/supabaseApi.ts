@@ -22,7 +22,9 @@ import {
   type MatchSummary,
   type OwnProfile,
   type PhotoUpload,
-  type PresenceAnswer,
+  type ActiveCheckin,
+  CheckinAnswer,
+  PresenceAnswer,
   MAX_PHOTOS,
   type ProfileInput,
   type ProfilePhoto,
@@ -666,6 +668,43 @@ export class SupabaseApi implements VocationApi {
       room: row.room as RoomKey,
       headcount: row.headcount,
     }));
+  }
+
+  /* -------------------------------------------------------------- check-ins */
+
+  async recordCheckin(venueId: string, latitude: number, longitude: number): Promise<CheckinAnswer> {
+    // Same shape as the presence check (D-005): the reading leaves the
+    // device once, as an argument; the server stores a venue id and a
+    // clock, never the point.
+    const row = await this.rpcSingle<{ within_range: boolean; expires_at: string | null }>(
+      'record_checkin',
+      { p_venue: venueId, p_latitude: latitude, p_longitude: longitude },
+      'Could not check you in.',
+    );
+    return {
+      withinRange: row.within_range,
+      expiresAt: row.expires_at ? Date.parse(row.expires_at) : null,
+    };
+  }
+
+  async clearCheckin(): Promise<void> {
+    const { error } = await this.client.rpc('clear_checkin');
+    if (error) {
+      throw toApiError(error, 'Could not end your check-in.');
+    }
+  }
+
+  async getCheckin(): Promise<ActiveCheckin | null> {
+    const { data, error } = await this.client.rpc('my_checkin');
+    if (error) {
+      throw toApiError(error, 'Could not load your check-in.');
+    }
+    const row = (data ?? [])[0] as
+      | { venue_id: string; venue_name: string; expires_at: string }
+      | undefined;
+    return row
+      ? { venueId: row.venue_id, venueName: row.venue_name, expiresAt: Date.parse(row.expires_at) }
+      : null;
   }
 
   /* -------------------------------------------------------------- discovery */

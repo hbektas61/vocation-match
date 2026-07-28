@@ -26,11 +26,13 @@ import { getHotelById, searchHotels as searchHotelFixtures } from '../fixtures/h
 import {
   ApiError,
   type ActivationResult,
+  type ActiveCheckin,
   type ActiveHotel,
   type AuthSession,
   type BlockedUser,
   type CandidateCard,
   type ChatMessage,
+  type CheckinAnswer,
   type HotelCard,
   type MatchSummary,
   type OwnProfile,
@@ -102,6 +104,11 @@ export class FakeApi implements VocationApi {
   private readonly activeHotels = new Map<string, ActiveHotel>();
   private readonly stays = new Map<string, UpcomingDeclaration>();
   private readonly presence = new Map<string, HereNowCheck>();
+  /** D-039: one present-tense check-in per user, venue-anchored. */
+  private readonly checkins = new Map<
+    string,
+    { venueId: string; checkedAt: number; expiresAt: number }
+  >();
   private readonly swipes = new Map<
     string,
     { direction: SwipeDirection; room: RoomKey; hotelId: string }
@@ -571,6 +578,48 @@ export class FakeApi implements VocationApi {
     this.presence.delete(userId);
   }
 
+  /* -------------------------------------------------------------- check-ins */
+
+  async recordCheckin(venueId: string, latitude: number, longitude: number): Promise<CheckinAnswer> {
+    const userId = await this.requireUserId();
+    const venue = getHotelById(venueId);
+    if (!venue) {
+      throw new ApiError('NOT_FOUND', 'That place is not in the catalogue.');
+    }
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      Math.abs(latitude) > 90 ||
+      Math.abs(longitude) > 180
+    ) {
+      throw new ApiError('INVALID_INPUT', 'That location reading is not usable.');
+    }
+    const within =
+      haversineMeters(venue.latitude, venue.longitude, latitude, longitude) <= 500;
+    if (!within) {
+      // Answered, never stored — mirrors `record_checkin`.
+      return { withinRange: false, expiresAt: null };
+    }
+    const expiresAt = this.now() + 3 * 60 * 60 * 1000;
+    this.checkins.set(userId, { venueId, checkedAt: this.now(), expiresAt });
+    return { withinRange: true, expiresAt };
+  }
+
+  async clearCheckin(): Promise<void> {
+    const userId = await this.requireUserId();
+    this.checkins.delete(userId);
+  }
+
+  async getCheckin(): Promise<ActiveCheckin | null> {
+    const userId = await this.requireUserId();
+    const checkin = this.freshCheckin(userId);
+    if (!checkin) return null;
+    const venue = getHotelById(checkin.venueId);
+    return venue
+      ? { venueId: checkin.venueId, venueName: venue.name, expiresAt: checkin.expiresAt }
+      : null;
+  }
+
   async getRooms(): Promise<RoomStatus[]> {
     const userId = await this.requireUserId();
     const active = this.activeHotels.get(userId) ?? null;
@@ -627,7 +676,7 @@ export class FakeApi implements VocationApi {
     // number is only spoken at five or more. Below that, null; and null
     // renders as nothing.
     const myStay = this.stays.get(stayKey(userId, active.hotelId)) ?? null;
-    return (['UPCOMING', 'HERE_NOW'] as RoomKey[]).map((room) => {
+    return (['UPCOMING', 'HERE_NOW'] as ('UPCOMING' | 'HERE_NOW')[]).map((room) => {
       const crowd = ROOM_CROWD[active.hotelId]?.[room] ?? 0;
       const visible =
         CANDIDATES.filter(
@@ -651,6 +700,44 @@ export class FakeApi implements VocationApi {
 
   async getDiscoveryFeed(room: RoomKey, limit = 20): Promise<CandidateCard[]> {
     const userId = await this.requireUserId();
+
+    // D-039: Çevremde is anchored to the check-in, not the active hotel, and
+    // mutuality is structural — no fresh check-in, no looking.
+    if (room === 'NEARBY') {
+      const checkin = this.freshCheckin(userId);
+      if (!checkin) {
+        throw new ApiError('NOT_FOUND', 'Check in somewhere first.');
+      }
+      const self = this.profiles.get(userId);
+      return CANDIDATES.filter(
+        (candidate) =>
+          candidate.rooms.includes('NEARBY') &&
+          this.inNearbyOf(checkin.venueId, candidate.hotelId) &&
+          showMeMatches(self?.showMe ?? null, candidate.gender) &&
+          showMeMatches('EVERYONE', self?.gender ?? null),
+      )
+        .sort((a, b) =>
+          Number(b.hotelId === checkin.venueId) - Number(a.hotelId === checkin.venueId),
+        )
+        .slice(0, Math.min(Math.max(limit, 1), 50))
+        .map((candidate) => ({
+          userId: candidate.id,
+          displayName: candidate.displayName,
+          age: candidate.age,
+          bio: candidate.bio,
+          photoPath: null,
+          photoPaths: [],
+          interests: candidate.interests,
+          gender: candidate.showGender ? candidate.gender : null,
+          orientations: candidate.showOrientation ? candidate.orientations : [],
+          venueName:
+            candidate.hotelId === checkin.venueId
+              ? null
+              : (getHotelById(candidate.hotelId)?.name ?? null),
+          sameVenue: candidate.hotelId === checkin.venueId,
+        }));
+    }
+
     const hotelId = await this.requireActiveHotelId(userId);
     const status = (await this.getRooms()).find((entry) => entry.room === room);
     if (!status?.eligible) {
@@ -739,10 +826,19 @@ export class FakeApi implements VocationApi {
       };
     }
 
-    const hotelId = await this.requireActiveHotelId(userId);
-    const status = (await this.getRooms()).find((entry) => entry.room === room);
-    if (!status?.eligible) {
-      throw new ApiError('FORBIDDEN', 'You do not have access to this room yet.');
+    let hotelId: string;
+    if (room === 'NEARBY') {
+      const checkin = this.freshCheckin(userId);
+      if (!checkin) {
+        throw new ApiError('NOT_FOUND', 'Check in somewhere first.');
+      }
+      hotelId = checkin.venueId;
+    } else {
+      hotelId = await this.requireActiveHotelId(userId);
+      const status = (await this.getRooms()).find((entry) => entry.room === room);
+      if (!status?.eligible) {
+        throw new ApiError('FORBIDDEN', 'You do not have access to this room yet.');
+      }
     }
     // D-036: the free allowance in Upcoming — 3 likes, 5 passes, per hotel.
     // Counted from stored swipes, after the replay branch, exactly like
@@ -769,9 +865,12 @@ export class FakeApi implements VocationApi {
       : CANDIDATES.find(
           (entry) =>
             entry.id === targetUserId &&
-            // D-038: reachable at the caller's venue or within the region.
-            this.inRegionOf(hotelId, entry.hotelId) &&
-            entry.rooms.includes(room),
+            entry.rooms.includes(room) &&
+            // D-038 / D-039: reachable within the region for the rooms, or
+            // within the 1 km street for Çevremde.
+            (room === 'NEARBY'
+              ? this.inNearbyOf(hotelId, entry.hotelId)
+              : this.inRegionOf(hotelId, entry.hotelId)),
         );
     if (!candidate) {
       throw new ApiError('FORBIDDEN', 'That person is not in this room.');
@@ -988,6 +1087,22 @@ export class FakeApi implements VocationApi {
     return (
       haversineMeters(mine.latitude, mine.longitude, theirs.latitude, theirs.longitude) <= 15000
     );
+  }
+
+  /** The 1 km street (D-039), venue to venue — mirrors the server's rule. */
+  private inNearbyOf(venueId: string, candidateHotelId: string): boolean {
+    if (candidateHotelId === venueId) return true;
+    const mine = getHotelById(venueId);
+    const theirs = getHotelById(candidateHotelId);
+    if (!mine || !theirs) return false;
+    return (
+      haversineMeters(mine.latitude, mine.longitude, theirs.latitude, theirs.longitude) <= 1000
+    );
+  }
+
+  private freshCheckin(userId: string): { venueId: string; expiresAt: number } | null {
+    const checkin = this.checkins.get(userId);
+    return checkin && checkin.expiresAt > this.now() ? checkin : null;
   }
 
   private isPremiumNow(userId: string): boolean {
