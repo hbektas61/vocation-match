@@ -2488,3 +2488,15 @@ backfilled from their ring width. my_checkin also returns the venue's
 photo for the active card. Omitted knowingly: inbox unread dot,
 photo heart button; two mock sentences corrected to the truth. Tatilim
 tab icon is now the suitcase. 419 jest, 474 SQL.
+
+## 2026-07-29 — staging test cast for the from-scratch run
+
+Operator seed (staging only, never migrations): three new demo members
+checked into Kocatepe Mahallesi for 48 h — Aslı (26) and Buse (29,
+both WOMAN) and Emre (32, MAN) — joining Derin…Melis (Voyage Sorgun,
+Tatilden Önce) and İrem (Sorgun Sahil Bar). A second staging trigger,
+staging_owner_seed_likes, fires when 905551122333 registers: every
+demo member LIKEs the fresh account from their own anchor (UPCOMING
+from active hotels, NEARBY from check-ins), so the owner can produce
+matches in every surface from minute one. Check-ins lapse after 48 h;
+re-seed on request.
