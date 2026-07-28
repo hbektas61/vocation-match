@@ -2402,3 +2402,12 @@ for NEARBY match/chat labels, fixtures Lara Marina Bar + Lale + Mert.
 020_checkins.sql (17 assertions, 469 total SQL), checkin.test.ts (8,
 419 jest). ROOM_NEW pushes for check-ins deliberately not wired —
 recorded in D-039's reopen list.
+
+## 2026-07-28 — staging Çevremde demo seed
+
+Demo venue "Sorgun Sahil Bar" (~730 m from Club Voyage Sorgur) and two
+12-hour demo check-ins: Derin at Voyage, İrem at the bar. Verified as
+İrem: the NEARBY deck answers "Derin · Club Voyage Sorgur". Note for
+device testing: staging uses the real GPS path (no simulation card), so
+the owner tests Çevremde by checking in at a real venue near wherever
+they physically are — two test numbers at the same spot see each other.
