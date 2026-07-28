@@ -296,20 +296,20 @@ export const tr: Copy = {
     withdrawButton: 'Beyanımı geri çek',
     withdrawing: 'Geri çekiliyor…',
     withdrawExplainer:
-      'Geri çekmek beyan ettiğin tarihleri siler ve bu oteldeki Yaklaşan odasını kapatır. Mevcut eşleşmelerin ve konuşmaların durur.',
+      'Geri çekmek beyan ettiğin tarihleri siler ve bu oteldeki Tatilden Önce odasını kapatır. Mevcut eşleşmelerin ve konuşmaların durur.',
     withdrawError: 'Beyanın geri çekilemedi. Tekrar dene.',
     loadError: 'Beyan ettiğin konaklama yüklenemedi.',
   },
 
   roomReason: {
     ELIGIBLE_UPCOMING: 'Açık — kendi beyan ettiğin konaklama bugünü kapsıyor.',
-    ELIGIBLE_HERE_NOW: 'Açık — yakın zamandaki bir kontrol seni 500 m içinde buldu.',
+    ELIGIBLE_HERE_NOW: 'Açık — az önceki kontrol seni otelde buldu.',
     NO_ACTIVE_HOTEL: 'Önce bir otel etkinleştir.',
     NO_DECLARATION: 'Kapalı — girmek için konaklama tarihlerini beyan et.',
     STAY_ENDED: 'Beyan ettiğin konaklama sona erdi. Odayı yeniden açmak için tarihlerini güncelle.',
     NO_RECENT_CHECK: 'Kapalı — girmek için bir yakınlık kontrolü yap.',
-    TOO_FAR: 'Bu kontrol seni otelden 500 metreden uzakta buldu. Yaklaştığında tekrar dene.',
-    PREMIUM_ONLY: 'Şu An Burada odası Premium üyelere özel.',
+    TOO_FAR: 'Bu kontrol seni otelin yakınında bulamadı. Oteldeyken tekrar dene.',
+    PREMIUM_ONLY: 'Oteldeyim, Premium üyelere özel.',
     loadError: 'Odaların yüklenemedi. Tekrar dene.',
   },
 
@@ -317,25 +317,25 @@ export const tr: Copy = {
     roomTitle: 'Oteldeyim',
     statusBadge: 'Şu an otele yakın',
     explainer:
-      'Şu An Burada, uygulama açıkken yapılan hızlı bir konum kontrolüyle açılır. Yalnız otele 500 m içinde olduğunu doğrular — tam konumun asla gösterilmez ve saklanmaz.',
+      'Oteldeyim, uygulama açıkken yapılan tek seferlik bir konum kontrolüyle açılır. Yalnız otelde olduğunu doğrular — tam konumun asla gösterilmez ve saklanmaz.',
     checkButton: 'Yakınlığımı kontrol et',
     realCheckIntro: 'Mevcut konumun tek seferlik, ön planda bir kontrol için kullanılır. Arka planda hiçbir şey çalışmaz.',
     realCheckButton: 'Mevcut konumumu kullan',
-    inRange: 'İçerdesin. Şu An Burada bu otel için açık.',
+    inRange: 'İçerdesin. Oteldeyim bu otel için açık.',
     goToDiscovery: 'Keşfete git',
     stopSharingError:
-      'Yakınlık bilgini kapatamadık. Tekrar dene — bu başarılana kadar Şu An Burada açık kalabilir.',
+      'Yakınlık bilgini kapatamadık. Tekrar dene — bu başarılana kadar Oteldeyim açık kalabilir.',
     simulateIntroPrefix: 'Önizleme: bu düğmeler, gerçek bir cihaz gerektirmeden konum okumasını simüle eder —',
     simulateAtHotel: 'Simüle et: oteldeyim',
     simulateFarAway: 'Simüle et: uzaktayım',
     simulateDeny: 'Simüle et: konum iznini reddet',
-    tooFar: 'Bu kontrol seni otelden 500 metreden uzakta buldu. Yaklaştığında tekrar dene.',
+    tooFar: 'Bu kontrol seni otelin yakınında bulamadı. Oteldeyken tekrar dene.',
     unavailable: 'Konumun okunamadı. Cihaz ayarlarını kontrol edip tekrar dene.',
     permissionDenied:
-      'Konum izni reddedildi. Şu An Burada tek seferlik, ön planda bir kontrol ister; arka planda hiçbir şey çalışmaz. Yaklaşan odasını yine kullanabilirsin.',
-    expired: 'Yakınlık kontrolünün süresi doldu. Şu An Burada’ya yeniden girmek için yeni bir kontrol yap.',
+      'Konum izni reddedildi. Oteldeyim tek seferlik, ön planda bir kontrol ister; arka planda hiçbir şey çalışmaz. Tatilden Önce odasını yine kullanabilirsin.',
+    expired: 'Yakınlık kontrolünün süresi doldu. Oteldeyim\'e yeniden girmek için yeni bir kontrol yap.',
     premiumOnly:
-      'Şu An Burada, Premium üyelere özel. Premium ayrıca Yaklaşan odasındaki beğeni sınırını kaldırır. Uygulama içinden Premium satın alma henüz açık değil.',
+      'Oteldeyim, Premium üyelere özel. Premium ayrıca Tatilden Önce odasındaki beğeni sınırını kaldırır. Uygulama içinden Premium satın alma henüz açık değil.',
   },
 
   trust: {
@@ -351,7 +351,7 @@ export const tr: Copy = {
     aboutLabel: 'Hakkında',
     overlapLabel: 'Nerede kesişiyorsunuz',
     overlapHereNow:
-      'İkiniz de şu an bu otelin 500 m yakınındasınız. Hiçbiriniz diğerinin nerede olduğunu göremez.',
+      'İkiniz de şu an bu oteldesiniz. Hiçbiriniz diğerinin nerede olduğunu göremez.',
     sameHotel: 'Aynı otelde',
     nearby: 'çevrede',
     overlapUpcoming:
@@ -364,7 +364,7 @@ export const tr: Copy = {
     noHotelBody: 'Bir otel seçtikten sonra sana uygun odalar ve kişiler burada görünecek.',
     howItWorks: 'Nasıl çalışır?',
     howItWorksBody:
-      'İki oda var. Yaklaşan, konaklama tarihlerini beyan ettiğinde açılır; Şu An Burada ise otele 500 m yakınlıkta yapılan tek seferlik bir kontrolle. Odadaki kişiler burada, Keşfet\'te görünür.',
+      'İki oda var. Tatilden Önce, konaklama tarihlerini beyan ettiğinde açılır; Oteldeyim ise oteldeyken yapılan tek seferlik bir konum kontrolüyle. Odadaki kişiler burada, Keşfet\'te görünür.',
     noRoomTitle: 'Henüz bir odaya girmedin',
     noRoomBody:
       'Keşfetmeye başlamadan önce bir odaya katıl ya da yakınlık kontrolü yap. Sana uygun odaları burada göreceksin.',
@@ -490,8 +490,8 @@ export const tr: Copy = {
     viewHotels: 'Otelleri görüntüle',
     upcomingLead: 'Konaklama tarihlerini sen beyan edersin.',
     upcomingBody: 'Kimseden rezervasyon, rezervasyon numarası ya da kimlik istenmez — senden de istenmez.',
-    hereNowLead: 'Şu An Burada, uygulama açıkken yapılan hızlı bir konum kontrolüyle açılır.',
-    hereNowBody: 'Yalnız otele 500 m içinde olduğunu doğrular — tam konumun asla gösterilmez ve saklanmaz.',
+    hereNowLead: 'Oteldeyim, uygulama açıkken yapılan tek seferlik bir konum kontrolüyle açılır.',
+    hereNowBody: 'Yalnız otelde olduğunu doğrular — tam konumun asla gösterilmez ve saklanmaz.',
     privacyTitle: 'Gizliliğin bizim için önemli',
     privacyBody: 'Tam konumun asla gösterilmez ve saklanmaz. Hesabını ve verilerini istediğin an silebilirsin.',
   },
@@ -521,7 +521,7 @@ export const tr: Copy = {
       'Tek konum okumasıyla çevrendeki mekânlar listelenir — birine dokun, check-in tamam. Yalnız mekân ve bir saat tutulur, okuma asla.',
     findVenues: 'Çevremdeki mekânları bul',
     aroundYou: 'Çevrende',
-    noVenues: 'Burada kayıtlı mekân bulunamadı. Aşağıdan adıyla ara — aynı 500 m kuralı geçerli.',
+    noVenues: 'Burada kayıtlı mekân bulunamadı. Bulunduğun mekânı aşağıdan adıyla ara.',
     searchFallback: 'Mekânın listede yok mu? Adıyla ara.',
     searchPlaceholder: 'Mekân veya mahalle ara',
     listSubtitle: 'Sana yakın mekânları keşfet, aynı yerde olan insanlarla tanış.',
@@ -552,7 +552,7 @@ export const tr: Copy = {
     kindVenue: 'Mekân',
     previewIntro: 'Önizleme: cihaz gerektirmeden bir okuma simüle et.',
     simulateShore: 'Simüle et: Lara sahilindeyim',
-    tooFar: 'Bu okuma seni mekândan 500 metreden uzakta buldu. Gerçekten bulunduğun mekânı seç.',
+    tooFar: 'Bu okuma seni bu mekânda bulamadı. Gerçekten bulunduğun mekânı seç.',
     seeNearby: 'Çevremdekileri keşfet',
     stayHere: 'Burada kal',
     changeCheckin: 'Check-in\'i değiştir',
@@ -573,7 +573,7 @@ export const tr: Copy = {
     conflict: 'Bu hesap açılamadı.',
     rateLimited: 'Bunu çok sık yapıyorsun. Biraz bekleyip tekrar dene.',
     premiumRequired:
-      'Bunun için Premium gerekli. Ücretsiz üyelikte Yaklaşan odasında 3 beğeni ve 5 geçiş hakkın var.',
+      'Bunun için Premium gerekli. Ücretsiz üyelikte Tatilden Önce odasında 3 beğeni ve 5 geçiş hakkın var.',
     network: 'Bağlantı yok. Tekrar dene.',
     suspended: 'Hesabın askıya alındı. Engelleme, bildirme ve konuşmalarını okuma yine açık.',
     unknown: 'Bir şeyler ters gitti. Tekrar dene.',

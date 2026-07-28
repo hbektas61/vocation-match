@@ -122,7 +122,7 @@ describe('rooms and hotel switching', () => {
     await onboardAndActivateHotel();
     await checkInAtHotel();
     expect(
-      await screen.findByText('Open — a recent check placed you within 500 m.'),
+      await screen.findByText('Open — a recent check found you at the hotel.'),
     ).toBeTruthy();
 
     await fireEvent.press(screen.getByTestId('tab-Vacation'));
@@ -143,7 +143,7 @@ describe('rooms and hotel switching', () => {
     await onboardAndActivateHotel();
     await checkInAtHotel();
     expect(
-      await screen.findByText('Open — a recent check placed you within 500 m.'),
+      await screen.findByText('Open — a recent check found you at the hotel.'),
     ).toBeTruthy();
 
     // Replace the next two `getRooms` answers with one that expires in
@@ -168,7 +168,7 @@ describe('rooms and hotel switching', () => {
     await fireEvent.press(screen.getByTestId('tab-Settings'));
     await fireEvent.press(screen.getByTestId('tab-Vacation'));
     expect(
-      await screen.findByText('Open — a recent check placed you within 500 m.'),
+      await screen.findByText('Open — a recent check found you at the hotel.'),
     ).toBeTruthy();
 
     expect(

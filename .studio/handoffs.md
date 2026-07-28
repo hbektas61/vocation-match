@@ -2500,3 +2500,13 @@ demo member LIKEs the fresh account from their own anchor (UPCOMING
 from active hotels, NEARBY from check-ins), so the owner can produce
 matches in every surface from minute one. Check-ins lapse after 48 h;
 re-seed on request.
+
+## 2026-07-29 — the copy stopped teaching geometry (D-042)
+
+All user-facing "500 m" removed from TR and EN strings (Oteldeyim
+explainer/status/too-far, match celebration, discovery how-it-works,
+Çevremde search fallback and too-far). The server's verification radius
+is untouched. The trust-copy audit flipped from requiring the metre
+figure to forbidding it. The same sweep finished D-040's rename inside
+body copy — "Şu An Burada"/"Yaklaşan" no longer appear in any sentence,
+including the premium wall the owner screenshotted. 419 jest.

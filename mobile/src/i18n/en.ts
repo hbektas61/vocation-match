@@ -295,20 +295,20 @@ export const en = {
     withdrawButton: 'Withdraw my stay',
     withdrawing: 'Withdrawing…',
     withdrawExplainer:
-      'Withdrawing removes your declared dates and closes the Upcoming room at this hotel. Matches and conversations you already have are kept.',
+      'Withdrawing removes your declared dates and closes Before the Trip at this hotel. Matches and conversations you already have are kept.',
     withdrawError: 'Could not withdraw your stay. Try again.',
     loadError: 'Could not load your declared stay.',
   },
 
   roomReason: {
     ELIGIBLE_UPCOMING: 'Open — your self-declared stay covers today.',
-    ELIGIBLE_HERE_NOW: 'Open — a recent check placed you within 500 m.',
+    ELIGIBLE_HERE_NOW: 'Open — a recent check found you at the hotel.',
     NO_ACTIVE_HOTEL: 'Activate a hotel first.',
     NO_DECLARATION: 'Closed — declare your stay dates to enter.',
     STAY_ENDED: 'Your declared stay has ended. Update your dates to reopen this room.',
     NO_RECENT_CHECK: 'Closed — run a presence check to enter.',
-    TOO_FAR: 'That check placed you more than 500 m from the hotel. Try again when you are closer.',
-    PREMIUM_ONLY: 'Here Now is for Premium members.',
+    TOO_FAR: 'That check could not find you near the hotel. Try again when you are there.',
+    PREMIUM_ONLY: 'At the Hotel is for Premium members.',
     loadError: 'Could not load your rooms. Try again.',
   },
 
@@ -316,25 +316,25 @@ export const en = {
     roomTitle: 'At the hotel',
     statusBadge: 'Near the hotel now',
     explainer:
-      'Here Now opens after a quick location check while the app is open. It only confirms you were within 500 m of the hotel — your exact location is never shown or stored.',
+      'At the Hotel opens after a one-time location check while the app is open. It only confirms you are at the hotel — your exact location is never shown or stored.',
     checkButton: 'Check my presence',
     realCheckIntro: 'Use your current location for a one-time foreground check. Nothing runs in the background.',
     realCheckButton: 'Use my current location',
-    inRange: 'You are in. Here Now is open for this hotel.',
+    inRange: 'You are in. At the Hotel is open for this hotel.',
     goToDiscovery: 'Go to discovery',
     stopSharingError:
-      'We could not stop sharing your presence. Try again — until this succeeds, Here Now may stay open.',
+      'We could not stop sharing your presence. Try again — until this succeeds, At the Hotel may stay open.',
     simulateIntroPrefix: 'Preview build: these buttons simulate a location read for testing, without needing a real device near',
     simulateAtHotel: 'Simulate: I am at the hotel',
     simulateFarAway: 'Simulate: I am far away',
     simulateDeny: 'Simulate: deny location permission',
-    tooFar: 'That check placed you more than 500 m from the hotel. Try again when you are closer.',
+    tooFar: 'That check could not find you near the hotel. Try again when you are there.',
     unavailable: 'We could not read your location. Check your device settings and try again.',
     permissionDenied:
-      'Location permission was declined. Here Now needs a one-time foreground check; nothing runs in the background. You can still use Upcoming.',
-    expired: 'Your presence check expired. Run a new check to re-enter Here Now.',
+      'Location permission was declined. At the Hotel needs a one-time foreground check; nothing runs in the background. You can still use Before the Trip.',
+    expired: 'Your presence check expired. Run a new check to re-enter At the Hotel.',
     premiumOnly:
-      'Here Now is for Premium members. Premium also removes the like limit in the Upcoming room. Buying Premium inside the app is not open yet.',
+      'At the Hotel is for Premium members. Premium also removes the like limit in Before the Trip. Buying Premium inside the app is not open yet.',
   },
 
   trust: {
@@ -352,7 +352,7 @@ export const en = {
     // dating app: the two of you are connected to the same hotel.
     overlapLabel: 'Where you overlap',
     overlapHereNow:
-      'You are both within 500 m of this hotel right now. Neither of you can see where the other is.',
+      'You are both at this hotel right now. Neither of you can see where the other is.',
     /** The card's top-right chip: the one bond this product can print. */
     sameHotel: 'Same hotel',
     nearby: 'nearby',
@@ -372,7 +372,7 @@ export const en = {
     noHotelBody: 'Once you choose a hotel, the rooms and people open to you will show up here.',
     howItWorks: 'How does it work?',
     howItWorksBody:
-      'There are two rooms. Upcoming opens when you declare your stay dates; Here Now opens with a one-time check that you are within 500 m of the hotel. The people in a room appear here, in Discovery.',
+      'There are two rooms. Before the Trip opens when you declare your stay dates; At the Hotel opens with a one-time location check made at the hotel. The people in a room appear here, in Discovery.',
     noRoomTitle: "You haven't entered a room yet",
     noRoomBody:
       'Join a room or run a proximity check before you start discovering. The rooms open to you will show up here.',
@@ -515,8 +515,8 @@ export const en = {
     viewHotels: 'View hotels',
     upcomingLead: 'Your stay dates are self-declared.',
     upcomingBody: 'Nobody is asked for a reservation, a booking number, or an ID — and neither are you.',
-    hereNowLead: 'Here Now opens with a quick location check made while the app is open.',
-    hereNowBody: 'It only confirms you are within 500 m of the hotel — your exact location is never shown or stored.',
+    hereNowLead: 'At the Hotel opens with a one-time location check made while the app is open.',
+    hereNowBody: 'It only confirms you are at the hotel — your exact location is never shown or stored.',
     privacyTitle: 'Your privacy matters here',
     privacyBody: 'Your exact location is never shown or stored. You can delete your account and data at any time.',
   },
@@ -551,7 +551,7 @@ export const en = {
       'One location reading lists the places around you — tap one and you are checked in. Only the place and a clock are kept, never the reading.',
     findVenues: 'Find places around me',
     aroundYou: 'Around you',
-    noVenues: 'No listed places here yet. Search yours below — the same 500 m rule decides.',
+    noVenues: 'No listed places here yet. Search the place you are at by name below.',
     searchFallback: 'Your place not listed? Search it by name.',
     searchPlaceholder: 'Search a place or neighbourhood',
     listSubtitle: 'Discover the places near you and meet the people who are there.',
@@ -582,7 +582,7 @@ export const en = {
     kindVenue: 'Place',
     previewIntro: 'Preview build: simulate a reading without a device.',
     simulateShore: 'Simulate: I am at the Lara shore',
-    tooFar: 'That reading placed you more than 500 m from this place. Pick the place you are actually at.',
+    tooFar: 'That reading could not find you at this place. Pick the place you are actually at.',
     seeNearby: 'Discover who is nearby',
     stayHere: 'Stay here',
     changeCheckin: 'Change check-in',
@@ -603,7 +603,7 @@ export const en = {
     conflict: 'That account could not be opened.',
     rateLimited: 'You are doing that too often. Wait a moment and try again.',
     premiumRequired:
-      'That needs Premium. Free members get 3 likes and 5 passes in the Upcoming room.',
+      'That needs Premium. Free members get 3 likes and 5 passes in Before the Trip.',
     network: 'No connection. Try again.',
     suspended: 'Your account is suspended. You can still block, report, and read your conversations.',
     unknown: 'Something went wrong. Try again.',

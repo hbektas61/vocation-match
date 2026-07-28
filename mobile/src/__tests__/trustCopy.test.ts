@@ -112,9 +112,13 @@ describe('what the app is allowed to claim', () => {
     expect(COPY.upcoming.explainer).toMatch(/reservation|booking number|ID/i);
   });
 
-  it('describes Here Now as a proximity check and not as a location', () => {
+  it('describes Here Now as a one-time check and not as a location', () => {
+    // Owner decision (2026-07-29): the radius is an internal rule, not user
+    // copy — consent is to "a check at the hotel", so the explainer names
+    // the one-time check and keeps the never-shown promise, metre-free.
     expect(COPY.hereNow.statusBadge).toMatch(/near the hotel/i);
-    expect(COPY.hereNow.explainer).toMatch(/500\s*m/i);
+    expect(COPY.hereNow.explainer).toMatch(/one-time/i);
+    expect(COPY.hereNow.explainer).not.toMatch(/\d\s*m\b/i);
     expect(COPY.hereNow.explainer).toMatch(/never shown or stored/i);
   });
 
@@ -186,8 +190,9 @@ describe('what the app is allowed to claim, in Turkish', () => {
     expect(tr.upcoming.explainer).toMatch(/rezervasyon|kimlik/i);
   });
 
-  it('Şu An Burada odasını konum değil yakınlık olarak anlatır', () => {
-    expect(tr.hereNow.explainer).toMatch(/500\s*m/i);
+  it('Oteldeyim ekranı tek seferlik kontrolü anlatır, metre anlatmaz', () => {
+    expect(tr.hereNow.explainer).toMatch(/tek seferlik/i);
+    expect(tr.hereNow.explainer).not.toMatch(/\d\s*m\b|metre/i);
     expect(tr.hereNow.explainer).toMatch(/asla gösterilmez ve saklanmaz/i);
   });
 });
