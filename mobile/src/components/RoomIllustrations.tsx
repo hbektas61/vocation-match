@@ -8,10 +8,10 @@
 import React from 'react';
 import Svg, { Circle, Ellipse, Path, Rect } from 'react-native-svg';
 
-const DEEP = '#7B4FA8';
-const MID = 'rgba(123, 79, 168, 0.45)';
-const SOFT = 'rgba(123, 79, 168, 0.18)';
-const FAINT = 'rgba(123, 79, 168, 0.10)';
+const DEEP = '#0F1B3D';
+const MID = 'rgba(236, 72, 153, 0.45)';
+const SOFT = 'rgba(236, 72, 153, 0.18)';
+const FAINT = 'rgba(236, 72, 153, 0.10)';
 
 /** A ring-bound calendar with a check badge: the stay you declare. */
 export function CalendarIllustration({ size = 96 }: { size?: number }) {
@@ -34,7 +34,7 @@ export function CalendarIllustration({ size = 96 }: { size?: number }) {
       )}
       {/* check badge */}
       <Circle cx={72} cy={70} r={15} fill={MID} />
-      <Circle cx={72} cy={70} r={15} fill="rgba(123, 79, 168, 0.25)" />
+      <Circle cx={72} cy={70} r={15} fill="rgba(236, 72, 153, 0.25)" />
       <Path d="M65 70.5l4.5 4.5 9-9" stroke="#FFFFFF" strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
@@ -46,7 +46,7 @@ export function ShieldLock({ size = 64 }: { size?: number }) {
     <Svg width={size} height={size} viewBox="0 0 64 64" fill="none">
       <Path
         d="M32 6c6 4.5 12.5 7 19 7v17c0 12.5-8.5 19.5-18.2 23a2.4 2.4 0 0 1-1.6 0C21.5 49.5 13 42.5 13 30V13c6.5 0 13-2.5 19-7z"
-        fill="rgba(123, 79, 168, 0.10)"
+        fill="rgba(236, 72, 153, 0.10)"
         stroke={MID}
         strokeWidth={2.5}
       />

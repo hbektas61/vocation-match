@@ -37,11 +37,13 @@ import {
 } from '../data';
 import { getHotelById } from '../fixtures/hotels';
 import type { TabParamList } from '../navigation/types';
-import { color, font, fontFamily, radius, spacing } from '../theme';
+import { LinearGradient } from 'expo-linear-gradient';
+
+import { color, font, fontFamily, gradient, radius, spacing } from '../theme';
 
 const HERO = require('../../assets/nearby-hero.jpg');
 
-const VIVID = '#8A5FD6';
+const VIVID = '#EC4899';
 const DEEP = color.accentDeep;
 
 /**
@@ -201,34 +203,34 @@ const HeartGlyph = ({ tone = VIVID, size = 16 }: { tone?: string; size?: number 
 
 /** The mock's corner doodle on the active screen: a dotted heart and plane. */
 const HeartPlaneDoodle = () => (
-  <Svg width={84} height={56} viewBox="0 0 84 56" fill="none" stroke="rgba(138, 95, 214, 0.45)" strokeWidth={1.6} strokeLinecap="round">
+  <Svg width={84} height={56} viewBox="0 0 84 56" fill="none" stroke="rgba(236, 72, 153, 0.45)" strokeWidth={1.6} strokeLinecap="round">
     <Path d="M8 34c-4-6 1-13 7-11 2-6 11-5 12 1 4 8-9 14-12 20-2-4-5-6-7-10z" strokeDasharray="4 4" />
     <Path d="M34 44c10-4 22-10 34-22" strokeDasharray="4 4" />
-    <Path d="M68 10l12 6-9 3-1 8z" fill="rgba(138, 95, 214, 0.35)" stroke="none" />
+    <Path d="M68 10l12 6-9 3-1 8z" fill="rgba(236, 72, 153, 0.35)" stroke="none" />
   </Svg>
 );
 
 /** The intro's bottom flourish: palm — dashes — heart — dashes — cocktail. */
 const FlourishRow = () => (
   <View style={styles.flourishRow} accessible={false} importantForAccessibility="no-hide-descendants">
-    <Svg {...stroke('rgba(123, 79, 168, 0.5)', 18)}>
+    <Svg {...stroke('rgba(236, 72, 153, 0.5)', 18)}>
       <Path d="M12 21v-8m0 0c-1-3-4-4-7-3 2-3 6-3 7-1 1-2 5-2 7 1-3-1-6 0-7 3z" />
     </Svg>
     <View style={styles.flourishDash} />
     <HeartGlyph size={20} />
     <View style={styles.flourishDash} />
-    <CocktailIcon tone="rgba(123, 79, 168, 0.5)" />
+    <CocktailIcon tone="rgba(236, 72, 153, 0.5)" />
   </View>
 );
 
 /* ------------------------------------------------------- category styling */
 
 const KIND_META: Record<string, { label: () => string; tint: string; tone: string }> = {
-  hotel: { label: () => COPY.checkin.kindHotel, tint: 'rgba(138, 95, 214, 0.14)', tone: DEEP },
-  area: { label: () => COPY.checkin.kindArea, tint: 'rgba(138, 95, 214, 0.14)', tone: DEEP },
+  hotel: { label: () => COPY.checkin.kindHotel, tint: 'rgba(236, 72, 153, 0.14)', tone: DEEP },
+  area: { label: () => COPY.checkin.kindArea, tint: 'rgba(236, 72, 153, 0.14)', tone: DEEP },
   cafe: { label: () => COPY.checkin.kindCafe, tint: '#FDEBD2', tone: '#B4690E' },
   restaurant: { label: () => COPY.checkin.kindRestaurant, tint: '#FBDCE4', tone: '#D6336C' },
-  bar: { label: () => COPY.checkin.kindBar, tint: 'rgba(138, 95, 214, 0.14)', tone: DEEP },
+  bar: { label: () => COPY.checkin.kindBar, tint: 'rgba(236, 72, 153, 0.14)', tone: DEEP },
   beach: { label: () => COPY.checkin.kindBeach, tint: '#D9F2EE', tone: '#0E8A78' },
 };
 
@@ -236,7 +238,7 @@ function kindMeta(kind: string | null) {
   return (
     (kind && KIND_META[kind]) || {
       label: () => COPY.checkin.kindVenue,
-      tint: 'rgba(138, 95, 214, 0.14)',
+      tint: 'rgba(236, 72, 153, 0.14)',
       tone: DEEP,
     }
   );
@@ -663,7 +665,14 @@ export function CheckinScreen({
           style={({ pressed }) => [styles.findButton, pressed && styles.pressed]}
           testID="checkin-look-around"
         >
-          <PinIcon tone="#FFFFFF" size={20} />
+          <LinearGradient
+            colors={[...gradient.primary]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={StyleSheet.absoluteFillObject}
+            pointerEvents="none"
+          />
+          <PinIcon tone="#1A1A2E" size={20} />
           <Text style={styles.findButtonLabel}>{COPY.checkin.findVenues}</Text>
         </Pressable>
         {busy ? (
@@ -781,7 +790,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     backgroundColor: color.surface,
     borderWidth: 1.5,
-    borderColor: 'rgba(138, 95, 214, 0.35)',
+    borderColor: 'rgba(236, 72, 153, 0.35)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -918,6 +927,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
     backgroundColor: VIVID,
+    overflow: 'hidden',
     borderRadius: radius.pill,
     minHeight: 60,
     shadowColor: VIVID,
@@ -929,7 +939,7 @@ const styles = StyleSheet.create({
   findButtonLabel: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.body + 2,
-    color: '#FFFFFF',
+    color: '#1A1A2E',
   },
   previewRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   previewChip: {
@@ -998,7 +1008,7 @@ const styles = StyleSheet.create({
     height: 1,
     borderBottomWidth: 1,
     borderStyle: 'dashed',
-    borderColor: 'rgba(123, 79, 168, 0.4)',
+    borderColor: 'rgba(236, 72, 153, 0.4)',
   },
 
   /* active */
@@ -1066,7 +1076,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: 'rgba(138, 95, 214, 0.28)',
+    backgroundColor: 'rgba(236, 72, 153, 0.28)',
     borderRadius: radius.pill,
     minHeight: 58,
   },
@@ -1082,7 +1092,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     backgroundColor: color.surface,
     borderWidth: 1.5,
-    borderColor: 'rgba(123, 79, 168, 0.45)',
+    borderColor: 'rgba(236, 72, 153, 0.45)',
     borderRadius: radius.pill,
     minHeight: 56,
   },

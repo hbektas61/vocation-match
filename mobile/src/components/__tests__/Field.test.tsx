@@ -32,12 +32,12 @@ function flatten(style: unknown): Record<string, unknown> {
 const shellOf = (testID: string) => flatten(screen.getByTestId(`${testID}-box`).props.style);
 
 describe('focus', () => {
-  it('takes the exact border colour the owner asked for', () => {
+  it('takes the exact brand focus colour (D-043: the rendevuu fill)', () => {
     render(<Field label="Name" testID="f" />);
 
     fireEvent(screen.getByTestId('f'), 'focus');
 
-    expect(shellOf('f').borderColor).toBe('#E1C4FF');
+    expect(shellOf('f').borderColor).toBe('#F472B6');
   });
 
   it('does not rely on that colour alone, because it is 1.55:1 on white', () => {

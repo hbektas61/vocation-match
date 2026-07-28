@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   wordmarkDeep: { color: color.accentDeep },
-  wordmarkMid: { color: 'rgba(123, 79, 168, 0.55)' },
+  wordmarkMid: { color: 'rgba(236, 72, 153, 0.55)' },
   headline: {
     fontFamily: fontFamily.display,
     fontSize: font.display,
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: 'rgba(123, 79, 168, 0.08)',
+    backgroundColor: 'rgba(236, 72, 153, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
   },

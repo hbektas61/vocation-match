@@ -2510,3 +2510,14 @@ is untouched. The trust-copy audit flipped from requiring the metre
 figure to forbidding it. The same sweep finished D-040's rename inside
 body copy — "Şu An Burada"/"Yaklaşan" no longer appear in any sentence,
 including the premium wall the owner screenshotted. 419 jest.
+
+## 2026-07-29 — the app tried on the rendevuu palette (D-043)
+
+Theme tokens repainted (navy reads, pinks fill, pink edges at 3.9:1,
+soft-pink washes); the primary action became the owner's gold→coral→
+pink gradient with an ink label (white fails on the gold end — the
+theme test now checks the label against the gradient's worst stop).
+Purple literals swept from 16 files, destination card gradients
+re-tinted, Field focus pin and the palette audit updated. Recorded as
+a trial the owner wants to see whole; a single revert of this commit
+restores lavender. 420 jest.

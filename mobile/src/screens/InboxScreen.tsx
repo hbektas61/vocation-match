@@ -205,7 +205,7 @@ export function InboxScreen() {
                           badge resting on its foot. */}
                       <View>
                         <LinearGradient
-                          colors={['#C9A3E8', '#7B4FA8']}
+                          colors={['#C9A3E8', '#0F1B3D']}
                           start={{ x: 0, y: 0 }}
                           end={{ x: 1, y: 1 }}
                           style={styles.freshRing}
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm + 2,
-    backgroundColor: 'rgba(123, 79, 168, 0.05)',
+    backgroundColor: 'rgba(236, 72, 153, 0.05)',
     borderRadius: radius.md,
     padding: spacing.sm + 4,
     alignSelf: 'stretch',

@@ -9,9 +9,9 @@ import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
 import { color, font, fontFamily, radius, spacing } from '../theme';
 
-const DEEP = '#7B4FA8';
-const MID = 'rgba(123, 79, 168, 0.45)';
-const SOFT = 'rgba(123, 79, 168, 0.22)';
+const DEEP = '#0F1B3D';
+const MID = 'rgba(236, 72, 153, 0.45)';
+const SOFT = 'rgba(236, 72, 153, 0.22)';
 
 /**
  * The celebration around the faces (designer, 2026-07-27): a faint heart
@@ -23,7 +23,7 @@ const Confetti = () => (
     {/* the big soft heart behind the pair */}
     <Path
       d="M170 96c-8-24-46-24-46 3 0 22 26 38 46 53 20-15 46-31 46-53 0-27-38-27-46-3z"
-      fill="rgba(123, 79, 168, 0.07)"
+      fill="rgba(236, 72, 153, 0.07)"
     />
     {/* petals */}
     <Path d="M56 40l12-6 2 13-12 5z" fill={SOFT} />

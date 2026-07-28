@@ -25,9 +25,9 @@ import { color, font, fontFamily, radius, spacing } from '../theme';
  * any number would be an invention. A card is a pre-typed query.
  */
 const DESTINATIONS: { name: string; query: string; cityKey: string; colors: readonly [string, string] }[] = [
-  { name: 'İstanbul', query: 'İstanbul', cityKey: 'istanbul', colors: ['#8E6BC7', '#54366E'] },
-  { name: 'Antalya', query: 'Antalya', cityKey: 'antalya', colors: ['#A98BDE', '#6C55B4'] },
-  { name: 'Kapadokya', query: 'Nevşehir', cityKey: 'kapadokya', colors: ['#C9A3E8', '#8A63B8'] },
+  { name: 'İstanbul', query: 'İstanbul', cityKey: 'istanbul', colors: ['#FCD34D', '#FB7185'] },
+  { name: 'Antalya', query: 'Antalya', cityKey: 'antalya', colors: ['#F472B6', '#EC4899'] },
+  { name: 'Kapadokya', query: 'Nevşehir', cityKey: 'kapadokya', colors: ['#FB7185', '#EC4899'] },
 ];
 
 /** A real photograph of the city through our proxy, or null in fake mode. */
@@ -778,7 +778,7 @@ const styles = StyleSheet.create({
     width: 84,
     height: 84,
     borderRadius: 42,
-    backgroundColor: 'rgba(123, 79, 168, 0.06)',
+    backgroundColor: 'rgba(236, 72, 153, 0.06)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -790,14 +790,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     borderRadius: radius.sm,
     padding: spacing.sm + 2,
-    backgroundColor: 'rgba(123, 79, 168, 0.03)',
+    backgroundColor: 'rgba(236, 72, 153, 0.03)',
   },
   roomTileText: { flex: 1, gap: 4 },
   detailsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(123, 79, 168, 0.05)',
+    backgroundColor: 'rgba(236, 72, 153, 0.05)',
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
@@ -829,7 +829,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
     alignItems: 'center',
-    backgroundColor: 'rgba(123, 79, 168, 0.05)',
+    backgroundColor: 'rgba(236, 72, 153, 0.05)',
     borderRadius: radius.lg,
     padding: spacing.md,
   },
@@ -837,7 +837,7 @@ const styles = StyleSheet.create({
     width: 92,
     height: 92,
     borderRadius: 46,
-    backgroundColor: 'rgba(123, 79, 168, 0.08)',
+    backgroundColor: 'rgba(236, 72, 153, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -871,8 +871,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     borderWidth: 1,
-    borderColor: 'rgba(123, 79, 168, 0.25)',
-    backgroundColor: 'rgba(123, 79, 168, 0.04)',
+    borderColor: 'rgba(236, 72, 153, 0.25)',
+    backgroundColor: 'rgba(236, 72, 153, 0.04)',
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,

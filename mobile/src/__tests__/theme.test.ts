@@ -6,11 +6,12 @@
  * worse than none — it is the reason a reviewer stops checking. So the ratios
  * are computed here from the actual tokens.
  *
- * The second half is about the brand colour specifically. `#E1C4FF` is 1.55:1
- * on white, which means it cannot be the only thing marking a control, a state
- * or a piece of text. Every rule below exists to stop it quietly becoming that.
+ * The second half is about the brand colours specifically (the owner's
+ * "rendevuu" trial, D-043): neither pink can carry body text on white, and
+ * the gold end of the gradient cannot carry white at all — which is why the
+ * navy does the reading and every label on the gradient is ink.
  */
-import { color, palette, roomTone } from '../theme';
+import { color, gradient, palette, roomTone } from '../theme';
 
 /** WCAG 2.x relative luminance. */
 function luminance(hex: string): number {
@@ -33,15 +34,25 @@ function contrast(a: string, b: string): number {
 const WHITE = '#FFFFFF';
 
 describe('the owner’s palette', () => {
-  it('uses exactly the lavender that was specified', () => {
-    // Not "about this colour". The owner gave a hex; drifting off it by a
-    // shade to win a contrast argument would be answering a different brief.
-    expect(palette.lavender).toBe('#E1C4FF');
-    expect(color.accent).toBe('#E1C4FF');
+  it('uses exactly the rendevuu hexes that were specified (D-043)', () => {
+    // Not "about these colours". The owner gave the hexes; drifting off one
+    // by a shade to win a contrast argument would answer a different brief.
+    expect(palette.navy).toBe('#0F1B3D');
+    expect(palette.ink).toBe('#1A1A2E');
+    expect(palette.gold).toBe('#FBBF24');
+    expect(palette.goldLight).toBe('#FCD34D');
+    expect(palette.coral).toBe('#FB7185');
+    expect(palette.pink).toBe('#EC4899');
+    expect(palette.pinkLight).toBe('#F472B6');
+    expect(gradient.primary).toEqual(['#FBBF24', '#FB7185', '#EC4899']);
+    expect(gradient.primaryPressed).toEqual(['#FCD34D', '#FB7185', '#F472B6']);
   });
 
-  it('has no sand, sea or ocean left anywhere in it', () => {
-    const retired = ['#E6CF9D', '#FAF2DF', '#176B7A', '#70C7D8', '#DDF3F7', '#F1FAFB', '#17343C'];
+  it('has no lavender, sand, sea or ocean left anywhere in it', () => {
+    const retired = [
+      '#E1C4FF', '#7B4FA8', '#F3E9FF', '#9678BE', '#8A5FD6',
+      '#E6CF9D', '#FAF2DF', '#176B7A', '#70C7D8', '#DDF3F7', '#F1FAFB', '#17343C',
+    ];
     const inUse = Object.values(palette).map((v) => v.toUpperCase());
     for (const gone of retired) {
       expect(inUse).not.toContain(gone);
@@ -54,23 +65,27 @@ describe('the owner’s palette', () => {
   });
 });
 
-describe('what the lavender is allowed to do', () => {
-  it('is not strong enough to be a boundary on its own, and the file says so', () => {
-    // This is the fact the whole palette is arranged around. If it ever stops
-    // being true the arrangement can be simplified — but it will not, because
-    // the hex is fixed.
-    expect(contrast(palette.lavender, WHITE)).toBeLessThan(3);
+describe('what the pinks are allowed to do', () => {
+  it('the brand fill is not strong enough to carry body text as text on white', () => {
+    // The fact the palette is arranged around: pinks fill and mark, navy reads.
+    expect(contrast(palette.pinkLight, WHITE)).toBeLessThan(4.5);
   });
 
-  it('has a darker sibling that can do the jobs it cannot', () => {
-    // Body text, a control edge, and the focus ring all need 3:1 or better.
-    expect(contrast(palette.lavenderDeep, WHITE)).toBeGreaterThanOrEqual(4.5);
+  it('the navy can do every job the pinks cannot', () => {
+    expect(contrast(palette.navy, WHITE)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('never carries white text', () => {
-    // Every place text sits on the brand fill resolves to ink, not white.
+  it('the strong pink clears a control edge on white', () => {
+    expect(contrast(palette.pink, WHITE)).toBeGreaterThanOrEqual(3);
+  });
+
+  it('never carries white text on the fill, and the gradient label is ink', () => {
     expect(color.onAccent).toBe(palette.ink);
     expect(contrast(color.onAccent, color.accent)).toBeGreaterThanOrEqual(4.5);
+    // The label must survive the gradient's WORST stop, not its average.
+    for (const stop of gradient.primary) {
+      expect(contrast(palette.ink, stop)).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });
 

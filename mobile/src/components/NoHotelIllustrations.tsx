@@ -8,10 +8,10 @@
 import React from 'react';
 import Svg, { Circle, Ellipse, Path, Rect } from 'react-native-svg';
 
-const DEEP = '#7B4FA8';
-const MID = 'rgba(123, 79, 168, 0.45)';
-const SOFT = 'rgba(123, 79, 168, 0.18)';
-const FAINT = 'rgba(123, 79, 168, 0.10)';
+const DEEP = '#0F1B3D';
+const MID = 'rgba(236, 72, 153, 0.45)';
+const SOFT = 'rgba(236, 72, 153, 0.18)';
+const FAINT = 'rgba(236, 72, 153, 0.10)';
 
 /** A numbered door, the hotel behind it, a plant keeping it company. */
 export function DoorScene({ width = 240 }: { width?: number }) {

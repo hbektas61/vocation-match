@@ -24,7 +24,7 @@ import { useAppStore } from '../state/AppStore';
 const DOOR_HERO = require('../../assets/discovery-door.jpg');
 
 const XIcon = () => (
-  <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke={'#7B4FA8'} strokeWidth={2.6} strokeLinecap="round">
+  <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke={'#0F1B3D'} strokeWidth={2.6} strokeLinecap="round">
     <Path d="M6 6l12 12M18 6L6 18" />
   </Svg>
 );
@@ -36,9 +36,9 @@ const HeartIcon = () => (
 );
 
 const FlagIcon = () => (
-  <Svg width={22} height={22} viewBox="0 0 24 24" fill="#7B4FA8" stroke="#7B4FA8" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
-    <Path d="M4 21V4c3-2 6 2 9 0s4-1 7 0v11c-3-1-4-2-7 0s-6-2-9 0z" fill="#7B4FA8" />
-    <Path d="M4 22V3" stroke="#7B4FA8" fill="none" />
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="#0F1B3D" stroke="#0F1B3D" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M4 21V4c3-2 6 2 9 0s4-1 7 0v11c-3-1-4-2-7 0s-6-2-9 0z" fill="#0F1B3D" />
+    <Path d="M4 22V3" stroke="#0F1B3D" fill="none" />
   </Svg>
 );
 

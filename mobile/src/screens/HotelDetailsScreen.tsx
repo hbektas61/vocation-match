@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   artWrap: {
     height: 160,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(123, 79, 168, 0.06)',
+    backgroundColor: 'rgba(236, 72, 153, 0.06)',
     alignItems: 'center',
     justifyContent: 'center',
   },

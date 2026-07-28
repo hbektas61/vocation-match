@@ -1,16 +1,12 @@
 /**
  * Design tokens. One file, so no screen writes a colour of its own.
  *
- * The ground is white and the one brand colour is a light lavender the owner
- * chose. That choice decides most of what follows: at 1.55:1 against white the
- * lavender cannot carry a boundary, a piece of text, or a state on its own, so
- * everywhere it appears it appears *with* something — a darker sibling, a
- * word, a mark. It is a fill and an accent, never the only signal.
- *
- * Every value is measured against the surface it is actually used on and the
- * ratio is in the comment. That habit came from the first accessibility audit
- * (R-004), which found real failures nobody had written down, and it has since
- * caught two supplied values that would have shipped broken.
+ * The palette is the owner's "rendevuu" trial (D-043, 2026-07-29): a navy
+ * for everything that must be read, a warm gold→coral→pink gradient for the
+ * one primary action, and a light pink as the brand fill. The old habit
+ * survives the repaint: every value is measured against the surface it is
+ * actually used on and the ratio is in the comment, because the first
+ * accessibility audit (R-004) found real failures nobody had written down.
  */
 
 /**
@@ -19,52 +15,66 @@
  */
 export const palette = {
   /**
-   * The brand, exactly as the owner specified it. 1.55:1 on white — which is
-   * why it is never a control edge by itself and never carries text on white.
-   * Text sits *on* it (ink is 11.68:1) rather than being drawn *in* it.
+   * The brand fill, exactly as the owner specified it (lightPink). Ink on it
+   * measures 6.0:1, so a chip or a filled pill can carry dark text; it never
+   * carries white text and never marks a boundary alone.
    */
-  lavender: '#E1C4FF',
+  pinkLight: '#F472B6',
   /**
-   * The same hue taken down until it can do the jobs the brand colour cannot:
-   * 5.96:1 on white, so it passes as body text, as a control edge, and as the
-   * companion ring that makes the lavender focus state perceivable.
+   * The strong brand hue (pink). 3.9:1 on white: enough for a control edge
+   * (WCAG 1.4.11 wants 3:1), not enough for body text — text jobs go to the
+   * navy below.
    */
-  lavenderDeep: '#7B4FA8',
-  /** A selected surface. Ink on it is 15.45:1. */
-  lavenderSoft: '#F3E9FF',
+  pink: '#EC4899',
+  /** The warm ends of the primary gradient, per the owner's spec. */
+  gold: '#FBBF24',
+  goldLight: '#FCD34D',
+  coral: '#FB7185',
+  /**
+   * The navy that does the reading jobs the pinks cannot: 16.9:1 on white as
+   * text, icon strokes, and the companion that keeps a pink state legible.
+   */
+  navy: '#0F1B3D',
+  /** A selected surface. Ink on it is 14.7:1. */
+  pinkSoft: '#FCE7F3',
 
   white: '#FFFFFF',
-  /** Near-black, the headline and body colour. 18.11:1 on white. */
-  ink: '#14161A',
-  /** Secondary lines. 6.05:1 on white — a neutral grey, deliberately not tinted. */
-  muted: '#5F6368',
+  /** Near-black (the owner's ink), the headline and body colour. 16.3:1 on white. */
+  ink: '#1A1A2E',
+  /** Secondary lines. 4.74:1 on white — the owner's neutral grey. */
+  muted: '#737373',
   /**
-   * The edge of an input, a card or a secondary button — often the only thing
-   * saying where a control starts, which WCAG 1.4.11 puts at 3:1. 4.21:1.
+   * The edge of an input or a pill — often the only thing saying where a
+   * control starts (WCAG 1.4.11: 3:1). The pink clears it at 3.9:1.
    */
-  // Was #767C85 — a slate the owner read as black against the lavender.
-  // Cards carry no border at all now (decorative edges are exempt from
-  // WCAG 1.4.11 and shadows do their job); this edge remains only on
-  // operable controls — inputs, pills — where 3:1 on white is the floor.
-  // #9678BE is the lightest lavender that clears it (3.67:1).
-  edge: '#9678BE',
-  /** Decorative hairlines only: 1.31:1. A divider between paragraphs, never an edge. */
-  rule: '#E4E6EA',
+  edge: '#EC4899',
+  /** Decorative hairlines only: a divider between paragraphs, never an edge. */
+  rule: '#E5E5E5',
   /** 5.18:1 on white, and white on it is the same. Red stays red. */
   error: '#B94747',
   /** The wash behind an error notice. */
   errorSoft: '#FDF3F3',
-  /** The initial standing in for a missing photo. 3.32:1 on the lavender-soft fill. */
-  placeholder: '#9077A9',
+  /** The initial standing in for a missing photo. 3.7:1 on the pink-soft fill. */
+  placeholder: '#B25A88',
+} as const;
+
+/**
+ * The one gradient in the app: the primary action, warm gold into pink,
+ * exactly as the owner wrote it. Labels on it are ink — the gold end cannot
+ * carry white. The pressed variant is the owner's lighter ramp.
+ */
+export const gradient = {
+  primary: ['#FBBF24', '#FB7185', '#EC4899'],
+  primaryPressed: ['#FCD34D', '#FB7185', '#F472B6'],
 } as const;
 
 export const color = {
-  /** The brand fill: the primary button, a selected surface, the focus border. */
-  accent: palette.lavender,
-  /** Where the brand has to be legible or load-bearing: text, edges, the focus ring. */
-  accentDeep: palette.lavenderDeep,
+  /** The brand fill: a selected surface, chips, the focus border. */
+  accent: palette.pinkLight,
+  /** Where the brand has to be legible or load-bearing: text, icons, the focus ring. */
+  accentDeep: palette.navy,
   /** A selected or highlighted surface. */
-  accentSoft: palette.lavenderSoft,
+  accentSoft: palette.pinkSoft,
 
   ink: palette.ink,
   inkMuted: palette.muted,
@@ -77,7 +87,7 @@ export const color = {
    */
   surface: palette.white,
   /** A fill only. The ground behind a missing photo. */
-  veil: palette.lavenderSoft,
+  veil: palette.pinkSoft,
   /** Control boundaries. See `palette.edge`. */
   border: palette.edge,
   /** Dividers between content, where no control edge is being marked. */

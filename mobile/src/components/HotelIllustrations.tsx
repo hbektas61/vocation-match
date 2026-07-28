@@ -9,9 +9,9 @@
 import React from 'react';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-const DEEP = '#7B4FA8';
-const MID = 'rgba(123, 79, 168, 0.45)';
-const SOFT = 'rgba(123, 79, 168, 0.18)';
+const DEEP = '#0F1B3D';
+const MID = 'rgba(236, 72, 153, 0.45)';
+const SOFT = 'rgba(236, 72, 153, 0.18)';
 
 /** A small hotel with an H sign, two trees, and a cloud. */
 export function HotelBuilding({ size = 64 }: { size?: number }) {
@@ -55,8 +55,8 @@ export function SearchScene({ width = 220 }: { width?: number }) {
   return (
     <Svg width={width} height={height} viewBox="0 0 220 120" fill="none">
       {/* hills */}
-      <Path d="M0 104c30-18 62-18 92 0z" fill="rgba(123, 79, 168, 0.08)" />
-      <Path d="M118 104c32-20 70-20 102 0z" fill="rgba(123, 79, 168, 0.08)" />
+      <Path d="M0 104c30-18 62-18 92 0z" fill="rgba(236, 72, 153, 0.08)" />
+      <Path d="M118 104c32-20 70-20 102 0z" fill="rgba(236, 72, 153, 0.08)" />
       {/* small trees */}
       <Path d="M36 100v-6m148 6v-6" stroke={SOFT} strokeWidth={2.4} strokeLinecap="round" />
       <Circle cx={36} cy={90} r={5} fill={SOFT} />
@@ -67,11 +67,11 @@ export function SearchScene({ width = 220 }: { width?: number }) {
       {/* sparkles */}
       <Path d="M158 16l1.6 3.6L163 21l-3.4 1.4L158 26l-1.6-3.6L153 21l3.4-1.4zM60 22l1 2.4 2.4 1-2.4 1L60 28l-1-2.6-2.4-1 2.4-1z" fill={MID} />
       {/* the tiny hotel under the lens */}
-      <Rect x={96} y={38} width={26} height={40} rx={2} fill="rgba(123, 79, 168, 0.16)" />
+      <Rect x={96} y={38} width={26} height={40} rx={2} fill="rgba(236, 72, 153, 0.16)" />
       {[44, 54, 64].map((y) => (
         <React.Fragment key={y}>
-          <Rect x={101} y={y} width={5} height={6} rx={1} fill="rgba(123, 79, 168, 0.35)" />
-          <Rect x={111} y={y} width={5} height={6} rx={1} fill="rgba(123, 79, 168, 0.35)" />
+          <Rect x={101} y={y} width={5} height={6} rx={1} fill="rgba(236, 72, 153, 0.35)" />
+          <Rect x={111} y={y} width={5} height={6} rx={1} fill="rgba(236, 72, 153, 0.35)" />
         </React.Fragment>
       ))}
       {/* magnifier */}

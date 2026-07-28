@@ -7,13 +7,14 @@
  * buttons.
  */
 import React from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { fontFamily, radius, spacing } from '../theme';
+import { gradient, fontFamily, radius, spacing } from '../theme';
 
-const FILL = '#8A5FD6';
-const DEEP = '#7B4FA8';
+const FILL = '#EC4899';
+const DEEP = '#0F1B3D';
 
 export type BigActionIcon = 'door' | 'compass' | 'sparkle';
 
@@ -63,7 +64,7 @@ export function BigActionButton({
   onPress: () => void;
   testID?: string;
 }) {
-  const tone = filled ? '#FFFFFF' : DEEP;
+  const tone = filled ? '#1A1A2E' : DEEP;
   return (
     <Pressable
       accessibilityRole="button"
@@ -76,6 +77,15 @@ export function BigActionButton({
       ]}
       testID={testID}
     >
+      {filled ? (
+        <LinearGradient
+          colors={[...gradient.primary]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={StyleSheet.absoluteFillObject}
+          pointerEvents="none"
+        />
+      ) : null}
       <View style={[styles.iconSeat, filled && styles.iconSeatFilled]}>
         <Icon name={icon} color={tone} />
       </View>
@@ -97,6 +107,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   filled: {
+    overflow: 'hidden',
     backgroundColor: FILL,
     shadowColor: FILL,
     shadowOpacity: 0.35,
@@ -107,7 +118,7 @@ const styles = StyleSheet.create({
   outline: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
-    borderColor: 'rgba(123, 79, 168, 0.5)',
+    borderColor: 'rgba(236, 72, 153, 0.5)',
   },
   pressed: { opacity: 0.85 },
   iconSeat: {
@@ -117,7 +128,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconSeatFilled: { backgroundColor: 'rgba(255, 255, 255, 0.18)' },
+  iconSeatFilled: { backgroundColor: 'rgba(255, 255, 255, 0.35)' },
   label: {
     flex: 1,
     textAlign: 'center',

@@ -21,10 +21,10 @@ const SIZE = 280;
 
 /** Border and fill pairs, outermost first — the reference's graduated depth. */
 const RINGS = [
-  { diameter: 280, border: 'rgba(123, 79, 168, 0.10)', fill: 'rgba(123, 79, 168, 0.02)' },
-  { diameter: 210, border: 'rgba(123, 79, 168, 0.16)', fill: 'rgba(123, 79, 168, 0.03)' },
-  { diameter: 148, border: 'rgba(123, 79, 168, 0.28)', fill: 'rgba(123, 79, 168, 0.05)' },
-  { diameter: 90, border: 'rgba(123, 79, 168, 0.45)', fill: 'rgba(123, 79, 168, 0.08)' },
+  { diameter: 280, border: 'rgba(236, 72, 153, 0.10)', fill: 'rgba(236, 72, 153, 0.02)' },
+  { diameter: 210, border: 'rgba(236, 72, 153, 0.16)', fill: 'rgba(236, 72, 153, 0.03)' },
+  { diameter: 148, border: 'rgba(236, 72, 153, 0.28)', fill: 'rgba(236, 72, 153, 0.05)' },
+  { diameter: 90, border: 'rgba(236, 72, 153, 0.45)', fill: 'rgba(236, 72, 153, 0.08)' },
 ];
 
 export function RadarEmpty({ testID }: { testID?: string }) {
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(123, 79, 168, 0.22)',
+    backgroundColor: 'rgba(236, 72, 153, 0.22)',
   },
   dot: {
     width: 24,

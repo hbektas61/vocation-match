@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import {
   AccessibilityInfo,
@@ -28,6 +29,7 @@ import {
   radius,
   roomTone,
   spacing,
+  gradient,
 } from '../theme';
 
 export function Screen({
@@ -212,7 +214,20 @@ export function Button({
         pressed && !disabled && !busy && styles.buttonPressed,
       ]}
     >
-      <Text
+      {({ pressed }) => (
+        <>
+          {variant === 'primary' && !disabled && !busy ? (
+            // The owner's gradient (D-043): gold into pink, the pressed state
+            // its lighter ramp. Behind the label, inside the pill's clip.
+            <LinearGradient
+              colors={[...(pressed ? gradient.primaryPressed : gradient.primary)]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={StyleSheet.absoluteFillObject}
+              pointerEvents="none"
+            />
+          ) : null}
+          <Text
         style={[
           styles.buttonLabel,
           compact && styles.buttonLabelCompact,
@@ -222,9 +237,11 @@ export function Button({
           // Last, so it wins over the variant colour.
           (disabled || busy) && styles.buttonLabelDisabled,
         ]}
-      >
-        {label}
-      </Text>
+          >
+            {label}
+          </Text>
+        </>
+      )}
     </Pressable>
   );
 }
@@ -743,9 +760,12 @@ const styles = StyleSheet.create({
    * whose edge nobody can find is not a primary action.
    */
   buttonPrimary: {
+    // The gradient is painted inside; the fill is its fallback frame and the
+    // clip that keeps it a pill.
     backgroundColor: color.accent,
-    shadowColor: color.accentDeep,
-    shadowOpacity: 0.25,
+    overflow: 'hidden',
+    shadowColor: '#FB7185',
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
@@ -753,7 +773,7 @@ const styles = StyleSheet.create({
   buttonSecondary: {
     backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: 'rgba(123, 79, 168, 0.45)',
+    borderColor: 'rgba(236, 72, 153, 0.45)',
   },
   buttonDanger: {
     backgroundColor: 'transparent',
@@ -792,7 +812,7 @@ const styles = StyleSheet.create({
   actionPass: {
     backgroundColor: color.background,
     borderWidth: 1.5,
-    borderColor: 'rgba(123, 79, 168, 0.35)',
+    borderColor: 'rgba(236, 72, 153, 0.35)',
   },
   actionLike: {
     backgroundColor: color.accent,

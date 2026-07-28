@@ -20,7 +20,7 @@ import { color, font, fontFamily, radius, spacing } from '../theme';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
 
-const DEEP = '#7B4FA8';
+const DEEP = '#0F1B3D';
 
 const BackIcon = () => (
   <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color.ink} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
     gap: 5,
     backgroundColor: color.surface,
     borderWidth: 1,
-    borderColor: 'rgba(123, 79, 168, 0.35)',
+    borderColor: 'rgba(236, 72, 153, 0.35)',
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: 4,
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: radius.pill,
     borderWidth: 1.5,
-    borderColor: 'rgba(123, 79, 168, 0.45)',
+    borderColor: 'rgba(236, 72, 153, 0.45)',
     paddingHorizontal: spacing.md + 4,
     fontFamily: fontFamily.body,
     fontSize: font.body,
