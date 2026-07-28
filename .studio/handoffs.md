@@ -2376,3 +2376,12 @@ correctly the same region. New: `019_region_pool.sql` (12 assertions,
 451 total), `regionPool.test.ts` on the fake mirror (411 jest), fixture
 venue Lara Dunes Club + Ece for the credential-free preview. Staging
 carries the migration; no edge-function change was needed.
+
+## 2026-07-28 — staging region demo seed
+
+Operator seed so the owner can see D-038 on a device: demo venue
+"Sorgun Beach Club" (Side, ~1.9 km from Club Voyage Sorgur, id
+36889d88-…) and demo member İrem (11111111-…-000000000006, WOMAN,
+stay today→+30, already LIKEs the owner's Cab account) anchored there.
+Verified end-to-end as dummy Derin: the Upcoming deck answers four
+own-venue cards then "İrem · Sorgun Beach Club" labelled as region.
