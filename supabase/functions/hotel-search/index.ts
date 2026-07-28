@@ -35,9 +35,12 @@ const THIN = 5;
  * Widened past lodging on 2026-07-28 (D-037): the summer crowd the owner is
  * building for gathers at beach clubs as much as at hotels, and OSM tags
  * those as `bar`, `nightclub` or `beach_resort` — Before Sunset in Alaçatı
- * is an `amenity=bar`. The filter's real job is unchanged: keep specific,
+ * is an `amenity=bar` — and a named public beach (Ilıca Plajı) is
+ * `natural=beach`. The filter's real job is unchanged: keep specific,
  * named venues and drop the geography a bare name drags in (parks, roads,
- * whole towns). A named bar is a venue; a park is not.
+ * whole towns). A named beach people plan a day around is a venue; an
+ * unnamed stretch of coast never reaches this filter, because the name
+ * match happens first.
  */
 const HOTEL_TYPES = new Set([
   "hotel",
@@ -45,6 +48,7 @@ const HOTEL_TYPES = new Set([
   "guest_house",
   "resort",
   "beach_resort",
+  "beach",
   "bar",
   "nightclub",
 ]);
