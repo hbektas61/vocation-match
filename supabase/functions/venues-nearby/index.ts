@@ -90,6 +90,23 @@ interface ReverseArea {
   latitude: number;
   longitude: number;
   city: string;
+  radiusMeters: number;
+}
+
+/** Great-circle metres — enough precision to size an area's ring. */
+function haversineMeters(
+  latitudeA: number,
+  longitudeA: number,
+  latitudeB: number,
+  longitudeB: number,
+): number {
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+  const dLat = toRadians(latitudeB - latitudeA);
+  const dLon = toRadians(longitudeB - longitudeA);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRadians(latitudeA)) * Math.cos(toRadians(latitudeB)) * Math.sin(dLon / 2) ** 2;
+  return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 /**
@@ -116,6 +133,7 @@ async function reverseArea(latitude: number, longitude: number): Promise<Reverse
     lat?: string;
     lon?: string;
     address?: Record<string, string>;
+    boundingbox?: [string, string, string, string];
   };
   const name =
     hit.name ||
@@ -125,22 +143,34 @@ async function reverseArea(latitude: number, longitude: number): Promise<Reverse
     hit.address?.town ||
     "";
   if (!name || !hit.osm_type || !hit.osm_id || !hit.lat || !hit.lon) return null;
+  const centerLatitude = Number(hit.lat);
+  const centerLongitude = Number(hit.lon);
+  // The ring has to cover the whole area, and a rural mahalle can put its
+  // centroid kilometres from a resident: size it from the bounding box
+  // (centroid to the far corner), clamped to the schema's 100–5000 m rule.
+  let radiusMeters = 2000;
+  if (hit.boundingbox) {
+    const [latMin, latMax, lonMin, lonMax] = hit.boundingbox.map(Number);
+    const corner = Math.max(
+      haversineMeters(centerLatitude, centerLongitude, latMin, lonMin),
+      haversineMeters(centerLatitude, centerLongitude, latMax, lonMax),
+    );
+    radiusMeters = Math.min(5000, Math.max(2000, Math.ceil(corner)));
+  }
   return {
     osmType: hit.osm_type,
     osmId: hit.osm_id,
     name,
-    latitude: Number(hit.lat),
-    longitude: Number(hit.lon),
+    latitude: centerLatitude,
+    longitude: centerLongitude,
     city:
       hit.address?.town ??
       hit.address?.city ??
       hit.address?.province ??
       "Türkiye",
+    radiusMeters,
   };
 }
-
-/** Wide enough that standing anywhere in an ordinary neighbourhood is inside. */
-const AREA_RADIUS_METERS = 2000;
 
 Deno.serve(async (req) => {
   const role = roleOf(req.headers.get("Authorization") ?? "");
@@ -244,7 +274,7 @@ Deno.serve(async (req) => {
       if (!upserted.error && upserted.data) {
         await admin
           .from("hotels")
-          .update({ checkin_radius_meters: AREA_RADIUS_METERS })
+          .update({ checkin_radius_meters: area.radiusMeters })
           .eq("id", upserted.data);
         const third = await admin.rpc("nearby_venues", {
           p_latitude: latitude,

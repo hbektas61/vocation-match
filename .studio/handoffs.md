@@ -2439,3 +2439,14 @@ reverse lookup (zoom 14) that upserts the neighbourhood with its own
 public centroid — the caller's reading is never written. A neighbourhood
 name is coarser than a street: more private than what was asked for.
 474 SQL assertions.
+
+## 2026-07-28 — area rings sized from the area itself
+
+Field-verified fix on the neighbourhood anchor: a rural mahalle can put
+its centroid kilometres from a resident (Erler Mahallesi: 4 km), so the
+ring is now sized from the reverse lookup's bounding box (centroid to
+far corner, clamped 2–5 km) instead of a flat 2 km. Also fixed a
+BOOT_ERROR from shadowed identifiers in the same function. Verified on
+staging: a venue-less Ankara street answers "Erler Mahallesi" and a
+check-in from that street lands inside the ring; Side kırsalı answers
+"Yalı"; Alaçatı still answers "Before Sunset Bar".
