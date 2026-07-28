@@ -45,7 +45,7 @@ async function returnToForeground() {
 describe('coming back to a session that has gone', () => {
   it('signs out rather than showing tabs whose every request fails', async () => {
     await onboardWithHotel();
-    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
+    expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
 
     // An hour passes with the app in the background: the session lapses.
     clock += 61 * 60 * 1000;
@@ -60,19 +60,19 @@ describe('coming back to a session that has gone', () => {
 
   it('stays put when the session is still good', async () => {
     await onboardWithHotel();
-    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
+    expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
 
     clock += 60 * 1000;
     await returnToForeground();
 
     // Nothing should have happened at all.
-    expect(screen.getByTestId('screen-rooms')).toBeTruthy();
+    expect(screen.getByTestId('screen-hotel')).toBeTruthy();
     expect(await getApi().currentSession()).not.toBeNull();
   });
 
   it('does not sign anyone out because a check failed', async () => {
     await onboardWithHotel();
-    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
+    expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
     jest
       .spyOn(getApi(), 'currentSession')
       .mockRejectedValue(new Error('fetch failed'));
@@ -81,7 +81,7 @@ describe('coming back to a session that has gone', () => {
 
     // A dropped connection looks exactly like a lapsed session from here.
     // Guessing wrong in that direction throws someone out of the app.
-    expect(screen.getByTestId('screen-rooms')).toBeTruthy();
+    expect(screen.getByTestId('screen-hotel')).toBeTruthy();
   });
 });
 

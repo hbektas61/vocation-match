@@ -2462,3 +2462,16 @@ rich); an empty catalogue asks Overpass and the reverse lookup in
 parallel and writes finds concurrently. Measured on staging: first
 look ~1.5 s, repeat looks 0.3–0.4 s (was 10 s+ worst case). The screen
 shows a spinner while looking.
+
+## 2026-07-29 — the app's shape now says what it is (D-040)
+
+IA restructure to the owner's spec. Tabs: Tatilim (HotelScreen grown:
+feature cards from the retired Rooms screen, stay dates on the active
+card, a change-hotel row, locked cards pre-hotel, R-003 expiry timer,
+no auto-redirect) · Çevremde (CheckinScreen as a tab: facts, success
+notice, change-check-in) · Keşfet (context line, `source` param,
+NEARBY-first default, renamed bond chips naming the actual venue) ·
+Mesajlar · Ayarlar. RoomsScreen deleted; its card lives on as
+components/VacationFeatureCard. Labels: Tatilden Önce / Oteldeyim /
+Çevremde — API values untouched. No backend change of any kind.
+419 jest; tab testIDs are now tab-Vacation and tab-Nearby.

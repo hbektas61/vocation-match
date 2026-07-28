@@ -18,7 +18,6 @@ import { OnboardingFlow } from '../onboarding/OnboardingFlow';
 import { InboxScreen } from '../screens/InboxScreen';
 import { MatchScreen } from '../screens/MatchScreen';
 import { ReportBlockScreen } from '../screens/ReportBlockScreen';
-import { RoomsScreen } from '../screens/RoomsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { UpcomingScreen } from '../screens/UpcomingScreen';
 import { useAppStore } from '../state/AppStore';
@@ -65,16 +64,16 @@ function AccountLoadErrorScreen() {
 function MainTabs() {
   return (
     <Tabs.Navigator
-      // Onboarding ends by choosing a hotel, so opening on the hotel screen
-      // asks the same question twice. The rooms are what was just explained.
-      initialRouteName="Rooms"
+      // D-040: the trip tab is home — it answers "what now?" for a new
+      // account (choose a hotel) and for a returning one (your features).
+      initialRouteName="Vacation"
       // The designer's floating bar (2026-07-27) replaces the platform bar
       // wholesale; every option the old bar needed lives in the component.
       tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{ headerShown: false }}
     >
-      <Tabs.Screen name="Hotel" component={HotelScreen} options={{ title: COPY.tabs.hotel }} />
-      <Tabs.Screen name="Rooms" component={RoomsScreen} options={{ title: COPY.tabs.rooms }} />
+      <Tabs.Screen name="Vacation" component={HotelScreen} options={{ title: COPY.tabs.vacation }} />
+      <Tabs.Screen name="Nearby" component={CheckinScreen} options={{ title: COPY.tabs.nearbyTab }} />
       <Tabs.Screen name="Discovery" component={DiscoveryScreen} options={{ title: COPY.tabs.discovery }} />
       <Tabs.Screen name="Inbox" component={InboxScreen} options={{ title: COPY.tabs.inbox }} />
       <Tabs.Screen name="Settings" component={SettingsScreen} options={{ title: COPY.tabs.settings }} />
@@ -146,11 +145,6 @@ export function RootNavigator() {
         name="HereNow"
         component={HereNowScreen}
         options={{ title: COPY.hereNow.roomTitle }}
-      />
-      <Stack.Screen
-        name="Checkin"
-        component={CheckinScreen}
-        options={{ title: COPY.checkin.roomTitle }}
       />
       <Stack.Screen
         name="Match"

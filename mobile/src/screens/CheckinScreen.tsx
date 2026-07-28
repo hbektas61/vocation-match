@@ -16,7 +16,7 @@ import {
   type HotelCard,
 } from '../data';
 import { getHotelById } from '../fixtures/hotels';
-import type { RootScreenProps, TabParamList } from '../navigation/types';
+import type { TabParamList } from '../navigation/types';
 import { color, font, fontFamily, radius, spacing } from '../theme';
 
 /**
@@ -29,10 +29,10 @@ import { color, font, fontFamily, radius, spacing } from '../theme';
  * (same rule as HereNowScreen) and walk the identical path.
  */
 export function CheckinScreen({
-  navigation: _navigation,
   reader = deviceLocation,
-}: RootScreenProps<'Checkin'> & { reader?: ForegroundLocationReader }) {
+}: { reader?: ForegroundLocationReader } = {}) {
   const tabNavigation = useNavigation<NavigationProp<TabParamList>>();
+  const [justCheckedIn, setJustCheckedIn] = useState(false);
   const [checkin, setCheckin] = useState<ActiveCheckin | null | undefined>(undefined);
   const [reading, setReading] = useState<{ latitude: number; longitude: number } | null>(null);
   const [nearby, setNearby] = useState<HotelCard[] | null>(null);
@@ -118,6 +118,7 @@ export function CheckinScreen({
           venueName: venue.name,
           expiresAt: answer.expiresAt ?? Date.now(),
         });
+        setJustCheckedIn(true);
         setNearby(null);
         setReading(null);
         setQuery('');
@@ -139,6 +140,7 @@ export function CheckinScreen({
     try {
       await getApi().clearCheckin();
       setCheckin(null);
+      setJustCheckedIn(false);
       setNotice({ message: COPY.checkin.checkedOut, tone: 'info' });
     } catch (err) {
       setNotice({
@@ -152,7 +154,7 @@ export function CheckinScreen({
 
   if (checkin === undefined) {
     return (
-      <Screen testID="screen-checkin">
+      <Screen safeTop testID="screen-checkin">
         <Title>{COPY.checkin.roomTitle}</Title>
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="checkin-loading" />
       </Screen>
@@ -179,11 +181,14 @@ export function CheckinScreen({
   );
 
   return (
-    <Screen testID="screen-checkin">
-      <Title>{COPY.checkin.roomTitle}</Title>
+    <Screen safeTop testID="screen-checkin">
+      <Title>{COPY.tabs.nearbyTab}</Title>
 
       {checkin ? (
         <>
+          {justCheckedIn ? (
+            <Notice message={COPY.checkin.success} testID="checkin-success" />
+          ) : null}
           <Card testID="checkin-active">
             <Text style={styles.activeVenue}>{checkin.venueName}</Text>
             <Body>
@@ -197,8 +202,20 @@ export function CheckinScreen({
             </Body>
             <Button
               label={COPY.checkin.seeNearby}
-              onPress={() => tabNavigation.navigate('Discovery')}
+              onPress={() => tabNavigation.navigate('Discovery', { source: 'NEARBY' })}
               testID="checkin-see-nearby"
+            />
+            <Button
+              label={COPY.checkin.changeCheckin}
+              variant="secondary"
+              onPress={() => {
+                // A new check-in replaces the old one on the server; here it
+                // just reopens the around-you list.
+                setJustCheckedIn(false);
+                setCheckin(null);
+              }}
+              disabled={busy}
+              testID="checkin-change"
             />
             <Button
               label={COPY.checkin.checkOut}
@@ -213,6 +230,8 @@ export function CheckinScreen({
       ) : nearby === null ? (
         <>
           <Body>{COPY.checkin.explainer}</Body>
+          <Caption>{COPY.checkin.factFree}</Caption>
+          <Caption>{COPY.checkin.factDuration}</Caption>
           <Gap size="sm" />
           <Button
             label={COPY.checkin.findVenues}

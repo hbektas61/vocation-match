@@ -33,12 +33,12 @@ async function reopenApp(view: { unmount: () => void }): Promise<void> {
 describe('coming back after closing the app', () => {
   it('takes a finished account straight to the app, never back to the phone', async () => {
     const view = await onboard('Deniz', '+905551119001');
-    await screen.findByTestId('screen-rooms');
+    await screen.findByTestId('screen-hotel');
 
     await reopenApp(view);
 
     // Straight in: the rooms, not the welcome screen and not the phone box.
-    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
+    expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
     expect(screen.queryByTestId('auth-phone')).toBeNull();
     expect(screen.queryByTestId('screen-welcome')).toBeNull();
   });

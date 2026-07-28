@@ -1,4 +1,4 @@
-import { useFocusEffect, useNavigation, type NavigationProp } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute, type NavigationProp, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -12,7 +12,7 @@ import { NoHotelCard } from '../components/NoHotelCard';
 import { CompassScene } from '../components/NoHotelIllustrations';
 import { RadarEmpty } from '../components/RadarEmpty';
 import { nowMs } from '../clock';
-import { apiErrorMessage, COPY, upperCase, roomPlate } from '../copy';
+import { apiErrorMessage, COPY, COPY_FOR, upperCase, roomPlate } from '../copy';
 import { ApiError, getApi, type CandidateCard, type RoomKey, type RoomStatus } from '../data';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { color, font, fontFamily, palette, radius, spacing } from '../theme';
@@ -56,6 +56,40 @@ const PinTinyIcon = () => (
   </Svg>
 );
 
+/** "12 Ağu – 17 Ağu" — the plan, in dates. */
+function formatStayRange(startIso: string, endIso: string): string {
+  const part = (iso: string) =>
+    new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  return `${part(startIso)} – ${part(endIso)}`;
+}
+
+/**
+ * The line that says where this deck comes from (D-040): the hotel and your
+ * dates, the hotel and the door's clock, or the venue and the check-in's
+ * clock. Context, never a person's location.
+ */
+function contextLine(
+  room: RoomKey,
+  hotelName: string | null,
+  stayRange: string | null,
+  validUntil: number | null | undefined,
+  checkinName: string | null,
+): string {
+  const minutesLeft =
+    validUntil != null ? Math.max(1, Math.round((validUntil - nowMs()) / 60000)) : null;
+  if (room === 'UPCOMING') {
+    return [hotelName, stayRange].filter(Boolean).join(' · ');
+  }
+  if (room === 'HERE_NOW') {
+    return [hotelName, minutesLeft != null ? COPY_FOR.timeLeft(minutesLeft) : null]
+      .filter(Boolean)
+      .join(' · ');
+  }
+  return [checkinName, minutesLeft != null ? COPY_FOR.timeLeft(minutesLeft) : null]
+    .filter(Boolean)
+    .join(' · ');
+}
+
 const ROOM_LABEL: Record<RoomKey, string> = {
   UPCOMING: COPY.upcoming.roomTitle,
   HERE_NOW: COPY.hereNow.roomTitle,
@@ -67,8 +101,12 @@ export function DiscoveryScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   // A second, honestly-typed handle for jumping to a sibling tab.
   const tabNavigation = useNavigation<NavigationProp<TabParamList>>();
+  const route = useRoute<RouteProp<TabParamList, 'Discovery'>>();
   const [rooms, setRooms] = useState<RoomStatus[] | null>(null);
   const [room, setRoom] = useState<RoomKey | null>(null);
+  /** Context for the header line and the bond chip (D-040). */
+  const [checkinName, setCheckinName] = useState<string | null>(null);
+  const [stayRange, setStayRange] = useState<string | null>(null);
   const [deck, setDeck] = useState<CandidateCard[] | null>(null);
   const [deckError, setDeckError] = useState<string | null>(null);
   /** Bumped by "scan again" on the empty room; the deck effect re-runs. */
@@ -99,9 +137,10 @@ export function DiscoveryScreen() {
           // Çevremde (D-039) joins the room list as a synthetic entry when a
           // fresh check-in exists: same segments, same deck machinery, same
           // expiry-driven refresh — its validUntil is the check-in clock.
-          const [fetched, checkin] = await Promise.all([
+          const [fetched, checkin, stay] = await Promise.all([
             getApi().getRooms(),
             getApi().getCheckin().catch(() => null),
+            getApi().getUpcomingStay().catch(() => null),
           ]);
           if (cancelled) return;
           const withNearby: RoomStatus[] = checkin
@@ -111,8 +150,15 @@ export function DiscoveryScreen() {
               ]
             : fetched;
           setRooms(withNearby);
+          setCheckinName(checkin?.venueName ?? null);
+          setStayRange(stay ? formatStayRange(stay.startDate, stay.endDate) : null);
           const eligible = withNearby.filter((r) => r.eligible).map((r) => r.room);
-          setRoom((current) => (current && eligible.includes(current) ? current : eligible[0] ?? null));
+          // D-040: keep what the person was looking at; otherwise the most
+          // present-tense source first — the street, the hotel door, the plan.
+          const fallback = (['NEARBY', 'HERE_NOW', 'UPCOMING'] as RoomKey[]).find((key) =>
+            eligible.includes(key),
+          );
+          setRoom((current) => (current && eligible.includes(current) ? current : fallback ?? null));
           const soonest = earliestRoomExpiry(withNearby, nowMs());
           if (soonest !== null) {
             timer = setTimeout(load, soonest - nowMs());
@@ -129,6 +175,13 @@ export function DiscoveryScreen() {
       };
     }, []),
   );
+
+  // Arriving with a source ("Discover people" on a feature card, "Discover
+  // who is nearby" after a check-in) opens that deck (D-040).
+  useEffect(() => {
+    const requested = route.params?.source;
+    if (requested) setRoom(requested);
+  }, [route.params?.source]);
 
   // The deck belongs to one room at a time and is refetched when it changes.
   // (When there is no eligible room, the render below returns before the
@@ -255,7 +308,7 @@ export function DiscoveryScreen() {
               label={COPY.inbox.viewRooms}
               icon="door"
               filled
-              onPress={() => tabNavigation.navigate('Rooms')}
+              onPress={() => tabNavigation.navigate('Vacation')}
               testID="discovery-go-rooms"
             />
             <BigActionButton
@@ -267,7 +320,7 @@ export function DiscoveryScreen() {
             <BigActionButton
               label={COPY.checkin.openCta}
               icon="sparkle"
-              onPress={() => navigation.navigate('Checkin')}
+              onPress={() => tabNavigation.navigate('Nearby')}
               testID="discovery-go-checkin"
             />
           </View>
@@ -311,6 +364,17 @@ export function DiscoveryScreen() {
     <Screen safeTop testID="screen-discovery" bleed scroll={false}>
       {/* The room switch stays above the card: which door you are browsing is
           a real choice, and the reference has no equivalent for it. */}
+      {room ? (
+        <Text style={styles.contextLine} testID="discovery-context">
+          {contextLine(
+            room,
+            hotelName,
+            stayRange,
+            rooms.find((r) => r.room === room)?.validUntil ?? null,
+            checkinName,
+          )}
+        </Text>
+      ) : null}
       {eligibleRooms.length > 1 ? (
         <View style={styles.roomSwitch}>
           {eligibleRooms.map((r) => (
@@ -392,9 +456,11 @@ export function DiscoveryScreen() {
             >
               <BuildingTinyIcon />
               <Text style={styles.sameHotelText} numberOfLines={1}>
-                {candidate.sameVenue || !candidate.venueName
-                  ? COPY.discovery.sameHotel
-                  : `${candidate.venueName} · ${COPY.discovery.nearby}`}
+                {candidate.sameVenue
+                  ? (room === 'NEARBY' ? checkinName : hotelName) ?? COPY.discovery.sameHotel
+                  : candidate.venueName
+                    ? `${candidate.venueName} · ${COPY.discovery.nearby}`
+                    : COPY.discovery.sameHotel}
               </Text>
             </View>
           </View>
@@ -550,6 +616,12 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
+  },
+  contextLine: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: font.caption,
+    color: color.inkMuted,
+    textAlign: 'center',
   },
   roomSwitch: {
     flexDirection: 'row',

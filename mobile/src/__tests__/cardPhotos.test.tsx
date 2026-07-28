@@ -46,7 +46,7 @@ async function openDeckWithPhotos(): Promise<void> {
     .mockImplementation(async (paths) =>
       Object.fromEntries(paths.map((path) => [path, `file:///signed/${path}`])),
     );
-  await fireEvent.press(screen.getByRole('button', { name: 'Rooms' }));
+  await fireEvent.press(screen.getByTestId('tab-Vacation'));
   await fireEvent.press(await screen.findByTestId('open-here-now'));
   await fireEvent.press(await screen.findByTestId('simulate-near'));
   await screen.findByText(/You are in/);
@@ -97,7 +97,7 @@ describe('the card photo set', () => {
       .mockImplementation(async (paths) =>
         Object.fromEntries(paths.map((path) => [path, `file:///signed/${path}`])),
       );
-    await fireEvent.press(screen.getByRole('button', { name: 'Rooms' }));
+    await fireEvent.press(screen.getByTestId('tab-Vacation'));
     await fireEvent.press(await screen.findByTestId('open-here-now'));
     await fireEvent.press(await screen.findByTestId('simulate-near'));
     await screen.findByText(/You are in/);
@@ -117,7 +117,7 @@ describe('the empty room (owner reference, 2026-07-26)', () => {
     // An empty room, straight from the server's mouth.
     const feedSpy = jest.spyOn(api, 'getDiscoveryFeed').mockResolvedValue([]);
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Rooms' }));
+    await fireEvent.press(screen.getByTestId('tab-Vacation'));
     await fireEvent.press(await screen.findByTestId('open-here-now'));
     await fireEvent.press(await screen.findByTestId('simulate-near'));
     await screen.findByText(/You are in/);

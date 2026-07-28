@@ -135,7 +135,7 @@ describe('the identity answers, after onboarding', () => {
 describe('the stay you declared', () => {
   async function openUpcoming() {
     await onboardWithHotel();
-    await fireEvent.press(await screen.findByRole('button', { name: 'Rooms' }));
+    await fireEvent.press(await screen.findByTestId('tab-Vacation'));
     await fireEvent.press(await screen.findByTestId('open-upcoming'));
   }
 
@@ -177,7 +177,7 @@ async function pickDate(testID: string, iso: string): Promise<void> {
     // And the hotel card must know: it refreshes on focus now, because the
     // owner declared a stay elsewhere and came back to a card still calling
     // the room closed.
-    await fireEvent.press(screen.getByText('Hotel'));
+    await fireEvent.press(screen.getByTestId('tab-Vacation'));
     expect(await screen.findAllByText('OPEN')).toBeTruthy();
   });
 
@@ -236,7 +236,7 @@ describe('a match that vanishes mid-conversation', () => {
   /** Onboard, open a room, match with the fixture who likes back, open chat. */
   async function reachChat() {
     await onboardWithHotel();
-    await fireEvent.press(await screen.findByRole('button', { name: 'Rooms' }));
+    await fireEvent.press(await screen.findByTestId('tab-Vacation'));
     await fireEvent.press(await screen.findByTestId('open-here-now'));
     await fireEvent.press(await screen.findByTestId('simulate-near'));
     await fireEvent.press(await screen.findByTestId('here-now-done'));

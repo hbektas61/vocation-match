@@ -13,7 +13,8 @@ import type { Copy, CopyFor } from './en';
 export const tr: Copy = {
   tabs: {
     hotel: 'Otel',
-    rooms: 'Odalar',
+    vacation: 'Tatilim',
+    nearbyTab: 'Çevremde',
     discovery: 'Keşfet',
     inbox: 'Gelen kutusu',
     settings: 'Ayarlar',
@@ -272,7 +273,7 @@ export const tr: Copy = {
   },
 
   upcoming: {
-    roomTitle: 'Yaklaşan konaklama',
+    roomTitle: 'Tatilden Önce',
     statusBadge: 'Kendi beyanınla yaklaşan konaklama',
     explainer:
       'Konaklama tarihlerini sen beyan edersin. Kimseden rezervasyon, rezervasyon numarası ya da kimlik istenmez — senden de istenmez.',
@@ -313,7 +314,7 @@ export const tr: Copy = {
   },
 
   hereNow: {
-    roomTitle: 'Şu an burada',
+    roomTitle: 'Oteldeyim',
     statusBadge: 'Şu an otele yakın',
     explainer:
       'Şu An Burada, uygulama açıkken yapılan hızlı bir konum kontrolüyle açılır. Yalnız otele 500 m içinde olduğunu doğrular — tam konumun asla gösterilmez ve saklanmaz.',
@@ -419,7 +420,7 @@ export const tr: Copy = {
     emptyTitle: 'Henüz eşleşme yok',
     emptyBody: 'Birbirinizi beğendiğinizde sohbetler burada başlayacak.',
     startDiscovering: 'Keşfetmeye başla',
-    viewRooms: 'Odaları görüntüle',
+    viewRooms: 'Tatilimi ayarla',
     matchesAppearHere: 'Yeni eşleşmeler olduğunda burada görünür.',
     loadError: 'Eşleşmelerin yüklenemedi. Tekrar dene.',
     closedLabel: 'Konuşma kapandı',
@@ -481,8 +482,8 @@ export const tr: Copy = {
     subtitle: 'Odaya katılmak için bir yöntem seç',
     openChip: 'Açık',
     closedChip: 'Kapalı',
-    upcomingPlate: 'Yaklaşan',
-    hereNowPlate: 'Şu an burada',
+    upcomingPlate: 'Tatilden önce',
+    hereNowPlate: 'Oteldeyim',
     nearbyPlate: 'Çevremde',
     noHotelTitle: 'Önce bir otel seç',
     noHotelBody: 'Henüz bir otel seçmedin. Bir otel seçtikten sonra odalar burada listelenecek.',
@@ -493,6 +494,18 @@ export const tr: Copy = {
     hereNowBody: 'Yalnız otele 500 m içinde olduğunu doğrular — tam konumun asla gösterilmez ve saklanmaz.',
     privacyTitle: 'Gizliliğin bizim için önemli',
     privacyBody: 'Tam konumun asla gösterilmez ve saklanmaz. Hesabını ve verilerini istediğin an silebilirsin.',
+  },
+
+  /** D-040 — the Tatilim tab: hotel choice and its two features, one place. */
+  vacation: {
+    planTitle: 'Tatilini planla',
+    upcomingFeatureBody: 'Aynı tarihlerde aynı otelde olacak kişilerle tatilden önce tanış.',
+    hereNowFeatureBody: 'Seçtiğin otelin yakınındaysan şu anda orada bulunan kişilerle tanış.',
+    chooseFirst: 'Önce otel seç',
+    premiumTag: 'Premium',
+    freeTag: 'Ücretsiz',
+    discoverCta: 'Kişileri keşfet',
+    changeHotel: 'Oteli değiştir',
   },
 
   checkin: {
@@ -514,7 +527,12 @@ export const tr: Copy = {
     previewIntro: 'Önizleme: cihaz gerektirmeden bir okuma simüle et.',
     simulateShore: 'Simüle et: Lara sahilindeyim',
     tooFar: 'Bu okuma seni mekândan 500 metreden uzakta buldu. Gerçekten bulunduğun mekânı seç.',
-    seeNearby: 'Çevremdekileri gör',
+    seeNearby: 'Çevremdekileri keşfet',
+    stayHere: 'Burada kal',
+    changeCheckin: 'Check-in\'i değiştir',
+    success: 'Check-in yapıldı — 3 saat geçerli.',
+    factFree: 'Herkese ücretsiz; otel seçmek gerekmez.',
+    factDuration: 'Check-in 3 saat sürer, istediğin an bitirebilirsin.',
     checkOut: 'Check-in\'i bitir',
     checkedOut: 'Check-in\'in sona erdi.',
   },
@@ -542,6 +560,8 @@ export const trFor: CopyFor = {
   discoveryTitle: (hotelName: string) => `${hotelName} keşfi`,
   switchPrompt: (hotelName: string) => `${hotelName} oteline geçilsin mi?`,
   daysAgo: (days: number) => `${days} gün`,
+  timeLeft: (minutes: number) =>
+    minutes >= 60 ? `${Math.floor(minutes / 60)} sa ${minutes % 60} dk kaldı` : `${minutes} dk kaldı`,
   checkinUntil: (venueName: string, time: string) => `${venueName} — ${time}'e kadar`,
   roomHeadcount: (count: number) => `${count} kişi`,
 };

@@ -28,12 +28,12 @@ afterEach(() => {
  */
 async function onboardAndActivateHotel() {
   await onboardWithHotel('Deniz');
-  expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
+  expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
 }
 
 /** From the Rooms tab, opens Here Now and simulates an in-range check. */
 async function checkInAtHotel() {
-  await fireEvent.press(screen.getByRole('button', { name: 'Rooms' }));
+  await fireEvent.press(screen.getByTestId('tab-Vacation'));
   await fireEvent.press(await screen.findByTestId('open-here-now'));
   await fireEvent.press(await screen.findByTestId('simulate-near'));
   expect(await screen.findByText(/You are in/)).toBeTruthy();
@@ -109,7 +109,7 @@ describe('rooms and hotel switching', () => {
   it('shows the server-decided reason a room is still closed', async () => {
     await onboardAndActivateHotel();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Rooms' }));
+    await fireEvent.press(screen.getByTestId('tab-Vacation'));
     expect(
       await screen.findByText('Closed — declare your stay dates to enter.'),
     ).toBeTruthy();
@@ -125,7 +125,7 @@ describe('rooms and hotel switching', () => {
       await screen.findByText('Open — a recent check placed you within 500 m.'),
     ).toBeTruthy();
 
-    await fireEvent.press(screen.getByText('Hotel'));
+    await fireEvent.press(screen.getByTestId('tab-Vacation'));
     // The search box still holds what the first hotel was found with, and the
     // list only ever shows what the query returned.
     await fireEvent.changeText(await screen.findByTestId('hotel-search'), 'bosphorus');
@@ -163,9 +163,10 @@ describe('rooms and hotel switching', () => {
         { room: 'HERE_NOW', eligible: false, reason: 'NO_RECENT_CHECK', validUntil: null },
       ]);
 
-    // Force a fresh focus-triggered fetch so the mocked sequence is consumed.
-    await fireEvent.press(screen.getByText('Hotel'));
-    await fireEvent.press(screen.getByRole('button', { name: 'Rooms' }));
+    // Force a fresh focus-triggered fetch so the mocked sequence is consumed:
+    // hop to another tab and back.
+    await fireEvent.press(screen.getByTestId('tab-Settings'));
+    await fireEvent.press(screen.getByTestId('tab-Vacation'));
     expect(
       await screen.findByText('Open — a recent check placed you within 500 m.'),
     ).toBeTruthy();
@@ -312,7 +313,7 @@ describe('authentication and profile', () => {
 
     hotel.mockRestore();
     await fireEvent.press(screen.getByTestId('account-load-retry'));
-    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
+    expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
   });
 
   it('refuses an underage birthdate with the 18+ message', async () => {
@@ -334,7 +335,7 @@ describe('authentication and profile', () => {
 
   it('completes the whole entry path and reaches the main tabs', async () => {
     await onboardWithHotel('Deniz', '+905551110016');
-    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
+    expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
   });
 
   it('stops sharing on the server when location permission is denied', async () => {
@@ -346,7 +347,7 @@ describe('authentication and profile', () => {
       (await getApi().getRooms()).find((room) => room.room === 'HERE_NOW')?.eligible,
     ).toBe(true);
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Rooms' }));
+    await fireEvent.press(screen.getByTestId('tab-Vacation'));
     await fireEvent.press(await screen.findByTestId('open-here-now'));
     await fireEvent.press(await screen.findByTestId('simulate-deny'));
 
@@ -469,7 +470,7 @@ describe('waiting for an SMS code', () => {
     await fireEvent.changeText(await screen.findByTestId('auth-otp'), '123456');
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
 
-    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
+    expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
   });
 
   it('goes back to the same phone number', async () => {

@@ -406,21 +406,21 @@ describe('gender, orientation and who you are shown', () => {
 describe('a finished onboarding', () => {
   it('does not come back on the next launch', async () => {
     await onboard('Deniz', '+905551110017');
-    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
+    expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
 
     // A cold start against the same backend: same session, same profile, same
     // hotel. Nothing about where somebody got to is written down, so this is
     // the only thing that proves the derived step lands in the right place.
     await relaunch();
 
-    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
+    expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
     expect(screen.queryByTestId('screen-welcome')).toBeNull();
     expect(screen.queryByTestId('screen-onboarding-photo')).toBeNull();
   });
 
   it('does not ask a returning user for a hotel they already have', async () => {
     await onboardWithHotel('Deniz', '+905551110019');
-    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
+    expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
 
     // A relaunch never visits the Hotel tab, and nothing on the bootstrap path
     // fills the cached hotel cards — so a screen that decided "do you have a
@@ -428,8 +428,8 @@ describe('a finished onboarding', () => {
     // there is one is the server's answer; the cache only ever holds its name.
     await relaunch();
 
-    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
-    expect(screen.queryByTestId('rooms-choose-hotel')).toBeNull();
+    expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
+    expect(screen.queryByTestId('vacation-choose-for-upcoming')).toBeNull();
   });
 
   it('lands in the app with no hotel, and asks for one only when it is needed', async () => {
@@ -437,7 +437,7 @@ describe('a finished onboarding', () => {
 
     // Choosing a hotel is no longer part of finishing, so a complete profile
     // gets in without one.
-    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
+    expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
     expect(screen.queryByTestId('screen-onboarding-photo')).toBeNull();
   });
 });

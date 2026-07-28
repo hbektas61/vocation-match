@@ -160,6 +160,6 @@ describe('the grid', () => {
     // being seen (D-024).
     await fireEvent.press(screen.getByTestId('onboarding-continue'));
 
-    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
+    expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
   });
 });

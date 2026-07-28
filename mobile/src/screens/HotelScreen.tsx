@@ -10,8 +10,11 @@ import { Body, Button, Caption, Card, DoorPlate, EmptyState, Field, Heading, Not
 import { DestinationCard } from '../components/DestinationCard';
 import { HotelBuilding, SearchScene } from '../components/HotelIllustrations';
 import { nowMs } from '../clock';
+import { earliestRoomExpiry } from '../state/roomSchedule';
 import { apiErrorMessage, COPY, COPY_FOR, upperCase } from '../copy';
-import { ApiError, getApi, readBackendConfig, type HotelCard, type RoomHeadcount, type RoomStatus } from '../data';
+import { ApiError, getApi, readBackendConfig, type HotelCard, type RoomHeadcount, type RoomStatus, type UpcomingStay } from '../data';
+import { VacationFeatureCard } from '../components/VacationFeatureCard';
+import { CalendarIllustration, PinScene } from '../components/RoomIllustrations';
 import { useAppStore } from '../state/AppStore';
 import { color, font, fontFamily, radius, spacing } from '../theme';
 
@@ -38,6 +41,13 @@ function destinationSource(cityKey: string) {
 }
 
 const QUICK_CITIES = ['İstanbul', 'Antalya'];
+
+/** "12 Ağu – 17 Ağu" in the device's language — dates, never documents. */
+function formatStayRange(stay: UpcomingStay): string {
+  const part = (iso: string) =>
+    new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  return `${part(stay.startDate)} – ${part(stay.endDate)}`;
+}
 
 const MagnifierIcon = () => (
   <View style={{ marginRight: spacing.sm }}>
@@ -72,12 +82,6 @@ const CalendarSmallIcon = () => (
   <Svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <Rect x={3} y={5} width={18} height={16} rx={3} />
     <Path d="M8 3v4M16 3v4M3 11h18" />
-  </Svg>
-);
-
-const DoorSmallIcon = () => (
-  <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <Path d="M11 20H2m9-15.438v16.157a1 1 0 0 0 1.242.97L19 20V5.562a2 2 0 0 0-1.515-1.94l-4-1A2 2 0 0 0 11 4.561zM11 4H8a2 2 0 0 0-2 2v14m8-8h.01M22 20h-3" />
   </Svg>
 );
 
@@ -150,6 +154,8 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
   const [roomCounts, setRoomCounts] = useState<RoomHeadcount[] | null>(null);
   /** What "Son arama" re-runs: the last query that actually searched. */
   const [lastQuery, setLastQuery] = useState<string | null>(null);
+  /** The declared window, shown on the active card (D-040). */
+  const [stay, setStay] = useState<UpcomingStay | null>(null);
 
   const activeHotel = state.hotels.find((h) => h.id === state.activeHotel?.hotelId) ?? null;
 
@@ -163,6 +169,22 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
   // claiming the room was closed.
   useFocusEffect(useCallback(() => {
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // R-003 lives with the cards: a lapsed Here Now check stops looking
+    // open on its own, exactly as it did on the retired Rooms screen.
+    const watchRooms = async () => {
+      try {
+        const rooms = await getApi().getRooms();
+        if (cancelled) return;
+        setRoomStates(rooms);
+        const soonest = earliestRoomExpiry(rooms, nowMs());
+        if (soonest !== null) {
+          timer = setTimeout(watchRooms, soonest - nowMs());
+        }
+      } catch {
+        // The card simply keeps its last answer.
+      }
+    };
     (async () => {
       try {
         const api = getApi();
@@ -170,16 +192,17 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         if (cancelled) return;
         dispatch({ type: 'ACTIVE_HOTEL_LOADED', activeHotel: active });
         if (active) {
-          api
-            .getRooms()
-            .then((rooms) => {
-              if (!cancelled) setRoomStates(rooms);
-            })
-            .catch(() => undefined);
+          watchRooms();
           api
             .getRoomCounts()
             .then((counts) => {
               if (!cancelled) setRoomCounts(counts);
+            })
+            .catch(() => undefined);
+          api
+            .getUpcomingStay()
+            .then((current) => {
+              if (!cancelled) setStay(current);
             })
             .catch(() => undefined);
         }
@@ -197,6 +220,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
     })();
     return () => {
       cancelled = true;
+      if (timer) clearTimeout(timer);
     };
   }, [dispatch]));
 
@@ -266,6 +290,10 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         .getRoomCounts()
         .then(setRoomCounts)
         .catch(() => undefined);
+      api
+        .getUpcomingStay()
+        .then(setStay)
+        .catch(() => setStay(null));
       setSwitchedNotice(result.previousHotelId !== null && result.previousHotelId !== hotel.id);
       // Choosing ends the search: clear the query so the screen settles on
       // the card of the hotel just chosen rather than the list it came from.
@@ -274,11 +302,9 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       if (onActivated) {
         // The gate: choosing finishes the errand it interrupted.
         onActivated();
-      } else {
-        // The tab: a chosen hotel's next step is its rooms, so go there —
-        // the owner watched people choose and then stand still.
-        tabNavigation.navigate('Rooms');
       }
+      // As a tab the screen stays (D-040): the next decision — dates or a
+      // proximity check — is made right here, on the feature cards below.
     } catch (err) {
       setActivateError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
     } finally {
@@ -300,7 +326,10 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
     // itself; as the choose-a-hotel gate it sits under a native modal header,
     // which already has. `onActivated` is exactly the difference between the two.
     <Screen safeTop={!onActivated} testID="screen-hotel">
-      <Title>{COPY.hotel.title}</Title>
+      <Title>{onActivated ? COPY.hotel.title : COPY.tabs.vacation}</Title>
+      {!onActivated && !activeHotel && !searchable(query) ? (
+        <Body>{COPY.vacation.planTitle}</Body>
+      ) : null}
       {/* The reference puts the search first: the screen opens ready to be
           asked. The ODbL line stays beside it — a licence term, not a
           caption. */}
@@ -393,6 +422,9 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
                 })}
               </View>
             ) : null}
+            {stay ? (
+              <Caption testID="active-hotel-dates">{formatStayRange(stay)}</Caption>
+            ) : null}
             <Caption>{COPY.trust.oneHotel}</Caption>
             <Pressable
               accessibilityRole="button"
@@ -401,6 +433,15 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
               testID="hotel-details"
             >
               <Text style={styles.detailsLabel}>{COPY.hotel.detailsCta}</Text>
+              <Text style={styles.detailsChevron}>›</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => stackNavigation.navigate('ChooseHotel')}
+              style={({ pressed }) => [styles.detailsRow, pressed && styles.resultPressed]}
+              testID="hotel-change"
+            >
+              <Text style={styles.detailsLabel}>{COPY.vacation.changeHotel}</Text>
               <Text style={styles.detailsChevron}>›</Text>
             </Pressable>
           </View>
@@ -447,38 +488,58 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         </Card>
       ) : null}
 
-      {activeHotel && !searchable(query) ? (
-        /* The designer's shortcut row: the places this screen's answers are
-           used, one tap away. */
-        <View style={styles.chipRow}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => tabNavigation.navigate('Rooms')}
-            style={({ pressed }) => [styles.quickChip, pressed && styles.resultPressed]}
-            testID="hotel-go-rooms"
-          >
-            <DoorSmallIcon />
-            <Text style={styles.quickChipLabel}>{COPY.discovery.goToRooms}</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => stackNavigation.navigate('Upcoming')}
-            style={({ pressed }) => [styles.quickChip, pressed && styles.resultPressed]}
-            testID="hotel-go-upcoming"
-          >
-            <CalendarSmallIcon />
-            <Text style={styles.quickChipLabel}>{COPY.rooms.upcomingPlate}</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => stackNavigation.navigate('HereNow')}
-            style={({ pressed }) => [styles.quickChip, pressed && styles.resultPressed]}
-            testID="hotel-go-here-now"
-          >
-            <PinSmallIcon />
-            <Text style={styles.quickChipLabel}>{COPY.rooms.hereNowPlate}</Text>
-          </Pressable>
-        </View>
+      {activeHotel && !searchable(query) && !onActivated ? (
+        /* D-040: the two hotel features live right under the hotel they
+           belong to. The trip tab is choose → decide, one screen. */
+        <>
+          <VacationFeatureCard
+            room="UPCOMING"
+            status={roomStates?.find((r) => r.room === 'UPCOMING') ?? null}
+            lead={COPY.rooms.upcomingLead}
+            body={COPY.vacation.upcomingFeatureBody}
+            illustration={<CalendarIllustration />}
+            icon={<CalendarSmallIcon />}
+            buttonLabel={
+              roomStates?.find((r) => r.room === 'UPCOMING')?.eligible
+                ? COPY.upcoming.updateButton
+                : COPY.upcoming.saveButton
+            }
+            onOpen={() => stackNavigation.navigate('Upcoming')}
+            extra={
+              roomStates?.find((r) => r.room === 'UPCOMING')?.eligible ? (
+                <Button
+                  label={COPY.vacation.discoverCta}
+                  onPress={() => tabNavigation.navigate('Discovery', { source: 'UPCOMING' })}
+                  testID="vacation-discover-upcoming"
+                />
+              ) : null
+            }
+            testID="room-upcoming"
+            buttonTestID="open-upcoming"
+          />
+          <VacationFeatureCard
+            room="HERE_NOW"
+            status={roomStates?.find((r) => r.room === 'HERE_NOW') ?? null}
+            lead={COPY.rooms.hereNowLead}
+            body={COPY.vacation.hereNowFeatureBody}
+            illustration={<PinScene />}
+            icon={<PinSmallIcon />}
+            tag={state.profile?.isPremium ? undefined : COPY.vacation.premiumTag}
+            buttonLabel={COPY.hereNow.checkButton}
+            onOpen={() => stackNavigation.navigate('HereNow')}
+            extra={
+              roomStates?.find((r) => r.room === 'HERE_NOW')?.eligible ? (
+                <Button
+                  label={COPY.vacation.discoverCta}
+                  onPress={() => tabNavigation.navigate('Discovery', { source: 'HERE_NOW' })}
+                  testID="vacation-discover-here-now"
+                />
+              ) : null
+            }
+            testID="room-here-now"
+            buttonTestID="open-here-now"
+          />
+        </>
       ) : null}
       {searchError ? (
         <>
@@ -499,8 +560,35 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         /* Idle is not empty (designer, 2026-07-27): quick queries, the
            popular destinations, and only then the type-to-search drawing. */
         <View style={styles.idle} testID="hotel-search-prompt">
-          {activeHotel ? null : (
+          {activeHotel || onActivated ? null : (
             <>
+          {/* D-040: the two features are visible before a hotel exists, each
+              honestly locked behind the one thing they need. */}
+          <VacationFeatureCard
+            room="UPCOMING"
+            status={null}
+            lead={COPY.rooms.upcomingLead}
+            body={COPY.vacation.upcomingFeatureBody}
+            illustration={<CalendarIllustration />}
+            icon={<CalendarSmallIcon />}
+            buttonLabel={COPY.vacation.chooseFirst}
+            onOpen={() => stackNavigation.navigate('ChooseHotel')}
+            testID="room-upcoming-locked"
+            buttonTestID="vacation-choose-for-upcoming"
+          />
+          <VacationFeatureCard
+            room="HERE_NOW"
+            status={null}
+            lead={COPY.rooms.hereNowLead}
+            body={COPY.vacation.hereNowFeatureBody}
+            illustration={<PinScene />}
+            icon={<PinSmallIcon />}
+            tag={COPY.vacation.premiumTag}
+            buttonLabel={COPY.vacation.chooseFirst}
+            onOpen={() => stackNavigation.navigate('ChooseHotel')}
+            testID="room-here-now-locked"
+            buttonTestID="vacation-choose-for-here-now"
+          />
           <Text style={styles.sectionTitle}>{COPY.hotel.quickOptions}</Text>
           <View style={styles.chipRow}>
             {QUICK_CITIES.map((city) => (

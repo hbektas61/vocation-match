@@ -106,13 +106,13 @@ export async function onboardToSettings(name = 'Deniz'): Promise<void> {
  * test rather than something onboarding quietly did for everybody.
  */
 export async function activateHotel(hotelId = PILOT_HOTEL): Promise<void> {
-  await fireEvent.press(await screen.findByText('Hotel'));
+  await fireEvent.press(await screen.findByTestId('tab-Vacation'));
   await type('hotel-search', 'lara');
   await press(`activate-${hotelId}`);
   // Back to where the rooms are, which is where somebody who came here to use
   // one would expect to end up. By role, because "Rooms" is also a heading on
   // the screen itself and the plain text query matches both.
-  await fireEvent.press(await screen.findByRole('button', { name: 'Rooms' }));
+  await fireEvent.press(await screen.findByTestId('tab-Vacation'));
 }
 
 /**

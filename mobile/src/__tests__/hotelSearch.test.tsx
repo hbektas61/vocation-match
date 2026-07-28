@@ -22,7 +22,7 @@ beforeEach(() => {
 /** Onboards, then opens the Hotel tab, which is where the choice now lives. */
 async function openHotelTab(): Promise<void> {
   await onboard('Deniz', '+905551117001');
-  await fireEvent.press(await screen.findByText('Hotel'));
+  await fireEvent.press(await screen.findByTestId('tab-Vacation'));
   await screen.findByTestId('hotel-search');
 }
 
@@ -50,7 +50,7 @@ describe('before anything is typed', () => {
     const api = getApi();
     const search = jest.spyOn(api, 'searchHotels');
 
-    await fireEvent.press(await screen.findByText('Hotel'));
+    await fireEvent.press(await screen.findByTestId('tab-Vacation'));
     await screen.findByTestId('hotel-search');
     await settle();
 
@@ -142,7 +142,7 @@ describe('the headcount on the key card (D-032)', () => {
     await fireEvent.press(await screen.findByTestId('activate-hotel-lara-shore'));
     await settle();
     // Activation moves to the rooms; the card being read lives on the tab.
-    await fireEvent.press(screen.getByText('Hotel'));
+    await fireEvent.press(screen.getByTestId('tab-Vacation'));
     await settle();
 
     // Lara Shore's fixtures put seven people in Upcoming (Nur included —
@@ -161,13 +161,13 @@ describe('reaching for a room without a hotel', () => {
 
     // Onboarding no longer asks for a hotel, so this is the ordinary state of
     // a brand new account rather than an edge case.
-    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
-    expect(screen.getByTestId('rooms-choose-hotel')).toBeTruthy();
+    expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
+    expect(screen.getByTestId('vacation-choose-for-upcoming')).toBeTruthy();
   });
 
   it('opens the search with nothing chosen, and comes back once one is', async () => {
     await onboard('Deniz', '+905551117011');
-    await fireEvent.press(await screen.findByTestId('rooms-choose-hotel'));
+    await fireEvent.press(await screen.findByTestId('vacation-choose-for-upcoming'));
 
     // The gate is the same search as the tab: nothing offered until asked.
     expect(await screen.findByTestId('hotel-search-prompt')).toBeTruthy();
@@ -179,13 +179,13 @@ describe('reaching for a room without a hotel', () => {
 
     // Choosing finishes the errand, so it hands back what was being reached
     // for rather than leaving somebody on a hotel screen.
-    expect(await screen.findByTestId('screen-rooms')).toBeTruthy();
-    expect(screen.queryByTestId('rooms-choose-hotel')).toBeNull();
+    expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
+    expect(screen.queryByTestId('vacation-choose-for-upcoming')).toBeNull();
   });
 
   it('can be backed out of without choosing anything', async () => {
     await onboard('Deniz', '+905551117012');
-    await fireEvent.press(await screen.findByTestId('rooms-choose-hotel'));
+    await fireEvent.press(await screen.findByTestId('vacation-choose-for-upcoming'));
     await screen.findByTestId('hotel-search-prompt');
 
     // A screen you cannot leave without picking a hotel is how default

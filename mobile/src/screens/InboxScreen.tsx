@@ -160,7 +160,7 @@ export function InboxScreen() {
             <BigActionButton
               label={COPY.inbox.viewRooms}
               icon="door"
-              onPress={() => tabNavigation.navigate('Rooms')}
+              onPress={() => tabNavigation.navigate('Vacation')}
               testID="inbox-view-rooms"
             />
           </View>

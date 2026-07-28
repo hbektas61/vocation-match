@@ -11,7 +11,8 @@
 export const en = {
   tabs: {
     hotel: 'Hotel',
-    rooms: 'Rooms',
+    vacation: 'My trip',
+    nearbyTab: 'Nearby',
     discovery: 'Discovery',
     inbox: 'Inbox',
     settings: 'Settings',
@@ -270,7 +271,7 @@ export const en = {
   },
 
   upcoming: {
-    roomTitle: 'Upcoming stays',
+    roomTitle: 'Before the trip',
     statusBadge: 'Self-declared upcoming stay',
     explainer:
       'Your stay dates are self-declared. Nobody is asked for a reservation, a booking number, or an ID — and neither are you.',
@@ -312,7 +313,7 @@ export const en = {
   },
 
   hereNow: {
-    roomTitle: 'Here now',
+    roomTitle: 'At the hotel',
     statusBadge: 'Near the hotel now',
     explainer:
       'Here Now opens after a quick location check while the app is open. It only confirms you were within 500 m of the hotel — your exact location is never shown or stored.',
@@ -427,7 +428,7 @@ export const en = {
     emptyTitle: 'No matches yet',
     emptyBody: 'When you like each other, conversations will start here.',
     startDiscovering: 'Start discovering',
-    viewRooms: 'View rooms',
+    viewRooms: 'Set up my trip',
     /**
      * "Show up here", not "you will be notified": there is no match push
      * (D-031 has exactly two kinds), so the sentence promises the inbox,
@@ -502,8 +503,8 @@ export const en = {
     subtitle: 'Choose a way to join a room',
     openChip: 'Open',
     closedChip: 'Closed',
-    upcomingPlate: 'Upcoming',
-    hereNowPlate: 'Here now',
+    upcomingPlate: 'Before the trip',
+    hereNowPlate: 'At the hotel',
     nearbyPlate: 'Nearby',
     /**
      * The designer's card texts (2026-07-27) are the reviewed explainers
@@ -525,6 +526,18 @@ export const en = {
    * feature does: a venue name, a three-hour clock, mutual visibility. No
    * word about exact locations or distances, because there are none.
    */
+  /** D-040 — the My trip tab: hotel choice and its two features, one place. */
+  vacation: {
+    planTitle: 'Plan your trip',
+    upcomingFeatureBody: 'Meet the people who will be at the same hotel on the same dates — before the trip.',
+    hereNowFeatureBody: 'Near your chosen hotel right now? Meet the people who are there too.',
+    chooseFirst: 'Choose a hotel first',
+    premiumTag: 'Premium',
+    freeTag: 'Free',
+    discoverCta: 'Discover people',
+    changeHotel: 'Change hotel',
+  },
+
   checkin: {
     roomTitle: 'Nearby',
     openCta: 'Check in',
@@ -544,7 +557,12 @@ export const en = {
     previewIntro: 'Preview build: simulate a reading without a device.',
     simulateShore: 'Simulate: I am at the Lara shore',
     tooFar: 'That reading placed you more than 500 m from this place. Pick the place you are actually at.',
-    seeNearby: 'See who is nearby',
+    seeNearby: 'Discover who is nearby',
+    stayHere: 'Stay here',
+    changeCheckin: 'Change check-in',
+    success: 'Checked in — good for 3 hours.',
+    factFree: 'Free for everyone; no hotel needed.',
+    factDuration: 'A check-in lasts 3 hours and can be ended any time.',
     checkOut: 'End check-in',
     checkedOut: 'Your check-in has ended.',
   },
@@ -580,6 +598,8 @@ export const enFor = {
    */
   roomHeadcount: (count: number) => `${count} people`,
   /** The active check-in line: the venue, and when it lapses. */
+  timeLeft: (minutes: number) =>
+    minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m left` : `${minutes}m left`,
   checkinUntil: (venueName: string, time: string) => `${venueName} — until ${time}`,
 };
 

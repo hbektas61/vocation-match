@@ -8,7 +8,6 @@ export type RootStackParamList = {
   Tabs: undefined;
   Upcoming: undefined;
   HereNow: undefined;
-  Checkin: undefined;
   HotelDetails: { hotelId: string };
   Match: { matchId: string };
   Chat: { matchId: string };
@@ -21,9 +20,12 @@ export type RootScreenProps<T extends keyof RootStackParamList> = NativeStackScr
 >;
 
 export type TabParamList = {
-  Hotel: undefined;
-  Rooms: undefined;
-  Discovery: undefined;
+  /** D-040: hotel choice and its two features, one tab. */
+  Vacation: undefined;
+  /** D-040: the free check-in street, independent of any hotel. */
+  Nearby: undefined;
+  /** `source` preselects a deck (API room key, never a display name). */
+  Discovery: { source?: 'UPCOMING' | 'HERE_NOW' | 'NEARBY' } | undefined;
   Inbox: undefined;
   Settings: undefined;
 };
