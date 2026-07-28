@@ -723,10 +723,24 @@ export class SupabaseApi implements VocationApi {
       throw toApiError(error, 'Could not load your check-in.');
     }
     const row = (data ?? [])[0] as
-      | { venue_id: string; venue_name: string; expires_at: string }
+      | {
+          venue_id: string;
+          venue_name: string;
+          photo_url: string | null;
+          photo_attribution: string | null;
+          venue_kind: string | null;
+          expires_at: string;
+        }
       | undefined;
     return row
-      ? { venueId: row.venue_id, venueName: row.venue_name, expiresAt: Date.parse(row.expires_at) }
+      ? {
+          venueId: row.venue_id,
+          venueName: row.venue_name,
+          photoUrl: row.photo_url ?? null,
+          photoAttribution: row.photo_attribution ?? null,
+          kind: row.venue_kind ?? null,
+          expiresAt: Date.parse(row.expires_at),
+        }
       : null;
   }
 
@@ -919,6 +933,7 @@ interface HotelRow {
   address: string | null;
   photo_url?: string | null;
   photo_attribution?: string | null;
+  venue_kind?: string | null;
 }
 
 function toHotelCard(row: HotelRow): HotelCard {
@@ -930,6 +945,7 @@ function toHotelCard(row: HotelRow): HotelCard {
     address: row.address ?? null,
     photoUrl: row.photo_url ?? null,
     photoAttribution: row.photo_attribution ?? null,
+    kind: row.venue_kind ?? null,
   };
 }
 

@@ -2475,3 +2475,16 @@ Mesajlar · Ayarlar. RoomsScreen deleted; its card lives on as
 components/VacationFeatureCard. Labels: Tatilden Önce / Oteldeyim /
 Çevremde — API values untouched. No backend change of any kind.
 419 jest; tab testIDs are now tab-Vacation and tab-Nearby.
+
+## 2026-07-29 — Çevremde wears the designer's three screens (D-041)
+
+Pixel-faithful rebuild of intro / list / active states, with the mock's
+bar photograph cropped into assets/nearby-hero.jpg and a drawn icon set
+(map-pin-on-map, building, coffee, cutlery, bed, cocktail, waves,
+locate, shields, people, refresh, stop, hearts, doodles). Venue kind
+became real data end to end: hotels.venue_kind + provider upserts +
+search/nearby/my_checkin returns + HotelCard.kind + fixtures; area rows
+backfilled from their ring width. my_checkin also returns the venue's
+photo for the active card. Omitted knowingly: inbox unread dot,
+photo heart button; two mock sentences corrected to the truth. Tatilim
+tab icon is now the suitcase. 419 jest, 474 SQL.

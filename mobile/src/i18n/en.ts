@@ -553,7 +553,33 @@ export const en = {
     aroundYou: 'Around you',
     noVenues: 'No listed places here yet. Search yours below — the same 500 m rule decides.',
     searchFallback: 'Your place not listed? Search it by name.',
-    searchPlaceholder: 'Search the place you are at',
+    searchPlaceholder: 'Search a place or neighbourhood',
+    listSubtitle: 'Discover the places near you and meet the people who are there.',
+    idleSubtitle: 'Meet the holidaymakers near you — an instant bond at the same place.',
+    introTitle: 'Same place, no searching.',
+    introBody:
+      'Pick one place, check in, and see the holidaymakers around you. You are active only at that place, and only for 3 hours.',
+    howTitle: 'How does it work?',
+    howLocation: 'Starts with a single location reading',
+    howFree: 'Free for everyone',
+    howDuration: 'A check-in lasts 3 hours',
+    howPrivacy: 'Privacy comes first',
+    expiredTitle: 'Your check-in has ended',
+    expiredBody:
+      'The check-in ran out. Pick a place and check in again to keep seeing who is around.',
+    privacyCardBody:
+      'Only the name of the place you chose is shown — never your exact location. And you are visible only while you also have a check-in.',
+    activeSubtitle: 'While your check-in is active, you are visible to the people at your chosen place.',
+    activeChip: 'Check-in active',
+    safeTitle: 'Safe and free',
+    safeCheck: 'Exact locations and live distances are never shown to anyone.',
+    kindHotel: 'Hotel',
+    kindCafe: 'Cafe',
+    kindRestaurant: 'Restaurant',
+    kindBar: 'Bar',
+    kindBeach: 'Beach',
+    kindArea: 'Neighbourhood',
+    kindVenue: 'Place',
     previewIntro: 'Preview build: simulate a reading without a device.',
     simulateShore: 'Simulate: I am at the Lara shore',
     tooFar: 'That reading placed you more than 500 m from this place. Pick the place you are actually at.',
@@ -600,6 +626,7 @@ export const enFor = {
   /** The active check-in line: the venue, and when it lapses. */
   timeLeft: (minutes: number) =>
     minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m left` : `${minutes}m left`,
+  untilTime: (time: string) => `until ${time}`,
   checkinUntil: (venueName: string, time: string) => `${venueName} — until ${time}`,
 };
 

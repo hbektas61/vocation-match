@@ -4,6 +4,7 @@ import type { Hotel } from '../domain/types';
 export const HOTELS: Hotel[] = [
   {
     id: 'hotel-lara-shore',
+    kind: 'hotel',
     name: 'Lara Shore Resort',
     city: 'Antalya',
     country: 'Türkiye',
@@ -13,6 +14,7 @@ export const HOTELS: Hotel[] = [
   {
     /** D-039 fixture: ~600 m from Lara Shore — the same street. */
     id: 'hotel-lara-marina',
+    kind: 'bar',
     name: 'Lara Marina Bar',
     city: 'Antalya',
     country: 'Türkiye',
@@ -22,6 +24,7 @@ export const HOTELS: Hotel[] = [
   {
     /** D-038 fixture: ~2 km from Lara Shore, so the fake has a region. */
     id: 'hotel-lara-dunes',
+    kind: 'bar',
     name: 'Lara Dunes Club',
     city: 'Antalya',
     country: 'Türkiye',
@@ -30,6 +33,7 @@ export const HOTELS: Hotel[] = [
   },
   {
     id: 'hotel-bosphorus-garden',
+    kind: 'hotel',
     name: 'Bosphorus Garden Hotel',
     city: 'İstanbul',
     country: 'Türkiye',
@@ -38,6 +42,7 @@ export const HOTELS: Hotel[] = [
   },
   {
     id: 'hotel-cesme-breeze',
+    kind: 'hotel',
     name: 'Çeşme Breeze Club',
     city: 'İzmir',
     country: 'Türkiye',
@@ -46,6 +51,7 @@ export const HOTELS: Hotel[] = [
   },
   {
     id: 'hotel-kas-blue',
+    kind: 'hotel',
     name: 'Kaş Blue Bay Suites',
     city: 'Antalya',
     country: 'Türkiye',
@@ -54,6 +60,7 @@ export const HOTELS: Hotel[] = [
   },
   {
     id: 'hotel-cappadocia-stone',
+    kind: 'hotel',
     name: 'Cappadocia Stone House',
     city: 'Nevşehir',
     country: 'Türkiye',

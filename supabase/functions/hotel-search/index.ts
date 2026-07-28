@@ -53,6 +53,16 @@ const HOTEL_TYPES = new Set([
   "nightclub",
 ]);
 
+/** The category chip's truth (D-041), from Nominatim's own type. */
+function kindOfType(type: string): string | null {
+  if (type === "cafe") return "cafe";
+  if (type === "restaurant") return "restaurant";
+  if (/^(bar|pub|nightclub)$/.test(type)) return "bar";
+  if (/^(hotel|motel|guest_house|resort)$/.test(type)) return "hotel";
+  if (/^(beach|beach_resort)$/.test(type)) return "beach";
+  return null;
+}
+
 interface NominatimHit {
   extratags?: Record<string, string>;
   osm_type: string;
@@ -296,6 +306,7 @@ Deno.serve(async (req) => {
         p_address: hit.address?.road ?? null,
         p_photo_url: photos[i]?.url ?? null,
         p_photo_attribution: photos[i]?.attribution ?? null,
+        p_venue_kind: kindOfType(hit.type),
       });
     }
 

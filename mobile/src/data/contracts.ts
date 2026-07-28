@@ -126,6 +126,12 @@ export interface HotelCard {
   photoUrl: string | null;
   /** The credit line the photo's licence requires, shown with the photo. */
   photoAttribution: string | null;
+  /**
+   * What kind of place (D-041): 'hotel' | 'cafe' | 'restaurant' | 'bar' |
+   * 'beach' | 'area', or null when the provider never said. Drives the
+   * category chip and icon — never any logic.
+   */
+  kind: string | null;
 }
 
 export interface ActiveHotel {
@@ -224,6 +230,10 @@ export interface RoomHeadcount {
 export interface ActiveCheckin {
   venueId: string;
   venueName: string;
+  /** The venue's photo and its licence credit, when the catalogue has one. */
+  photoUrl: string | null;
+  photoAttribution: string | null;
+  kind: string | null;
   /** Epoch milliseconds. */
   expiresAt: number;
 }

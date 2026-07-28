@@ -12,7 +12,7 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { color, font, fontFamily, radius, spacing } from '../theme';
 
@@ -30,11 +30,11 @@ function iconFor(routeName: string, active: boolean) {
   };
   switch (routeName) {
     case 'Vacation':
+      // The designer's suitcase (2026-07-29): the trip, packed.
       return (
         <Svg {...common}>
-          <Path d="M10 12h4m-4-4h4m0 13v-3a2 2 0 0 0-4 0v3" />
-          <Path d="M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2" />
-          <Path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" />
+          <Rect x={4} y={8} width={16} height={12} rx={2} />
+          <Path d="M9 8V6a3 3 0 0 1 6 0v2M9 12v4m6-4v4" />
         </Svg>
       );
     case 'Nearby':

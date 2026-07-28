@@ -47,12 +47,17 @@ interface OverpassElement {
 
 /** Named places people gather at — the same families the search admits. */
 function isVenue(tags: Record<string, string>): boolean {
-  return (
-    /^(bar|cafe|pub|restaurant|nightclub)$/.test(tags.amenity ?? "") ||
-    /^(hotel|guest_house|motel|resort)$/.test(tags.tourism ?? "") ||
-    tags.leisure === "beach_resort" ||
-    tags.natural === "beach"
-  );
+  return kindOf(tags) !== null;
+}
+
+/** The category chip's truth (D-041), from the provider's own tags. */
+function kindOf(tags: Record<string, string>): string | null {
+  if (/^(cafe)$/.test(tags.amenity ?? "")) return "cafe";
+  if (/^(restaurant)$/.test(tags.amenity ?? "")) return "restaurant";
+  if (/^(bar|pub|nightclub)$/.test(tags.amenity ?? "")) return "bar";
+  if (/^(hotel|guest_house|motel|resort)$/.test(tags.tourism ?? "")) return "hotel";
+  if (tags.leisure === "beach_resort" || tags.natural === "beach") return "beach";
+  return null;
 }
 
 async function askOverpass(latitude: number, longitude: number): Promise<OverpassElement[]> {
@@ -221,6 +226,7 @@ Deno.serve(async (req) => {
           p_address: element.tags!["addr:street"] ?? null,
           p_photo_url: null,
           p_photo_attribution: null,
+          p_venue_kind: kindOf(element.tags!),
         });
       }),
     );
@@ -276,6 +282,7 @@ Deno.serve(async (req) => {
       p_address: null,
       p_photo_url: null,
       p_photo_attribution: null,
+      p_venue_kind: "area",
     });
     if (!upserted.error && upserted.data) {
       await admin

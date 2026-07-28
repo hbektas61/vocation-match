@@ -481,6 +481,7 @@ export class FakeApi implements VocationApi {
       address: null,
       photoUrl: null,
       photoAttribution: null,
+      kind: hotel.kind ?? null,
     }));
   }
 
@@ -606,6 +607,7 @@ export class FakeApi implements VocationApi {
         address: null,
         photoUrl: null,
         photoAttribution: null,
+        kind: venue.kind ?? null,
       }));
   }
 
@@ -645,7 +647,14 @@ export class FakeApi implements VocationApi {
     if (!checkin) return null;
     const venue = getHotelById(checkin.venueId);
     return venue
-      ? { venueId: checkin.venueId, venueName: venue.name, expiresAt: checkin.expiresAt }
+      ? {
+          venueId: checkin.venueId,
+          venueName: venue.name,
+          photoUrl: null,
+          photoAttribution: null,
+          kind: venue.kind ?? null,
+          expiresAt: checkin.expiresAt,
+        }
       : null;
   }
 

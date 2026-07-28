@@ -19,6 +19,8 @@ export interface Hotel {
   /** Public venue coordinates, used only as a distance-computation input. */
   latitude: number;
   longitude: number;
+  /** D-041: category for the chip/icon — display only, never logic. */
+  kind?: string;
 }
 
 export interface Profile {
