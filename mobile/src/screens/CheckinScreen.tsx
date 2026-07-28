@@ -220,6 +220,9 @@ export function CheckinScreen({
             disabled={busy}
             testID="checkin-look-around"
           />
+          {busy ? (
+            <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="checkin-looking" />
+          ) : null}
           {previewShore ? (
             <Card>
               <Caption>{COPY.checkin.previewIntro}</Caption>

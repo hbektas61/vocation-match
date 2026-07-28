@@ -201,6 +201,31 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
+  /** Overpass finds → catalogue rows, upserted concurrently. */
+  const storeFound = async (found: OverpassElement[]) => {
+    await Promise.all(
+      found.map((element) => {
+        const lat = element.lat ?? element.center?.lat;
+        const lon = element.lon ?? element.center?.lon;
+        if (lat === undefined || lon === undefined) return Promise.resolve();
+        // The single write boundary, and the same provider-key space as
+        // hotel-search: a venue found both ways is one row.
+        return admin.rpc("upsert_hotel_from_provider", {
+          p_provider: "osm",
+          p_provider_hotel_id: `${element.type}/${element.id}`,
+          p_name: element.tags!.name,
+          p_city: element.tags!["addr:city"] ?? element.tags!["addr:town"] ?? "Türkiye",
+          p_country: "Türkiye",
+          p_latitude: lat,
+          p_longitude: lon,
+          p_address: element.tags!["addr:street"] ?? null,
+          p_photo_url: null,
+          p_photo_attribution: null,
+        });
+      }),
+    );
+  };
+
   const first = await admin.rpc("nearby_venues", {
     p_latitude: latitude,
     p_longitude: longitude,
@@ -210,79 +235,62 @@ Deno.serve(async (req) => {
   }
   let venues = first.data ?? [];
 
-  if (venues.length < THIN) {
-    let found: OverpassElement[] = [];
-    try {
-      found = await askOverpass(latitude, longitude);
-    } catch {
-      // The world being unreachable must not take the catalogue down with
-      // it: the thin answer is still an answer.
+  // Anything cached answers *now*. A thin-but-nonempty area is enriched in
+  // the background, so the next look around here is both instant and rich —
+  // the person standing there is never made to wait on Overpass twice.
+  if (venues.length > 0) {
+    if (venues.length < THIN) {
+      const warm = askOverpass(latitude, longitude).then(storeFound).catch(() => {});
+      // deno-lint-ignore no-explicit-any
+      const runtime = (globalThis as any).EdgeRuntime;
+      if (runtime?.waitUntil) runtime.waitUntil(warm);
+      else await warm;
     }
+    return Response.json({ venues });
+  }
 
-    for (const element of found) {
-      const lat = element.lat ?? element.center?.lat;
-      const lon = element.lon ?? element.center?.lon;
-      if (lat === undefined || lon === undefined) continue;
-      // The single write boundary, and the same provider-key space as
-      // hotel-search: a venue found both ways is one row.
-      await admin.rpc("upsert_hotel_from_provider", {
-        p_provider: "osm",
-        p_provider_hotel_id: `${element.type}/${element.id}`,
-        p_name: element.tags!.name,
-        p_city: element.tags!["addr:city"] ?? element.tags!["addr:town"] ?? "Türkiye",
-        p_country: "Türkiye",
-        p_latitude: lat,
-        p_longitude: lon,
-        p_address: element.tags!["addr:street"] ?? null,
-        p_photo_url: null,
-        p_photo_attribution: null,
-      });
-    }
+  // Empty catalogue: the two outside sources are independent questions, so
+  // they are asked at the same time — venues around the point, and the name
+  // of the area the point sits in.
+  const [overpassResult, areaResult] = await Promise.allSettled([
+    askOverpass(latitude, longitude),
+    reverseArea(latitude, longitude),
+  ]);
+  const found = overpassResult.status === "fulfilled" ? overpassResult.value : [];
+  const area = areaResult.status === "fulfilled" ? areaResult.value : null;
 
-    if (found.length > 0) {
-      const second = await admin.rpc("nearby_venues", {
-        p_latitude: latitude,
-        p_longitude: longitude,
-      });
-      if (!second.error) venues = second.data ?? venues;
+  if (found.length > 0) {
+    await storeFound(found);
+  } else if (area) {
+    // Where there is no venue, the neighbourhood is the venue: its own
+    // public centroid and a ring sized from its bounding box. The caller's
+    // reading is never written.
+    const upserted = await admin.rpc("upsert_hotel_from_provider", {
+      p_provider: "osm",
+      p_provider_hotel_id: `${area.osmType}/${area.osmId}`,
+      p_name: area.name,
+      p_city: area.city,
+      p_country: "Türkiye",
+      p_latitude: area.latitude,
+      p_longitude: area.longitude,
+      p_address: null,
+      p_photo_url: null,
+      p_photo_attribution: null,
+    });
+    if (!upserted.error && upserted.data) {
+      await admin
+        .from("hotels")
+        .update({ checkin_radius_meters: area.radiusMeters })
+        .eq("id", upserted.data);
     }
   }
 
-  // Still nothing named around this point: the neighbourhood itself becomes
-  // the anchor, with a ring wide enough to stand anywhere in it. The row
-  // stores the area's own centroid — the caller's reading is never written.
-  if (venues.length === 0) {
-    let area: ReverseArea | null = null;
-    try {
-      area = await reverseArea(latitude, longitude);
-    } catch {
-      // The empty answer stands.
-    }
-    if (area) {
-      const upserted = await admin.rpc("upsert_hotel_from_provider", {
-        p_provider: "osm",
-        p_provider_hotel_id: `${area.osmType}/${area.osmId}`,
-        p_name: area.name,
-        p_city: area.city,
-        p_country: "Türkiye",
-        p_latitude: area.latitude,
-        p_longitude: area.longitude,
-        p_address: null,
-        p_photo_url: null,
-        p_photo_attribution: null,
-      });
-      if (!upserted.error && upserted.data) {
-        await admin
-          .from("hotels")
-          .update({ checkin_radius_meters: area.radiusMeters })
-          .eq("id", upserted.data);
-        const third = await admin.rpc("nearby_venues", {
-          p_latitude: latitude,
-          p_longitude: longitude,
-        });
-        if (!third.error) venues = third.data ?? venues;
-      }
-    }
+  if (found.length > 0 || area) {
+    const second = await admin.rpc("nearby_venues", {
+      p_latitude: latitude,
+      p_longitude: longitude,
+    });
+    if (!second.error) venues = second.data ?? venues;
   }
 
   return Response.json({ venues });

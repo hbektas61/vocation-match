@@ -2450,3 +2450,15 @@ BOOT_ERROR from shadowed identifiers in the same function. Verified on
 staging: a venue-less Ankara street answers "Erler Mahallesi" and a
 check-in from that street lands inside the ring; Side kırsalı answers
 "Yalı"; Alaçatı still answers "Before Sunset Bar".
+
+## 2026-07-28 — the around-you list got fast
+
+Owner's report: venues arrived, but slowly. Three causes stacked in
+venues-nearby: Overpass awaited before anything answered, its finds
+upserted one by one, and the reverse lookup queued behind both. Now a
+non-empty catalogue answers immediately (thin areas enrich in the
+background via EdgeRuntime.waitUntil, so the next look is instant and
+rich); an empty catalogue asks Overpass and the reverse lookup in
+parallel and writes finds concurrently. Measured on staging: first
+look ~1.5 s, repeat looks 0.3–0.4 s (was 10 s+ worst case). The screen
+shows a spinner while looking.
