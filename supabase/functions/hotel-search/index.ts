@@ -128,12 +128,16 @@ async function askNominatim(query: string): Promise<NominatimHit[]> {
   const bare = await askNominatimOnce(query);
   if (bare.length > 0) return bare;
   // A venue's colloquial name often carries one word OSM's record does not
-  // ("before sunset beach" where OSM says "Before Sunset Bar"). For a query
-  // of three or more words, drop the last one and ask once more before
-  // giving up — one extra request, only on the empty-handed path.
+  // ("before sunset beach" where OSM says "Before Sunset Bar"). Drop the
+  // last word and ask once more before giving up — one extra request, only
+  // on the empty-handed path, and only while what remains is still a name
+  // rather than a fragment.
   const words = query.trim().split(/\s+/);
-  if (words.length >= 3) {
-    return askNominatimOnce(words.slice(0, -1).join(" "));
+  if (words.length >= 2) {
+    const kept = words.slice(0, -1).join(" ");
+    if (kept.replace(/\s+/g, "").length >= 5) {
+      return askNominatimOnce(kept);
+    }
   }
   return [];
 }

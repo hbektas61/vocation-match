@@ -113,6 +113,12 @@ select is(
   'two stray words are a different search, not a fuzzy one'
 );
 
+select is(
+  (select count(*)::int from public.search_hotels('bosphorusgrand beach')),
+  1,
+  'joined-up words and a stray word at once still land (the owner''s fourth spelling)'
+);
+
 select throws_ok(
   $$select public.upsert_hotel_from_provider('rogue','x','X','Y','ZZ',1,1)$$,
   '42501',
