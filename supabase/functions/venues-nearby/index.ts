@@ -14,6 +14,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const OVERPASS = "https://overpass-api.de/api/interpreter";
+const NOMINATIM_REVERSE = "https://nominatim.openstreetmap.org/reverse";
 const USER_AGENT = "VocationMatch/0.1 (pilot; hamibektas61@gmail.com)";
 /** Below this many catalogue hits around the point, the world is asked. */
 const THIN = 3;
@@ -81,6 +82,65 @@ out center 30;`;
       (element.lat !== undefined || element.center !== undefined),
   );
 }
+
+interface ReverseArea {
+  osmType: string;
+  osmId: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  city: string;
+}
+
+/**
+ * Where there is no venue, the neighbourhood is the venue (D-039): a
+ * reverse lookup names the area the point sits in — suburb, neighbourhood,
+ * village — and returns *its* public centroid, never the caller's point.
+ */
+async function reverseArea(latitude: number, longitude: number): Promise<ReverseArea | null> {
+  const url = new URL(NOMINATIM_REVERSE);
+  url.searchParams.set("lat", String(latitude));
+  url.searchParams.set("lon", String(longitude));
+  url.searchParams.set("zoom", "14");
+  url.searchParams.set("format", "jsonv2");
+  url.searchParams.set("addressdetails", "1");
+  const response = await fetch(url, {
+    headers: { "User-Agent": USER_AGENT },
+    signal: AbortSignal.timeout(5_000),
+  });
+  if (!response.ok) return null;
+  const hit = (await response.json()) as {
+    osm_type?: string;
+    osm_id?: number;
+    name?: string;
+    lat?: string;
+    lon?: string;
+    address?: Record<string, string>;
+  };
+  const name =
+    hit.name ||
+    hit.address?.suburb ||
+    hit.address?.neighbourhood ||
+    hit.address?.village ||
+    hit.address?.town ||
+    "";
+  if (!name || !hit.osm_type || !hit.osm_id || !hit.lat || !hit.lon) return null;
+  return {
+    osmType: hit.osm_type,
+    osmId: hit.osm_id,
+    name,
+    latitude: Number(hit.lat),
+    longitude: Number(hit.lon),
+    city:
+      hit.address?.town ??
+      hit.address?.city ??
+      hit.address?.province ??
+      "Türkiye",
+  };
+}
+
+/** Wide enough that standing anywhere in an ordinary neighbourhood is inside. */
+const AREA_RADIUS_METERS = 2000;
 
 Deno.serve(async (req) => {
   const role = roleOf(req.headers.get("Authorization") ?? "");
@@ -155,6 +215,43 @@ Deno.serve(async (req) => {
         p_longitude: longitude,
       });
       if (!second.error) venues = second.data ?? venues;
+    }
+  }
+
+  // Still nothing named around this point: the neighbourhood itself becomes
+  // the anchor, with a ring wide enough to stand anywhere in it. The row
+  // stores the area's own centroid — the caller's reading is never written.
+  if (venues.length === 0) {
+    let area: ReverseArea | null = null;
+    try {
+      area = await reverseArea(latitude, longitude);
+    } catch {
+      // The empty answer stands.
+    }
+    if (area) {
+      const upserted = await admin.rpc("upsert_hotel_from_provider", {
+        p_provider: "osm",
+        p_provider_hotel_id: `${area.osmType}/${area.osmId}`,
+        p_name: area.name,
+        p_city: area.city,
+        p_country: "Türkiye",
+        p_latitude: area.latitude,
+        p_longitude: area.longitude,
+        p_address: null,
+        p_photo_url: null,
+        p_photo_attribution: null,
+      });
+      if (!upserted.error && upserted.data) {
+        await admin
+          .from("hotels")
+          .update({ checkin_radius_meters: AREA_RADIUS_METERS })
+          .eq("id", upserted.data);
+        const third = await admin.rpc("nearby_venues", {
+          p_latitude: latitude,
+          p_longitude: longitude,
+        });
+        if (!third.error) venues = third.data ?? venues;
+      }
     }
   }
 

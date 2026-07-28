@@ -2426,3 +2426,16 @@ function fills a thin answer from Overpass (named bars/cafés/
 restaurants/hotels/beaches around the point) through the same
 `upsert_hotel_from_provider` boundary and provider-key space as
 hotel-search. 472 SQL assertions, 419 jest.
+
+## 2026-07-28 — where there is no venue, the neighbourhood is the venue
+
+Owner's field report: on an ordinary street the around-you list was
+empty (OSM knows no named venue near most homes), and they asked to
+anchor on the raw location instead. Kept the no-coordinates promise by
+anchoring on the named *area*: venues gained `checkin_radius_meters`
+(500 default; 2000 for area rows), `record_checkin` and `nearby_venues`
+honour the per-row ring, and `venues-nearby` falls back to a Nominatim
+reverse lookup (zoom 14) that upserts the neighbourhood with its own
+public centroid — the caller's reading is never written. A neighbourhood
+name is coarser than a street: more private than what was asked for.
+474 SQL assertions.

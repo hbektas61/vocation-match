@@ -163,6 +163,28 @@ select is(
   'around the far pier only the pier answers'
 );
 
+-- ------------------------------------------------- the neighbourhood anchor
+-- D-039, continued: where OSM knows no venue, a named area with a 2 km ring
+-- is the anchor. Standing 1.5 km from its centroid is still "inside".
+select tests.clear_auth();
+create temp table area as select tests.create_hotel('Kale Mahallesi', 40.9900, 28.8000) as id;
+grant select on area to anon, authenticated;
+update public.hotels set checkin_radius_meters = 2000 where id = (select id from area);
+
+select tests.authenticate_as('00000000-0000-0000-0000-000000000701');
+-- ~1.45 km north of the area's centroid.
+select is(
+  (select count(*)::int from public.nearby_venues(41.0030, 28.8000)),
+  1,
+  'a neighbourhood offers itself from anywhere inside its ring'
+);
+select results_eq(
+  $$select within_range from public.record_checkin((select id from area), 41.0030, 28.8000)$$,
+  $$values (true)$$,
+  'and standing inside the ring checks in'
+);
+select public.clear_checkin();
+
 select tests.authenticate_as_anon();
 select throws_ok(
   $$select * from public.nearby_venues(41.0369, 28.9850)$$,
