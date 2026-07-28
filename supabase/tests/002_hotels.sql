@@ -94,6 +94,25 @@ select is(
   'search_hotels returns a usable card for every hit'
 );
 
+-- D-037 — the search forgives how people actually type a venue's name.
+select is(
+  (select count(*)::int from public.search_hotels('bosphorusgrand')),
+  1,
+  'joined-up words still land (squashed matching)'
+);
+
+select is(
+  (select count(*)::int from public.search_hotels('bosphorus grand palace')),
+  1,
+  'one stray word in a multi-word query is forgiven (token matching)'
+);
+
+select is(
+  (select count(*)::int from public.search_hotels('palace kebab')),
+  0,
+  'two stray words are a different search, not a fuzzy one'
+);
+
 select throws_ok(
   $$select public.upsert_hotel_from_provider('rogue','x','X','Y','ZZ',1,1)$$,
   '42501',

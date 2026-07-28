@@ -29,8 +29,25 @@ const NOMINATIM = "https://nominatim.openstreetmap.org/search";
 const USER_AGENT = "VocationMatch/0.1 (pilot; hamibektas61@gmail.com)";
 /** Below this many catalogue hits, the world is worth asking. */
 const THIN = 5;
-/** Nominatim types that are a hotel for this product's purposes. */
-const HOTEL_TYPES = new Set(["hotel", "motel", "guest_house", "resort"]);
+/**
+ * Nominatim types that are an anchor place for this product's purposes.
+ *
+ * Widened past lodging on 2026-07-28 (D-037): the summer crowd the owner is
+ * building for gathers at beach clubs as much as at hotels, and OSM tags
+ * those as `bar`, `nightclub` or `beach_resort` — Before Sunset in Alaçatı
+ * is an `amenity=bar`. The filter's real job is unchanged: keep specific,
+ * named venues and drop the geography a bare name drags in (parks, roads,
+ * whole towns). A named bar is a venue; a park is not.
+ */
+const HOTEL_TYPES = new Set([
+  "hotel",
+  "motel",
+  "guest_house",
+  "resort",
+  "beach_resort",
+  "bar",
+  "nightclub",
+]);
 
 interface NominatimHit {
   extratags?: Record<string, string>;
@@ -104,7 +121,17 @@ async function askNominatimOnce(query: string): Promise<NominatimHit[]> {
 async function askNominatim(query: string): Promise<NominatimHit[]> {
   const biased = await askNominatimOnce(`${query} hotel`);
   if (biased.length > 0) return biased;
-  return askNominatimOnce(query);
+  const bare = await askNominatimOnce(query);
+  if (bare.length > 0) return bare;
+  // A venue's colloquial name often carries one word OSM's record does not
+  // ("before sunset beach" where OSM says "Before Sunset Bar"). For a query
+  // of three or more words, drop the last one and ask once more before
+  // giving up — one extra request, only on the empty-handed path.
+  const words = query.trim().split(/\s+/);
+  if (words.length >= 3) {
+    return askNominatimOnce(words.slice(0, -1).join(" "));
+  }
+  return [];
 }
 
 /** Wikidata P18 → a Commons photo URL and the credit line its licence asks for. */
