@@ -2411,3 +2411,18 @@ Demo venue "Sorgun Sahil Bar" (~730 m from Club Voyage Sorgur) and two
 device testing: staging uses the real GPS path (no simulation card), so
 the owner tests Çevremde by checking in at a real venue near wherever
 they physically are — two test numbers at the same spot see each other.
+
+## 2026-07-28 — check-in stopped asking people to type
+
+Owner's correction, immediately right: someone checking in is standing
+somewhere — the screen now reads the location once and lists the venues
+around it (nearest first, tap to check in against that same reading);
+search-by-name remains only as the fallback underneath, and the "hotel"
+query bias plays no part here. `nearby_venues(lat, lon)` answers from
+the catalogue within the 500 m check-in ring (security definer because
+`hotels.location` is rightly not client-readable — the answer still
+carries no coordinate and no distance); the `venues-nearby` edge
+function fills a thin answer from Overpass (named bars/cafés/
+restaurants/hotels/beaches around the point) through the same
+`upsert_hotel_from_provider` boundary and provider-key space as
+hotel-search. 472 SQL assertions, 419 jest.

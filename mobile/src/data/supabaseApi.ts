@@ -672,6 +672,29 @@ export class SupabaseApi implements VocationApi {
 
   /* -------------------------------------------------------------- check-ins */
 
+  async nearbyVenues(latitude: number, longitude: number): Promise<HotelCard[]> {
+    // Edge function first (catalogue plus the world, like searchHotels);
+    // the direct RPC is the degraded-but-correct fallback.
+    try {
+      const { data, error } = await this.client.functions.invoke('venues-nearby', {
+        body: { latitude, longitude },
+      });
+      if (!error && Array.isArray(data?.venues)) {
+        return (data.venues as HotelRow[]).map(toHotelCard);
+      }
+    } catch {
+      // Fall through to the catalogue.
+    }
+    const { data, error } = await this.client.rpc('nearby_venues', {
+      p_latitude: latitude,
+      p_longitude: longitude,
+    });
+    if (error) {
+      throw toApiError(error, 'Could not look around.');
+    }
+    return ((data ?? []) as HotelRow[]).map(toHotelCard);
+  }
+
   async recordCheckin(venueId: string, latitude: number, longitude: number): Promise<CheckinAnswer> {
     // Same shape as the presence check (D-005): the reading leaves the
     // device once, as an argument; the server stores a venue id and a

@@ -7,7 +7,9 @@ select no_plan();
 create temp table v as
 select tests.create_hotel('Corner Beach Bar', 41.0369, 28.9850) as a,
        tests.create_hotel('Marina Club',      41.0400, 28.9900) as b,
-       tests.create_hotel('Far Pier',         41.0550, 28.9850) as c;
+       tests.create_hotel('Far Pier',         41.0550, 28.9850) as c,
+       -- ~150 m from A: inside the 500 m check-in ring, for the list test.
+       tests.create_hotel('Corner Kiosk',     41.0380, 28.9860) as d;
 grant select on v to anon, authenticated;
 
 -- Nil is deliberately FREE: the whole feature must work without premium.
@@ -145,6 +147,28 @@ select is(
   (select count(*)::int from public.checkins),
   0,
   'RLS: a member reads only their own check-in row — everyone else''s is invisible'
+);
+
+-- ------------------------------------------------- the venues around a point
+-- D-039, continued: the screen reads the location once and offers the
+-- catalogue's venues within check-in range, nearest first.
+select results_eq(
+  $$select name from public.nearby_venues(41.0369, 28.9850)$$,
+  $$values ('Corner Beach Bar'::text), ('Corner Kiosk')$$,
+  'around the bar: itself first, 150 m second — 540 m is outside check-in range'
+);
+select is(
+  (select count(*)::int from public.nearby_venues(41.0550, 28.9850)),
+  1,
+  'around the far pier only the pier answers'
+);
+
+select tests.authenticate_as_anon();
+select throws_ok(
+  $$select * from public.nearby_venues(41.0369, 28.9850)$$,
+  '42501',
+  null,
+  'anonymous callers cannot look around'
 );
 
 select tests.clear_auth();

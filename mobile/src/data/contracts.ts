@@ -374,6 +374,12 @@ export interface VocationApi {
 
   /* check-ins (D-039) */
   /**
+   * The named venues within check-in range of a point, nearest first — what
+   * the check-in screen offers instead of a search box. The reading is used
+   * and discarded; nothing about the caller is stored.
+   */
+  nearbyVenues(latitude: number, longitude: number): Promise<HotelCard[]>;
+  /**
    * Checks in to a venue after a one-time foreground reading verifies the
    * caller is within 500 m of it. Out of range answers false and stores
    * nothing. Free — no premium involved anywhere in Çevremde.

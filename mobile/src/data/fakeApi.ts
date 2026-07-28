@@ -22,7 +22,7 @@ import { haversineMeters } from '../domain/location';
 import { isUpcomingEligible, validateStayDates } from '../domain/upcoming';
 import type { HereNowCheck, UpcomingDeclaration } from '../domain/types';
 import { CANDIDATES, ROOM_CROWD } from '../fixtures/candidates';
-import { getHotelById, searchHotels as searchHotelFixtures } from '../fixtures/hotels';
+import { getHotelById, HOTELS, searchHotels as searchHotelFixtures } from '../fixtures/hotels';
 import {
   ApiError,
   type ActivationResult,
@@ -579,6 +579,35 @@ export class FakeApi implements VocationApi {
   }
 
   /* -------------------------------------------------------------- check-ins */
+
+  async nearbyVenues(latitude: number, longitude: number): Promise<HotelCard[]> {
+    await this.requireUserId();
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      Math.abs(latitude) > 90 ||
+      Math.abs(longitude) > 180
+    ) {
+      throw new ApiError('INVALID_INPUT', 'That location reading is not usable.');
+    }
+    return HOTELS.filter(
+      (venue) => haversineMeters(venue.latitude, venue.longitude, latitude, longitude) <= 500,
+    )
+      .sort(
+        (a, b) =>
+          haversineMeters(a.latitude, a.longitude, latitude, longitude) -
+          haversineMeters(b.latitude, b.longitude, latitude, longitude),
+      )
+      .map((venue) => ({
+        id: venue.id,
+        name: venue.name,
+        city: venue.city,
+        country: venue.country,
+        address: null,
+        photoUrl: null,
+        photoAttribution: null,
+      }));
+  }
 
   async recordCheckin(venueId: string, latitude: number, longitude: number): Promise<CheckinAnswer> {
     const userId = await this.requireUserId();
