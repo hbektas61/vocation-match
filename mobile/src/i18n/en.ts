@@ -354,6 +354,7 @@ export const en = {
       'You are both within 500 m of this hotel right now. Neither of you can see where the other is.',
     /** The card's top-right chip: the one bond this product can print. */
     sameHotel: 'Same hotel',
+    nearby: 'nearby',
     overlapUpcoming:
       'Your stays at this hotel overlap. Nobody was asked for a reservation.',
     reportBlockButton: 'Report or block',

@@ -27,6 +27,8 @@ const CANDIDATE: CandidateCard = {
   photoPath: PATHS[0],
   photoPaths: PATHS,
   interests: [],
+  venueName: null,
+  sameVenue: true,
   gender: null,
   orientations: [],
 };

@@ -11,6 +11,15 @@ export const HOTELS: Hotel[] = [
     longitude: 30.7995,
   },
   {
+    /** D-038 fixture: ~2 km from Lara Shore, so the fake has a region. */
+    id: 'hotel-lara-dunes',
+    name: 'Lara Dunes Club',
+    city: 'Antalya',
+    country: 'Türkiye',
+    latitude: 36.86,
+    longitude: 30.82,
+  },
+  {
     id: 'hotel-bosphorus-garden',
     name: 'Bosphorus Garden Hotel',
     city: 'İstanbul',

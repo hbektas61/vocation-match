@@ -111,6 +111,22 @@ export const CANDIDATES: Candidate[] = [
     stay: { startDate: '2026-07-20', endDate: '2026-08-20' },
   },
   {
+    /** D-038 fixture: anchored 2 km away, reachable through the region pool. */
+    id: 'cand-ece',
+    displayName: 'Ece',
+    gender: 'WOMAN',
+    showGender: true,
+    orientations: [],
+    showOrientation: false,
+    age: 30,
+    bio: 'Dunes in the morning, old town at night.',
+    interests: ['surf', 'markets', 'films'],
+    hotelId: 'hotel-lara-dunes',
+    rooms: ['UPCOMING'],
+    likesYou: true,
+    stay: { startDate: '2026-07-20', endDate: '2026-08-20' },
+  },
+  {
     /** D-035 fixture: at Lara Shore, but long after everyone else has left. */
     id: 'cand-nur',
     displayName: 'Nur',

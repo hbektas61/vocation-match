@@ -234,6 +234,13 @@ export interface CandidateCard {
   gender: string | null;
   /** Empty unless its owner published them. Never a filter — only ever read. */
   orientations: string[];
+  /**
+   * D-038: the other person's venue name when they are anchored nearby
+   * rather than at the caller's own venue; null on own-venue cards. The one
+   * new disclosure the region pool makes — a name, never a distance.
+   */
+  venueName: string | null;
+  sameVenue: boolean;
 }
 
 /** Five, matching `profiles_interests_count`. Said out loud in the UI. */

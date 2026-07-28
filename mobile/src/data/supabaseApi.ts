@@ -688,6 +688,8 @@ export class SupabaseApi implements VocationApi {
       interests: row.interests ?? [],
       gender: row.gender ?? null,
       orientations: row.orientations ?? [],
+      venueName: row.venue_name ?? null,
+      sameVenue: row.same_venue ?? true,
     }));
   }
 
@@ -903,6 +905,8 @@ interface CandidateRow {
   photo_paths: string[] | null;
   gender: string | null;
   orientations: string[] | null;
+  venue_name: string | null;
+  same_venue: boolean;
 }
 
 interface SwipeRow {

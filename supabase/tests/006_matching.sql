@@ -13,7 +13,9 @@ select tests.create_member('eve@example.test', '00000000-0000-0000-0000-00000000
 
 create temp table h as
 select tests.create_hotel('Bosphorus Grand', 41.0369, 28.9850) as one,
-       tests.create_hotel('Galata Rooms',    41.0256, 28.9744) as two;
+       -- Another city on purpose: within 15 km hotel two would be the same
+       -- region (D-038), and this suite needs a truly unreachable target.
+       tests.create_hotel('Ankara Palas',    39.9334, 32.8597) as two;
 grant select on h to anon, authenticated;
 
 -- Ada, Bo, Cam and Eve all declare a stay at hotel one; Dev is at hotel two.
@@ -138,7 +140,7 @@ select throws_ok(
 select is(
   (select refused from public.swipe('00000000-0000-0000-0000-0000000000d1', 'UPCOMING', 'LIKE')),
   'NOT_IN_ROOM',
-  'a user at another hotel cannot be swiped by id'
+  'a user in another region cannot be swiped by id'
 );
 
 -- A target with no decision stored yet: a repeat swipe deliberately answers

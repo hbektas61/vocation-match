@@ -13,7 +13,9 @@ select tests.create_member('dev@example.test', '00000000-0000-0000-0000-00000000
 
 create temp table h as
 select tests.create_hotel('Bosphorus Grand', 41.0369, 28.9850) as one,
-       tests.create_hotel('Galata Rooms',    41.0256, 28.9744) as two;
+       -- Hotel two is deliberately in another city: within 15 km it would now
+       -- be the same region (D-038), and these tests are about true isolation.
+       tests.create_hotel('Ankara Palas',    39.9334, 32.8597) as two;
 grant select on h to anon, authenticated;
 
 -- Bo declares a stay at hotel one.
@@ -133,7 +135,7 @@ select bag_eq(
       join unnest(p.proargnames, p.proargmodes) as a(attname, mode) on true
      where n.nspname = 'public' and p.proname = 'discovery_feed' and a.mode = 't'$$,
   $$values ('user_id'::text),('display_name'),('age'),('bio'),('photo_path'),('photo_paths'),
-           ('interests'),('gender'),('orientations')$$,
+           ('interests'),('gender'),('orientations'),('venue_name'),('same_venue')$$,
   'the feed returns exactly the card fields — no birthdate, no email, no location, no show_me'
 );
 
@@ -244,7 +246,7 @@ select is(
   (select count(*)::int from public.discovery_feed('UPCOMING') f
     where f.display_name = 'Dev'),
   0,
-  'a guest at another hotel never appears in this hotel`s room'
+  'a guest in another region never appears in this hotel`s room (D-038: nearby is a different story)'
 );
 
 -- ------------------------------------------- drafts, show-me, and toggles

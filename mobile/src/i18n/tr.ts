@@ -352,6 +352,7 @@ export const tr: Copy = {
     overlapHereNow:
       'İkiniz de şu an bu otelin 500 m yakınındasınız. Hiçbiriniz diğerinin nerede olduğunu göremez.',
     sameHotel: 'Aynı otelde',
+    nearby: 'çevrede',
     overlapUpcoming:
       'Bu oteldeki konaklamalarınız çakışıyor. Kimseden rezervasyon istenmedi.',
     reportBlockButton: 'Bildir veya engelle',

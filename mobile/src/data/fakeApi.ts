@@ -18,6 +18,7 @@ import {
   HERE_NOW_FRESHNESS_MS,
   isHereNowEligible,
 } from '../domain/hereNow';
+import { haversineMeters } from '../domain/location';
 import { isUpcomingEligible, validateStayDates } from '../domain/upcoming';
 import type { HereNowCheck, UpcomingDeclaration } from '../domain/types';
 import { CANDIDATES, ROOM_CROWD } from '../fixtures/candidates';
@@ -661,21 +662,38 @@ export class FakeApi implements VocationApi {
     // the bugs these tests exist to catch.
     const self = this.profiles.get(userId);
     const myStay = this.stays.get(stayKey(userId, hotelId)) ?? null;
-    return CANDIDATES.filter(
-      (candidate) =>
-        candidate.hotelId === hotelId &&
-        candidate.rooms.includes(room) &&
-        showMeMatches(self?.showMe ?? null, candidate.gender) &&
-        showMeMatches('EVERYONE', self?.gender ?? null) &&
-        // D-035, exactly as discovery_feed applies it: in Upcoming you meet
-        // only the people whose declared window crosses yours, edges
-        // inclusive — the checkout day and the checkin day are one day.
-        (room !== 'UPCOMING' ||
-          (myStay !== null &&
-            candidate.stay !== undefined &&
-            myStay.checkInDate <= candidate.stay.endDate &&
-            candidate.stay.startDate <= myStay.checkOutDate)),
-    )
+    const swipeable = (candidate: (typeof CANDIDATES)[number]) =>
+      candidate.rooms.includes(room) &&
+      showMeMatches(self?.showMe ?? null, candidate.gender) &&
+      showMeMatches('EVERYONE', self?.gender ?? null) &&
+      // D-035, exactly as discovery_feed applies it: in Upcoming you meet
+      // only the people whose declared window crosses yours, edges
+      // inclusive — the checkout day and the checkin day are one day.
+      (room !== 'UPCOMING' ||
+        (myStay !== null &&
+          candidate.stay !== undefined &&
+          myStay.checkInDate <= candidate.stay.endDate &&
+          candidate.stay.startDate <= myStay.checkOutDate));
+
+    const own = CANDIDATES.filter(
+      (candidate) => candidate.hotelId === hotelId && swipeable(candidate),
+    );
+    // D-038, the same gate as the server's: the region only speaks when the
+    // own-venue deck has fewer than five unswiped people left.
+    const ownUnswiped = own.filter(
+      (candidate) => !this.swipes.has(swipeKey(userId, candidate.id)),
+    ).length;
+    const region =
+      ownUnswiped < 5
+        ? CANDIDATES.filter(
+            (candidate) =>
+              candidate.hotelId !== hotelId &&
+              this.inRegionOf(hotelId, candidate.hotelId) &&
+              swipeable(candidate),
+          )
+        : [];
+
+    return [...own, ...region]
       .slice(0, Math.min(Math.max(limit, 1), 50))
       .map((candidate) => ({
         userId: candidate.id,
@@ -687,6 +705,11 @@ export class FakeApi implements VocationApi {
         interests: candidate.interests,
         gender: candidate.showGender ? candidate.gender : null,
         orientations: candidate.showOrientation ? candidate.orientations : [],
+        venueName:
+          candidate.hotelId === hotelId
+            ? null
+            : (getHotelById(candidate.hotelId)?.name ?? null),
+        sameVenue: candidate.hotelId === hotelId,
       }));
   }
 
@@ -745,7 +768,10 @@ export class FakeApi implements VocationApi {
       ? undefined
       : CANDIDATES.find(
           (entry) =>
-            entry.id === targetUserId && entry.hotelId === hotelId && entry.rooms.includes(room),
+            entry.id === targetUserId &&
+            // D-038: reachable at the caller's venue or within the region.
+            this.inRegionOf(hotelId, entry.hotelId) &&
+            entry.rooms.includes(room),
         );
     if (!candidate) {
       throw new ApiError('FORBIDDEN', 'That person is not in this room.');
@@ -948,6 +974,20 @@ export class FakeApi implements VocationApi {
       age: ageYears(stored.birthdate, todayIsoDate(new Date(this.now()))) ?? 0,
       isPremium: premiumUntil !== null && premiumUntil > this.now(),
     };
+  }
+
+  /**
+   * D-038: whether a candidate's fixture venue is the caller's own venue or
+   * one within the region radius — the same 15 km the server uses.
+   */
+  private inRegionOf(hotelId: string, candidateHotelId: string): boolean {
+    if (candidateHotelId === hotelId) return true;
+    const mine = getHotelById(hotelId);
+    const theirs = getHotelById(candidateHotelId);
+    if (!mine || !theirs) return false;
+    return (
+      haversineMeters(mine.latitude, mine.longitude, theirs.latitude, theirs.longitude) <= 15000
+    );
   }
 
   private isPremiumNow(userId: string): boolean {

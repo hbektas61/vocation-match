@@ -2359,3 +2359,20 @@ shared test numbers 555 111 00 01–05 stay free on purpose, so the
 free-member gates (3 likes / 5 passes, the Here Now premium wall) remain
 visible on a device. This trigger is staging drift; if it ever matters,
 drop it or promote it knowingly.
+
+## 2026-07-28 — the deck learned the shape of a holiday town
+
+D-038. The cold-start answer that is not fake profiles and not invites:
+`discovery_feed` continues a thin own-venue deck (fewer than five
+unswiped locals) with real people anchored within 15 km, own venue
+always first, region rows labelled with their venue's name and a
+`same_venue` flag the card renders as "Venue · çevrede". Eligibility,
+dates (D-035), premium (D-036), blocks and show_me are all judged
+exactly as before, each person at their own venue; `swipe` recognises
+the same region so a labelled card never refuses the like it invited;
+`hotel_room_counts` deliberately does not absorb the region. 005/006
+moved their "other hotel" fixtures to Ankara because 1.3 km away is now
+correctly the same region. New: `019_region_pool.sql` (12 assertions,
+451 total), `regionPool.test.ts` on the fake mirror (411 jest), fixture
+venue Lara Dunes Club + Ece for the credential-free preview. Staging
+carries the migration; no edge-function change was needed.

@@ -287,7 +287,9 @@ describe('VocationApi contract (in-memory implementation)', () => {
           'orientations',
           'photoPath',
           'photoPaths',
+          'sameVenue',
           'userId',
+          'venueName',
         ]);
         expect(card.age).toBeGreaterThanOrEqual(18);
       });

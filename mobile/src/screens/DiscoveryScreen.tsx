@@ -356,7 +356,8 @@ export function DiscoveryScreen() {
           ) : null}
 
           {/* The two chips of the reference: the room, white on the photo,
-              and the one bond this product can print — same hotel. */}
+              and the bond — same venue, or the neighbour's venue by name
+              (D-038): the label is what keeps the region pool honest. */}
           <View style={styles.chipRowTop} pointerEvents="none">
             <View style={styles.roomChip} testID="candidate-room">
               <View style={styles.roomChipDot} />
@@ -364,9 +365,16 @@ export function DiscoveryScreen() {
                 {upperCase(room === 'UPCOMING' ? COPY.rooms.upcomingPlate : COPY.rooms.hereNowPlate)}
               </Text>
             </View>
-            <View style={styles.sameHotelChip}>
+            <View
+              style={styles.sameHotelChip}
+              testID={candidate.sameVenue ? 'card-bond-same' : 'card-bond-nearby'}
+            >
               <BuildingTinyIcon />
-              <Text style={styles.sameHotelText}>{COPY.discovery.sameHotel}</Text>
+              <Text style={styles.sameHotelText} numberOfLines={1}>
+                {candidate.sameVenue || !candidate.venueName
+                  ? COPY.discovery.sameHotel
+                  : `${candidate.venueName} · ${COPY.discovery.nearby}`}
+              </Text>
             </View>
           </View>
 
