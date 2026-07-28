@@ -2345,3 +2345,17 @@ same default and a `setPremium` seam; jest covers the mirror. No
 billing, no paywall, no RevenueCat — purchasing is still an open owner
 decision, and the "premium can DM without a match" perk is staged as
 L-005, its own slice.
+
+## 2026-07-28 — staging entitlement, operator side
+
+The D-036 migration is applied to hosted staging. Operator actions done
+directly on staging (deliberately NOT in migrations): the owner's
+current account (Cab, 905551110003) was granted `premium_until` now+1y,
+and a `staging_owner_premium` before-insert trigger on
+`public.profiles` re-grants premium automatically whenever the owner's
+own number (905551122333) registers again — the owner deletes accounts
+between tests, and the entitlement should survive that ritual. The
+shared test numbers 555 111 00 01–05 stay free on purpose, so the
+free-member gates (3 likes / 5 passes, the Here Now premium wall) remain
+visible on a device. This trigger is staging drift; if it ever matters,
+drop it or promote it knowingly.
