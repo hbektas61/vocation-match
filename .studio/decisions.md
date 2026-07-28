@@ -45,6 +45,8 @@ These decisions are owner-approved and must not be silently changed.
 
 | D-036 | 2026-07-28 | **Premium entitlement exists; billing still does not.** The rules, all server-enforced: a free member in the Upcoming room gets 3 likes and 5 passes, counted per hotel from stored swipes (a new hotel starts a fresh allowance; a replayed swipe never spends one); the Here Now room is Premium-only — the premium test sits inside `app.room_eligible` itself, so feed, headcount, my_rooms and swipe-target checks agree in the same instant, and `record_presence_check` refuses a free member before ever taking a location. Entitlement is one operator-set column, `profiles.premium_until` — readable by its owner, writable by no client — surfaced as `OwnProfile.isPremium`. Refusals travel as the project-private SQLSTATE `PP001` → client `PREMIUM_REQUIRED`; the room reason is `PREMIUM_ONLY`. No paywall, no purchase flow, no RevenueCat: buying Premium is an explicitly open decision. The owner's "premium can message directly without a match" is accepted and staged as its own next slice (it needs a pre-match message model). | Owner (2026-07-28): "kullanıcı premium değilse rezervasyon odasında maksimum 3 like atabilmeli ve anca 5 kişiyi geçebilmeli (toplam), premiumsa hem doğrudan mesaj atabilir hem de sınırsız like atabilir, premium değilse anında odasına giremez, buraya sadece premium kullanıcılar girebilir". | Changing either allowance number or its per-hotel scope, gating anything else behind premium (the D-032 count is still ungated), opening any purchase flow, or building the direct-message perk. |
 
+| D-037 | 2026-07-28 | **The anchor place is a vacation venue, not only lodging — and the search forgives real typing.** The provider filter admits OSM `bar`, `nightclub` and `beach_resort` alongside hotel types, because the summer crowd gathers at beach clubs (the owner's case: Before Sunset, Alaçatı, tagged `amenity=bar`); the filter's job stays "named venues in, bare geography out". `search_hotels` adds squashed matching (joined-up words) and token matching (at most one stray word in a multi-word query); Nominatim gets one last-word-dropped retry when empty-handed. | Owner: "Alaçatı'daki Before Sunset Beach çıkmıyor, oralarda çok yoğunluk var" — and the observed misses "beforesunset" / "before sunset beach" on a row the catalogue already held. | Admitting broader amenity types (restaurants, cafés), any fuzzier matching, or a commercial places API as the discovery source. |
+
 ## Open owner decisions
 
 - **Should the Upcoming room require overlapping stay dates?** Today it does
@@ -66,6 +68,18 @@ These decisions are owner-approved and must not be silently changed.
   email addresses but do not eliminate this risk. The flag is queue priority,
   not a ban. Whoever
   watches the queue during the pilot should know it is a lever.
+- **Fake profiles: proposed and advised against (2026-07-28).** The owner
+  floated seeding ~10 fake women's profiles into thin Upcoming rooms so the
+  app never looks empty before a premium purchase. Studio assessment, given
+  in full in chat: this is the FTC-v-Match / Ashley Madison fact pattern —
+  deceptive commercial practice (no force required, influencing the purchase
+  decision suffices), store-policy ban territory, KVKK/personality-rights
+  exposure on the photos, and commercially self-defeating (likes into a void
+  → refunds and one-star reviews; the hotel setting makes the fabrication
+  physically checkable). Recommended instead, awaiting owner go: premium
+  sales stay closed below a room-density threshold ("founding member" free
+  premium until then) and the empty room becomes an invite mechanic. Fake
+  profiles are not built and should not be.
 - First pilot city and hotels.
 - Whether existing chats expire after the trip.
 - Premium package and price in the next phase. (2026-07-28: the entitlement
