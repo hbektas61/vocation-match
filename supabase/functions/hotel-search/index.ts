@@ -289,9 +289,13 @@ Deno.serve(async (req) => {
   }
 
   let query = "";
+  let venuesMode = false;
   try {
     const body = await req.json();
     query = String(body?.query ?? "").trim();
+    // D-051: the trip tab asks for lodging, Çevremde asks for anywhere a
+    // person can be. Same enrichment, two different acceptances.
+    venuesMode = String(body?.mode ?? "lodging") === "venues";
   } catch {
     // An empty body is an empty search, not an error.
   }
@@ -304,7 +308,8 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  const first = await admin.rpc("search_hotels", { p_query: query });
+  const rpc = venuesMode ? "search_venues" : "search_hotels";
+  const first = await admin.rpc(rpc, { p_query: query });
   if (first.error) {
     return Response.json({ error: "Could not search hotels." }, { status: 500 });
   }
@@ -350,7 +355,7 @@ Deno.serve(async (req) => {
     }
 
     if (found.length > 0) {
-      const second = await admin.rpc("search_hotels", { p_query: query });
+      const second = await admin.rpc(rpc, { p_query: query });
       if (!second.error) hotels = second.data ?? hotels;
     }
   }

@@ -301,7 +301,9 @@ export function CheckinScreen({
     const seq = ++searchSeq.current;
     const timer = setTimeout(async () => {
       try {
-        const found = await getApi().searchHotels(trimmed);
+        // D-051: this asks "what is this place I am in", not "where am I
+        // staying" — so it may answer with a café, a bar, a stadium.
+        const found = await getApi().searchVenues(trimmed);
         if (searchSeq.current === seq) setResults(found);
       } catch {
         if (searchSeq.current === seq) setResults([]);

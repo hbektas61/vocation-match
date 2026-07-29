@@ -540,6 +540,30 @@ export class SupabaseApi implements VocationApi {
     return ((data ?? []) as HotelRow[]).map(toHotelCard);
   }
 
+  async searchVenues(query: string): Promise<HotelCard[]> {
+    // The edge function is the catalogue *plus* the world: it asks OSM when
+    // the local table answers thinly and caches what it finds, so the search
+    // is not limited to hotels somebody already picked. If the function is
+    // unreachable — not deployed, cold, or down — the catalogue alone is
+    // still a correct answer, just a narrower one, so this degrades to the
+    // direct RPC rather than to an error.
+    try {
+      const { data, error } = await this.client.functions.invoke('hotel-search', {
+        body: { query, mode: 'venues' },
+      });
+      if (!error && Array.isArray(data?.hotels)) {
+        return (data.hotels as HotelRow[]).map(toHotelCard);
+      }
+    } catch {
+      // Fall through to the catalogue.
+    }
+    const { data, error } = await this.client.rpc('search_venues', { p_query: query });
+    if (error) {
+      throw toApiError(error, 'Could not search places.');
+    }
+    return ((data ?? []) as HotelRow[]).map(toHotelCard);
+  }
+
   async getHotelById(hotelId: string): Promise<HotelCard | null> {
     // A direct catalogue read: the columns granted one by one to
     // authenticated (never `location`), scoped by the is_active policy.

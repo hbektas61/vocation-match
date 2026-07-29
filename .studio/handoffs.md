@@ -2887,3 +2887,34 @@ Operator note for a fresh region:
     python3 scripts/overture-ingest.py \
       --bbox 28.85,40.95,29.20,41.13 --grid 6 --limit 900 \
       --cache /tmp/region.json
+
+## 2026-07-30 — the owner was right about the algorithm (D-051)
+
+Two corrections to the record first, both mine. I reported "nothing was
+written" from the Overture run and "the catalogue is 100 rows"; both came from
+a PostgREST response capped at 100 rows that I read as a total. The truth: the
+catalogue holds **1,075** rows and **893 of them did land** from Overture
+before the network died. Counts must come from `Prefer: count=exact`, not from
+the length of a page.
+
+With the real numbers, the owner's objection was demonstrably right. One
+search served two questions, and at this size the noise won: on the *hotel*
+tab, "sorgun" returned Sorgun Beach Club and Sorgun Sahil Bar and no hotel,
+"marina" returned four restaurants and a beach. Note this predated Overture —
+the OSM sweep had been writing cafés into the same table since D-039 — so the
+ingest amplified an existing defect rather than creating one.
+
+Fixed by splitting the question, not by deleting data (the owner's call):
+`app.search_places(query, limit, lodging_only)` holds the matching logic,
+`search_hotels` asks for lodging, `search_venues` asks for anywhere a person
+can be, and the edge function takes a `mode` so both keep the OSM enrichment.
+Verified live: "sorgun" on the hotel tab is now five hotels, and in venues
+mode seven results with the bars back. 265 pre-D-041 rows were backfilled to
+`hotel` after sampling proved they were Rixos, Hilton, Cratos, Kempinski and
+the seeded pilot hotels.
+
+Also recorded, because my sequencing was wrong: the bulk ingest was proposed
+*before* measuring what the distance-sort fix alone achieved — and that fix
+alone had already solved the reported Espressolab case. Overture is parked.
+The 28k-place read sits in a cache file, so a future decision costs minutes,
+not fifteen. tsc, eslint, 430 jest.

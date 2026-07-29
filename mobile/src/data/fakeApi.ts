@@ -474,6 +474,27 @@ export class FakeApi implements VocationApi {
 
   async searchHotels(query: string): Promise<HotelCard[]> {
     await this.requireUserId();
+    // D-051: the trip tab asks where somebody is staying, so a café is not
+    // an answer. A fixture with no kind predates the vocabulary and is a
+    // hotel, exactly as the catalogue's backfill assumes.
+    return searchHotelFixtures(query)
+      .filter((hotel) => (hotel.kind ?? 'hotel') === 'hotel')
+      .map((hotel) => ({
+      id: hotel.id,
+      name: hotel.name,
+      city: hotel.city,
+      country: hotel.country,
+      address: null,
+      photoUrl: null,
+      photoAttribution: null,
+      kind: hotel.kind ?? null,
+    }));
+  }
+
+  async searchVenues(query: string): Promise<HotelCard[]> {
+    await this.requireUserId();
+    // D-051: anywhere a person can be, which is every fixture — the fake's
+    // catalogue holds no cells, and a hotel lobby is a place you can sit in.
     return searchHotelFixtures(query).map((hotel) => ({
       id: hotel.id,
       name: hotel.name,

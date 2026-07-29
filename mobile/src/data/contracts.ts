@@ -356,6 +356,13 @@ export interface VocationApi {
   /* hotel */
   searchHotels(query: string): Promise<HotelCard[]>;
   /**
+   * Anywhere a person can actually be, by name (D-051) — a café, a bar, a
+   * stadium, a hotel lobby. Deliberately *not* `searchHotels`: the trip tab
+   * asks which hotel somebody is staying at and must not answer with the
+   * bar next door, which is precisely what one shared search did.
+   */
+  searchVenues(query: string): Promise<HotelCard[]>;
+  /**
    * One hotel, by its id. The store's hydration uses this to resolve the
    * active hotel's card without a search — the id alone is what the server
    * remembers, and every screen needs the name it belongs to.
