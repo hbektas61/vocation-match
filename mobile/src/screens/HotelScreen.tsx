@@ -16,7 +16,7 @@ import { ApiError, getApi, readBackendConfig, type HotelCard, type RoomHeadcount
 import { VacationFeatureCard } from '../components/VacationFeatureCard';
 import { CalendarIllustration, PinScene } from '../components/RoomIllustrations';
 import { useAppStore } from '../state/AppStore';
-import { color, font, fontFamily, radius, spacing } from '../theme';
+import { color, font, fontFamily, radius, spacing, glass } from '../theme';
 
 /**
  * The designer's popular destinations. Names are proper nouns (no i18n);
@@ -703,8 +703,10 @@ function mergeHotel(hotels: HotelCard[], hotel: HotelCard): HotelCard[] {
 const styles = StyleSheet.create({
   /** The designer's card shell: hairline edge, soft lift, band on top. */
   hotelCard: {
-    backgroundColor: color.surface,
-    borderRadius: radius.md,
+    backgroundColor: glass.fill,
+    borderWidth: 1,
+    borderColor: glass.edge,
+    borderRadius: radius.lg,
     overflow: 'hidden',
     shadowColor: '#000000',
     shadowOpacity: 0.06,
@@ -833,7 +835,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
     alignItems: 'center',
-    backgroundColor: 'rgba(236, 72, 153, 0.05)',
+    backgroundColor: glass.fill,
+    borderWidth: 1,
+    borderColor: glass.edge,
     borderRadius: radius.lg,
     padding: spacing.md,
   },
@@ -876,8 +880,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     borderWidth: 1,
-    borderColor: 'rgba(236, 72, 153, 0.25)',
-    backgroundColor: 'rgba(236, 72, 153, 0.04)',
+    borderColor: glass.edge,
+    backgroundColor: glass.fill,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,

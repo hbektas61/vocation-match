@@ -39,7 +39,7 @@ import { getHotelById } from '../fixtures/hotels';
 import type { TabParamList } from '../navigation/types';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { color, font, fontFamily, gradient, radius, spacing } from '../theme';
+import { color, font, fontFamily, gradient, radius, spacing, glass } from '../theme';
 
 const HERO = require('../../assets/nearby-hero.jpg');
 
@@ -801,7 +801,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: color.veil,
+    backgroundColor: glass.fill,
+    borderWidth: 1,
+    borderColor: glass.edge,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     minHeight: 52,
@@ -817,7 +819,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: color.surface,
+    backgroundColor: glass.fill,
+    borderWidth: 1,
+    borderColor: glass.edge,
     borderRadius: radius.lg,
     padding: spacing.sm + 4,
     shadowColor: '#000000',
@@ -870,7 +874,9 @@ const styles = StyleSheet.create({
 
   /* intro */
   heroCard: {
-    backgroundColor: color.surface,
+    backgroundColor: glass.fill,
+    borderWidth: 1,
+    borderColor: glass.edge,
     borderRadius: radius.lg + 6,
     padding: spacing.md,
     gap: spacing.md,
@@ -957,7 +963,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: color.surface,
+    backgroundColor: glass.fill,
+    borderWidth: 1,
+    borderColor: glass.edge,
     borderRadius: radius.lg,
     padding: spacing.md,
     shadowColor: '#000000',
@@ -1013,7 +1021,9 @@ const styles = StyleSheet.create({
 
   /* active */
   activeCard: {
-    backgroundColor: color.surface,
+    backgroundColor: glass.fill,
+    borderWidth: 1,
+    borderColor: glass.edge,
     borderRadius: radius.lg + 6,
     overflow: 'hidden',
     shadowColor: '#000000',
@@ -1090,7 +1100,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: color.surface,
+    backgroundColor: glass.fill,
     borderWidth: 1.5,
     borderColor: 'rgba(236, 72, 153, 0.45)',
     borderRadius: radius.pill,

@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,7 +17,7 @@ import { Body, Button, Notice, Screen } from '../components/ui';
 import { apiErrorMessage, COPY, upperCase, roomPlate } from '../copy';
 import { ApiError, getApi, type ChatMessage } from '../data';
 import type { RootScreenProps } from '../navigation/types';
-import { color, font, fontFamily, radius, spacing } from '../theme';
+import { color, font, fontFamily, radius, spacing, glass, gradient } from '../theme';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
 
@@ -324,7 +325,16 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
                         accessibilityRole="text"
                         accessibilityLabel={`${mine ? COPY.chat.senderYou : match.displayName}: ${message.body}`}
                       >
-                        <Text style={styles.bubbleText}>{message.body}</Text>
+                        {mine ? (
+                          <LinearGradient
+                            colors={[...gradient.primary]}
+                            start={{ x: 0, y: 0.5 }}
+                            end={{ x: 1, y: 0.5 }}
+                            style={StyleSheet.absoluteFillObject}
+                            pointerEvents="none"
+                          />
+                        ) : null}
+                        <Text style={[styles.bubbleText, mine && styles.bubbleTextMine]}>{message.body}</Text>
                       </View>
                       <Text style={[styles.bubbleTime, mine && styles.bubbleTimeMine]}>
                         {timeOf(message.createdAt)}
@@ -481,15 +491,22 @@ const styles = StyleSheet.create({
    * family, both carrying ink; the tucked corner says whose voice it is
    * without leaning on colour alone.
    */
-  bubbleTheirs: { backgroundColor: color.veil, borderBottomLeftRadius: 6 },
-  bubbleMine: { backgroundColor: color.accent, borderBottomRightRadius: 6 },
+  bubbleTheirs: {
+    backgroundColor: glass.fill,
+    borderWidth: 1,
+    borderColor: glass.edge,
+    borderBottomLeftRadius: 6,
+  },
+  bubbleMine: { backgroundColor: color.accent, borderBottomRightRadius: 6, overflow: 'hidden' },
   bubbleText: {
     color: color.ink,
     fontSize: font.body + 1,
     lineHeight: (font.body + 1) * 1.4,
     fontFamily: fontFamily.body,
   },
+  bubbleTextMine: { color: '#1A1A2E' },
   bubbleTime: { fontFamily: fontFamily.body, fontSize: font.caption, color: color.inkMuted },
+  bubbleTimeMineInk: { color: 'rgba(26, 26, 46, 0.7)' },
   bubbleTimeMine: { textAlign: 'right' },
   composer: {
     flexDirection: 'row',
@@ -502,13 +519,13 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 52,
     borderRadius: radius.pill,
+    backgroundColor: glass.fill,
     borderWidth: 1.5,
     borderColor: 'rgba(236, 72, 153, 0.45)',
     paddingHorizontal: spacing.md + 4,
     fontFamily: fontFamily.body,
     fontSize: font.body,
     color: color.ink,
-    backgroundColor: color.surface,
   },
   sendButton: {
     width: 52,

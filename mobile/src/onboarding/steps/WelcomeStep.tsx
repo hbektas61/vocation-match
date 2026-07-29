@@ -8,7 +8,7 @@ import { LanguageSwitch } from '../../components/LanguageSwitch';
 import { Button } from '../../components/ui';
 import { COPY } from '../../copy';
 import { useAppStore } from '../../state/AppStore';
-import { color, font, fontFamily, radius, spacing } from '../../theme';
+import { color, font, fontFamily, radius, spacing, glass } from '../../theme';
 import type { StepProps } from './types';
 
 /**
@@ -149,8 +149,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm + 4,
     alignSelf: 'stretch',
-    backgroundColor: color.surface,
-    borderRadius: radius.md,
+    backgroundColor: glass.fill,
+    borderWidth: 1,
+    borderColor: glass.edge,
+    borderRadius: radius.lg,
     padding: spacing.md,
     marginTop: spacing.sm,
     shadowColor: '#000000',

@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
@@ -7,7 +8,7 @@ import { COPY, upperCase, roomPlate } from '../copy';
 import type { RootScreenProps } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
-import { color, font, fontFamily, radius, spacing } from '../theme';
+import { color, font, fontFamily, radius, spacing, gradient } from '../theme';
 
 const DEEP = '#0F1B3D';
 const MID = 'rgba(236, 72, 153, 0.45)';
@@ -53,6 +54,13 @@ const Confetti = () => (
 
 const HeartBadge = () => (
   <View style={styles.heartBadge}>
+    <LinearGradient
+      colors={[...gradient.primary]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={StyleSheet.absoluteFillObject}
+      pointerEvents="none"
+    />
     <Svg width={30} height={30} viewBox="0 0 24 24" fill="#FFFFFF">
       <Path d="M12 8c0-4.5-7.2-4.5-7.2 0 0 4 4.7 6.8 7.2 8.7 2.5-1.9 7.2-4.7 7.2-8.7 0-4.5-7.2-4.5-7.2 0z" />
     </Svg>
@@ -77,15 +85,24 @@ function FaceCircle({
   testID?: string;
 }) {
   return (
-    <View style={styles.faceRing} testID={testID}>
-      {url ? (
-        <Image source={{ uri: url }} style={styles.facePhoto} resizeMode="cover" accessibilityIgnoresInvertColors />
-      ) : (
-        <View style={styles.faceEmpty}>
-          <Text style={styles.faceInitial}>{upperCase(name.slice(0, 1))}</Text>
-        </View>
-      )}
-    </View>
+    // The Figma ring (D-045): the face inside the brand gradient.
+    <LinearGradient
+      colors={[...gradient.primary]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.faceRing}
+      testID={testID}
+    >
+      <View style={styles.faceSeat}>
+        {url ? (
+          <Image source={{ uri: url }} style={styles.facePhoto} resizeMode="cover" accessibilityIgnoresInvertColors />
+        ) : (
+          <View style={styles.faceEmpty}>
+            <Text style={styles.faceInitial}>{upperCase(name.slice(0, 1))}</Text>
+          </View>
+        )}
+      </View>
+    </LinearGradient>
   );
 }
 
@@ -189,15 +206,18 @@ const styles = StyleSheet.create({
     width: FACE,
     height: FACE,
     borderRadius: FACE / 2,
-    borderWidth: 6,
-    borderColor: '#FFFFFF',
-    overflow: 'hidden',
-    backgroundColor: color.veil,
+    padding: 6,
     shadowColor: color.accentDeep,
     shadowOpacity: 0.25,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },
     elevation: 6,
+  },
+  faceSeat: {
+    flex: 1,
+    borderRadius: FACE / 2,
+    overflow: 'hidden',
+    backgroundColor: color.veil,
   },
   facePhoto: { width: '100%', height: '100%' },
   faceEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -211,9 +231,8 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
+    overflow: 'hidden',
     backgroundColor: DEEP,
-    borderWidth: 4,
-    borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: DEEP,

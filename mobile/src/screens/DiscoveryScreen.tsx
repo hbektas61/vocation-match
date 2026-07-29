@@ -13,7 +13,7 @@ import { nowMs } from '../clock';
 import { apiErrorMessage, COPY, COPY_FOR, upperCase, roomPlate } from '../copy';
 import { ApiError, getApi, type CandidateCard, type RoomKey, type RoomStatus } from '../data';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
-import { color, font, fontFamily, palette, radius, spacing } from '../theme';
+import { color, font, fontFamily, palette, radius, spacing, gradient } from '../theme';
 import { earliestRoomExpiry } from '../state/roomSchedule';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
@@ -540,6 +540,13 @@ export function DiscoveryScreen() {
             style={styles.actionHeart}
             testID="swipe-like"
           >
+            <LinearGradient
+              colors={[...gradient.primary]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+              pointerEvents="none"
+            />
             <HeartIcon />
           </Pressable>
           <Pressable
@@ -813,6 +820,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   actionHeart: {
+    overflow: 'hidden',
     width: 84,
     height: 84,
     borderRadius: 42,

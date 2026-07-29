@@ -29,8 +29,7 @@ import {
   radius,
   roomTone,
   spacing,
-  gradient,
-} from '../theme';
+  gradient, glass } from '../theme';
 
 export function Screen({
   children,
@@ -771,9 +770,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   buttonSecondary: {
-    backgroundColor: 'transparent',
+    backgroundColor: glass.fill,
     borderWidth: 1.5,
-    borderColor: 'rgba(236, 72, 153, 0.45)',
+    borderColor: 'rgba(236, 72, 153, 0.5)',
   },
   buttonDanger: {
     backgroundColor: 'transparent',
@@ -901,8 +900,10 @@ const styles = StyleSheet.create({
    * without `elevation`.
    */
   card: {
-    backgroundColor: color.surface,
-    borderRadius: radius.md,
+    backgroundColor: glass.fill,
+    borderWidth: 1,
+    borderColor: glass.edge,
+    borderRadius: radius.lg,
     padding: spacing.md,
     gap: spacing.sm,
     shadowColor: '#000000',
@@ -951,17 +952,19 @@ const styles = StyleSheet.create({
   /* The designer's pair (2026-07-27): open is a filled lavender pill whose
      dot and words are the deep accent; closed is hollow with a muted solid
      dot — grey but present, a door that exists and is shut. */
-  stateChipOpen: { backgroundColor: color.accent },
+  /* The Figma pair (D-045): open is the green live chip, closed stays a
+     hollow grey door that exists and is shut. */
+  stateChipOpen: { backgroundColor: 'rgba(52, 211, 153, 0.15)' },
   stateChipClosed: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: color.inkMuted },
   stateChipText: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
     letterSpacing: 1,
   },
-  stateChipTextOpen: { color: color.accentDeep },
+  stateChipTextOpen: { color: '#34D399' },
   stateChipTextClosed: { color: color.inkMuted },
   stateDot: { width: 7, height: 7, borderRadius: radius.pill },
-  stateDotOpen: { backgroundColor: color.accentDeep },
+  stateDotOpen: { backgroundColor: '#34D399' },
   stateDotClosed: { backgroundColor: color.inkMuted },
   doorPlate: {
     fontFamily: fontFamily.bodySemi,

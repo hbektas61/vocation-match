@@ -13,7 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { color, font, fontFamily, gradient, MIN_TOUCH, radius, spacing } from '../theme';
+import { color, font, fontFamily, gradient, MIN_TOUCH, radius, spacing, glass } from '../theme';
 import { CheckBadge } from './stepIcons';
 
 export function ChoiceChip({
@@ -223,8 +223,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     borderWidth: 1.5,
-    borderColor: color.rule,
-    backgroundColor: color.surface,
+    borderColor: glass.edge,
+    backgroundColor: glass.fill,
     marginBottom: spacing.sm,
   },
   rowLabel: {
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     color: color.ink,
   },
   rowLabelSelected: { fontFamily: fontFamily.bodySemi, color: color.accentDeep },
-  chipIdle: { backgroundColor: color.surface, borderColor: color.border },
+  chipIdle: { backgroundColor: glass.fill, borderColor: glass.edge },
   chipSelected: { backgroundColor: color.accentSoft, borderColor: 'transparent' },
   chipDisabled: { opacity: 0.45 },
   chipPressed: { opacity: 0.85 },

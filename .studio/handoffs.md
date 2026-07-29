@@ -2533,3 +2533,15 @@ icons + gradient-selected chips + glowing selected rows, ShowMe's three
 cards, Settings avatar gradient ring + conditional crown, dark empty
 states with mock crops (dark-hotel-disc/pin, dark-inbox-chat,
 dark-calendar in assets). 419 jest, lint 0, tsc clean.
+
+## 2026-07-29 — the Figma glass came home (D-045)
+
+The approved Figma system implemented app-wide: glass tokens in
+theme.ts worn by ui.Card, Field surrounds, secondary buttons, the
+floating tab bar, choice chips/rows, feature cards (now gold tracked
+plates + green Açık chips), hotel/empty cards, Çevremde rows and hero,
+inbox chat cards, welcome trust card. Gradients where Figma puts them:
+own chat bubbles (dark ink text), match-screen face rings and heart
+badge, the deck's like button. Frosted-glass look is translucency +
+light edge + shadow, not native blur — recorded as the performance
+trade in D-045. 419 jest, lint 0.

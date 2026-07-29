@@ -11,7 +11,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Body, Button, Caption, StateChip } from './ui';
 import { COPY, roomPlate, roomStatusExplanation, upperCase } from '../copy';
 import type { RoomKey, RoomStatus } from '../data';
-import { color, font, fontFamily, radius, spacing } from '../theme';
+import { color, font, fontFamily, radius, spacing, glass } from '../theme';
 
 export function VacationFeatureCard({
   room,
@@ -86,7 +86,9 @@ export function VacationFeatureCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: color.surface,
+    backgroundColor: glass.fill,
+    borderWidth: 1,
+    borderColor: glass.edge,
     borderRadius: radius.lg,
     padding: spacing.md,
     gap: spacing.md,
@@ -102,17 +104,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   headRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  /* The Figma plate (D-045): a bare tracked label in gold, no pill. */
   platePill: {
-    backgroundColor: color.veil,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm + 4,
-    paddingVertical: 5,
+    paddingVertical: 2,
   },
   platePillText: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
     letterSpacing: 1.6,
-    color: color.accentDeep,
+    color: '#FBBF24',
   },
   tag: {
     fontFamily: fontFamily.bodySemi,

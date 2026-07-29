@@ -68,6 +68,17 @@ export const palette = {
  * exactly as the owner wrote it. Labels on it are ink — the gold end cannot
  * carry white. The pressed variant is the owner's lighter ramp.
  */
+/**
+ * The glass system from the designer's Figma (D-045): a breath of white over
+ * the night ground, a one-pixel light edge, and depth from shadow. Read as
+ * frosted glass against the navy without costing a native blur pass.
+ */
+export const glass = {
+  fill: 'rgba(255, 255, 255, 0.06)',
+  strong: 'rgba(255, 255, 255, 0.10)',
+  edge: 'rgba(255, 255, 255, 0.14)',
+} as const;
+
 export const gradient = {
   primary: ['#FBBF24', '#FB7185', '#EC4899'],
   primaryPressed: ['#FCD34D', '#FB7185', '#F472B6'],
