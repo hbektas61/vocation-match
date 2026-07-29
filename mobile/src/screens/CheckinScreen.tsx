@@ -210,19 +210,6 @@ const HeartPlaneDoodle = () => (
   </Svg>
 );
 
-/** The intro's bottom flourish: palm — dashes — heart — dashes — cocktail. */
-const FlourishRow = () => (
-  <View style={styles.flourishRow} accessible={false} importantForAccessibility="no-hide-descendants">
-    <Svg {...stroke('rgba(236, 72, 153, 0.5)', 18)}>
-      <Path d="M12 21v-8m0 0c-1-3-4-4-7-3 2-3 6-3 7-1 1-2 5-2 7 1-3-1-6 0-7 3z" />
-    </Svg>
-    <View style={styles.flourishDash} />
-    <HeartGlyph size={20} />
-    <View style={styles.flourishDash} />
-    <CocktailIcon tone="rgba(236, 72, 153, 0.5)" />
-  </View>
-);
-
 /* ------------------------------------------------------- category styling */
 
 const KIND_META: Record<string, { label: () => string; tint: string; tone: string }> = {
@@ -537,7 +524,7 @@ export function CheckinScreen({
           </View>
           <View style={styles.infoWords}>
             <Text style={styles.infoTitle}>{COPY.checkin.safeTitle}</Text>
-            <Caption>{COPY.checkin.cardBody}</Caption>
+            <Text style={styles.infoBody}>{COPY.checkin.cardBody}</Text>
             <View style={styles.safeCheckRow}>
               <CheckCircleIcon />
               <Text style={styles.safeCheckText}>{COPY.checkin.safeCheck}</Text>
@@ -672,7 +659,6 @@ export function CheckinScreen({
             style={StyleSheet.absoluteFillObject}
             pointerEvents="none"
           />
-          <PinIcon tone="#1A1A2E" size={20} />
           <Text style={styles.findButtonLabel}>{COPY.checkin.findVenues}</Text>
         </Pressable>
         {busy ? (
@@ -716,7 +702,7 @@ export function CheckinScreen({
           </View>
           <View style={styles.infoWords}>
             <Text style={styles.infoTitle}>{COPY.checkin.expiredTitle}</Text>
-            <Caption>{COPY.checkin.expiredBody}</Caption>
+            <Text style={styles.infoBody}>{COPY.checkin.expiredBody}</Text>
           </View>
           <Text style={styles.chevron}>›</Text>
         </Pressable>
@@ -728,10 +714,7 @@ export function CheckinScreen({
         </View>
         <View style={styles.infoWords}>
           <Text style={styles.infoTitle}>{COPY.rooms.privacyTitle}</Text>
-          <Caption>{COPY.checkin.privacyCardBody}</Caption>
-        </View>
-        <View style={styles.infoMiniDisc}>
-          <ShieldLockIcon size={16} />
+          <Text style={styles.infoBody}>{COPY.checkin.privacyCardBody}</Text>
         </View>
       </View>
 
@@ -742,7 +725,6 @@ export function CheckinScreen({
           testID="checkin-notice"
         />
       ) : null}
-      <FlourishRow />
     </Screen>
   );
 }
@@ -769,10 +751,11 @@ const styles = StyleSheet.create({
     fontSize: 40,
     color: color.ink,
   },
+  /** The Figma line under the head (1:6): 15, muted. */
   subtitle: {
     fontFamily: fontFamily.body,
-    fontSize: font.body,
-    lineHeight: font.body * 1.5,
+    fontSize: 15,
+    lineHeight: 15 * 1.5,
     color: color.inkMuted,
   },
   subtitleHeart: { color: VIVID },
@@ -784,13 +767,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  /** The corner badge (1:5): the panel disc with the half-pink 1.5 edge. */
   cornerBadge: {
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: color.surface,
     borderWidth: 1.5,
-    borderColor: 'rgba(236, 72, 153, 0.35)',
+    borderColor: 'rgba(236, 72, 153, 0.5)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -872,12 +856,10 @@ const styles = StyleSheet.create({
     color: color.inkMuted,
   },
 
-  /* intro */
+  /* intro — the Figma hero (1:7): a solid panel, 28 corners, 16 inside. */
   heroCard: {
-    backgroundColor: glass.fill,
-    borderWidth: 1,
-    borderColor: glass.edge,
-    borderRadius: radius.lg + 6,
+    backgroundColor: color.surface,
+    borderRadius: 28,
     padding: spacing.md,
     gap: spacing.md,
     shadowColor: '#000000',
@@ -887,30 +869,31 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   heroColumns: { flexDirection: 'row', gap: spacing.md },
-  heroWords: { flex: 1, gap: spacing.sm },
+  heroWords: { flex: 1, gap: 10 },
   heroTitle: {
     fontFamily: fontFamily.display,
-    fontSize: font.heading + 2,
-    lineHeight: (font.heading + 2) * 1.2,
+    fontSize: 22,
+    lineHeight: 22 * 1.2,
     color: color.ink,
   },
   heroBody: {
     fontFamily: fontFamily.body,
-    fontSize: font.caption + 1,
-    lineHeight: (font.caption + 1) * 1.5,
+    fontSize: 13,
+    lineHeight: 13 * 1.5,
     color: color.inkMuted,
   },
   howTitle: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: font.body,
+    fontSize: 14,
     color: DEEP,
     marginTop: 2,
   },
   howRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  /** The 26 disc (1:14) on the how rows. */
   howDisc: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: color.veil,
     alignItems: 'center',
     justifyContent: 'center',
@@ -918,14 +901,15 @@ const styles = StyleSheet.create({
   howText: {
     flex: 1,
     fontFamily: fontFamily.body,
-    fontSize: font.caption + 1,
+    fontSize: 12.5,
     color: color.ink,
   },
+  /** The 150-wide photo column (1:25), stretched to the words beside it. */
   heroPhoto: {
-    width: '44%',
-    borderRadius: radius.lg,
-    aspectRatio: 372 / 628,
+    width: 150,
+    borderRadius: 20,
     alignSelf: 'stretch',
+    minHeight: 300,
   },
   findButton: {
     flexDirection: 'row',
@@ -935,7 +919,7 @@ const styles = StyleSheet.create({
     backgroundColor: VIVID,
     overflow: 'hidden',
     borderRadius: radius.pill,
-    minHeight: 60,
+    paddingVertical: 16,
     shadowColor: VIVID,
     shadowOpacity: 0.35,
     shadowRadius: 12,
@@ -944,7 +928,7 @@ const styles = StyleSheet.create({
   },
   findButtonLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: font.body + 2,
+    fontSize: 16,
     color: '#1A1A2E',
   },
   previewRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
@@ -959,15 +943,15 @@ const styles = StyleSheet.create({
     fontSize: font.caption,
     color: DEEP,
   },
+  /** The Figma privacy card (1:28): a solid panel, 20 corners, 48 disc. */
   infoCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: glass.fill,
-    borderWidth: 1,
-    borderColor: glass.edge,
-    borderRadius: radius.lg,
-    padding: spacing.md,
+    gap: 12,
+    backgroundColor: color.surface,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     shadowColor: '#000000',
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -975,17 +959,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   infoDisc: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: color.veil,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  infoMiniDisc: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: color.veil,
     alignItems: 'center',
     justifyContent: 'center',
@@ -993,8 +969,14 @@ const styles = StyleSheet.create({
   infoWords: { flex: 1, gap: 4 },
   infoTitle: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: font.body + 1,
+    fontSize: 15,
     color: color.ink,
+  },
+  infoBody: {
+    fontFamily: fontFamily.body,
+    fontSize: 12,
+    lineHeight: 12 * 1.45,
+    color: color.inkMuted,
   },
   safeCheckRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   safeCheckText: {
@@ -1003,22 +985,6 @@ const styles = StyleSheet.create({
     fontSize: font.caption,
     color: color.ink,
   },
-  flourishRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  flourishDash: {
-    flex: 1,
-    maxWidth: 110,
-    height: 1,
-    borderBottomWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: 'rgba(236, 72, 153, 0.4)',
-  },
-
   /* active */
   activeCard: {
     backgroundColor: glass.fill,

@@ -2594,3 +2594,15 @@ word. Popular destinations and the search scene left the tab with the
 design. tsc, eslint, 419 jest all green. Note: this worktree's stale
 branch was rebased onto main first — its one commit (the onboarding
 wizard) was already on main as d3b41f0, so nothing was lost.
+
+## 2026-07-29 — Çevremde intro, to the Figma sheet
+
+Node 1:2 ("Çevremde — tanıtım") measured and applied to the intro state
+of CheckinScreen: hero and privacy cards became solid panels (28/20
+corners, no hairline), subtitle 15, hero body 13, "Nasıl çalışır?" 14,
+26px how-discs with 12.5 rows, the 150-wide photo column at 20 corners,
+the CTA at 16-on-16 without its pin, the privacy card at 48-disc/15/12
+without the trailing mini-shield, and the corner badge's edge at the
+sheet's half-pink 1.5. The decorative flourish row left with the
+design. All copy already matched the sheet word for word. tsc, eslint,
+419 jest green.
