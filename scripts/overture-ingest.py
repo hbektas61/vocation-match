@@ -40,6 +40,7 @@ import os
 import sys
 import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 RELEASE = os.environ.get("OVERTURE_RELEASE", "2026-07-22.0")
 PLACES = f"s3://overturemaps-us-west-2/release/{RELEASE}/theme=places/type=place/*"
@@ -111,15 +112,31 @@ def kind_of(category: str | None, alternates: list[str] | None) -> str | None:
     return None
 
 
-def fetch(bbox: tuple[float, float, float, float], limit: int) -> list[dict]:
+def connect():
     try:
         import duckdb
     except ModuleNotFoundError:
         sys.exit("duckdb is required: pip install duckdb")
-
-    west, south, east, north = bbox
     con = duckdb.connect()
     con.execute("install httpfs; load httpfs; set s3_region='us-west-2';")
+    return con
+
+
+def tiles_of(
+    bbox: tuple[float, float, float, float], grid: int
+) -> list[tuple[float, float, float, float]]:
+    west, south, east, north = bbox
+    dx = (east - west) / grid
+    dy = (north - south) / grid
+    return [
+        (west + x * dx, south + y * dy, west + (x + 1) * dx, south + (y + 1) * dy)
+        for x in range(grid)
+        for y in range(grid)
+    ]
+
+
+def fetch(con, bbox: tuple[float, float, float, float], limit: int) -> list[dict]:
+    west, south, east, north = bbox
     rows = con.execute(
         f"""
         select id,
@@ -178,7 +195,13 @@ def upsert(place: dict, kind: str, url: str, key: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Pre-fill the catalogue from Overture places.")
     parser.add_argument("--bbox", required=True, help="west,south,east,north in degrees")
-    parser.add_argument("--limit", type=int, default=5000, help="rows to read from Overture")
+    parser.add_argument("--limit", type=int, default=5000, help="rows to read per tile")
+    parser.add_argument(
+        "--grid",
+        type=int,
+        default=1,
+        help="split the bbox into grid×grid tiles, so coverage is even across it",
+    )
     parser.add_argument(
         "--min-confidence",
         type=float,
@@ -189,7 +212,15 @@ def main() -> None:
     args = parser.parse_args()
 
     west, south, east, north = (float(part) for part in args.bbox.split(","))
-    places = fetch((west, south, east, north), args.limit)
+    con = connect()
+    places = []
+    seen_ids = set()
+    for index, tile in enumerate(tiles_of((west, south, east, north), args.grid), start=1):
+        found = fetch(con, tile, args.limit)
+        fresh = [place for place in found if place["id"] not in seen_ids]
+        seen_ids.update(place["id"] for place in fresh)
+        places.extend(fresh)
+        print(f"  tile {index}/{args.grid ** 2}: {len(found)} read, {len(fresh)} new", flush=True)
 
     kept: list[tuple[dict, str]] = []
     skipped_kind = 0
@@ -223,14 +254,23 @@ def main() -> None:
     if not url or not key:
         sys.exit("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required to write")
 
+    # One RPC per place, eight at a time: the write boundary is a function
+    # call, not a bulk endpoint, and a region's worth of places sequentially
+    # would take longer than the person running it will wait.
     written = 0
-    for place, kind in kept:
-        try:
-            upsert(place, kind, url, key)
-            written += 1
-        except (urllib.error.HTTPError, urllib.error.URLError) as error:
-            print(f"  ! {place['name'][:40]}: {error}", file=sys.stderr)
-    print(f"written: {written}/{len(kept)}")
+    failed = 0
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        futures = {pool.submit(upsert, place, kind, url, key): place for place, kind in kept}
+        for future in as_completed(futures):
+            place = futures[future]
+            try:
+                future.result()
+                written += 1
+            except (urllib.error.HTTPError, urllib.error.URLError) as error:
+                failed += 1
+                if failed <= 5:
+                    print(f"  ! {place['name'][:40]}: {error}", file=sys.stderr)
+    print(f"written: {written}/{len(kept)}" + (f", failed: {failed}" if failed else ""))
 
 
 if __name__ == "__main__":

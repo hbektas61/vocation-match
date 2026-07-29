@@ -2843,3 +2843,26 @@ tsc, eslint, 427 jest. Still open: cell-label enrichment from reverse
 geocoding, cross-provider dedup, the density/duration decisions for
 festivals, and a self-hosted or commercial Overpass endpoint before real
 traffic.
+
+## 2026-07-30 — Google Places rejected (D-050), and the ingest made runnable
+
+The owner's question settled it, and it was an economics question rather than
+a licence one: "adam oturduğu mekânı check-in etmek için servise nasıl para
+ödüyoruz". A compliant Google shape does exist — store only `place_id` (which
+Google exempts from caching limits), keep our cell as the anchor, fetch the
+name on demand for the check-in's owner alone — and I had earlier overstated
+two things worth correcting in the record: the no-map situation is a grey area
+rather than a flat prohibition, and the label *can* be delivered through
+`place_id`. Rejected anyway: the action is the app's most frequent and it sits
+in the free tier, so at $32/1,000 Nearby Search a five-open day is ~$4.80 per
+user per month against zero revenue, and the Sziget weekend would be ~$14,400
+where today it is ~$0. The property that decides it: our costs scale with
+geography, a metered provider scales with usage.
+
+The ingest script grew the two things a real run needs. It now tiles a region
+(`--grid`), because Overture's parquet is spatially ordered and a single
+city-sized bbox with a limit returns one contiguous corner and leaves the rest
+empty — a city-wide run also blew a 10-minute budget when an `order by` forced
+a full scan, so the ordering is gone and `--min-confidence` does the quality
+filtering. Writes now go eight at a time, since the write boundary is one RPC
+per place.
