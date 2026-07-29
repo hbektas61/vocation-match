@@ -8,8 +8,6 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { Body, Button, Notice, Screen, Title } from '../components/ui';
 import { BigActionButton } from '../components/BigActionButton';
-import { NoHotelCard } from '../components/NoHotelCard';
-import { CompassScene } from '../components/NoHotelIllustrations';
 import { RadarEmpty } from '../components/RadarEmpty';
 import { nowMs } from '../clock';
 import { apiErrorMessage, COPY, COPY_FOR, upperCase, roomPlate } from '../copy';
@@ -22,6 +20,7 @@ import { useAppStore } from '../state/AppStore';
 
 /** The owner's own 3D door render (2026-07-28), bundled — not a redrawing. */
 const DOOR_HERO = require('../../assets/discovery-door.jpg');
+const NO_HOTEL_ART = require('../../assets/dark-hotel-pin.png');
 
 const XIcon = () => (
   <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke={'#0F1B3D'} strokeWidth={2.6} strokeLinecap="round">
@@ -256,29 +255,40 @@ export function DiscoveryScreen() {
       <Screen safeTop testID="screen-discovery">
         <Title>{COPY.tabs.discovery}</Title>
         <Body>{`${COPY.roomReason.NO_ACTIVE_HOTEL} ${COPY.trust.oneHotel}`}</Body>
-        <NoHotelCard
-          illustration={<CompassScene />}
-          title={COPY.discovery.noHotelTitle}
-          body={COPY.discovery.noHotelBody}
-          primaryLabel={COPY.hotel.chooseCta}
-          onPrimary={() => navigation.navigate('ChooseHotel')}
-          primaryTestID="discovery-choose-hotel"
-          secondary={
-            <>
-              <Button
-                label={COPY.discovery.howItWorks}
-                variant="secondary"
-                onPress={() => setHowOpen((open) => !open)}
-                testID="discovery-how"
-              />
-              {howOpen ? (
-                <Text style={styles.howBody} testID="discovery-how-body">
-                  {COPY.discovery.howItWorksBody}
-                </Text>
-              ) : null}
-            </>
-          }
+        {/* The designer's night empty state (D-044): the neon hotel and pin
+            cropped from the mock, the claim, the one-hotel pill, and both
+            actions. */}
+        <View style={styles.noHotelCard}>
+          <Image
+            source={NO_HOTEL_ART}
+            style={styles.noHotelArt}
+            resizeMode="contain"
+            accessibilityIgnoresInvertColors
+          />
+          <Text accessibilityRole="header" style={styles.noHotelTitle}>
+            {COPY.discovery.noHotelTitle}
+          </Text>
+          <Text style={styles.noHotelBody}>{COPY.discovery.noHotelBody}</Text>
+          <View style={styles.oneHotelPill}>
+            <Text style={styles.oneHotelPillText}>{COPY.trust.oneHotel}</Text>
+          </View>
+        </View>
+        <Button
+          label={COPY.hotel.chooseCta}
+          onPress={() => navigation.navigate('ChooseHotel')}
+          testID="discovery-choose-hotel"
         />
+        <Button
+          label={COPY.discovery.howItWorks}
+          variant="secondary"
+          onPress={() => setHowOpen((open) => !open)}
+          testID="discovery-how"
+        />
+        {howOpen ? (
+          <Text style={styles.howBody} testID="discovery-how-body">
+            {COPY.discovery.howItWorksBody}
+          </Text>
+        ) : null}
       </Screen>
     );
   }
@@ -602,6 +612,38 @@ const styles = StyleSheet.create({
   emptyAction: { alignSelf: 'stretch', maxWidth: 280, width: '100%', gap: spacing.sm },
   emptyActionWide: { alignSelf: 'stretch', gap: spacing.sm },
   noRoomHero: { width: 320, height: 292 },
+  noHotelCard: {
+    backgroundColor: color.surface,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  noHotelArt: { width: '92%', aspectRatio: 330 / 126 },
+  noHotelTitle: {
+    fontFamily: fontFamily.display,
+    fontSize: font.heading,
+    color: color.ink,
+    textAlign: 'center',
+  },
+  noHotelBody: {
+    fontFamily: fontFamily.body,
+    fontSize: font.body,
+    lineHeight: font.body * 1.5,
+    color: color.inkMuted,
+    textAlign: 'center',
+  },
+  oneHotelPill: {
+    backgroundColor: color.accentSoft,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+  },
+  oneHotelPillText: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: font.caption,
+    color: color.inkMuted,
+  },
   howBody: {
     fontFamily: fontFamily.body,
     fontSize: font.caption,
@@ -638,7 +680,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     overflow: 'hidden',
     backgroundColor: color.veil,
-    shadowColor: color.ink,
+    shadowColor: '#000000',
     shadowOpacity: 0.12,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 6 },
@@ -764,7 +806,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: color.ink,
+    shadowColor: '#000000',
     shadowOpacity: 0.12,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },

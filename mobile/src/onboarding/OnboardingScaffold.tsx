@@ -25,11 +25,12 @@ import {
   Text,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Notice, useScreenChangeAnnouncement } from '../components/ui';
 import { COPY } from '../copy';
-import { color, font, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
+import { color, font, fontFamily, gradient, MIN_TOUCH, radius, spacing } from '../theme';
 
 export function OnboardingProgress({ step, total }: { step: number; total: number }) {
   const ratio = Math.max(0, Math.min(1, total > 0 ? step / total : 0));
@@ -41,7 +42,12 @@ export function OnboardingProgress({ step, total }: { step: number; total: numbe
       accessibilityLabel={COPY.onboarding.progressLabel(step, total)}
       testID="onboarding-progress"
     >
-      <View style={[styles.progressFill, { width: `${ratio * 100}%` }]} />
+      <LinearGradient
+        colors={[...gradient.primary]}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={[styles.progressFill, { width: `${ratio * 100}%` }]}
+      />
     </View>
   );
 }
@@ -163,13 +169,13 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   screen: { flex: 1, backgroundColor: color.background },
   progressTrack: {
-    height: 3,
+    height: 6,
     backgroundColor: color.rule,
     marginHorizontal: spacing.md,
     borderRadius: radius.pill,
     overflow: 'hidden',
   },
-  progressFill: { height: 3, backgroundColor: color.accentDeep },
+  progressFill: { height: 6, borderRadius: radius.pill },
   bar: {
     flexDirection: 'row',
     justifyContent: 'space-between',

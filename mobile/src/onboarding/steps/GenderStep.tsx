@@ -7,6 +7,7 @@ import { ApiError } from '../../data';
 import { genderLabel, MORE_GENDERS, PRIMARY_GENDERS } from '../../fixtures/identity';
 import { spacing } from '../../theme';
 import { ChoiceChip } from '../ChoiceChip';
+import { genderIcon } from '../stepIcons';
 import { OnboardingScaffold } from '../OnboardingScaffold';
 import type { SavingStepProps } from './types';
 
@@ -75,6 +76,7 @@ export function GenderStep({ step, total, draft, patch, go, onBack, saveProfile 
             key={value}
             label={genderLabel(value)}
             selected={chosen === value}
+            icon={genderIcon(value)}
             wide
             onPress={() => setChosen(value)}
             testID={`gender-${value.toLowerCase().replace(/\s+/g, '-')}`}

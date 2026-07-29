@@ -29,6 +29,7 @@ export function DateField({
   invalid = false,
   autoFocus = false,
   editable = true,
+  softKeyboard = true,
   testID,
 }: {
   /** Bare digits, `DDMMYYYY` order — the same state the parsers speak. */
@@ -39,6 +40,8 @@ export function DateField({
   invalid?: boolean;
   autoFocus?: boolean;
   editable?: boolean;
+  /** Off when the screen draws its own keypad (D-044). */
+  softKeyboard?: boolean;
   testID?: string;
 }) {
   const inputRef = useRef<TextInput>(null);
@@ -77,6 +80,7 @@ export function DateField({
           caretHidden
           autoFocus={autoFocus}
           editable={editable}
+          showSoftInputOnFocus={softKeyboard}
           style={styles.hiddenInput}
           testID={testID}
         />

@@ -2521,3 +2521,15 @@ Purple literals swept from 16 files, destination card gradients
 re-tinted, Field focus pin and the palette audit updated. Recorded as
 a trial the owner wants to see whole; a single revert of this commit
 restores lavender. 420 jest.
+
+## 2026-07-29 — the whole app went night-mode to the designer's sheets (D-044)
+
+Theme flipped to the dark ground with recomputed ratios (theme audit
+re-pinned); tokens carried ~all screens across. New per the mocks:
+gradient progress bar, DigitKeypad on the birthdate step (DateField
+gained softKeyboard=false; tests unchanged), stepIcons.tsx (gender
+glyphs, show-me marks, 14 interest line icons, CheckBadge), ChoiceChip
+icons + gradient-selected chips + glowing selected rows, ShowMe's three
+cards, Settings avatar gradient ring + conditional crown, dark empty
+states with mock crops (dark-hotel-disc/pin, dark-inbox-chat,
+dark-calendar in assets). 419 jest, lint 0, tsc clean.

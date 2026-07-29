@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 4,
     marginTop: spacing.sm,
-    shadowColor: color.ink,
+    shadowColor: '#000000',
     shadowOpacity: 0.07,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },

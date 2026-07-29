@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import { DateField } from '../../components/DateField';
+import { DigitKeypad } from '../../components/DigitKeypad';
 import { todayIsoDate } from '../../clock';
 import { apiErrorMessage, birthdateMessage, COPY } from '../../copy';
 import { ApiError } from '../../data';
@@ -88,7 +89,14 @@ export function BirthdateStep({
         onDigits={setDigits}
         autoFocus
         editable={!busy}
+        softKeyboard={false}
         testID="profile-birthdate"
+      />
+      {/* The designer's own keypad (D-044) instead of the system keyboard. */}
+      <DigitKeypad
+        onDigit={(digit) => setDigits((current) => (current + digit).slice(0, 8))}
+        onDelete={() => setDigits((current) => current.slice(0, -1))}
+        disabled={busy}
       />
     </OnboardingScaffold>
   );

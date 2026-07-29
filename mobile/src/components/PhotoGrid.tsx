@@ -541,7 +541,7 @@ const styles = StyleSheet.create({
   slotLifted: {
     zIndex: 10,
     elevation: 8,
-    shadowColor: color.ink,
+    shadowColor: '#000000',
     shadowOpacity: 0.25,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },

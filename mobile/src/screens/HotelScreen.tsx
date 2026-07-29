@@ -41,6 +41,7 @@ function destinationSource(cityKey: string) {
 }
 
 const QUICK_CITIES = ['İstanbul', 'Antalya'];
+const EMPTY_DISC = require('../../assets/dark-hotel-disc.png');
 
 /** "12 Ağu – 17 Ağu" in the device's language — dates, never documents. */
 function formatStayRange(stay: UpcomingStay): string {
@@ -328,7 +329,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
     <Screen safeTop={!onActivated} testID="screen-hotel">
       <Title>{onActivated ? COPY.hotel.title : COPY.tabs.vacation}</Title>
       {!onActivated && !activeHotel && !searchable(query) ? (
-        <Body>{COPY.vacation.planTitle}</Body>
+        <Body>{COPY.vacation.subtitle}</Body>
       ) : null}
       {/* The reference puts the search first: the screen opens ready to be
           asked. The ODbL line stays beside it — a licence term, not a
@@ -451,9 +452,12 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
            in its pale disc, the invitation beside it, and the requirement
            worn as a quiet badge rather than an error. */
         <View style={styles.emptyCard} testID="hotel-empty-state">
-          <View style={styles.emptyDisc}>
-            <HotelBuilding />
-          </View>
+          <Image
+            source={EMPTY_DISC}
+            style={styles.emptyDiscArt}
+            resizeMode="contain"
+            accessibilityIgnoresInvertColors
+          />
           <View style={styles.emptyText}>
             <Heading>{COPY.hotel.emptyTitle}</Heading>
             <Body>{COPY.hotel.emptyBody}</Body>
@@ -702,7 +706,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface,
     borderRadius: radius.md,
     overflow: 'hidden',
-    shadowColor: color.ink,
+    shadowColor: '#000000',
     shadowOpacity: 0.06,
     shadowRadius: 3,
     shadowOffset: { width: 0, height: 1 },
@@ -841,6 +845,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  emptyDiscArt: { width: 96, height: 92 },
   emptyText: { flex: 1, gap: spacing.xs },
   emptyBadge: {
     flexDirection: 'row',

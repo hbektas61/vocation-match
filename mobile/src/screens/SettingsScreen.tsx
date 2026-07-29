@@ -6,13 +6,16 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { LanguageSwitch } from '../components/LanguageSwitch';
 import { unregisterPush } from '../notifications/push';
 import { PhotoGrid } from '../components/PhotoGrid';
+import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path } from 'react-native-svg';
+
 import { Avatar, Body, Button, Caption, Card, EmptyState, Heading, Notice, Screen, SectionLabel, Title } from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type BlockedUser, type ProfilePhoto } from '../data';
 import type { RootStackParamList } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
-import { spacing } from '../theme';
+import { color, gradient, spacing } from '../theme';
 
 /**
  * What the app is entitled to claim about a deletion that did not visibly work.
@@ -127,11 +130,31 @@ export function SettingsScreen() {
           {/* The face first: this screen's subject is the person, and a card
               that opens with a section label reads as a form about them. */}
           <View style={styles.profileHead}>
-            <Avatar
-              url={state.profile.photoPath ? profileUrls[state.profile.photoPath] ?? null : null}
-              name={state.profile.displayName}
-              size="md"
-            />
+            {/* The designer's ring (D-044): the avatar inside the brand
+                gradient, the crown only when Premium is actually true. */}
+            <View>
+              <LinearGradient
+                colors={[...gradient.primary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.avatarRing}
+              >
+                <View style={styles.avatarSeat}>
+                  <Avatar
+                    url={state.profile.photoPath ? profileUrls[state.profile.photoPath] ?? null : null}
+                    name={state.profile.displayName}
+                    size="md"
+                  />
+                </View>
+              </LinearGradient>
+              {state.profile.isPremium ? (
+                <View style={styles.crownBadge} testID="settings-premium-crown">
+                  <Svg width={14} height={14} viewBox="0 0 24 24" fill="#FBBF24">
+                    <Path d="M3 8l4.5 4L12 5l4.5 7L21 8l-1.8 10H4.8z" />
+                  </Svg>
+                </View>
+              ) : null}
+            </View>
             <View style={styles.profileText}>
               <Heading>{`${state.profile.displayName}, ${state.profile.age}`}</Heading>
               {state.profile.bio ? <Body numberOfLines={2}>{state.profile.bio}</Body> : null}
@@ -259,5 +282,20 @@ export function SettingsScreen() {
 
 const styles = StyleSheet.create({
   profileHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  avatarRing: { borderRadius: 999, padding: 3 },
+  avatarSeat: { borderRadius: 999, padding: 3, backgroundColor: color.surface },
+  crownBadge: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: color.background,
+    borderWidth: 1.5,
+    borderColor: '#FBBF24',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   profileText: { flex: 1, gap: 2 },
 });

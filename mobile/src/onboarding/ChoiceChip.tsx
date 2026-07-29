@@ -9,10 +9,12 @@
  * by tapping: `ChoiceGroup` prints it and gives the group an accessibility hint
  * carrying the same sentence.
  */
+import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { color, font, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
+import { color, font, fontFamily, gradient, MIN_TOUCH, radius, spacing } from '../theme';
+import { CheckBadge } from './stepIcons';
 
 export function ChoiceChip({
   label,
@@ -20,6 +22,7 @@ export function ChoiceChip({
   disabled = false,
   wide = false,
   trailing,
+  icon,
   onPress,
   testID,
 }: {
@@ -30,6 +33,8 @@ export function ChoiceChip({
   wide?: boolean;
   /** A glyph at the trailing edge, for a choice that opens more choices. */
   trailing?: string;
+  /** The designer's leading glyph (D-044). Decorative: the label carries meaning. */
+  icon?: React.ReactNode;
   onPress: () => void;
   testID?: string;
 }) {
@@ -44,24 +49,41 @@ export function ChoiceChip({
       style={({ pressed }) => [
         styles.chip,
         selected ? styles.chipSelected : styles.chipIdle,
-        // After the state styles on purpose: the wide pill's thin lavender
-        // border must win over the idle grey, and the array is the cascade.
+        // After the state styles on purpose: the wide pill's pink border
+        // must win over the idle grey, and the array is the cascade.
         wide && styles.chipWide,
         wide && selected && styles.chipWideSelected,
         disabled && !selected && styles.chipDisabled,
         pressed && styles.chipPressed,
       ]}
     >
+      {selected && !wide ? (
+        // The mock's selected passion chip is the brand gradient itself.
+        <LinearGradient
+          colors={[...gradient.primary]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={styles.chipGradient}
+          pointerEvents="none"
+        />
+      ) : null}
+      {icon ? <View style={styles.chipIcon}>{icon}</View> : null}
       <Text
         style={[
           styles.chipLabel,
           wide && styles.chipLabelWide,
-          selected && styles.chipLabelSelected,
+          selected && (wide ? styles.chipLabelSelectedWide : styles.chipLabelSelected),
         ]}
       >
         {label}
       </Text>
-      {trailing ? <Text style={styles.chipTrailing}>{trailing}</Text> : null}
+      {wide && selected ? (
+        <View style={styles.chipBadge}>
+          <CheckBadge />
+        </View>
+      ) : trailing ? (
+        <Text style={styles.chipTrailing}>{trailing}</Text>
+      ) : null}
     </Pressable>
   );
 }
@@ -101,7 +123,7 @@ export function ChoiceRow({
       ]}
     >
       <Text style={[styles.rowLabel, selected && styles.rowLabelSelected]}>{label}</Text>
-      {selected ? <Text style={styles.rowTick}>✓</Text> : null}
+      {selected ? <CheckBadge size={20} /> : null}
     </Pressable>
   );
 }
@@ -140,12 +162,19 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
     minHeight: MIN_TOUCH,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.pill,
     borderWidth: 1.5,
+    overflow: 'hidden',
   },
+  chipGradient: { ...StyleSheet.absoluteFillObject },
+  chipIcon: { marginRight: 2 },
+  chipBadge: { position: 'absolute', right: spacing.sm + 2 },
   /**
    * One decision per line, sized like the reference's pills: tall enough to
    * feel like the main event on the screen rather than a tag that escaped the
@@ -167,7 +196,16 @@ const styles = StyleSheet.create({
     borderColor: color.accent,
   },
   /** Selected keeps the deeper edge so the state is more than a fill. */
-  chipWideSelected: { borderColor: color.accentDeep },
+  chipWideSelected: {
+    borderColor: color.border,
+    backgroundColor: color.accentSoft,
+    shadowColor: color.border,
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 3,
+  },
+  chipLabelSelectedWide: { fontFamily: fontFamily.bodySemi, color: color.ink },
   chipTrailing: {
     position: 'absolute',
     right: spacing.md,
@@ -175,26 +213,28 @@ const styles = StyleSheet.create({
     fontSize: font.heading,
     color: color.inkMuted,
   },
+  /** The mock's orientation rows: thin outlined pills, one per line. */
   row: {
     minHeight: MIN_TOUCH,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: color.rule,
+    backgroundColor: color.surface,
+    marginBottom: spacing.sm,
   },
   rowLabel: {
     fontFamily: fontFamily.body,
-    fontSize: font.heading,
+    fontSize: font.body,
     color: color.ink,
   },
   rowLabelSelected: { fontFamily: fontFamily.bodySemi, color: color.accentDeep },
-  rowTick: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.heading,
-    color: color.accentDeep,
-  },
   chipIdle: { backgroundColor: color.surface, borderColor: color.border },
-  chipSelected: { backgroundColor: color.accentSoft, borderColor: color.accentDeep },
+  chipSelected: { backgroundColor: color.accentSoft, borderColor: 'transparent' },
   chipDisabled: { opacity: 0.45 },
   chipPressed: { opacity: 0.85 },
   chipLabel: {
@@ -208,5 +248,6 @@ const styles = StyleSheet.create({
    * border and fill carry the structure, so the label can speak quietly.
    */
   chipLabelWide: { fontFamily: fontFamily.body },
-  chipLabelSelected: { fontFamily: fontFamily.bodyMedium, color: color.accentDeep },
+  /** On the gradient: the dark ink, which survives its worst stop (D-043). */
+  chipLabelSelected: { fontFamily: fontFamily.bodySemi, color: '#1A1A2E' },
 });

@@ -24,7 +24,7 @@ import { useAppStore } from '../state/AppStore';
 import { color, font, fontFamily, radius, spacing } from '../theme';
 
 /** The owner's own 3D lobby render (2026-07-28), bundled — not a redrawing. */
-const INBOX_HERO = require('../../assets/inbox-empty.jpg');
+const INBOX_HERO = require('../../assets/dark-inbox-chat.png');
 
 const MagnifierIcon = () => (
   <View style={{ marginRight: spacing.sm }}>
@@ -52,19 +52,12 @@ const heartBadgeStyle = {
   backgroundColor: '#FFFFFF',
   alignItems: 'center' as const,
   justifyContent: 'center' as const,
-  shadowColor: color.ink,
+  shadowColor: '#000000',
   shadowOpacity: 0.15,
   shadowRadius: 4,
   shadowOffset: { width: 0, height: 2 },
   elevation: 3,
 };
-
-const BellIcon = () => (
-  <Svg width={20} height={20} viewBox="0 0 24 24" fill={color.accentDeep} stroke={color.accentDeep} strokeWidth={1.5} strokeLinejoin="round">
-    <Path d="M10.268 21a2 2 0 0 0 3.464 0" stroke="#FFFFFF" fill="none" strokeLinecap="round" />
-    <Path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
-  </Svg>
-);
 
 /** Everything a sighted person sees in one row, in the order they see it. */
 function inboxRowLabel(match: MatchSummary): string {
@@ -163,14 +156,6 @@ export function InboxScreen() {
               onPress={() => tabNavigation.navigate('Vacation')}
               testID="inbox-view-rooms"
             />
-          </View>
-          <View style={styles.bellStrip}>
-            <View style={styles.bellDisc}>
-              <BellIcon />
-            </View>
-            <View style={styles.bellWords}>
-              <Caption>{COPY.inbox.matchesAppearHere}</Caption>
-            </View>
           </View>
         </View>
       ) : (
@@ -323,7 +308,11 @@ const styles = StyleSheet.create({
     maxWidth: 280,
   },
   emptyActions: { alignSelf: 'stretch', gap: spacing.sm },
-  emptyHero: { width: 330, height: 248 },
+  emptyHero: {
+    width: '100%',
+    aspectRatio: 398 / 172,
+    borderRadius: radius.lg,
+  },
   bellStrip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -340,7 +329,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: color.ink,
+    shadowColor: '#000000',
     shadowOpacity: 0.08,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
@@ -374,7 +363,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     padding: spacing.md,
     marginBottom: spacing.sm,
-    shadowColor: color.ink,
+    shadowColor: '#000000',
     shadowOpacity: 0.05,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },

@@ -499,6 +499,7 @@ export const tr: Copy = {
   /** D-040 — the Tatilim tab: hotel choice and its two features, one place. */
   vacation: {
     planTitle: 'Tatilini planla',
+    subtitle: 'Tatiline başlayacağın oteli seç.',
     upcomingFeatureBody: 'Aynı tarihlerde aynı otelde olacak kişilerle tatilden önce tanış.',
     hereNowFeatureBody: 'Seçtiğin otelin yakınındaysan şu anda orada bulunan kişilerle tanış.',
     chooseFirst: 'Önce otel seç',

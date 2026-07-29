@@ -529,6 +529,7 @@ export const en = {
   /** D-040 — the My trip tab: hotel choice and its two features, one place. */
   vacation: {
     planTitle: 'Plan your trip',
+    subtitle: 'Choose the hotel your trip starts at.',
     upcomingFeatureBody: 'Meet the people who will be at the same hotel on the same dates — before the trip.',
     hereNowFeatureBody: 'Near your chosen hotel right now? Meet the people who are there too.',
     chooseFirst: 'Choose a hotel first',

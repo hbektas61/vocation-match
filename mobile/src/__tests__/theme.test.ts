@@ -31,14 +31,14 @@ function contrast(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-const WHITE = '#FFFFFF';
+const GROUND = '#12162E';
 
 describe('the owner’s palette', () => {
-  it('uses exactly the rendevuu hexes that were specified (D-043)', () => {
+  it('uses exactly the rendevuu hexes that were specified (D-043/D-044)', () => {
     // Not "about these colours". The owner gave the hexes; drifting off one
     // by a shade to win a contrast argument would answer a different brief.
     expect(palette.navy).toBe('#0F1B3D');
-    expect(palette.ink).toBe('#1A1A2E');
+    expect(palette.inkDark).toBe('#1A1A2E');
     expect(palette.gold).toBe('#FBBF24');
     expect(palette.goldLight).toBe('#FCD34D');
     expect(palette.coral).toBe('#FB7185');
@@ -59,50 +59,46 @@ describe('the owner’s palette', () => {
     }
   });
 
-  it('puts white under everything', () => {
-    expect(color.background).toBe(WHITE);
-    expect(color.surface).toBe(WHITE);
+  it('puts the night navy under everything (D-044)', () => {
+    expect(color.background).toBe('#12162E');
+    expect(color.surface).toBe('#1C2242');
   });
 });
 
-describe('what the pinks are allowed to do', () => {
-  it('the brand fill is not strong enough to carry body text as text on white', () => {
-    // The fact the palette is arranged around: pinks fill and mark, navy reads.
-    expect(contrast(palette.pinkLight, WHITE)).toBeLessThan(4.5);
+describe('what the pinks are allowed to do at night', () => {
+  it('the light pink reads as accent text on the ground', () => {
+    expect(contrast(color.accentDeep, GROUND)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('the navy can do every job the pinks cannot', () => {
-    expect(contrast(palette.navy, WHITE)).toBeGreaterThanOrEqual(4.5);
+  it('the strong pink clears a control edge on the ground', () => {
+    expect(contrast(palette.pink, GROUND)).toBeGreaterThanOrEqual(3);
   });
 
-  it('the strong pink clears a control edge on white', () => {
-    expect(contrast(palette.pink, WHITE)).toBeGreaterThanOrEqual(3);
-  });
-
-  it('never carries white text on the fill, and the gradient label is ink', () => {
-    expect(color.onAccent).toBe(palette.ink);
+  it('never carries white text on the fill, and the gradient label is the dark ink', () => {
+    expect(color.onAccent).toBe(palette.inkDark);
     expect(contrast(color.onAccent, color.accent)).toBeGreaterThanOrEqual(4.5);
     // The label must survive the gradient's WORST stop, not its average.
     for (const stop of gradient.primary) {
-      expect(contrast(palette.ink, stop)).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(palette.inkDark, stop)).toBeGreaterThanOrEqual(4.5);
     }
   });
 });
 
 describe('text and edges against the ground they are used on', () => {
-  it('reads at body-text contrast on white', () => {
-    expect(contrast(color.ink, WHITE)).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(color.inkMuted, WHITE)).toBeGreaterThanOrEqual(4.5);
+  it('reads at body-text contrast on the night ground', () => {
+    expect(contrast(color.ink, GROUND)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(color.inkMuted, GROUND)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(color.ink, color.surface)).toBeGreaterThanOrEqual(4.5);
   });
 
   it('marks where a control starts at 3:1', () => {
     // WCAG 1.4.11. `rule` is exempt on purpose: it divides paragraphs and is
     // never the edge of anything you can operate.
-    expect(contrast(color.border, WHITE)).toBeGreaterThanOrEqual(3);
+    expect(contrast(color.border, GROUND)).toBeGreaterThanOrEqual(3);
   });
 
   it('keeps the error colour readable both ways round', () => {
-    expect(contrast(color.danger, WHITE)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(color.danger, GROUND)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(color.onDanger, color.danger)).toBeGreaterThanOrEqual(4.5);
   });
 

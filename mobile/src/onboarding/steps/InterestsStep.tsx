@@ -4,6 +4,8 @@ import { apiErrorMessage, COPY } from '../../copy';
 import { ApiError, MAX_INTERESTS } from '../../data';
 import { INTEREST_CHOICES } from '../../fixtures/interests';
 import { ChoiceChip, ChoiceGroup } from '../ChoiceChip';
+import { interestIcon } from '../stepIcons';
+import { color } from '../../theme';
 import { OnboardingScaffold } from '../OnboardingScaffold';
 import type { SavingStepProps } from './types';
 
@@ -82,6 +84,7 @@ export function InterestsStep({
               key={choice}
               label={choice}
               selected={selected}
+              icon={interestIcon(choice, selected ? '#1A1A2E' : color.accentDeep)}
               disabled={!selected && full}
               onPress={() => toggle(choice)}
               testID={`interest-${choice.toLowerCase().replace(/\s+/g, '-')}`}

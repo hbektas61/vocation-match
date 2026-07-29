@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
     alignItems: 'center',
     gap: spacing.sm,
-    shadowColor: color.ink,
+    shadowColor: '#000000',
     shadowOpacity: 0.05,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 3 },
