@@ -115,7 +115,12 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
   /** The declared window, shown on the active card (D-040). */
   const [stay, setStay] = useState<UpcomingStay | null>(null);
 
-  const activeHotel = state.hotels.find((h) => h.id === state.activeHotel?.hotelId) ?? null;
+  // The one question every branch of this screen asks — "is a hotel
+  // chosen" — is answered by the id the store hydrated, never by whether
+  // the card's details happen to be cached yet (the bug: a returning
+  // account read as "no hotel chosen" until a search refilled the cache).
+  const activeId = state.activeHotel?.hotelId ?? null;
+  const activeHotel = state.hotels.find((h) => h.id === activeId) ?? null;
 
   // Only the hotel already on this account. The catalog is deliberately not
   // fetched: a list of every hotel presented as though it were a result is an
@@ -165,12 +170,12 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
             .catch(() => undefined);
         }
         // `getActiveHotel` answers with an id, and the card above it needs a
-        // name. Resolved here rather than by showing the catalogue: these go
-        // into the store, never into `results`, so nothing becomes selectable
-        // that somebody did not search for.
+        // name. Resolved by the id itself — a catalogue search cannot be
+        // trusted to contain it — and merged into the store, never into
+        // `results`, so nothing becomes selectable that nobody searched for.
         if (active) {
-          const known = await api.searchHotels('');
-          if (!cancelled) dispatch({ type: 'HOTELS_LOADED', hotels: known });
+          const card = await api.getHotelById(active.hotelId).catch(() => null);
+          if (!cancelled && card) dispatch({ type: 'HOTELS_LOADED', hotels: [card] });
         }
       } finally {
         if (!cancelled) setLoadingActive(false);
@@ -271,7 +276,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
 
   const requestActivation = (hotel: HotelCard) => {
     setSwitchedNotice(false);
-    if (activeHotel && activeHotel.id !== hotel.id) {
+    if (activeId && activeId !== hotel.id) {
       setPendingSwitch(hotel);
       return;
     }
@@ -322,13 +327,13 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           />
         )}
       </View>
-      {!onActivated && !activeHotel && !searchable(query) ? (
+      {!onActivated && !activeId && !searchable(query) ? (
         <Text style={styles.subtitle}>{COPY.vacation.subtitle}</Text>
       ) : null}
       {/* The label is printed only where the design prints it (10:76): over
           the search on the not-yet-chosen screen. The field keeps the name
           for a screen reader either way. */}
-      {!activeHotel && !searchable(query) && !loadingActive ? (
+      {!activeId && !searchable(query) && !loadingActive ? (
         <Text style={styles.searchLabel}>{upperCase(COPY.hotel.searchLabel)}</Text>
       ) : null}
       <Field
@@ -342,7 +347,9 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         style={styles.searchInput}
         testID="hotel-search"
       />
-      {searchable(query) ? null : loadingActive ? (
+      {searchable(query) ? null : loadingActive || (activeId && !activeHotel) ? (
+        // Either the answer is on its way, or the id is known and its card
+        // is still being resolved. Neither is "no hotel chosen".
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="hotel-loading" />
       ) : activeHotel ? (
         /* The Figma active card (10:117): the photo band, the name, one line
@@ -436,7 +443,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         </Card>
       ) : null}
 
-      {activeHotel && !searchable(query) && !onActivated ? (
+      {activeId && !searchable(query) && !onActivated ? (
         /* D-040 in the Figma card shape (10:124, 10:131): the two features
            right under the hotel they belong to. When Upcoming is live its
            button becomes the deck, and updating the dates steps back to a
@@ -513,7 +520,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
            that exists before any hotel does, honestly shut behind the one
            thing it needs. */
         <View style={styles.idle} testID="hotel-search-prompt">
-          {activeHotel || onActivated ? null : (
+          {activeId || onActivated ? null : (
             <VacationFeatureCard
               room="UPCOMING"
               status={null}
@@ -538,7 +545,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       ) : (
         <>
         {results.map((hotel) => {
-          const isActive = activeHotel?.id === hotel.id;
+          const isActive = activeId === hotel.id;
           return (
             /* Results wear the same card as the active hotel — the designer's
                one card, in two roles — with a slimmer band so the list stays

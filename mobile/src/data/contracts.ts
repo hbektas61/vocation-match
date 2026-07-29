@@ -350,6 +350,12 @@ export interface VocationApi {
 
   /* hotel */
   searchHotels(query: string): Promise<HotelCard[]>;
+  /**
+   * One hotel, by its id. The store's hydration uses this to resolve the
+   * active hotel's card without a search — the id alone is what the server
+   * remembers, and every screen needs the name it belongs to.
+   */
+  getHotelById(hotelId: string): Promise<HotelCard | null>;
   getActiveHotel(): Promise<ActiveHotel | null>;
   setActiveHotel(hotelId: string): Promise<ActivationResult>;
 

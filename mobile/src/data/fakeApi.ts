@@ -22,7 +22,7 @@ import { haversineMeters } from '../domain/location';
 import { isUpcomingEligible, validateStayDates } from '../domain/upcoming';
 import type { HereNowCheck, UpcomingDeclaration } from '../domain/types';
 import { CANDIDATES, ROOM_CROWD } from '../fixtures/candidates';
-import { getHotelById, HOTELS, searchHotels as searchHotelFixtures } from '../fixtures/hotels';
+import { getHotelById as getHotelFixtureById, HOTELS, searchHotels as searchHotelFixtures } from '../fixtures/hotels';
 import {
   ApiError,
   type ActivationResult,
@@ -485,6 +485,22 @@ export class FakeApi implements VocationApi {
     }));
   }
 
+  async getHotelById(hotelId: string): Promise<HotelCard | null> {
+    await this.requireUserId();
+    const hotel = getHotelFixtureById(hotelId);
+    if (!hotel) return null;
+    return {
+      id: hotel.id,
+      name: hotel.name,
+      city: hotel.city,
+      country: hotel.country,
+      address: null,
+      photoUrl: null,
+      photoAttribution: null,
+      kind: hotel.kind ?? null,
+    };
+  }
+
   async getActiveHotel(): Promise<ActiveHotel | null> {
     const userId = await this.requireUserId();
     return this.activeHotels.get(userId) ?? null;
@@ -492,7 +508,7 @@ export class FakeApi implements VocationApi {
 
   async setActiveHotel(hotelId: string): Promise<ActivationResult> {
     const userId = await this.requireUserId();
-    if (!getHotelById(hotelId)) {
+    if (!getHotelFixtureById(hotelId)) {
       throw new ApiError('NOT_FOUND', 'That hotel is not available.');
     }
     const current = this.activeHotels.get(userId) ?? null;
@@ -550,7 +566,7 @@ export class FakeApi implements VocationApi {
   async recordPresenceCheck(latitude: number, longitude: number): Promise<PresenceAnswer> {
     const userId = await this.requireUserId();
     const hotelId = await this.requireActiveHotelId(userId);
-    const hotel = getHotelById(hotelId);
+    const hotel = getHotelFixtureById(hotelId);
     if (
       !hotel ||
       !Number.isFinite(latitude) ||
@@ -613,7 +629,7 @@ export class FakeApi implements VocationApi {
 
   async recordCheckin(venueId: string, latitude: number, longitude: number): Promise<CheckinAnswer> {
     const userId = await this.requireUserId();
-    const venue = getHotelById(venueId);
+    const venue = getHotelFixtureById(venueId);
     if (!venue) {
       throw new ApiError('NOT_FOUND', 'That place is not in the catalogue.');
     }
@@ -645,7 +661,7 @@ export class FakeApi implements VocationApi {
     const userId = await this.requireUserId();
     const checkin = this.freshCheckin(userId);
     if (!checkin) return null;
-    const venue = getHotelById(checkin.venueId);
+    const venue = getHotelFixtureById(checkin.venueId);
     return venue
       ? {
           venueId: checkin.venueId,
@@ -771,7 +787,7 @@ export class FakeApi implements VocationApi {
           venueName:
             candidate.hotelId === checkin.venueId
               ? null
-              : (getHotelById(candidate.hotelId)?.name ?? null),
+              : (getHotelFixtureById(candidate.hotelId)?.name ?? null),
           sameVenue: candidate.hotelId === checkin.venueId,
         }));
     }
@@ -833,7 +849,7 @@ export class FakeApi implements VocationApi {
         venueName:
           candidate.hotelId === hotelId
             ? null
-            : (getHotelById(candidate.hotelId)?.name ?? null),
+            : (getHotelFixtureById(candidate.hotelId)?.name ?? null),
         sameVenue: candidate.hotelId === hotelId,
       }));
   }
@@ -1119,8 +1135,8 @@ export class FakeApi implements VocationApi {
    */
   private inRegionOf(hotelId: string, candidateHotelId: string): boolean {
     if (candidateHotelId === hotelId) return true;
-    const mine = getHotelById(hotelId);
-    const theirs = getHotelById(candidateHotelId);
+    const mine = getHotelFixtureById(hotelId);
+    const theirs = getHotelFixtureById(candidateHotelId);
     if (!mine || !theirs) return false;
     return (
       haversineMeters(mine.latitude, mine.longitude, theirs.latitude, theirs.longitude) <= 15000
@@ -1130,8 +1146,8 @@ export class FakeApi implements VocationApi {
   /** The 1 km street (D-039), venue to venue — mirrors the server's rule. */
   private inNearbyOf(venueId: string, candidateHotelId: string): boolean {
     if (candidateHotelId === venueId) return true;
-    const mine = getHotelById(venueId);
-    const theirs = getHotelById(candidateHotelId);
+    const mine = getHotelFixtureById(venueId);
+    const theirs = getHotelFixtureById(candidateHotelId);
     if (!mine || !theirs) return false;
     return (
       haversineMeters(mine.latitude, mine.longitude, theirs.latitude, theirs.longitude) <= 1000

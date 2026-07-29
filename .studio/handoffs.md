@@ -2733,3 +2733,21 @@ centred under the grid ("4 / 5 seçildi", new copy key in both
 languages, announced politely for screen readers). The skip word
 matches the sheet's 15. Wide decision pills elsewhere kept their size.
 tsc, eslint, 419 jest green.
+
+## 2026-07-29 — a returning account read as "no hotel chosen"
+
+The owner's bug report, and it was a single-source-of-truth failure in
+two layers. The store's hydration loaded only the active hotel's *id*;
+the card (name, city, photo) arrived exclusively from searches, and the
+trip tab keyed "is a hotel chosen" off the cached card — so a returning
+account read as hotelless until a search happened to refill the cache
+(on staging, the empty-query search cannot be trusted to contain it).
+Discovery separately pitched its no-hotel screen while the account was
+still hydrating. Fixed at the source: a new `getHotelById` on the Api
+contract (direct catalogue read on staging, fixture read in fake mode);
+hydration now resolves the active hotel's card into the store the
+moment it learns the id; the trip tab answers every branch from the id
+and shows a loading face — never the empty card — while the card is in
+flight; Discovery treats "account still loading" as loading. Pinned by
+a new relaunch test that mocks the search to emptiness and expects the
+chosen hotel's card anyway. tsc, eslint, 420 jest green.

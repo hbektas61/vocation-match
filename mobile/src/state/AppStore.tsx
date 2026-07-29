@@ -89,6 +89,19 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
         if (!cancelled) {
           dispatch({ type: 'ACCOUNT_HYDRATED', profile, activeHotel });
         }
+        // The hotel's card, resolved here so every screen agrees from the
+        // first frame: the id alone is what the server remembers, and a
+        // returning account must not read as "no hotel chosen" anywhere.
+        // Failing to fetch the card does not fail hydration — the id is
+        // already in the store, and screens show a loading face, never a lie.
+        if (activeHotel) {
+          api
+            .getHotelById(activeHotel.hotelId)
+            .then((card) => {
+              if (!cancelled && card) dispatch({ type: 'HOTELS_LOADED', hotels: [card] });
+            })
+            .catch(() => undefined);
+        }
       } catch {
         if (!cancelled) dispatch({ type: 'ACCOUNT_HYDRATION_FAILED' });
       }

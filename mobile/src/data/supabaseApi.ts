@@ -540,6 +540,20 @@ export class SupabaseApi implements VocationApi {
     return ((data ?? []) as HotelRow[]).map(toHotelCard);
   }
 
+  async getHotelById(hotelId: string): Promise<HotelCard | null> {
+    // A direct catalogue read: the columns granted one by one to
+    // authenticated (never `location`), scoped by the is_active policy.
+    const { data, error } = await this.client
+      .from('hotels')
+      .select('id, name, city, country, address, photo_url, photo_attribution, venue_kind')
+      .eq('id', hotelId)
+      .maybeSingle();
+    if (error) {
+      throw toApiError(error, 'Could not load the hotel.');
+    }
+    return data ? toHotelCard(data as HotelRow) : null;
+  }
+
   async getActiveHotel(): Promise<ActiveHotel | null> {
     const { data, error } = await this.client
       .from('user_active_hotel')

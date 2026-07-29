@@ -254,7 +254,11 @@ export function DiscoveryScreen() {
   const shownPath = cardPaths[Math.min(photoIndex, Math.max(cardPaths.length - 1, 0))] ?? null;
   const photoUrls = usePhotoUrls(photoPaths);
 
-  if (rooms === null) {
+  // "No hotel yet" is a claim about the account, and while the account is
+  // still being hydrated the claim is not known — showing the no-hotel
+  // pitch to a returning owner for a heartbeat (or until they visited the
+  // trip tab) was the bug. Loading is loading, everywhere.
+  if (rooms === null || (!hasHotel && state.accountLoadStatus === 'loading')) {
     return (
       <Screen safeTop testID="screen-discovery">
         <Title>{COPY.tabs.discovery}</Title>
