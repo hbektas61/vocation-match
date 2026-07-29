@@ -178,7 +178,7 @@ async function pickDate(testID: string, iso: string): Promise<void> {
     // owner declared a stay elsewhere and came back to a card still calling
     // the room closed.
     await fireEvent.press(screen.getByTestId('tab-Vacation'));
-    expect(await screen.findAllByText('OPEN')).toBeTruthy();
+    expect(await screen.findAllByText('Open')).toBeTruthy();
   });
 
   it('shows what you declared when you come back to it', async () => {

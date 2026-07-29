@@ -2577,3 +2577,20 @@ it, and the button carries the busy state ("Taranıyor…"). The radar
 screen also exists in Figma now ("Keşfet — odada kimse yok": sunset
 ground, graduated rings, glowing gradient dot, frozen pulse ring), and
 the empty-room copy matches it in both languages. 419 jest.
+
+## 2026-07-29 — the trip tab, to the designer's two sheets
+
+The Figma "Tatilim" pair (10:71 otel yok, 10:111 otel aktif) is now the
+screen. The header grew to the design's 34 with the profile ring beside
+it; the search became the glass pill with the half-pink edge; the empty
+card, the active card (photo band at 140, one place-and-dates line, the
+selected pill) and both feature cards follow the sheets' exact paddings,
+radii and type sizes. The feature cards lost their illustrations and
+hairlines per the design, but kept the server's reason line (D-002) and
+the thresholded counts (D-032) as quiet notes — the tests that guard
+those surfaces still pass. Buttons app-wide now wear the design's
+semibold 15 on 14 vertical; the state chip is the bare "● Açık/Kapalı"
+word. Popular destinations and the search scene left the tab with the
+design. tsc, eslint, 419 jest all green. Note: this worktree's stale
+branch was rebased onto main first — its one commit (the onboarding
+wizard) was already on main as d3b41f0, so nothing was lost.

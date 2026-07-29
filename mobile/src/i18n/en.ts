@@ -251,7 +251,7 @@ export const en = {
     noActiveHotel: 'No active hotel yet.',
     searchLabel: 'Search hotels',
     searchHint: 'You can search to choose a different hotel.',
-    selectedActive: 'Selected • Active',
+    selectedActive: 'Selected · Active',
     detailsCta: 'See hotel details',
     detailsTitle: 'Hotel details',
     addressLabel: 'Address',
@@ -317,7 +317,7 @@ export const en = {
     statusBadge: 'Near the hotel now',
     explainer:
       'At the Hotel opens after a one-time location check while the app is open. It only confirms you are at the hotel — your exact location is never shown or stored.',
-    checkButton: 'Check my presence',
+    checkButton: 'Check hotel proximity',
     realCheckIntro: 'Use your current location for a one-time foreground check. Nothing runs in the background.',
     realCheckButton: 'Use my current location',
     inRange: 'You are in. At the Hotel is open for this hotel.',
@@ -532,7 +532,7 @@ export const en = {
     planTitle: 'Plan your trip',
     subtitle: 'Choose the hotel your trip starts at.',
     upcomingFeatureBody: 'Meet the people who will be at the same hotel on the same dates — before the trip.',
-    hereNowFeatureBody: 'Near your chosen hotel right now? Meet the people who are there too.',
+    hereNowFeatureBody: 'At the hotel? One foreground location check, and you meet who is there right now.',
     chooseFirst: 'Choose a hotel first',
     premiumTag: 'Premium',
     freeTag: 'Free',
@@ -630,6 +630,8 @@ export const enFor = {
     minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m left` : `${minutes}m left`,
   untilTime: (time: string) => `until ${time}`,
   checkinUntil: (venueName: string, time: string) => `${venueName} — until ${time}`,
+  /** The live Upcoming line (10:128): the declared window, and what it opens. */
+  upcomingWindow: (range: string) => `Your dates: ${range}. People whose dates overlap are in the deck.`,
 };
 
 export type Copy = typeof en;

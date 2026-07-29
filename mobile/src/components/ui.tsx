@@ -349,9 +349,14 @@ export function Field(
     invalid?: boolean;
     /** Rendered inside the box, before the text. The `+90` on the phone step. */
     prefix?: React.ReactNode;
+    /**
+     * The Figma search shape (10:77): a full-round glass pill with the pink
+     * edge at half strength, instead of the squared panel input.
+     */
+    pill?: boolean;
   },
 ) {
-  const { label, hint, hideLabel, invalid, prefix, style, onFocus, onBlur, ...inputProps } = props;
+  const { label, hint, hideLabel, invalid, prefix, pill, style, onFocus, onBlur, ...inputProps } = props;
   const [focused, setFocused] = useState(false);
   const multiline = inputProps.multiline === true;
 
@@ -364,6 +369,7 @@ export function Field(
         testID={inputProps.testID ? `${inputProps.testID}-box` : undefined}
         style={[
           styles.inputShell,
+          pill && styles.inputShellPill,
           multiline && styles.inputShellMultiline,
           focused && styles.inputShellFocused,
           invalid && styles.inputShellInvalid,
@@ -421,13 +427,14 @@ export function KeyCard({
 }
 
 /**
- * OPEN / CLOSED, as a word with a mark. The fill is the third signal after
- * the word and the dot, so the state survives every kind of colour vision.
+ * Open / closed, as a word with a mark. The Figma pair (10:89/10:127) wears
+ * no container at all: a dot and the word, green and semibold when live,
+ * muted when shut — the word is the first signal, the dot the second.
  */
 export function StateChip({ open, label, testID }: { open: boolean; label: string; testID?: string }) {
   return (
     <View
-      style={[styles.stateChip, open ? styles.stateChipOpen : styles.stateChipClosed]}
+      style={styles.stateChip}
       accessible
       accessibilityRole="text"
       accessibilityLabel={label}
@@ -435,7 +442,7 @@ export function StateChip({ open, label, testID }: { open: boolean; label: strin
     >
       <View style={[styles.stateDot, open ? styles.stateDotOpen : styles.stateDotClosed]} />
       <Text style={[styles.stateChipText, open ? styles.stateChipTextOpen : styles.stateChipTextClosed]}>
-        {upperCase(label)}
+        {label}
       </Text>
     </View>
   );
@@ -711,8 +718,9 @@ export function Rule() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   screen: { flex: 1, backgroundColor: color.background },
-  screenContent: { padding: spacing.md, gap: spacing.md },
-  screenBleed: { paddingBottom: spacing.xl, gap: spacing.md },
+  /** The Figma screen shell (10:71/10:111): 20 aside, 24 above, 16 below, 14 between. */
+  screenContent: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: spacing.md, gap: 14 },
+  screenBleed: { paddingBottom: spacing.xl, gap: 14 },
 
   display: {
     fontFamily: fontFamily.display,
@@ -757,7 +765,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm + 2,
+    // The Figma action (10:92): 14 above and below the label.
+    paddingVertical: 14,
   },
   buttonCompact: { paddingHorizontal: spacing.sm },
   /**
@@ -798,10 +807,10 @@ const styles = StyleSheet.create({
   actionDisabled: { opacity: 0.45 },
   buttonPressed: { opacity: 0.82 },
   buttonLabel: {
-    // Medium, not semibold: the owner read the heavy black-on-lavender as a
-    // clash, and the pill's fill is already doing the emphasis.
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: font.body,
+    // The Figma label (10:93): semibold at 15, which the warm gradient can
+    // carry now that the ink on it is dark rather than white.
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 15,
     letterSpacing: 0.2,
   },
   buttonLabelCompact: { fontSize: font.caption + 1, letterSpacing: 0 },
@@ -860,6 +869,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     paddingHorizontal: spacing.md,
     backgroundColor: color.surface,
+  },
+  /** The Figma search pill (10:77): glass fill, half-pink edge at 1.2. */
+  inputShellPill: {
+    borderRadius: radius.pill,
+    backgroundColor: glass.fill,
+    borderWidth: 1.2,
+    borderColor: 'rgba(236, 72, 153, 0.5)',
   },
   /** A composer grows downward, so its text starts at the top and stays there. */
   inputShellMultiline: { alignItems: 'stretch', paddingVertical: spacing.sm },
@@ -951,27 +967,18 @@ const styles = StyleSheet.create({
   stateChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     alignSelf: 'flex-start',
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
   },
-  /* The designer's pair (2026-07-27): open is a filled lavender pill whose
-     dot and words are the deep accent; closed is hollow with a muted solid
-     dot — grey but present, a door that exists and is shut. */
-  /* The Figma pair (D-045): open is the green live chip, closed stays a
-     hollow grey door that exists and is shut. */
-  stateChipOpen: { backgroundColor: 'rgba(52, 211, 153, 0.15)' },
-  stateChipClosed: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: color.inkMuted },
+  /* The Figma pair (10:89/10:127): no pill, no border — "● Açık" in the live
+     green, "● Kapalı" in the muted line colour, both at 11. */
   stateChipText: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.label,
-    letterSpacing: 1,
+    fontSize: 11,
+    lineHeight: 14,
   },
-  stateChipTextOpen: { color: '#34D399' },
-  stateChipTextClosed: { color: color.inkMuted },
-  stateDot: { width: 7, height: 7, borderRadius: radius.pill },
+  stateChipTextOpen: { fontFamily: fontFamily.bodySemi, color: '#34D399' },
+  stateChipTextClosed: { fontFamily: fontFamily.bodyMedium, color: color.inkMuted },
+  stateDot: { width: 6, height: 6, borderRadius: radius.pill },
   stateDotOpen: { backgroundColor: '#34D399' },
   stateDotClosed: { backgroundColor: color.inkMuted },
   doorPlate: {

@@ -255,7 +255,7 @@ export const tr: Copy = {
     noActiveHotel: 'Henüz aktif otel yok.',
     searchLabel: 'Otel ara',
     searchHint: 'Farklı bir otel seçmek için arama yapabilirsin.',
-    selectedActive: 'Seçildi • Aktif',
+    selectedActive: 'Seçildi · Aktif',
     detailsCta: 'Otel detaylarını gör',
     detailsTitle: 'Otel detayları',
     addressLabel: 'Adres',
@@ -318,7 +318,7 @@ export const tr: Copy = {
     statusBadge: 'Şu an otele yakın',
     explainer:
       'Oteldeyim, uygulama açıkken yapılan tek seferlik bir konum kontrolüyle açılır. Yalnız otelde olduğunu doğrular — tam konumun asla gösterilmez ve saklanmaz.',
-    checkButton: 'Yakınlığımı kontrol et',
+    checkButton: 'Otel yakınlığını kontrol et',
     realCheckIntro: 'Mevcut konumun tek seferlik, ön planda bir kontrol için kullanılır. Arka planda hiçbir şey çalışmaz.',
     realCheckButton: 'Mevcut konumumu kullan',
     inRange: 'İçerdesin. Oteldeyim bu otel için açık.',
@@ -502,7 +502,7 @@ export const tr: Copy = {
     planTitle: 'Tatilini planla',
     subtitle: 'Tatiline başlayacağın oteli seç.',
     upcomingFeatureBody: 'Aynı tarihlerde aynı otelde olacak kişilerle tatilden önce tanış.',
-    hereNowFeatureBody: 'Seçtiğin otelin yakınındaysan şu anda orada bulunan kişilerle tanış.',
+    hereNowFeatureBody: 'Oteldeyken tek seferlik konum kontrolüyle şu an oradakilerle tanış.',
     chooseFirst: 'Önce otel seç',
     premiumTag: 'Premium',
     freeTag: 'Ücretsiz',
@@ -593,4 +593,5 @@ export const trFor: CopyFor = {
   untilTime: (time: string) => `${time}'e kadar`,
   checkinUntil: (venueName: string, time: string) => `${venueName} — ${time}'e kadar`,
   roomHeadcount: (count: number) => `${count} kişi`,
+  upcomingWindow: (range: string) => `Tarihlerin: ${range}. Tarihi çakışan kişiler destede.`,
 };

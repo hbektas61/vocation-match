@@ -1,46 +1,28 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useNavigation, type NavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 
-import { Body, Button, Caption, Card, DoorPlate, EmptyState, Field, Heading, Notice, Screen, StateChip, Title } from '../components/ui';
-import { DestinationCard } from '../components/DestinationCard';
-import { HotelBuilding, SearchScene } from '../components/HotelIllustrations';
+import { Body, Button, Caption, Card, DoorPlate, EmptyState, Field, Heading, Notice, Screen } from '../components/ui';
 import { nowMs } from '../clock';
 import { earliestRoomExpiry } from '../state/roomSchedule';
-import { apiErrorMessage, COPY, COPY_FOR, upperCase } from '../copy';
+import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation, upperCase } from '../copy';
 import { ApiError, getApi, readBackendConfig, type HotelCard, type RoomHeadcount, type RoomStatus, type UpcomingStay } from '../data';
 import { VacationFeatureCard } from '../components/VacationFeatureCard';
-import { CalendarIllustration, PinScene } from '../components/RoomIllustrations';
 import { useAppStore } from '../state/AppStore';
-import { color, font, fontFamily, radius, spacing, glass } from '../theme';
-
-/**
- * The designer's popular destinations. Names are proper nouns (no i18n);
- * the gradients stand in for photographs we hold no rights to, and the
- * reference's hotel counts are omitted because the catalogue fills lazily —
- * any number would be an invention. A card is a pre-typed query.
- */
-const DESTINATIONS: { name: string; query: string; cityKey: string; colors: readonly [string, string] }[] = [
-  { name: 'İstanbul', query: 'İstanbul', cityKey: 'istanbul', colors: ['#FCD34D', '#FB7185'] },
-  { name: 'Antalya', query: 'Antalya', cityKey: 'antalya', colors: ['#F472B6', '#EC4899'] },
-  { name: 'Kapadokya', query: 'Nevşehir', cityKey: 'kapadokya', colors: ['#FB7185', '#EC4899'] },
-];
-
-/** A real photograph of the city through our proxy, or null in fake mode. */
-function destinationSource(cityKey: string) {
-  const config = readBackendConfig();
-  if (!config) return null;
-  return {
-    uri: `${config.url}/functions/v1/hotel-photo?city=${cityKey}&w=600`,
-    headers: { apikey: config.anonKey },
-  };
-}
+import { color, fontFamily, glass, radius, spacing } from '../theme';
 
 const EMPTY_DISC = require('../../assets/dark-hotel-disc.png');
+
+/**
+ * The photo band's stand-in (10:118): plum falling into the night ground,
+ * for the hotel the catalogue holds no photograph of.
+ */
+const BAND_FALLBACK = ['#6B2E63', '#1C172E'] as const;
 
 /** "12 Ağu – 17 Ağu" in the device's language — dates, never documents. */
 function formatStayRange(stay: UpcomingStay): string {
@@ -51,7 +33,7 @@ function formatStayRange(stay: UpcomingStay): string {
 
 const MagnifierIcon = () => (
   <View style={{ marginRight: spacing.sm }}>
-    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color.inkMuted} strokeWidth={2.2} strokeLinecap="round">
+    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={color.inkMuted} strokeWidth={2.2} strokeLinecap="round">
       <Circle cx={11} cy={11} r={7} />
       <Path d="M21 21l-4.5-4.5" />
     </Svg>
@@ -59,29 +41,22 @@ const MagnifierIcon = () => (
 );
 
 const InfoIcon = () => (
-  <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round">
+  <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2.2} strokeLinecap="round">
     <Circle cx={12} cy={12} r={9} />
     <Path d="M12 16v-4M12 8h.01" />
   </Svg>
 );
 
 const CheckIcon = () => (
-  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+  <Svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
     <Path d="M4 12.5l5.5 5.5L20 6.5" />
   </Svg>
 );
 
 const PinSmallIcon = () => (
-  <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+  <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <Path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
     <Circle cx={12} cy={10} r={3} />
-  </Svg>
-);
-
-const CalendarSmallIcon = () => (
-  <Svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <Rect x={3} y={5} width={18} height={16} rx={3} />
-    <Path d="M8 3v4M16 3v4M3 11h18" />
   </Svg>
 );
 
@@ -129,7 +104,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
   const [switchedNotice, setSwitchedNotice] = useState(false);
   const [activating, setActivating] = useState(false);
   const [activateError, setActivateError] = useState<string | null>(null);
-  /** For the two mini state chips on the active hotel's key card. */
+  /** For the state words on the two feature cards. */
   const [roomStates, setRoomStates] = useState<RoomStatus[] | null>(null);
   /**
    * Thresholded headcounts (D-032). A null entry renders as nothing — no
@@ -262,7 +237,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       const active = await api.getActiveHotel();
       dispatch({ type: 'HOTELS_LOADED', hotels: mergeHotel(state.hotels, hotel) });
       dispatch({ type: 'HOTEL_ACTIVATED', activeHotel: active ?? { hotelId: hotel.id, activatedAt: nowMs() } });
-      // The key card's mini door-states have to describe the hotel just
+      // The feature cards' state words have to describe the hotel just
       // activated, not the one from screen-mount.
       api
         .getRooms()
@@ -303,36 +278,84 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
     activate(hotel);
   };
 
+  const upcomingStatus = roomStates?.find((r) => r.room === 'UPCOMING') ?? null;
+  const upcomingOpen = upcomingStatus?.eligible === true;
+  const hereNowStatus = roomStates?.find((r) => r.room === 'HERE_NOW') ?? null;
+  const hereNowOpen = hereNowStatus?.eligible === true;
+
+  // The live card's one line (10:128): the declared window and what it opens.
+  const upcomingBody = upcomingOpen
+    ? stay
+      ? COPY_FOR.upcomingWindow(formatStayRange(stay))
+      : roomStatusExplanation('UPCOMING', upcomingStatus as RoomStatus)
+    : COPY.vacation.upcomingFeatureBody;
+  // The server's reason a room is shut stays on the card (D-002/D-007): the
+  // chip says closed, this says why, and the server is the one saying it.
+  const upcomingNote =
+    upcomingStatus && !upcomingOpen ? roomStatusExplanation('UPCOMING', upcomingStatus) : undefined;
+  const hereNowNote = hereNowStatus ? roomStatusExplanation('HERE_NOW', hereNowStatus) : undefined;
+
+  const countFor = (room: RoomStatus['room']) => {
+    const entry = roomCounts?.find((candidate) => candidate.room === room);
+    if (entry?.headcount == null) return null;
+    return <Caption testID={`room-count-${room}`}>{COPY_FOR.roomHeadcount(entry.headcount)}</Caption>;
+  };
+
   return (
     // As a tab there is no header over this screen, so it takes the top inset
     // itself; as the choose-a-hotel gate it sits under a native modal header,
     // which already has. `onActivated` is exactly the difference between the two.
     <Screen safeTop={!onActivated} testID="screen-hotel">
-      <Title>{onActivated ? COPY.hotel.title : COPY.tabs.vacation}</Title>
+      <View style={styles.headerRow}>
+        <Text accessibilityRole="header" style={styles.headerTitle}>
+          {onActivated ? COPY.hotel.title : COPY.tabs.vacation}
+        </Text>
+        {onActivated ? null : (
+          // The Figma header's ring (10:74): the way to your own profile,
+          // drawn as the empty frame a photo would fill.
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={COPY.tabs.settings}
+            onPress={() => tabNavigation.navigate('Settings')}
+            style={({ pressed }) => [styles.profileRing, pressed && styles.resultPressed]}
+            testID="hotel-profile-ring"
+          />
+        )}
+      </View>
       {!onActivated && !activeHotel && !searchable(query) ? (
-        <Body>{COPY.vacation.subtitle}</Body>
+        <Text style={styles.subtitle}>{COPY.vacation.subtitle}</Text>
       ) : null}
-      {/* The reference puts the search first: the screen opens ready to be
-          asked. The ODbL line stays beside it — a licence term, not a
-          caption. */}
+      {/* The label is printed only where the design prints it (10:76): over
+          the search on the not-yet-chosen screen. The field keeps the name
+          for a screen reader either way. */}
+      {!activeHotel && !searchable(query) && !loadingActive ? (
+        <Text style={styles.searchLabel}>{upperCase(COPY.hotel.searchLabel)}</Text>
+      ) : null}
       <Field
         label={COPY.hotel.searchLabel}
+        hideLabel
+        pill
         value={query}
         onChangeText={changeQuery}
         placeholder={COPY.hotel.searchPlaceholder}
         prefix={<MagnifierIcon />}
+        style={styles.searchInput}
         testID="hotel-search"
       />
       <Caption>{COPY.hotel.attribution}</Caption>
       {searchable(query) ? null : loadingActive ? (
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="hotel-loading" />
       ) : activeHotel ? (
-        /* The designer's active card (2026-07-27, "resim şart"): a real
-           photograph when the catalogue has one — Commons, credited — and
-           the lavender band when it honestly does not. Under it: the name,
-           the place, the selected pill, the two doors as tiles, the
-           one-hotel line. */
-        <View style={styles.hotelCard} testID="active-hotel-card">
+        /* The Figma active card (10:117): the photo band, the name, one line
+           of place and dates, and the selected pill. The whole card is the
+           way to the hotel's details. */
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${activeHotel.name}. ${COPY.hotel.detailsCta}`}
+          onPress={() => stackNavigation.navigate('HotelDetails', { hotelId: activeHotel.id })}
+          style={({ pressed }) => [styles.hotelCard, pressed && styles.resultPressed]}
+          testID="active-hotel-card"
+        >
           <View>
             {activeHotel.photoUrl ? (
               <Image
@@ -343,14 +366,8 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
                 testID="active-hotel-photo"
               />
             ) : (
-              <View style={styles.hotelCardBand} />
+              <LinearGradient colors={[...BAND_FALLBACK]} style={styles.hotelCardBand} />
             )}
-            <View style={styles.activeBadge}>
-              <View style={styles.activeBadgeDot}>
-                <CheckIcon />
-              </View>
-              <Text style={styles.activeBadgeText}>{upperCase(COPY.hotel.activePlate)}</Text>
-            </View>
             {activeHotel.photoUrl && activeHotel.photoAttribution ? (
               <Text style={styles.photoCredit} numberOfLines={1}>
                 {activeHotel.photoAttribution}
@@ -358,80 +375,24 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
             ) : null}
           </View>
           <View style={styles.hotelCardBody}>
-            <View style={styles.activeHeadRow}>
-              <View style={styles.activeHeadText}>
-                <Heading>{activeHotel.name}</Heading>
-                <View style={styles.placeRow}>
-                  <PinSmallIcon />
-                  <Caption>{`${activeHotel.city}, ${activeHotel.country}`}</Caption>
-                </View>
-                <View style={styles.selectedPill}>
-                  <View style={styles.selectedPillDot}>
-                    <CheckIcon />
-                  </View>
-                  <Text style={styles.selectedPillText}>{COPY.hotel.selectedActive}</Text>
-                </View>
-              </View>
-              <View style={styles.activeArtCircle}>
-                <HotelBuilding size={54} />
-              </View>
+            <Text style={styles.hotelName}>{activeHotel.name}</Text>
+            <View style={styles.placeRow}>
+              <PinSmallIcon />
+              <Text style={styles.metaText} testID="active-hotel-dates">
+                {`${activeHotel.city}, ${activeHotel.country}`}
+                {stay ? `   ·   ${formatStayRange(stay)}` : ''}
+              </Text>
             </View>
-            {roomStates ? (
-              <View style={styles.roomTiles}>
-                {roomStates.map((status) => {
-                  const count = roomCounts?.find((entry) => entry.room === status.room);
-                  return (
-                    <View key={status.room} style={styles.roomTile}>
-                      {status.room === 'UPCOMING' ? <CalendarSmallIcon /> : <PinSmallIcon />}
-                      <View style={styles.roomTileText}>
-                        <Caption>
-                          {status.room === 'UPCOMING'
-                            ? COPY.rooms.upcomingPlate
-                            : COPY.rooms.hereNowPlate}
-                        </Caption>
-                        <StateChip
-                          open={status.eligible}
-                          label={status.eligible ? COPY.rooms.openChip : COPY.rooms.closedChip}
-                        />
-                        {count?.headcount != null ? (
-                          <Caption testID={`room-count-${status.room}`}>
-                            {COPY_FOR.roomHeadcount(count.headcount)}
-                          </Caption>
-                        ) : null}
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            ) : null}
-            {stay ? (
-              <Caption testID="active-hotel-dates">{formatStayRange(stay)}</Caption>
-            ) : null}
-            <Caption>{COPY.trust.oneHotel}</Caption>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => stackNavigation.navigate('HotelDetails', { hotelId: activeHotel.id })}
-              style={({ pressed }) => [styles.detailsRow, pressed && styles.resultPressed]}
-              testID="hotel-details"
-            >
-              <Text style={styles.detailsLabel}>{COPY.hotel.detailsCta}</Text>
-              <Text style={styles.detailsChevron}>›</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => stackNavigation.navigate('ChooseHotel')}
-              style={({ pressed }) => [styles.detailsRow, pressed && styles.resultPressed]}
-              testID="hotel-change"
-            >
-              <Text style={styles.detailsLabel}>{COPY.vacation.changeHotel}</Text>
-              <Text style={styles.detailsChevron}>›</Text>
-            </Pressable>
+            <View style={styles.selectedPill}>
+              <CheckIcon />
+              <Text style={styles.selectedPillText}>{COPY.hotel.selectedActive}</Text>
+            </View>
           </View>
-        </View>
+        </Pressable>
       ) : (
-        /* The designer's nothing-chosen card (2026-07-27): the little hotel
-           in its pale disc, the invitation beside it, and the requirement
-           worn as a quiet badge rather than an error. */
+        /* The Figma nothing-chosen card (10:79): the little hotel in its dark
+           disc, the invitation beside it, and the requirement worn as a quiet
+           badge rather than an error. */
         <View style={styles.emptyCard} testID="hotel-empty-state">
           <Image
             source={EMPTY_DISC}
@@ -440,8 +401,8 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
             accessibilityIgnoresInvertColors
           />
           <View style={styles.emptyText}>
-            <Heading>{COPY.hotel.emptyTitle}</Heading>
-            <Body>{COPY.hotel.emptyBody}</Body>
+            <Text style={styles.emptyTitle}>{COPY.hotel.emptyTitle}</Text>
+            <Text style={styles.emptyBody}>{COPY.hotel.emptyBody}</Text>
             <View style={styles.emptyBadge}>
               <InfoIcon />
               <Text style={styles.emptyBadgeText}>{COPY.hotel.emptyBadge}</Text>
@@ -474,48 +435,52 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       ) : null}
 
       {activeHotel && !searchable(query) && !onActivated ? (
-        /* D-040: the two hotel features live right under the hotel they
-           belong to. The trip tab is choose → decide, one screen. */
+        /* D-040 in the Figma card shape (10:124, 10:131): the two features
+           right under the hotel they belong to. When Upcoming is live its
+           button becomes the deck, and updating the dates steps back to a
+           quiet second action. */
         <>
           <VacationFeatureCard
             room="UPCOMING"
-            status={roomStates?.find((r) => r.room === 'UPCOMING') ?? null}
+            status={upcomingStatus}
             lead={COPY.rooms.upcomingLead}
-            body={COPY.vacation.upcomingFeatureBody}
-            illustration={<CalendarIllustration />}
-            icon={<CalendarSmallIcon />}
-            buttonLabel={
-              roomStates?.find((r) => r.room === 'UPCOMING')?.eligible
-                ? COPY.upcoming.updateButton
-                : COPY.upcoming.saveButton
+            body={upcomingBody}
+            note={upcomingNote}
+            counts={countFor('UPCOMING')}
+            buttonLabel={upcomingOpen ? COPY.vacation.discoverCta : COPY.upcoming.saveButton}
+            onOpen={
+              upcomingOpen
+                ? () => tabNavigation.navigate('Discovery', { source: 'UPCOMING' })
+                : () => stackNavigation.navigate('Upcoming')
             }
-            onOpen={() => stackNavigation.navigate('Upcoming')}
             extra={
-              roomStates?.find((r) => r.room === 'UPCOMING')?.eligible ? (
+              upcomingOpen ? (
                 <Button
-                  label={COPY.vacation.discoverCta}
-                  onPress={() => tabNavigation.navigate('Discovery', { source: 'UPCOMING' })}
-                  testID="vacation-discover-upcoming"
+                  label={COPY.upcoming.updateButton}
+                  variant="secondary"
+                  onPress={() => stackNavigation.navigate('Upcoming')}
+                  testID="open-upcoming"
                 />
               ) : null
             }
             testID="room-upcoming"
-            buttonTestID="open-upcoming"
+            buttonTestID={upcomingOpen ? 'vacation-discover-upcoming' : 'open-upcoming'}
           />
           <VacationFeatureCard
             room="HERE_NOW"
-            status={roomStates?.find((r) => r.room === 'HERE_NOW') ?? null}
+            status={hereNowStatus}
             lead={COPY.rooms.hereNowLead}
             body={COPY.vacation.hereNowFeatureBody}
-            illustration={<PinScene />}
-            icon={<PinSmallIcon />}
+            note={hereNowNote}
             tag={state.profile?.isPremium ? undefined : COPY.vacation.premiumTag}
+            counts={countFor('HERE_NOW')}
             buttonLabel={COPY.hereNow.checkButton}
             onOpen={() => stackNavigation.navigate('HereNow')}
             extra={
-              roomStates?.find((r) => r.room === 'HERE_NOW')?.eligible ? (
+              hereNowOpen ? (
                 <Button
                   label={COPY.vacation.discoverCta}
+                  variant="secondary"
                   onPress={() => tabNavigation.navigate('Discovery', { source: 'HERE_NOW' })}
                   testID="vacation-discover-here-now"
                 />
@@ -542,58 +507,21 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           collapsing any two of them makes the screen look broken in the case
           it collapsed. */}
       {searchError ? null : !searchable(query) ? (
-        /* Idle is not empty (designer, 2026-07-27): quick queries, the
-           popular destinations, and only then the type-to-search drawing. */
+        /* Idle on the not-yet-chosen screen is one card (10:86): the feature
+           that exists before any hotel does, honestly shut behind the one
+           thing it needs. */
         <View style={styles.idle} testID="hotel-search-prompt">
           {activeHotel || onActivated ? null : (
-            <>
-          {/* D-040: the two features are visible before a hotel exists, each
-              honestly locked behind the one thing they need. */}
-          <VacationFeatureCard
-            room="UPCOMING"
-            status={null}
-            lead={COPY.rooms.upcomingLead}
-            body={COPY.vacation.upcomingFeatureBody}
-            illustration={<CalendarIllustration />}
-            icon={<CalendarSmallIcon />}
-            buttonLabel={COPY.vacation.chooseFirst}
-            onOpen={() => stackNavigation.navigate('ChooseHotel')}
-            testID="room-upcoming-locked"
-            buttonTestID="vacation-choose-for-upcoming"
-          />
-          <VacationFeatureCard
-            room="HERE_NOW"
-            status={null}
-            lead={COPY.rooms.hereNowLead}
-            body={COPY.vacation.hereNowFeatureBody}
-            illustration={<PinScene />}
-            icon={<PinSmallIcon />}
-            tag={COPY.vacation.premiumTag}
-            buttonLabel={COPY.vacation.chooseFirst}
-            onOpen={() => stackNavigation.navigate('ChooseHotel')}
-            testID="room-here-now-locked"
-            buttonTestID="vacation-choose-for-here-now"
-          />
-                      </>
-          )}
-          <Text style={styles.sectionTitle}>{COPY.hotel.popularTitle}</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.destinationRow}>
-            {DESTINATIONS.map((destination) => (
-              <DestinationCard
-                key={destination.name}
-                name={destination.name}
-                colors={destination.colors}
-                source={destinationSource(destination.cityKey)}
-                onPress={() => changeQuery(destination.query)}
-                testID={`destination-${destination.name}`}
-              />
-            ))}
-          </ScrollView>
-          {activeHotel ? null : (
-            <View style={styles.promptScene}>
-              <SearchScene />
-              <Body>{COPY.hotel.searchPrompt}</Body>
-            </View>
+            <VacationFeatureCard
+              room="UPCOMING"
+              status={null}
+              lead={COPY.rooms.upcomingLead}
+              body={COPY.vacation.upcomingFeatureBody}
+              buttonLabel={COPY.vacation.chooseFirst}
+              onOpen={() => stackNavigation.navigate('ChooseHotel')}
+              testID="room-upcoming-locked"
+              buttonTestID="vacation-choose-for-upcoming"
+            />
           )}
         </View>
       ) : results === null ? (
@@ -654,12 +582,44 @@ function mergeHotel(hotels: HotelCard[], hotel: HotelCard): HotelCard[] {
 }
 
 const styles = StyleSheet.create({
-  /** The designer's card shell: hairline edge, soft lift, band on top. */
+  /** The Figma header row (10:72): the tab's name, and the ring to yourself. */
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerTitle: {
+    fontFamily: fontFamily.display,
+    fontSize: 34,
+    lineHeight: 34 * 1.15,
+    color: color.ink,
+  },
+  profileRing: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 1.4,
+    borderColor: 'rgba(244, 114, 182, 0.5)',
+  },
+  subtitle: {
+    fontFamily: fontFamily.body,
+    fontSize: 14,
+    lineHeight: 14 * 1.45,
+    color: color.inkMuted,
+  },
+  searchLabel: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 11,
+    color: color.inkMuted,
+  },
+  /** The Figma placeholder size (10:78). */
+  searchInput: { fontSize: 14 },
+  /** The Figma card shell (10:117): glass, the light hairline, 22 corners. */
   hotelCard: {
     backgroundColor: glass.fill,
     borderWidth: 1,
     borderColor: glass.edge,
-    borderRadius: radius.lg,
+    borderRadius: 22,
     overflow: 'hidden',
     shadowColor: '#000000',
     shadowOpacity: 0.06,
@@ -667,34 +627,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 2,
   },
-  hotelCardBand: { height: 96, backgroundColor: color.accent },
-  hotelPhoto: { width: '100%', height: 190, backgroundColor: color.veil },
-  activeBadge: {
-    position: 'absolute',
-    top: spacing.sm + 4,
-    left: spacing.sm + 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: color.accentDeep,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm + 4,
-    paddingVertical: 6,
-  },
-  activeBadgeDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activeBadgeText: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.label,
-    letterSpacing: 1,
-    color: '#FFFFFF',
-  },
+  hotelCardBand: { height: 140 },
+  hotelPhoto: { width: '100%', height: 140, backgroundColor: color.veil },
   /** The licence's half of the bargain, on the photo it pays for. */
   photoCredit: {
     position: 'absolute',
@@ -707,144 +641,82 @@ const styles = StyleSheet.create({
     textShadowRadius: 3,
     maxWidth: '80%',
   },
-  activeHeadRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
-  activeHeadText: { flex: 1, gap: spacing.xs },
+  hotelCardBody: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 14,
+    gap: 6,
+  },
+  hotelName: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 18,
+    color: color.ink,
+  },
   placeRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  metaText: {
+    fontFamily: fontFamily.body,
+    fontSize: 12,
+    color: color.inkMuted,
+  },
   selectedPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     alignSelf: 'flex-start',
     backgroundColor: color.veil,
     borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm + 4,
+    paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  selectedPillDot: {
-    width: 15,
-    height: 15,
-    borderRadius: 8,
-    backgroundColor: color.accentDeep,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   selectedPillText: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.caption,
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: 11,
     color: color.accentDeep,
   },
-  activeArtCircle: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: 'rgba(236, 72, 153, 0.06)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  roomTiles: { flexDirection: 'row', gap: spacing.sm },
-  roomTile: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    alignItems: 'flex-start',
-    borderRadius: radius.sm,
-    padding: spacing.sm + 2,
-    backgroundColor: 'rgba(236, 72, 153, 0.03)',
-  },
-  roomTileText: { flex: 1, gap: 4 },
-  detailsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(236, 72, 153, 0.05)',
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-  },
-  detailsLabel: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: font.body,
-    color: color.ink,
-  },
-  detailsChevron: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.heading,
-    color: color.inkMuted,
-  },
-  hotelCardBody: { padding: spacing.lg, gap: spacing.md },
-  hotelCardTitle: { gap: spacing.xs },
-  resultBand: { height: 20, backgroundColor: color.accent },
-  resultPhoto: { width: '100%', height: 110, backgroundColor: color.veil },
-  resultBody: { padding: spacing.md, gap: spacing.xs },
-  roomStates: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  roomState: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  /** The Figma empty card (10:79): 20 corners, 16 inside, 14 between. */
   emptyCard: {
     flexDirection: 'row',
-    gap: spacing.md,
+    gap: 14,
     alignItems: 'center',
     backgroundColor: glass.fill,
     borderWidth: 1,
     borderColor: glass.edge,
-    borderRadius: radius.lg,
-    padding: spacing.md,
+    borderRadius: 20,
+    padding: 16,
   },
-  emptyDisc: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    backgroundColor: 'rgba(236, 72, 153, 0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  /** The 74 disc (10:80), through the asset's own 96:92 shape. */
+  emptyDiscArt: { width: 74, height: 71 },
+  emptyText: { flex: 1, gap: 6 },
+  emptyTitle: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 16,
+    color: color.ink,
   },
-  emptyDiscArt: { width: 96, height: 92 },
-  emptyText: { flex: 1, gap: spacing.xs },
+  emptyBody: {
+    fontFamily: fontFamily.body,
+    fontSize: 12,
+    lineHeight: 12 * 1.45,
+    color: color.inkMuted,
+  },
   emptyBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     alignSelf: 'flex-start',
     backgroundColor: color.veil,
     borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm + 4,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    marginTop: spacing.xs,
   },
   emptyBadgeText: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: font.caption,
+    fontSize: 11,
     color: color.accentDeep,
   },
-  idle: { gap: spacing.sm },
-  sectionTitle: {
-    fontFamily: fontFamily.display,
-    fontSize: font.heading,
-    color: color.ink,
-    marginTop: spacing.sm,
-  },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  quickChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderColor: glass.edge,
-    backgroundColor: glass.fill,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-  },
-  quickChipLabel: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: font.body,
-    color: color.ink,
-  },
-  destinationRow: { gap: spacing.sm, paddingVertical: spacing.xs },
-  promptScene: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
+  idle: { gap: 14 },
+  resultBand: { height: 20, backgroundColor: color.accent },
+  resultPhoto: { width: '100%', height: 110, backgroundColor: color.veil },
+  resultBody: { padding: spacing.md, gap: spacing.xs },
+  hotelCardTitle: { gap: spacing.xs },
   resultPressed: { opacity: 0.8 },
 });
