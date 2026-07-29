@@ -2622,3 +2622,17 @@ gradient at 15-on-14, its two companions outlined 1.4 half-pink at
 and the sheet's shorter sentence (cardBody updated in both languages).
 The doodle and the safety check row left with the design. tsc, eslint,
 419 jest green.
+
+## 2026-07-29 — the welcome, to the Figma sheet
+
+Node 4:2 ("Karşılama") applied to WelcomeStep. The hero now bleeds to
+the very top at the sheet's 380, darkening into #12162E at its foot;
+the language pills float over it below the status inset and became the
+sheet's pair — glass at rest, the warm gradient when chosen (shared
+with Settings). The wordmark is one pink at 20, the headline 26 with
+the sheet's red heart, the body 14; the trust card went to glass
+18/16-14 with the 44 shield disc and lost the trailing lock chip; and
+the action became the sheet's outsized gradient pill — a hundred tall,
+16 ink label, the pink glow under it. Trust sentence untouched: the
+sheet's one-letter variant would reword an audited claim. tsc, eslint,
+419 jest green.
