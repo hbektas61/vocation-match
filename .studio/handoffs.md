@@ -2866,3 +2866,24 @@ empty — a city-wide run also blew a 10-minute budget when an `order by` forced
 a full scan, so the ordering is gone and `--min-confidence` does the quality
 filtering. Writes now go eight at a time, since the write boundary is one RPC
 per place.
+
+## 2026-07-30 — the first real ingest, and what it taught the script
+
+Ran the Istanbul ingest for real (28.85–29.20, 40.95–41.13, 36 tiles). Two
+things surfaced that only a real run could:
+
+  · Legacy API keys are disabled on this project (since 2026-07-25), so the
+    legacy `service_role` JWT gets a clean 401. The write path needs the new
+    `sb_secret_…` key, which `supabase projects api-keys --reveal` returns.
+    Worth knowing for any future operator script.
+  · Reading a city from Overture takes ~15 minutes, and the first run spent
+    all of it before failing every write on that 401. So the script now takes
+    `--cache <file>`: the region is written once and re-read from disk, and a
+    failed write never pays for the read twice.
+
+Operator note for a fresh region:
+
+    SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=sb_secret_… \
+    python3 scripts/overture-ingest.py \
+      --bbox 28.85,40.95,29.20,41.13 --grid 6 --limit 900 \
+      --cache /tmp/region.json

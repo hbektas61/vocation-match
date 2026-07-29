@@ -209,9 +209,24 @@ def main() -> None:
         help="Overture's own confidence floor; below it a row is a guess.",
     )
     parser.add_argument("--dry-run", action="store_true", help="report, write nothing")
+    parser.add_argument(
+        "--cache",
+        help=(
+            "JSON file to read the region from, or write it to. Reading Overture "
+            "for a city takes minutes; a failed write should not pay for it twice."
+        ),
+    )
     args = parser.parse_args()
 
     west, south, east, north = (float(part) for part in args.bbox.split(","))
+
+    if args.cache and os.path.exists(args.cache):
+        with open(args.cache) as handle:
+            places = json.load(handle)
+        print(f"cache: {len(places)} places from {args.cache}")
+        finish(places, args)
+        return
+
     con = connect()
     places = []
     seen_ids = set()
@@ -221,6 +236,16 @@ def main() -> None:
         seen_ids.update(place["id"] for place in fresh)
         places.extend(fresh)
         print(f"  tile {index}/{args.grid ** 2}: {len(found)} read, {len(fresh)} new", flush=True)
+
+    if args.cache:
+        with open(args.cache, "w") as handle:
+            json.dump(places, handle)
+        print(f"cache: wrote {len(places)} places to {args.cache}")
+
+    finish(places, args)
+
+
+def finish(places: list[dict], args) -> None:
 
     kept: list[tuple[dict, str]] = []
     skipped_kind = 0
