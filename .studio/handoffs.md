@@ -2683,3 +2683,15 @@ pill — glass with the light hairline, the words and the 40 warm disc
 together, "Mesaj yaz…" at 14. A lone "Bugün" separator no longer
 prints; the label earns its line when the thread spans days. tsc,
 eslint, 419 jest green.
+
+## 2026-07-29 — the inbox's filled state, to the Figma sheet
+
+Node 12:166 applied to InboxScreen and verified in the running web app
+with real matches. The head became the sheet's 34 with the ring to
+Settings; the subtitle, the search field, the "Yeni eşleşmeler" and
+"Sohbetler" headings, and the heart badge all left with the design.
+The new-match strip wears the warm gradient collar (4 around the 56
+face) with the first name at 12 under it; conversation rows became the
+sheet's 18-corner glass cards — the 46 face, 14 name over the 12
+preview, the clock at 11 on the right. Closed conversations keep their
+dimmed treatment and label. tsc, eslint, 419 jest green.

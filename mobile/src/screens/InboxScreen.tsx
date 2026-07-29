@@ -2,18 +2,8 @@ import { useFocusEffect, useNavigation, type NavigationProp } from '@react-navig
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 
-import {
-  Avatar,
-  Body,
-  Caption,
-  Field,
-  Heading,
-  Notice,
-  Screen,
-  Title,
-} from '../components/ui';
+import { Avatar, Notice, Screen } from '../components/ui';
 import { BigActionButton } from '../components/BigActionButton';
 import { LinearGradient } from 'expo-linear-gradient';
 import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
@@ -25,39 +15,6 @@ import { color, font, fontFamily, radius, spacing, glass } from '../theme';
 
 /** The owner's own 3D lobby render (2026-07-28), bundled — not a redrawing. */
 const INBOX_HERO = require('../../assets/dark-inbox-chat.png');
-
-const MagnifierIcon = () => (
-  <View style={{ marginRight: spacing.sm }}>
-    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color.inkMuted} strokeWidth={2.2} strokeLinecap="round">
-      <Path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.5-4.5" />
-    </Svg>
-  </View>
-);
-
-const HeartBadge = () => (
-  <View style={heartBadgeStyle}>
-    <Svg width={13} height={13} viewBox="0 0 24 24" fill={color.accentDeep}>
-      <Path d="M12 8c0-5-8-5-8 0 0 4.5 5.2 7.6 8 9.6 2.8-2 8-5.1 8-9.6 0-5-8-5-8 0z" />
-    </Svg>
-  </View>
-);
-
-const heartBadgeStyle = {
-  position: 'absolute' as const,
-  bottom: -4,
-  alignSelf: 'center' as const,
-  width: 22,
-  height: 22,
-  borderRadius: 11,
-  backgroundColor: '#FFFFFF',
-  alignItems: 'center' as const,
-  justifyContent: 'center' as const,
-  shadowColor: '#000000',
-  shadowOpacity: 0.15,
-  shadowRadius: 4,
-  shadowOffset: { width: 0, height: 2 },
-  elevation: 3,
-};
 
 /** Everything a sighted person sees in one row, in the order they see it. */
 function inboxRowLabel(match: MatchSummary): string {
@@ -76,8 +33,6 @@ export function InboxScreen() {
   const tabNavigation = useNavigation<NavigationProp<TabParamList>>();
   const [matches, setMatches] = useState<MatchSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  /** Client-side only: the list is small, the server never sees the query. */
-  const [query, setQuery] = useState('');
   const photoPaths = useMemo(() => (matches ?? []).map((m) => m.photoPath), [matches]);
   const photoUrls = usePhotoUrls(photoPaths);
 
@@ -107,20 +62,22 @@ export function InboxScreen() {
   // The convention borrowed from the apps that earned it: a face with no
   // conversation yet is an invitation, and it lives in its own strip; a
   // conversation is a row. The split is real information, not decoration.
-  const q = query.trim().toLocaleLowerCase('tr');
-  const visible = (matches ?? []).filter(
-    (m) =>
-      q === '' ||
-      m.displayName.toLocaleLowerCase('tr').includes(q) ||
-      (m.lastMessageBody ?? '').toLocaleLowerCase('tr').includes(q),
-  );
-  const fresh = visible.filter((m) => m.lastMessageAt === null && m.unmatchedAt === null);
-  const talking = visible.filter((m) => m.lastMessageAt !== null || m.unmatchedAt !== null);
+  const fresh = (matches ?? []).filter((m) => m.lastMessageAt === null && m.unmatchedAt === null);
+  const talking = (matches ?? []).filter((m) => m.lastMessageAt !== null || m.unmatchedAt !== null);
 
   return (
     <Screen safeTop testID="screen-inbox">
-      <Title>{COPY.inbox.title}</Title>
-      <Body>{COPY.inbox.subtitle}</Body>
+      {/* The sheet's head (12:167): the tab's name and the ring to yourself. */}
+      <View style={styles.headRow}>
+        <Text accessibilityRole="header" style={styles.headTitle}>{COPY.inbox.title}</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={COPY.tabs.settings}
+          onPress={() => tabNavigation.navigate('Settings')}
+          style={({ pressed }) => [styles.profileRing, pressed && styles.pressedDim]}
+          testID="inbox-profile-ring"
+        />
+      </View>
       {error ? (
         <Notice message={error} tone="error" testID="inbox-error" />
       ) : matches === null ? (
@@ -160,65 +117,40 @@ export function InboxScreen() {
         </View>
       ) : (
         <>
-          <Field
-            label={COPY.inbox.searchLabel}
-            hideLabel
-            value={query}
-            onChangeText={setQuery}
-            placeholder={COPY.inbox.searchPlaceholder}
-            prefix={<MagnifierIcon />}
-            autoCapitalize="none"
-            testID="inbox-search"
-          />
           {fresh.length > 0 ? (
-            <View style={styles.freshBlock}>
-              <Text accessibilityRole="header" style={styles.sectionTitle}>
-                {COPY.inbox.newMatches}
-              </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.freshRow}>
-                  {fresh.map((match) => (
-                    <Pressable
-                      key={match.matchId}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${match.displayName}. ${COPY.inbox.sayHello}`}
-                      onPress={() => navigation.navigate('Chat', { matchId: match.matchId })}
-                      style={styles.freshItem}
-                      testID={`inbox-${match.matchId}`}
+            /* The sheet's new-match strip (12:170): the warm ring around the
+               face, the first name under it — no heading over it. */
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.freshRow}>
+                {fresh.map((match) => (
+                  <Pressable
+                    key={match.matchId}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${match.displayName}. ${COPY.inbox.sayHello}`}
+                    onPress={() => navigation.navigate('Chat', { matchId: match.matchId })}
+                    style={styles.freshItem}
+                    testID={`inbox-${match.matchId}`}
+                  >
+                    <LinearGradient
+                      colors={['#FBBF24', '#FB7185', '#EC4899']}
+                      start={{ x: 0, y: 0.5 }}
+                      end={{ x: 1, y: 0.5 }}
+                      style={styles.freshRing}
                     >
-                      {/* The designer's ring: a gradient collar with the heart
-                          badge resting on its foot. */}
-                      <View>
-                        <LinearGradient
-                          colors={['#C9A3E8', '#0F1B3D']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={styles.freshRing}
-                        >
-                          <View style={styles.freshRingInner}>
-                            <Avatar
-                              url={match.photoPath ? photoUrls[match.photoPath] ?? null : null}
-                              name={match.displayName}
-                              size="md"
-                              testID={`inbox-photo-${match.matchId}`}
-                            />
-                          </View>
-                        </LinearGradient>
-                        <HeartBadge />
-                      </View>
-                      <Caption>{firstName(match.displayName)}</Caption>
-                    </Pressable>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
+                      <Avatar
+                        url={match.photoPath ? photoUrls[match.photoPath] ?? null : null}
+                        name={match.displayName}
+                        size="md"
+                        testID={`inbox-photo-${match.matchId}`}
+                      />
+                    </LinearGradient>
+                    <Text style={styles.freshName}>{firstName(match.displayName)}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </ScrollView>
           ) : null}
 
-          {talking.length > 0 ? (
-            <Text accessibilityRole="header" style={styles.sectionTitle}>
-              {COPY.inbox.chats}
-            </Text>
-          ) : null}
           {talking.map((match) => (
             <Pressable
               key={match.matchId}
@@ -230,34 +162,64 @@ export function InboxScreen() {
               onPress={() => navigation.navigate('Chat', { matchId: match.matchId })}
               testID={`inbox-${match.matchId}`}
             >
+              {/* The sheet's row (12:183): the 46 face, the name over the
+                  last words, the clock on the right. */}
               <View
                 style={[styles.chatCard, match.unmatchedAt !== null && styles.rowClosed]}
               >
-                <Avatar
+                <RowFace
                   url={match.photoPath ? photoUrls[match.photoPath] ?? null : null}
                   name={match.displayName}
                   testID={`inbox-photo-${match.matchId}`}
                 />
                 <View style={styles.rowText}>
-                  <View style={styles.rowTop}>
-                    <Heading>{match.displayName}</Heading>
-                    {match.lastMessageAt !== null ? (
-                      <Caption>{formatWhen(match.lastMessageAt)}</Caption>
-                    ) : null}
-                  </View>
+                  <Text style={styles.rowName} numberOfLines={1}>{match.displayName}</Text>
                   {match.unmatchedAt !== null ? (
-                    <Caption>{COPY.inbox.closedLabel}</Caption>
+                    <Text style={styles.rowPreview}>{COPY.inbox.closedLabel}</Text>
                   ) : null}
-                  <Body numberOfLines={1}>
+                  <Text style={styles.rowPreview} numberOfLines={1}>
                     {match.lastMessageBody ?? COPY.inbox.sayHelloPreview}
-                  </Body>
+                  </Text>
                 </View>
+                {match.lastMessageAt !== null ? (
+                  <Text style={styles.rowWhen}>{formatWhen(match.lastMessageAt)}</Text>
+                ) : null}
               </View>
             </Pressable>
           ))}
         </>
       )}
     </Screen>
+  );
+}
+
+/**
+ * The row's 46 face (12:184) — the shared Avatar is 56, and the sheet is
+ * specific. Falls back to the initial the same way.
+ */
+function RowFace({ url, name, testID }: { url: string | null; name: string; testID?: string }) {
+  const [failed, setFailed] = useState(false);
+  const showImage = url !== null && !failed;
+  return (
+    <View
+      style={styles.rowFace}
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={name}
+      testID={testID}
+    >
+      {showImage ? (
+        <Image
+          source={{ uri: url }}
+          style={styles.rowFaceImage}
+          resizeMode="cover"
+          onError={() => setFailed(true)}
+          accessibilityIgnoresInvertColors
+        />
+      ) : (
+        <Text style={styles.rowFaceInitial}>{name.trim() ? name.trim()[0].toUpperCase() : '?'}</Text>
+      )}
+    </View>
   );
 }
 
@@ -313,58 +275,49 @@ const styles = StyleSheet.create({
     aspectRatio: 398 / 172,
     borderRadius: radius.lg,
   },
-  bellStrip: {
+  /** The sheet's head row (12:167). */
+  headRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm + 2,
-    backgroundColor: 'rgba(236, 72, 153, 0.05)',
-    borderRadius: radius.md,
-    padding: spacing.sm + 4,
-    alignSelf: 'stretch',
+    justifyContent: 'space-between',
   },
-  bellDisc: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: color.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  bellWords: { flex: 1 },
-  sectionTitle: {
+  headTitle: {
     fontFamily: fontFamily.display,
-    fontSize: font.heading,
+    fontSize: 34,
+    lineHeight: 34 * 1.15,
     color: color.ink,
-    marginTop: spacing.xs,
   },
-  freshBlock: { gap: spacing.sm },
-  freshRow: { flexDirection: 'row', gap: spacing.md, paddingVertical: spacing.xs, paddingBottom: spacing.sm },
-  freshItem: { alignItems: 'center', gap: spacing.sm },
-  /** The ring is the "new" signal, and the word under the face repeats it. */
+  profileRing: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 1.4,
+    borderColor: 'rgba(244, 114, 182, 0.5)',
+  },
+  pressedDim: { opacity: 0.8 },
+  /** The new-match strip (12:170): 14 between faces, 6 under each. */
+  freshRow: { flexDirection: 'row', gap: 14 },
+  freshItem: { alignItems: 'center', gap: 6 },
+  /** The warm 64 collar (12:172): 4 of gradient around the 56 face. */
   freshRing: {
-    padding: 3,
-    borderRadius: radius.pill,
+    padding: 4,
+    borderRadius: 32,
   },
-  freshRingInner: {
-    padding: 2,
-    borderRadius: radius.pill,
-    backgroundColor: color.surface,
+  freshName: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: 12,
+    color: color.ink,
   },
+  /** The sheet's conversation row (12:183): glass, 18 corners, 12 inside. */
   chatCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: 12,
     backgroundColor: glass.fill,
     borderWidth: 1,
     borderColor: glass.edge,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
+    borderRadius: 18,
+    padding: 12,
     shadowColor: '#000000',
     shadowOpacity: 0.05,
     shadowRadius: 6,
@@ -374,10 +327,34 @@ const styles = StyleSheet.create({
   /** Readable, dimmed: a closed conversation is history, not a mistake. */
   rowClosed: { opacity: 0.55 },
   rowText: { flex: 1, gap: 2 },
-  rowTop: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
+  rowName: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 14,
+    color: color.ink,
+  },
+  rowPreview: {
+    fontFamily: fontFamily.body,
+    fontSize: 12,
+    color: color.inkMuted,
+  },
+  rowWhen: {
+    fontFamily: fontFamily.body,
+    fontSize: 11,
+    color: color.inkMuted,
+  },
+  rowFace: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: color.veil,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowFaceImage: { width: 46, height: 46 },
+  rowFaceInitial: {
+    fontFamily: fontFamily.display,
+    fontSize: font.heading,
+    color: color.inkMuted,
   },
 });
