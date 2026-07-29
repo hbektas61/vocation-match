@@ -2667,3 +2667,19 @@ explainer keeps self-declared + no-reservation/ID in denial form, and
 the TR assertion now accepts the owner's "belge/kanıt" denial words.
 tsc, eslint, 419 jest green; verified against the sheet in the running
 web app.
+
+## 2026-07-29 — the conversation, to the Figma sheet
+
+Node 13:153 ("Sohbet") applied to ChatScreen and verified in the
+running web app with a real match walked end to end. The header
+collapsed to the sheet's one row — 40 glass squares for back and the
+dots, the 48 avatar, name at 15 over the bond line at 11 ("Tatilden
+önce · Lara Shore Resort") — replacing the old two-circle top row, the
+76 photo block, the room chip and the hairline. Bubbles took the
+sheet's shape: 18 corners, 14/10 inside, 260 max, the clock inside the
+bubble at 10 (mine in dark ink on the warm gradient, theirs muted on
+glass); the mini avatars left. The composer became the sheet's one
+pill — glass with the light hairline, the words and the 40 warm disc
+together, "Mesaj yaz…" at 14. A lone "Bugün" separator no longer
+prints; the label earns its line when the thread spans days. tsc,
+eslint, 419 jest green.

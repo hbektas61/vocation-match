@@ -10,7 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 import { nowMs } from '../clock';
 import { Body, Button, Notice, Screen } from '../components/ui';
@@ -21,31 +21,23 @@ import { color, font, fontFamily, radius, spacing, glass, gradient } from '../th
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
 
-const DEEP = '#0F1B3D';
-
 const BackIcon = () => (
-  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color.ink} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color.ink} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
     <Path d="M15 18l-6-6 6-6" />
   </Svg>
 );
 
 const DotsIcon = () => (
-  <Svg width={22} height={22} viewBox="0 0 24 24" fill={color.ink}>
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill={color.ink}>
     <Circle cx={5} cy={12} r={2} />
     <Circle cx={12} cy={12} r={2} />
     <Circle cx={19} cy={12} r={2} />
   </Svg>
 );
 
-const BuildingIcon = () => (
-  <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={color.inkMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <Rect x={5} y={3} width={14} height={18} rx={2} />
-    <Path d="M9 8h2m2 0h2M9 12h2m2 0h2M10 21v-4h4v4" />
-  </Svg>
-);
-
+/** On the warm disc, so it wears the dark ink the gradient can carry. */
 const SendIcon = () => (
-  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#1A1A2E" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <Path d="M22 2L11 13" />
     <Path d="M22 2l-7 20-4-9-9-4z" />
   </Svg>
@@ -208,25 +200,37 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
 
   return (
     <Screen safeTop testID="screen-chat" scroll={false}>
-      {/* The reference's own header: two floating circles, then the person
-          and the bond — who this is, and the room·hotel you know each other
-          from. It does not scroll away with the messages. */}
-      <View style={styles.topRow}>
+      {/* The sheet's one header row (13:154): the way back, the person, the
+          bond in one small line, and the dots. It does not scroll away. */}
+      <View style={styles.headRow}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={COPY.common.back}
           onPress={() => navigation.goBack()}
-          style={({ pressed }) => [styles.roundButton, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.squareButton, pressed && styles.pressed]}
           testID="chat-back"
         >
           <BackIcon />
         </Pressable>
+        {theirPhoto ? (
+          <Image source={{ uri: theirPhoto }} style={styles.headAvatar} resizeMode="cover" accessibilityIgnoresInvertColors />
+        ) : (
+          <View style={[styles.headAvatar, styles.headAvatarEmpty]}>
+            <Text style={styles.headInitial}>{upperCase(match.displayName.slice(0, 1))}</Text>
+          </View>
+        )}
+        <View style={styles.headWords}>
+          <Text style={styles.headName} numberOfLines={1}>{`${match.displayName}, ${match.age}`}</Text>
+          <Text style={styles.headBond} numberOfLines={1} testID="chat-room">
+            {hotel ? `${roomPlate(match.room)} · ${hotel.name}` : roomPlate(match.room)}
+          </Text>
+        </View>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={COPY.chat.moreActions}
           accessibilityState={{ expanded: menuOpen }}
           onPress={() => setMenuOpen((open) => !open)}
-          style={({ pressed }) => [styles.roundButton, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.squareButton, pressed && styles.pressed]}
           testID="chat-menu"
         >
           <DotsIcon />
@@ -263,36 +267,6 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
         </View>
       ) : null}
 
-      <View style={styles.bondHeader}>
-        {theirPhoto ? (
-          <Image source={{ uri: theirPhoto }} style={styles.bondPhoto} resizeMode="cover" accessibilityIgnoresInvertColors />
-        ) : (
-          <View style={[styles.bondPhoto, styles.bondPhotoEmpty]}>
-            <Text style={styles.bondInitial}>{upperCase(match.displayName.slice(0, 1))}</Text>
-          </View>
-        )}
-        <View style={styles.bondText}>
-          <View style={styles.bondNameRow}>
-            <Text style={styles.bondName}>{`${match.displayName}, ${match.age}`}</Text>
-            <View style={styles.roomChip} testID="chat-room">
-              <View style={styles.roomChipDot} />
-              <Text style={styles.roomChipText}>
-                {upperCase(roomPlate(match.room))}
-              </Text>
-            </View>
-          </View>
-          {hotel ? (
-            <View style={styles.bondHotelRow}>
-              <BuildingIcon />
-              <Text style={styles.bondHotelText} numberOfLines={1}>
-                {`${hotel.name}, ${hotel.city}`}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-      </View>
-      <View style={styles.headerRule} />
-
       <ScrollView contentContainerStyle={styles.thread} keyboardShouldPersistTaps="handled">
         {loadError ? <Notice message={loadError} tone="error" testID="chat-load-error" /> : null}
         {messages === null ? (
@@ -304,38 +278,32 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
         ) : (
           grouped.map((group) => (
             <View key={group.label} style={styles.dayGroup}>
-              <Text style={styles.daySeparator}>{group.label}</Text>
+              {/* A lone "today" would only say what the clock already says
+                  (13:153 shows none); the label earns its line when the
+                  thread spans more than one day. */}
+              {grouped.length > 1 ? <Text style={styles.daySeparator}>{group.label}</Text> : null}
               {group.items.map((message) => {
                 const mine = message.senderId === selfId;
                 return (
+                  /* The sheet's bubbles (13:163/13:167): glass for theirs,
+                     the warm gradient for mine, the clock inside each. */
                   <View key={message.id} style={mine ? styles.rowMine : styles.rowTheirs}>
-                    {!mine ? (
-                      theirPhoto ? (
-                        <Image source={{ uri: theirPhoto }} style={styles.miniAvatar} resizeMode="cover" accessibilityIgnoresInvertColors />
-                      ) : (
-                        <View style={[styles.miniAvatar, styles.miniAvatarEmpty]}>
-                          <Text style={styles.miniInitial}>{upperCase(match.displayName.slice(0, 1))}</Text>
-                        </View>
-                      )
-                    ) : null}
-                    <View style={mine ? styles.bubbleColumnMine : styles.bubbleColumn}>
-                      <View
-                        style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleTheirs]}
-                        accessible
-                        accessibilityRole="text"
-                        accessibilityLabel={`${mine ? COPY.chat.senderYou : match.displayName}: ${message.body}`}
-                      >
-                        {mine ? (
-                          <LinearGradient
-                            colors={[...gradient.primary]}
-                            start={{ x: 0, y: 0.5 }}
-                            end={{ x: 1, y: 0.5 }}
-                            style={StyleSheet.absoluteFillObject}
-                            pointerEvents="none"
-                          />
-                        ) : null}
-                        <Text style={[styles.bubbleText, mine && styles.bubbleTextMine]}>{message.body}</Text>
-                      </View>
+                    <View
+                      style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleTheirs]}
+                      accessible
+                      accessibilityRole="text"
+                      accessibilityLabel={`${mine ? COPY.chat.senderYou : match.displayName}: ${message.body}`}
+                    >
+                      {mine ? (
+                        <LinearGradient
+                          colors={[...gradient.primary]}
+                          start={{ x: 0, y: 0.5 }}
+                          end={{ x: 1, y: 0.5 }}
+                          style={StyleSheet.absoluteFillObject}
+                          pointerEvents="none"
+                        />
+                      ) : null}
+                      <Text style={[styles.bubbleText, mine && styles.bubbleTextMine]}>{message.body}</Text>
                       <Text style={[styles.bubbleTime, mine && styles.bubbleTimeMine]}>
                         {timeOf(message.createdAt)}
                       </Text>
@@ -351,7 +319,8 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
       </ScrollView>
 
       {!closed ? (
-        /* The reference's composer: the pill and the plane. */
+        /* The sheet's composer (13:174): one glass pill holding the words
+           and the warm send disc together. */
         <View style={styles.composer}>
           <TextInput
             accessibilityLabel={`${COPY.chat.messageLabel} ${match.displayName}`}
@@ -376,6 +345,13 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
             ]}
             testID="chat-send"
           >
+            <LinearGradient
+              colors={[...gradient.primary]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={StyleSheet.absoluteFillObject}
+              pointerEvents="none"
+            />
             <SendIcon />
           </Pressable>
         </View>
@@ -385,23 +361,42 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
 }
 
 const styles = StyleSheet.create({
-  topRow: {
+  /** The sheet's head row (13:154): 12 between everything, one line. */
+  headRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
     paddingBottom: spacing.sm,
   },
-  roundButton: {
+  /** The 40 glass squares (13:155/13:160) holding the back and the dots. */
+  squareButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: glass.fill,
+    borderWidth: 1,
+    borderColor: glass.edge,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headAvatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: color.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    backgroundColor: '#4A2E5C',
+  },
+  headAvatarEmpty: { alignItems: 'center', justifyContent: 'center' },
+  headInitial: { fontFamily: fontFamily.display, fontSize: 20, color: color.accentDeep },
+  headWords: { flex: 1, gap: 2 },
+  headName: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 15,
+    color: color.ink,
+  },
+  headBond: {
+    fontFamily: fontFamily.body,
+    fontSize: 11,
+    color: color.inkMuted,
   },
   pressed: { opacity: 0.8 },
   menu: {
@@ -416,57 +411,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
-  bondHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  bondPhoto: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    backgroundColor: color.veil,
-  },
-  bondPhotoEmpty: { alignItems: 'center', justifyContent: 'center' },
-  bondInitial: { fontFamily: fontFamily.display, fontSize: 30, color: color.accentDeep },
-  bondText: { flex: 1, gap: 4 },
-  bondNameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
-  bondName: { fontFamily: fontFamily.display, fontSize: font.heading + 2, color: color.ink },
-  roomChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: 'rgba(236, 72, 153, 0.35)',
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 4,
-  },
-  roomChipDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    borderWidth: 2.2,
-    borderColor: DEEP,
-  },
-  roomChipText: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.label,
-    letterSpacing: 0.8,
-    color: DEEP,
-  },
-  bondHotelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  bondHotelText: {
-    fontFamily: fontFamily.body,
-    fontSize: font.body,
-    color: color.inkMuted,
-    flexShrink: 1,
-  },
-  headerRule: { height: 1, backgroundColor: color.rule },
-  thread: { paddingVertical: spacing.md, gap: spacing.md, flexGrow: 1 },
-  dayGroup: { gap: spacing.sm },
+  thread: { paddingVertical: spacing.md, gap: 12, flexGrow: 1 },
+  dayGroup: { gap: 12 },
   daySeparator: {
     fontFamily: fontFamily.body,
     fontSize: font.caption,
@@ -474,71 +420,65 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.xs,
   },
-  rowTheirs: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
+  rowTheirs: { flexDirection: 'row' },
   rowMine: { flexDirection: 'row', justifyContent: 'flex-end' },
-  miniAvatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: color.veil },
-  miniAvatarEmpty: { alignItems: 'center', justifyContent: 'center' },
-  miniInitial: { fontFamily: fontFamily.bodySemi, fontSize: 15, color: color.accentDeep },
-  bubbleColumn: { maxWidth: '78%', gap: 4 },
-  bubbleColumnMine: { maxWidth: '78%', gap: 4, alignItems: 'flex-end' },
+  /** The sheet's bubble (13:163): 18 corners, 14/10 inside, clock within. */
   bubble: {
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 4,
+    maxWidth: 260,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 4,
   },
-  /**
-   * Theirs a touch lighter, mine a touch deeper — both from the brand
-   * family, both carrying ink; the tucked corner says whose voice it is
-   * without leaning on colour alone.
-   */
   bubbleTheirs: {
     backgroundColor: glass.fill,
     borderWidth: 1,
     borderColor: glass.edge,
-    borderBottomLeftRadius: 6,
   },
-  bubbleMine: { backgroundColor: color.accent, borderBottomRightRadius: 6, overflow: 'hidden' },
+  bubbleMine: { backgroundColor: color.accent, overflow: 'hidden' },
   bubbleText: {
     color: color.ink,
-    fontSize: font.body + 1,
-    lineHeight: (font.body + 1) * 1.4,
+    fontSize: 14,
+    lineHeight: 14 * 1.4,
     fontFamily: fontFamily.body,
   },
   bubbleTextMine: { color: '#1A1A2E' },
-  bubbleTime: { fontFamily: fontFamily.body, fontSize: font.caption, color: color.inkMuted },
-  bubbleTimeMineInk: { color: 'rgba(26, 26, 46, 0.7)' },
-  bubbleTimeMine: { textAlign: 'right' },
+  bubbleTime: {
+    fontFamily: fontFamily.body,
+    fontSize: 10,
+    color: 'rgba(163, 169, 201, 0.7)',
+  },
+  bubbleTimeMine: { color: 'rgba(26, 26, 46, 0.7)' },
+  /** The sheet's composer pill (13:174): the words and the disc together. */
   composer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingTop: spacing.sm,
-    backgroundColor: color.background,
+    gap: 10,
+    marginTop: spacing.sm,
+    backgroundColor: glass.fill,
+    borderWidth: 1,
+    borderColor: glass.edge,
+    borderRadius: radius.pill,
+    paddingLeft: 16,
+    paddingRight: 10,
+    paddingVertical: 10,
   },
   composerInput: {
     flex: 1,
-    minHeight: 52,
-    borderRadius: radius.pill,
-    backgroundColor: glass.fill,
-    borderWidth: 1.5,
-    borderColor: 'rgba(236, 72, 153, 0.45)',
-    paddingHorizontal: spacing.md + 4,
     fontFamily: fontFamily.body,
-    fontSize: font.body,
+    fontSize: 14,
     color: color.ink,
+    paddingVertical: 0,
   },
+  /** The 40 warm disc (13:176), the gradient painted inside. */
   sendButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: DEEP,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: color.accent,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: DEEP,
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
   },
   sendButtonIdle: { opacity: 0.45 },
 });

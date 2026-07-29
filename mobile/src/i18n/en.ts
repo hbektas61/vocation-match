@@ -448,7 +448,7 @@ export const en = {
     sayHelloTo: 'Say hello to',
     closedNotice: 'This conversation is closed. You can still read the history.',
     messageLabel: 'Message',
-    messagePlaceholder: 'Type a message',
+    messagePlaceholder: 'Write a message…',
     sendButton: 'Send',
     sendingButton: 'Sending…',
     unmatchButton: 'Unmatch',

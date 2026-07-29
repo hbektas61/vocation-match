@@ -435,7 +435,7 @@ export const tr: Copy = {
     sayHelloTo: 'Bir merhaba de:',
     closedNotice: 'Bu konuşma kapandı. Geçmişi yine okuyabilirsin.',
     messageLabel: 'Mesaj',
-    messagePlaceholder: 'Bir mesaj yaz',
+    messagePlaceholder: 'Mesaj yaz…',
     sendButton: 'Gönder',
     sendingButton: 'Gönderiliyor…',
     unmatchButton: 'Eşleşmeyi bitir',
