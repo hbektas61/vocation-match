@@ -516,7 +516,7 @@ export const tr: Copy = {
     manageButton: 'Check-in\'i yönet',
     cardLead: 'Bulunduğun mekâna check-in at, çevrede kimler var gör.',
     cardBody:
-      'Herkese ücretsiz. Check-in bir mekân adı söyler — asla tam konumunu değil — 3 saat sürer ve sen de check-in\'liyken görünürsün.',
+      'Check-in bir mekân adı söyler — asla tam konumunu değil — 3 saat sürer.',
     statusOpen: 'Açık — check-in\'in taze.',
     statusClosed: 'Kapalı — girmek için bir mekâna check-in at.',
     explainer:

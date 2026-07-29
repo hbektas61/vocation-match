@@ -546,7 +546,7 @@ export const en = {
     manageButton: 'Manage check-in',
     cardLead: 'Check in where you are, see who is out nearby.',
     cardBody:
-      'Free for everyone. A check-in names a place — never your exact location — lasts 3 hours, and you are only visible while you also have one.',
+      'A check-in names a place — never your exact location — and lasts 3 hours.',
     statusOpen: 'Open — your check-in is fresh.',
     statusClosed: 'Closed — check in at a place to enter.',
     explainer:

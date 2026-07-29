@@ -1,20 +1,21 @@
 /**
- * Çevremde, to the owner's three designer screens (2026-07-29, "birebir"):
+ * Çevremde, to the Figma sheets (1:2 intro, 11:71 list, 11:145 active):
  *
- *  1. the intro — headline and how-it-works bullets beside the bar
- *     photograph cropped from the mock, the vivid find-places button, the
- *     expired-check-in card (only when a check-in actually expired), and
- *     the privacy card;
- *  2. the around-you list — brand line, big title with the locate button,
- *     the search pill, and venue rows wearing category icons and chips
- *     (D-041) with the chevron;
- *  3. the active check-in — the venue's photograph on the card, the green
- *     active chip, the clock line, and the three actions.
+ *  1. the intro — headline and how-it-works rows beside the photo column
+ *     on the solid panel, the gradient find-places button, the expired
+ *     card (only when a check-in actually expired), and the privacy panel;
+ *  2. the around-you list — brand line, the head with its corner ring
+ *     (kept as the locate control, because a second read is a real job),
+ *     the glass search pill, and venue rows wearing the category tints
+ *     and chips (D-041) with the chevron;
+ *  3. the active check-in — the venue's photograph over the card, the
+ *     green active chip, the clock line, the gradient discover action and
+ *     its two outlined companions, and the safety card.
  *
- * Deliberate departures from the mocks, each because the control would lie:
- * no unread dot on the inbox tab (no read-state exists), no heart button on
- * the venue photo (no favourites exist), and the privacy sentences describe
- * what the feature actually does. The status-bar chrome belongs to the OS.
+ * Deliberate departures from the sheets, each because the control would
+ * lie: no unread dot on the inbox tab (no read-state exists), and the
+ * privacy sentences describe what the feature actually does. The
+ * status-bar chrome belongs to the OS.
  */
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react';
@@ -188,44 +189,32 @@ const StopIcon = ({ tone = DEEP, size = 20 }: { tone?: string; size?: number }) 
   </Svg>
 );
 
-const CheckCircleIcon = ({ tone = '#199A62', size = 16 }: { tone?: string; size?: number }) => (
-  <Svg {...stroke(tone, size)}>
-    <Circle cx={12} cy={12} r={9} />
-    <Path d="m8.5 12 2.5 2.5 4.5-5" />
-  </Svg>
-);
-
 const HeartGlyph = ({ tone = VIVID, size = 16 }: { tone?: string; size?: number }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill={tone}>
     <Path d="M12 8c0-4.5-7.2-4.5-7.2 0 0 4 4.7 6.8 7.2 8.7 2.5-1.9 7.2-4.7 7.2-8.7 0-4.5-7.2-4.5-7.2 0z" />
   </Svg>
 );
 
-/** The mock's corner doodle on the active screen: a dotted heart and plane. */
-const HeartPlaneDoodle = () => (
-  <Svg width={84} height={56} viewBox="0 0 84 56" fill="none" stroke="rgba(236, 72, 153, 0.45)" strokeWidth={1.6} strokeLinecap="round">
-    <Path d="M8 34c-4-6 1-13 7-11 2-6 11-5 12 1 4 8-9 14-12 20-2-4-5-6-7-10z" strokeDasharray="4 4" />
-    <Path d="M34 44c10-4 22-10 34-22" strokeDasharray="4 4" />
-    <Path d="M68 10l12 6-9 3-1 8z" fill="rgba(236, 72, 153, 0.35)" stroke="none" />
-  </Svg>
-);
-
 /* ------------------------------------------------------- category styling */
 
+/**
+ * The sheet's category tints (11:81/11:97/11:105): each kind's colour at the
+ * same 0.18 breath over the night ground, the label in the colour itself.
+ */
 const KIND_META: Record<string, { label: () => string; tint: string; tone: string }> = {
-  hotel: { label: () => COPY.checkin.kindHotel, tint: 'rgba(236, 72, 153, 0.14)', tone: DEEP },
-  area: { label: () => COPY.checkin.kindArea, tint: 'rgba(236, 72, 153, 0.14)', tone: DEEP },
-  cafe: { label: () => COPY.checkin.kindCafe, tint: '#FDEBD2', tone: '#B4690E' },
-  restaurant: { label: () => COPY.checkin.kindRestaurant, tint: '#FBDCE4', tone: '#D6336C' },
-  bar: { label: () => COPY.checkin.kindBar, tint: 'rgba(236, 72, 153, 0.14)', tone: DEEP },
-  beach: { label: () => COPY.checkin.kindBeach, tint: '#D9F2EE', tone: '#0E8A78' },
+  hotel: { label: () => COPY.checkin.kindHotel, tint: 'rgba(244, 114, 182, 0.18)', tone: DEEP },
+  area: { label: () => COPY.checkin.kindArea, tint: 'rgba(244, 114, 182, 0.18)', tone: DEEP },
+  cafe: { label: () => COPY.checkin.kindCafe, tint: 'rgba(251, 191, 36, 0.18)', tone: '#FBBF24' },
+  restaurant: { label: () => COPY.checkin.kindRestaurant, tint: 'rgba(251, 113, 133, 0.18)', tone: '#FB7185' },
+  bar: { label: () => COPY.checkin.kindBar, tint: 'rgba(244, 114, 182, 0.18)', tone: DEEP },
+  beach: { label: () => COPY.checkin.kindBeach, tint: 'rgba(52, 211, 153, 0.18)', tone: '#34D399' },
 };
 
 function kindMeta(kind: string | null) {
   return (
     (kind && KIND_META[kind]) || {
       label: () => COPY.checkin.kindVenue,
-      tint: 'rgba(236, 72, 153, 0.14)',
+      tint: 'rgba(244, 114, 182, 0.18)',
       tone: DEEP,
     }
   );
@@ -420,7 +409,7 @@ export function CheckinScreen({
         <View style={styles.venueWords}>
           <Text style={styles.venueName} numberOfLines={1}>{venue.name}</Text>
           <View style={styles.venuePlace}>
-            <PinIcon tone={color.inkMuted} size={14} />
+            <PinIcon tone={color.inkMuted} size={11} />
             <Text style={styles.venueCity} numberOfLines={1}>{venue.city}</Text>
           </View>
         </View>
@@ -442,12 +431,16 @@ export function CheckinScreen({
     return (
       <Screen safeTop testID="screen-checkin">
         <View style={styles.headRow}>
-          <Text accessibilityRole="header" style={styles.title}>{COPY.tabs.nearbyTab}</Text>
-          <View accessible={false} importantForAccessibility="no-hide-descendants">
-            <HeartPlaneDoodle />
-          </View>
+          <Text accessibilityRole="header" style={styles.titleSm}>{COPY.tabs.nearbyTab}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={COPY.tabs.settings}
+            onPress={() => tabNavigation.navigate('Settings')}
+            style={({ pressed }) => [styles.profileRing, pressed && styles.pressed]}
+            testID="checkin-profile-ring"
+          />
         </View>
-        <Text style={styles.subtitle}>{COPY.checkin.activeSubtitle}</Text>
+        <Text style={styles.subtitleSm}>{COPY.checkin.activeSubtitle}</Text>
 
         <View style={styles.activeCard} testID="checkin-active">
           {checkin.photoUrl ? (
@@ -464,10 +457,11 @@ export function CheckinScreen({
               ) : null}
             </View>
           ) : (
-            <View style={styles.activePhotoBand} />
+            /* The sheet's photo band stand-in (11:151): warm copper into night. */
+            <LinearGradient colors={['#A65940', '#1F1A33']} style={styles.activePhotoBand} />
           )}
           <View style={styles.activeBody}>
-            <View style={[styles.venueDisc, { backgroundColor: meta.tint }]}>
+            <View style={[styles.activeDisc, { backgroundColor: meta.tint }]}>
               {checkin.kind === 'hotel' ? (
                 <BedIcon tone={meta.tone} />
               ) : (
@@ -481,7 +475,7 @@ export function CheckinScreen({
                 <Text style={styles.activeChipText}>{COPY.checkin.activeChip}</Text>
               </View>
               <View style={styles.untilRow}>
-                <ClockIcon tone={color.inkMuted} />
+                <ClockIcon tone={color.inkMuted} size={14} />
                 <Text style={styles.untilText}>{COPY_FOR.untilTime(hhmm)}</Text>
               </View>
             </View>
@@ -494,7 +488,14 @@ export function CheckinScreen({
           style={({ pressed }) => [styles.bigFilled, pressed && styles.pressed]}
           testID="checkin-see-nearby"
         >
-          <PeopleIcon tone={DEEP} />
+          <LinearGradient
+            colors={[...gradient.primary]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={StyleSheet.absoluteFillObject}
+            pointerEvents="none"
+          />
+          <PeopleIcon tone="#1A1A2E" size={18} />
           <Text style={styles.bigFilledLabel}>{COPY.checkin.seeNearby}</Text>
         </Pressable>
         <Pressable
@@ -504,7 +505,7 @@ export function CheckinScreen({
           style={({ pressed }) => [styles.bigOutline, pressed && styles.pressed]}
           testID="checkin-change"
         >
-          <RefreshIcon />
+          <RefreshIcon tone={color.ink} size={16} />
           <Text style={styles.bigOutlineLabel}>{COPY.checkin.changeCheckin}</Text>
         </Pressable>
         <Pressable
@@ -514,21 +515,18 @@ export function CheckinScreen({
           style={({ pressed }) => [styles.bigOutline, pressed && styles.pressed]}
           testID="checkin-clear"
         >
-          <StopIcon tone={color.ink} />
-          <Text style={[styles.bigOutlineLabel, { color: color.ink }]}>{COPY.checkin.checkOut}</Text>
+          <StopIcon tone={color.ink} size={16} />
+          <Text style={styles.bigOutlineLabel}>{COPY.checkin.checkOut}</Text>
         </Pressable>
 
-        <View style={styles.infoCard}>
-          <View style={styles.infoDisc}>
-            <ShieldLockIcon />
+        {/* The sheet's safety card (11:166): glass, 18 corners, the 44 disc. */}
+        <View style={styles.safeCard}>
+          <View style={styles.safeDisc}>
+            <ShieldLockIcon size={22} />
           </View>
           <View style={styles.infoWords}>
-            <Text style={styles.infoTitle}>{COPY.checkin.safeTitle}</Text>
+            <Text style={styles.safeTitle}>{COPY.checkin.safeTitle}</Text>
             <Text style={styles.infoBody}>{COPY.checkin.cardBody}</Text>
-            <View style={styles.safeCheckRow}>
-              <CheckCircleIcon />
-              <Text style={styles.safeCheckText}>{COPY.checkin.safeCheck}</Text>
-            </View>
           </View>
         </View>
 
@@ -551,22 +549,24 @@ export function CheckinScreen({
       <Screen safeTop testID="screen-checkin">
         <View style={styles.brandRow}>
           <Text style={styles.brandText}>{COPY.appName}</Text>
-          <HeartGlyph />
+          <HeartGlyph size={14} />
         </View>
         <View style={styles.headRow}>
-          <Text accessibilityRole="header" style={styles.title}>{COPY.tabs.nearbyTab}</Text>
+          <Text accessibilityRole="header" style={styles.titleSm}>{COPY.tabs.nearbyTab}</Text>
+          {/* The sheet's corner ring (11:76), still doing the useful job:
+              another location read, for the list under it. */}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={COPY.checkin.findVenues}
             onPress={() => lookAround(reader)}
             disabled={busy}
-            style={({ pressed }) => [styles.cornerButton, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.profileRing, styles.ringCentered, pressed && styles.pressed]}
             testID="checkin-look-again"
           >
             <LocateIcon />
           </Pressable>
         </View>
-        <Text style={styles.subtitle}>
+        <Text style={styles.subtitleSm}>
           {COPY.checkin.listSubtitle} <Text style={styles.subtitleHeart}>♥</Text>
         </Text>
 
@@ -736,10 +736,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
   },
+  /** The brand line over the list (11:73): 15, in the light pink. */
   brandText: {
     fontFamily: fontFamily.display,
-    fontSize: font.body + 2,
-    color: VIVID,
+    fontSize: 15,
+    color: DEEP,
   },
   headRow: {
     flexDirection: 'row',
@@ -751,6 +752,22 @@ const styles = StyleSheet.create({
     fontSize: 40,
     color: color.ink,
   },
+  /** The list and active sheets' head (11:75/11:147): a size down from the intro. */
+  titleSm: {
+    fontFamily: fontFamily.display,
+    fontSize: 34,
+    lineHeight: 34 * 1.15,
+    color: color.ink,
+  },
+  /** The corner ring (11:76): the empty frame, 1.4 of half-pink. */
+  profileRing: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 1.4,
+    borderColor: 'rgba(244, 114, 182, 0.5)',
+  },
+  ringCentered: { alignItems: 'center', justifyContent: 'center' },
   /** The Figma line under the head (1:6): 15, muted. */
   subtitle: {
     fontFamily: fontFamily.body,
@@ -758,15 +775,14 @@ const styles = StyleSheet.create({
     lineHeight: 15 * 1.5,
     color: color.inkMuted,
   },
-  subtitleHeart: { color: VIVID },
-  cornerButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: color.veil,
-    alignItems: 'center',
-    justifyContent: 'center',
+  /** The line under the list/active heads (11:77/11:149): 13, muted. */
+  subtitleSm: {
+    fontFamily: fontFamily.body,
+    fontSize: 13,
+    lineHeight: 13 * 1.5,
+    color: color.inkMuted,
   },
+  subtitleHeart: { color: VIVID },
   /** The corner badge (1:5): the panel disc with the half-pink 1.5 edge. */
   cornerBadge: {
     width: 56,
@@ -780,7 +796,7 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.8 },
 
-  /* list */
+  /* list — the sheet's search pill (11:78) and venue rows (11:80). */
   searchPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -790,24 +806,23 @@ const styles = StyleSheet.create({
     borderColor: glass.edge,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
-    minHeight: 52,
   },
   searchInput: {
     flex: 1,
     fontFamily: fontFamily.body,
-    fontSize: font.body,
+    fontSize: 14,
     color: color.ink,
     paddingVertical: 12,
   },
   venueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 12,
     backgroundColor: glass.fill,
     borderWidth: 1,
     borderColor: glass.edge,
-    borderRadius: radius.lg,
-    padding: spacing.sm + 4,
+    borderRadius: 18,
+    padding: 12,
     shadowColor: '#000000',
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -815,37 +830,37 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   venueDisc: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
   venueWords: { flex: 1, gap: 2 },
   venueName: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: font.body + 1,
+    fontSize: 14,
     color: color.ink,
   },
   venuePlace: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   venueCity: {
     fontFamily: fontFamily.body,
-    fontSize: font.caption,
+    fontSize: 11,
     color: color.inkMuted,
     flexShrink: 1,
   },
   kindChip: {
     borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   kindChipText: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: font.caption,
+    fontSize: 11,
   },
   chevron: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 24,
+    fontSize: 18,
     color: color.inkMuted,
     paddingHorizontal: 2,
   },
@@ -978,19 +993,12 @@ const styles = StyleSheet.create({
     lineHeight: 12 * 1.45,
     color: color.inkMuted,
   },
-  safeCheckRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
-  safeCheckText: {
-    flex: 1,
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: font.caption,
-    color: color.ink,
-  },
-  /* active */
+  /* active — the sheet's card (11:150), buttons (11:160-164), safety (11:166). */
   activeCard: {
     backgroundColor: glass.fill,
     borderWidth: 1,
     borderColor: glass.edge,
-    borderRadius: radius.lg + 6,
+    borderRadius: 22,
     overflow: 'hidden',
     shadowColor: '#000000',
     shadowOpacity: 0.07,
@@ -998,8 +1006,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
-  activePhoto: { width: '100%', height: 210 },
-  activePhotoBand: { width: '100%', height: 120, backgroundColor: color.veil },
+  activePhoto: { width: '100%', height: 170 },
+  activePhotoBand: { width: '100%', height: 170 },
   photoCredit: {
     position: 'absolute',
     right: 8,
@@ -1010,14 +1018,24 @@ const styles = StyleSheet.create({
   },
   activeBody: {
     flexDirection: 'row',
-    gap: spacing.md,
-    padding: spacing.md,
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 14,
     alignItems: 'flex-start',
   },
-  activeWords: { flex: 1, gap: spacing.xs + 2 },
+  /** The 48 square-ish disc beside the venue's name (11:153). */
+  activeDisc: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeWords: { flex: 1, gap: 5 },
   activeName: {
-    fontFamily: fontFamily.displaySemi,
-    fontSize: font.heading,
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 17,
     color: color.ink,
   },
   activeChip: {
@@ -1025,26 +1043,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(25, 154, 98, 0.12)',
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
     borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm + 2,
+    paddingHorizontal: 10,
     paddingVertical: 5,
   },
   activeChipDot: {
-    width: 8,
-    height: 8,
+    width: 7,
+    height: 7,
     borderRadius: 4,
-    backgroundColor: '#199A62',
+    backgroundColor: '#34D399',
   },
   activeChipText: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: font.caption,
-    color: '#127B4E',
+    fontSize: 11,
+    color: '#34D399',
   },
   untilRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   untilText: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: font.body,
+    fontFamily: fontFamily.body,
+    fontSize: 13,
     color: color.inkMuted,
   },
   bigFilled: {
@@ -1052,14 +1070,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: 'rgba(236, 72, 153, 0.28)',
+    backgroundColor: color.accent,
+    overflow: 'hidden',
     borderRadius: radius.pill,
-    minHeight: 58,
+    paddingVertical: 14,
+    shadowColor: '#FB7185',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   bigFilledLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: font.body + 2,
-    color: DEEP,
+    fontSize: 15,
+    color: '#1A1A2E',
   },
   bigOutline: {
     flexDirection: 'row',
@@ -1067,14 +1091,39 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
     backgroundColor: glass.fill,
-    borderWidth: 1.5,
-    borderColor: 'rgba(236, 72, 153, 0.45)',
+    borderWidth: 1.4,
+    borderColor: 'rgba(236, 72, 153, 0.5)',
     borderRadius: radius.pill,
-    minHeight: 56,
+    paddingVertical: 12,
   },
   bigOutlineLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: font.body + 1,
-    color: DEEP,
+    fontSize: 14,
+    color: color.ink,
+  },
+  /** The sheet's safety card (11:166): glass, 18 corners, the 44 veil disc. */
+  safeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: glass.fill,
+    borderWidth: 1,
+    borderColor: glass.edge,
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  safeDisc: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: color.veil,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  safeTitle: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 14,
+    color: color.ink,
   },
 });

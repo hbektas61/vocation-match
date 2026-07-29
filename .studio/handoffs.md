@@ -2606,3 +2606,19 @@ without the trailing mini-shield, and the corner badge's edge at the
 sheet's half-pink 1.5. The decorative flourish row left with the
 design. All copy already matched the sheet word for word. tsc, eslint,
 419 jest green.
+
+## 2026-07-29 — Çevremde list and active, to the Figma sheets
+
+Nodes 11:71 and 11:145 applied to CheckinScreen's other two states.
+List: 15 brand line, 34 head with the corner ring (kept as the locate
+control), 13 subtitle, glass search pill at 14, venue rows at 18/12
+with 44 discs and the sheet's 0.18 category tints (pink/gold/coral,
+green for beach), 14/11 text, 11 chips, 18 chevron. Active: 34 head
+with the ring to Settings, 22-corner card with the 170 photo band
+(copper-into-night fallback), 48 square-ish disc, 17 name, the
+34D399 chip at 11, 13 clock line; the discover action became the warm
+gradient at 15-on-14, its two companions outlined 1.4 half-pink at
+14-on-12 in ink; the safety card became glass 18 with the 44 veil disc
+and the sheet's shorter sentence (cardBody updated in both languages).
+The doodle and the safety check row left with the design. tsc, eslint,
+419 jest green.
