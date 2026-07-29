@@ -2720,3 +2720,16 @@ promise's rules moved into the sheet's glass card at 20/16/12 with the
 pink points and 13 ink lines. The solid band behind the footer left
 with the design. Verified in the running web app; tsc, eslint, 419
 jest green.
+
+## 2026-07-29 — the passions step, to the Figma sheet
+
+Node 9:84 ("09 Tutkular") applied and verified in the running web app
+with the sheet's own four picks. The chips lost their leading icons
+and took the sheet's exact clothes — glass at 16/11 under a 1
+hairline, 14 medium ink at rest, the warm gradient with dark semibold
+ink when chosen. The limit line moved up under the headline as the
+sheet's second muted line, and the running count now stands pink and
+centred under the grid ("4 / 5 seçildi", new copy key in both
+languages, announced politely for screen readers). The skip word
+matches the sheet's 15. Wide decision pills elsewhere kept their size.
+tsc, eslint, 419 jest green.

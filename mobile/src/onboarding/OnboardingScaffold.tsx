@@ -30,7 +30,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Notice, useScreenChangeAnnouncement } from '../components/ui';
 import { COPY } from '../copy';
-import { color, font, fontFamily, gradient, MIN_TOUCH, radius, spacing, backgroundGradient } from '../theme';
+import { color, fontFamily, gradient, MIN_TOUCH, radius, spacing, backgroundGradient } from '../theme';
 
 export function OnboardingProgress({ step, total }: { step: number; total: number }) {
   const ratio = Math.max(0, Math.min(1, total > 0 ? step / total : 0));
@@ -223,9 +223,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   barGlyph: { fontSize: 22, lineHeight: 26, color: color.ink },
+  /** The sheet's Atla (9:89): 15, in the light pink. */
   barSkip: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: font.body,
+    fontSize: 15,
     color: color.accentDeep,
   },
   /** The sheet's column (8:84): 20 aside, 14 between. */

@@ -124,6 +124,7 @@ export const tr: Copy = {
       counter: (chosen: number, max: number) => `Devam et ${chosen}/${max}`,
       limit: (max: number) => `En fazla ${max} seç. Kaldırmak için tekrar dokun.`,
       atLimit: (max: number) => `Bu ${max} etti — başka seçmek için birini kaldır.`,
+      selectedCount: (chosen: number, max: number) => `${chosen} / ${max} seçildi`,
     },
     photo: {
       headline: 'Bir fotoğraf ekle.',

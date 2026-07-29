@@ -160,6 +160,7 @@ const styles = StyleSheet.create({
     color: color.inkMuted,
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  /** The sheet's chip (9:93): 16/11 inside, the light hairline at 1. */
   chip: {
     minHeight: MIN_TOUCH,
     flexDirection: 'row',
@@ -167,9 +168,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: 11,
     borderRadius: radius.pill,
-    borderWidth: 1.5,
+    borderWidth: 1,
     overflow: 'hidden',
   },
   chipGradient: { ...StyleSheet.absoluteFillObject },
@@ -239,7 +240,7 @@ const styles = StyleSheet.create({
   chipPressed: { opacity: 0.85 },
   chipLabel: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: font.body,
+    fontSize: 14,
     color: color.ink,
   },
   /**
@@ -247,7 +248,7 @@ const styles = StyleSheet.create({
    * black. Regular weight at body size is still an 18:1 read; the pill's
    * border and fill carry the structure, so the label can speak quietly.
    */
-  chipLabelWide: { fontFamily: fontFamily.body },
+  chipLabelWide: { fontFamily: fontFamily.body, fontSize: font.body },
   /** On the gradient: the dark ink, which survives its worst stop (D-043). */
   chipLabelSelected: { fontFamily: fontFamily.bodySemi, color: '#1A1A2E' },
 });

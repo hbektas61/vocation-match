@@ -114,6 +114,7 @@ export const en = {
       counter: (chosen: number, max: number) => `Continue ${chosen}/${max}`,
       limit: (max: number) => `Pick up to ${max}. Tap again to remove one.`,
       atLimit: (max: number) => `That is ${max} — remove one to choose another.`,
+      selectedCount: (chosen: number, max: number) => `${chosen} / ${max} selected`,
     },
     photo: {
       headline: 'Add a photo.',
