@@ -2557,3 +2557,12 @@ onboarding scaffold and welcome, base lifted to #2A2350, panels to
 #3A3168, audit re-pinned. Known R-003 flake under full-suite load
 reappeared once and passed clean on rerun — still noted, still not
 masked. 419 jest, lint 0.
+
+## 2026-07-29 — Figma matched to the sunset (D-046 sync)
+
+The "Vacation Match — Flows" file now shows what the app ships: all 25
+screen frames repainted with the ground/sunset gradient style
+(indigo→violet→coral, added to Foundations), ground/midnight and
+ground/panel styles updated to #2A2350 / #3A3168, 54 panel fills
+lifted, mock tab bars turned to the translucent glass over the warm
+end. Design source and app are one palette again.
