@@ -342,7 +342,6 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         style={styles.searchInput}
         testID="hotel-search"
       />
-      <Caption>{COPY.hotel.attribution}</Caption>
       {searchable(query) ? null : loadingActive ? (
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="hotel-loading" />
       ) : activeHotel ? (
@@ -394,12 +393,15 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
            disc, the invitation beside it, and the requirement worn as a quiet
            badge rather than an error. */
         <View style={styles.emptyCard} testID="hotel-empty-state">
-          <Image
-            source={EMPTY_DISC}
-            style={styles.emptyDiscArt}
-            resizeMode="contain"
-            accessibilityIgnoresInvertColors
-          />
+          {/* The sheet's 74 disc (10:80): the art clipped into the circle. */}
+          <View style={styles.emptyDisc}>
+            <Image
+              source={EMPTY_DISC}
+              style={styles.emptyDiscArt}
+              resizeMode="cover"
+              accessibilityIgnoresInvertColors
+            />
+          </View>
           <View style={styles.emptyText}>
             <Text style={styles.emptyTitle}>{COPY.hotel.emptyTitle}</Text>
             <Text style={styles.emptyBody}>{COPY.hotel.emptyBody}</Text>
@@ -527,9 +529,15 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       ) : results === null ? (
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="hotel-loading" />
       ) : results.length === 0 ? (
-        <EmptyState message={COPY.hotel.noResults} testID="hotel-no-results" />
+        /* ODbL: the licence line stands where the OSM data actually shows —
+           beside results, not on the idle sheet the design keeps clean. */
+        <>
+          <EmptyState message={COPY.hotel.noResults} testID="hotel-no-results" />
+          <Caption>{COPY.hotel.attribution}</Caption>
+        </>
       ) : (
-        results.map((hotel) => {
+        <>
+        {results.map((hotel) => {
           const isActive = activeHotel?.id === hotel.id;
           return (
             /* Results wear the same card as the active hotel — the designer's
@@ -569,7 +577,9 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
               </View>
             </Pressable>
           );
-        })
+        })}
+        <Caption>{COPY.hotel.attribution}</Caption>
+        </>
       )}
     </Screen>
   );
@@ -684,8 +694,17 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 16,
   },
-  /** The 74 disc (10:80), through the asset's own 96:92 shape. */
-  emptyDiscArt: { width: 74, height: 71 },
+  /** The 74 disc (10:80): a circle over the pink-soft fill, the art inside. */
+  emptyDisc: {
+    width: 74,
+    height: 74,
+    borderRadius: 37,
+    backgroundColor: color.veil,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyDiscArt: { width: 74, height: 74 },
   emptyText: { flex: 1, gap: 6 },
   emptyTitle: {
     fontFamily: fontFamily.bodySemi,

@@ -2636,3 +2636,16 @@ the action became the sheet's outsized gradient pill — a hundred tall,
 16 ink label, the pink glow under it. Trust sentence untouched: the
 sheet's one-letter variant would reword an audited claim. tsc, eslint,
 419 jest green.
+
+## 2026-07-29 — the owner's check: 10:71 against the running app
+
+The owner compared the Tatilim no-hotel screen to the sheet and was
+right to: three things were not the sheet's. Fixed by a real
+side-by-side (Figma render vs Expo web at 390×844): the ODbL line left
+the idle sheet and now stands only beside actual OSM results; the
+empty card's art is clipped into the sheet's 74 circle; and the tab
+bar took the sheet's exact clothes — the .92 wash, the 0.14 hairline,
+22 corners, 38×24 seats, 10 labels — which also un-truncated "Gelen
+kutusu". Verified by fresh screenshots of both. The one full-suite
+jest failure is the known timer-sensitive R-003 flake; it passes in
+isolation, twice.

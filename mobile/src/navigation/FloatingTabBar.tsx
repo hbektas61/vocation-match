@@ -14,13 +14,13 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import { color, font, fontFamily, radius, spacing, warmEnd } from '../theme';
+import { color, fontFamily, radius, spacing, warmEnd } from '../theme';
 
 function iconFor(routeName: string, active: boolean) {
   const stroke = active ? color.accentDeep : color.inkMuted;
   const common = {
-    width: 22,
-    height: 22,
+    width: 18,
+    height: 18,
     viewBox: '0 0 24 24',
     fill: 'none' as const,
     stroke,
@@ -122,14 +122,15 @@ const styles = StyleSheet.create({
     backgroundColor: warmEnd,
     paddingHorizontal: spacing.sm,
   },
+  /** The Figma bar (10:95): the deep wash at .92, the light hairline, 22 corners. */
   bar: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(42, 35, 80, 0.55)',
+    backgroundColor: 'rgba(58, 49, 104, 0.92)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
-    borderRadius: radius.lg,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.xs,
+    borderColor: 'rgba(255, 255, 255, 0.14)',
+    borderRadius: 22,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.sm,
     shadowColor: '#000000',
     shadowOpacity: 0.1,
     shadowRadius: 14,
@@ -140,11 +141,12 @@ const styles = StyleSheet.create({
   item: {
     flex: 1,
     alignItems: 'center',
-    gap: 2,
+    gap: 4,
   },
+  /** The 38×24 seat (10:97); only the active one shows its fill. */
   iconSeat: {
-    width: 44,
-    height: 30,
+    width: 38,
+    height: 24,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -152,7 +154,7 @@ const styles = StyleSheet.create({
   iconSeatActive: { backgroundColor: color.veil },
   label: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: font.label,
+    fontSize: 10,
   },
   labelActive: { color: color.accentDeep },
   labelIdle: { color: color.inkMuted },
