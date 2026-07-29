@@ -1,6 +1,6 @@
 import { useFocusEffect, useNavigation, useRoute, type NavigationProp, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
@@ -110,6 +110,9 @@ export function DiscoveryScreen() {
   const [deckError, setDeckError] = useState<string | null>(null);
   /** Bumped by "scan again" on the empty room; the deck effect re-runs. */
   const [scan, setScan] = useState(0);
+  /** A rescan in flight. The radar stays on screen and keeps pulsing. */
+  const [rescanning, setRescanning] = useState(false);
+  const lastDeckRoom = useRef<RoomKey | null>(null);
   /** The no-hotel screen's "how does it work?" reveal. */
   const [howOpen, setHowOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -188,8 +191,18 @@ export function DiscoveryScreen() {
   useEffect(() => {
     if (!room) return;
     let cancelled = false;
+    // Only a *room change* clears the deck. A rescan of the same room keeps
+    // whatever is on screen — the radar goes on pulsing and the answer swaps
+    // in quietly, so the person never sees the screen torn down and rebuilt
+    // (owner, 2026-07-29).
+    const roomChanged = lastDeckRoom.current !== room;
+    lastDeckRoom.current = room;
     (async () => {
-      setDeck(null);
+      if (roomChanged) {
+        setDeck(null);
+      } else {
+        setRescanning(true);
+      }
       setDeckError(null);
       try {
         const feed = await getApi().getDiscoveryFeed(room);
@@ -198,6 +211,8 @@ export function DiscoveryScreen() {
         if (!cancelled) {
           setDeckError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
         }
+      } finally {
+        if (!cancelled) setRescanning(false);
       }
     })();
     return () => {
@@ -581,7 +596,8 @@ export function DiscoveryScreen() {
           </View>
           <View style={styles.emptyAction}>
             <Button
-              label={COPY.discovery.rescan}
+              label={rescanning ? COPY.discovery.rescanning : COPY.discovery.rescan}
+              busy={rescanning}
               onPress={() => setScan((n) => n + 1)}
               testID="discovery-rescan"
             />

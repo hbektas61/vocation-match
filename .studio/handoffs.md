@@ -2566,3 +2566,14 @@ screen frames repainted with the ground/sunset gradient style
 ground/panel styles updated to #2A2350 / #3A3168, 54 panel fills
 lifted, mock tab bars turned to the translucent glass over the warm
 end. Design source and app are one palette again.
+
+## 2026-07-29 — the rescan stopped tearing the screen down
+
+Owner's UX note on the radar empty-room: "Tekrar tara" used to null the
+deck, unmounting the radar and remounting it — felt like remove/put-
+back. Now only a *room change* clears the deck; a same-room rescan
+keeps the radar mounted and pulsing while the answer is fetched behind
+it, and the button carries the busy state ("Taranıyor…"). The radar
+screen also exists in Figma now ("Keşfet — odada kimse yok": sunset
+ground, graduated rings, glowing gradient dot, frozen pulse ring), and
+the empty-room copy matches it in both languages. 419 jest.

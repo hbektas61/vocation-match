@@ -365,8 +365,9 @@ export const en = {
      * apology, no "unfortunately" — an empty room is a fact, not a failure.
      */
     emptyTitle: 'No one here yet',
-    emptyBody: 'Nobody is waiting in this room right now. Check back in a little while.',
+    emptyBody: 'Nobody is waiting in this room right now. The radar is on — when somebody arrives, they appear here.',
     rescan: 'Scan again',
+    rescanning: 'Scanning…',
     /** Discovery before any door is open — the orbit screen's words. */
     noHotelTitle: 'Choose a hotel to discover',
     noHotelBody: 'Once you choose a hotel, the rooms and people open to you will show up here.',
