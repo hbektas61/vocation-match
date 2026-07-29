@@ -2768,3 +2768,42 @@ through upsert_hotel_from_provider, and answered from the catalogue on
 repeat. Scale note in D-047: a real global launch moves this function
 off the public Nominatim endpoint and adds declared-context and
 popularity ranking ahead of any locale hint.
+
+## 2026-07-29 — the room became geometry (D-048)
+
+The owner pushed back on every map-shaped answer: "yakınımda" has to give
+a certain result, because people will use it at concerts and on beaches.
+They were right, and the flaw was structural — `checkins.venue_id` was a
+NOT NULL reference to a catalogue row, so the feature's existence was
+hostage to whatever a provider happened to know.
+
+Verified the premise live before building: Sziget's island returns 0
+catalogue venues, and Espressolab (0 m away, `amenity=cafe`) was dropped
+by Overpass's arbitrary `out center 30` among 168 venues within 500 m.
+
+The core now shipped: `app.cell_of` snaps a reading to a ~200 m cell;
+`checkin_here` mints/reuses that cell as a `provider='cell'` catalogue row
+through the existing write boundary and checks the caller in, always in
+range. Every other mechanism (deck, swipe, eligibility, matches) is
+untouched, because a cell *is* an anchor row — which is why this landed as
+one migration instead of a rewrite. A cell stays mute: name is the fixed
+`(cell)` placeholder, excluded from `nearby_venues` and `search_hotels`,
+nulled by `my_checkin` and by the deck for callers and strangers alike.
+
+Verified on staging with real requests: on the island (0 venues) the
+check-in succeeds, `my_checkin` answers `venue_kind: cell` with
+`venue_name: null`, the NEARBY deck runs instead of raising, two accounts
+120 m apart in *different* cells see each other (distance matching, so the
+grid edge is harmless), and `search_hotels('cell')` plus `nearby_venues`
+over the cell both return nothing. App side: `checkinHere` on the Api
+contract with both implementations, `ActiveCheckin.venueName` nullable, a
+shared `domain/cell.ts` mirroring the SQL grid, and the screen's here-CTA
+standing *beside* the list rather than only under an empty one — the
+Espressolab case is a wrong list, not an empty one. tsc, eslint, 427 jest.
+
+Still open, deliberately, as the next slices: distance-sorted Overpass
+(the `out center 30` truncation), the widened venue vocabulary (concert
+halls, arenas, parks — verified all rejected today), honest failure when
+Overpass 504s (it did, on the first real request), the hardcoded "Türkiye"
+in venues-nearby, cell-label enrichment from reverse geocoding, and the
+density/duration decisions for festivals.

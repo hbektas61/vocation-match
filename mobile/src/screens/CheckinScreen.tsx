@@ -361,6 +361,40 @@ export function CheckinScreen({
     }
   };
 
+  /**
+   * D-048: check in to wherever the reading is, named or not. This is the
+   * branch that cannot answer "nowhere" — a concert in a forest, a beach
+   * nobody mapped, a café that opened last week. It stands beside the list
+   * rather than only under an empty one, because the list being *wrong* is
+   * the common case, not the list being empty.
+   */
+  const checkInHere = async () => {
+    if (!reading || busy) return;
+    setBusy(true);
+    setNotice(null);
+    try {
+      await getApi().checkinHere(reading.latitude, reading.longitude);
+      // Re-read rather than assemble it here: the server decides what the
+      // anchor is called, and for a cell that is nothing at all.
+      const active = await getApi().getCheckin();
+      if (active) {
+        lastSeenExpiry = active.expiresAt;
+        setCheckin(active);
+        setNearby(null);
+        setReading(null);
+        setQuery('');
+        setResults([]);
+      }
+    } catch (err) {
+      setNotice({
+        message: err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown,
+        tone: 'error',
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const endCheckin = async () => {
     setBusy(true);
     setNotice(null);
@@ -469,7 +503,9 @@ export function CheckinScreen({
               )}
             </View>
             <View style={styles.activeWords}>
-              <Text style={styles.activeName}>{checkin.venueName}</Text>
+              <Text style={styles.activeName}>
+                {checkin.venueName ?? COPY.checkin.hereLabel}
+              </Text>
               <View style={styles.activeChip}>
                 <View style={styles.activeChipDot} />
                 <Text style={styles.activeChipText}>{COPY.checkin.activeChip}</Text>
@@ -592,6 +628,35 @@ export function CheckinScreen({
         ) : (
           shown.map((venue) => venueRow(venue, searching ? 'found' : 'near'))
         )}
+
+        {/* Always here, never only under an emptiness: the map missing the
+            place you are standing in is the ordinary case (D-048). */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={COPY.checkin.hereCta}
+          accessibilityState={{ disabled: busy }}
+          disabled={busy}
+          onPress={checkInHere}
+          style={({ pressed }) => [
+            shown.length === 0 ? styles.bigFilled : styles.bigOutline,
+            pressed && styles.pressed,
+          ]}
+          testID="checkin-here"
+        >
+          {shown.length === 0 ? (
+            <LinearGradient
+              colors={[...gradient.primary]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={StyleSheet.absoluteFillObject}
+              pointerEvents="none"
+            />
+          ) : null}
+          <PinIcon tone={shown.length === 0 ? '#1A1A2E' : color.ink} size={16} />
+          <Text style={shown.length === 0 ? styles.bigFilledLabel : styles.bigOutlineLabel}>
+            {COPY.checkin.hereCta}
+          </Text>
+        </Pressable>
 
         {notice ? (
           <Notice

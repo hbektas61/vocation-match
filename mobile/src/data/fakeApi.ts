@@ -23,6 +23,7 @@ import { isUpcomingEligible, validateStayDates } from '../domain/upcoming';
 import type { HereNowCheck, UpcomingDeclaration } from '../domain/types';
 import { CANDIDATES, ROOM_CROWD } from '../fixtures/candidates';
 import { getHotelById as getHotelFixtureById, HOTELS, searchHotels as searchHotelFixtures } from '../fixtures/hotels';
+import { cellOf } from '../domain/cell';
 import {
   ApiError,
   type ActivationResult,
@@ -652,6 +653,26 @@ export class FakeApi implements VocationApi {
     return { withinRange: true, expiresAt };
   }
 
+  async checkinHere(latitude: number, longitude: number): Promise<CheckinAnswer> {
+    const userId = await this.requireUserId();
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      Math.abs(latitude) > 90 ||
+      Math.abs(longitude) > 180
+    ) {
+      throw new ApiError('INVALID_INPUT', 'That location reading is not usable.');
+    }
+    // D-048: the anchor is built around the reading, so there is no geometry
+    // left to fail — this is the branch that cannot answer "nowhere".
+    const cell = cellOf(latitude, longitude);
+    const venueId = `cell-${cell.key}`;
+    this.cellVenues.set(venueId, { latitude: cell.latitude, longitude: cell.longitude });
+    const expiresAt = this.now() + 3 * 60 * 60 * 1000;
+    this.checkins.set(userId, { venueId, checkedAt: this.now(), expiresAt });
+    return { withinRange: true, expiresAt };
+  }
+
   async clearCheckin(): Promise<void> {
     const userId = await this.requireUserId();
     this.checkins.delete(userId);
@@ -662,16 +683,29 @@ export class FakeApi implements VocationApi {
     const checkin = this.freshCheckin(userId);
     if (!checkin) return null;
     const venue = getHotelFixtureById(checkin.venueId);
-    return venue
-      ? {
-          venueId: checkin.venueId,
-          venueName: venue.name,
-          photoUrl: null,
-          photoAttribution: null,
-          kind: venue.kind ?? null,
-          expiresAt: checkin.expiresAt,
-        }
-      : null;
+    if (venue) {
+      return {
+        venueId: checkin.venueId,
+        venueName: venue.name,
+        photoUrl: null,
+        photoAttribution: null,
+        kind: venue.kind ?? null,
+        expiresAt: checkin.expiresAt,
+      };
+    }
+    // A cell answers with no name (D-048): the screen says where-you-are in
+    // the reader's own language rather than carrying a positional key.
+    if (this.cellVenues.has(checkin.venueId)) {
+      return {
+        venueId: checkin.venueId,
+        venueName: null,
+        photoUrl: null,
+        photoAttribution: null,
+        kind: 'cell',
+        expiresAt: checkin.expiresAt,
+      };
+    }
+    return null;
   }
 
   async getRooms(): Promise<RoomStatus[]> {
@@ -1143,11 +1177,23 @@ export class FakeApi implements VocationApi {
     );
   }
 
-  /** The 1 km street (D-039), venue to venue — mirrors the server's rule. */
+  /**
+   * Cells this run has minted (D-048), mirroring the catalogue's cell rows.
+   * Keyed by the synthetic venue id, which is derived from the cell key so
+   * two people standing in one cell share one anchor.
+   */
+  private cellVenues = new Map<string, { latitude: number; longitude: number }>();
+
+  /** An anchor's point, whether it is a catalogue fixture or a cell. */
+  private venuePoint(venueId: string): { latitude: number; longitude: number } | null {
+    return getHotelFixtureById(venueId) ?? this.cellVenues.get(venueId) ?? null;
+  }
+
+  /** The 1 km street (D-039), anchor to anchor — mirrors the server's rule. */
   private inNearbyOf(venueId: string, candidateHotelId: string): boolean {
     if (candidateHotelId === venueId) return true;
-    const mine = getHotelFixtureById(venueId);
-    const theirs = getHotelFixtureById(candidateHotelId);
+    const mine = this.venuePoint(venueId);
+    const theirs = this.venuePoint(candidateHotelId);
     if (!mine || !theirs) return false;
     return (
       haversineMeters(mine.latitude, mine.longitude, theirs.latitude, theirs.longitude) <= 1000

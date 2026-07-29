@@ -526,6 +526,9 @@ export const tr: Copy = {
     aroundYou: 'Çevrende',
     noVenues: 'Burada kayıtlı mekân bulunamadı. Bulunduğun mekânı aşağıdan adıyla ara.',
     searchFallback: 'Mekânın listede yok mu? Adıyla ara.',
+    /** D-048: the anchor that always exists — where you are standing. */
+    hereLabel: 'Bulunduğun yer',
+    hereCta: 'Buradayım — çevremi gör',
     searchPlaceholder: 'Mekân veya mahalle ara',
     listSubtitle: 'Sana yakın mekânları keşfet, aynı yerde olan insanlarla tanış.',
     idleSubtitle: 'Yakınındaki tatilcilerle tanış, aynı mekânda anlık bağ kur.',

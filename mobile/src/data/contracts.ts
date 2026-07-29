@@ -229,7 +229,12 @@ export interface RoomHeadcount {
  */
 export interface ActiveCheckin {
   venueId: string;
-  venueName: string;
+  /**
+   * Null for a placeless check-in (D-048): the anchor is the caller's own
+   * cell, and a cell is a coarse position, so it has no name to carry. The
+   * screen says where-you-are in the reader's own language instead.
+   */
+  venueName: string | null;
   /** The venue's photo and its licence credit, when the catalogue has one. */
   photoUrl: string | null;
   photoAttribution: string | null;
@@ -401,6 +406,13 @@ export interface VocationApi {
    * nothing. Free — no premium involved anywhere in Çevremde.
    */
   recordCheckin(venueId: string, latitude: number, longitude: number): Promise<CheckinAnswer>;
+  /**
+   * Checks in to wherever the caller is standing, named or not (D-048).
+   * Cannot fail for want of a mapped place — the room is the caller's own
+   * cell — so this is the answer at a concert in a forest or on a beach
+   * nobody has mapped.
+   */
+  checkinHere(latitude: number, longitude: number): Promise<CheckinAnswer>;
   clearCheckin(): Promise<void>;
   getCheckin(): Promise<ActiveCheckin | null>;
 

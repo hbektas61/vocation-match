@@ -724,6 +724,22 @@ export class SupabaseApi implements VocationApi {
     };
   }
 
+  async checkinHere(latitude: number, longitude: number): Promise<CheckinAnswer> {
+    // D-048: no venue argument, because the anchor is the caller's own cell.
+    // The reading still leaves the device once, as an argument; what the
+    // server keeps is the cell it falls in, which is coarser than the name of
+    // the café it would otherwise have stored.
+    const row = await this.rpcSingle<{ within_range: boolean; expires_at: string | null }>(
+      'checkin_here',
+      { p_latitude: latitude, p_longitude: longitude },
+      'Could not check you in.',
+    );
+    return {
+      withinRange: row.within_range,
+      expiresAt: row.expires_at ? Date.parse(row.expires_at) : null,
+    };
+  }
+
   async clearCheckin(): Promise<void> {
     const { error } = await this.client.rpc('clear_checkin');
     if (error) {
@@ -739,7 +755,8 @@ export class SupabaseApi implements VocationApi {
     const row = (data ?? [])[0] as
       | {
           venue_id: string;
-          venue_name: string;
+          /** Null for a cell (D-048) — a coarse position has no name. */
+          venue_name: string | null;
           photo_url: string | null;
           photo_attribution: string | null;
           venue_kind: string | null;
@@ -749,7 +766,7 @@ export class SupabaseApi implements VocationApi {
     return row
       ? {
           venueId: row.venue_id,
-          venueName: row.venue_name,
+          venueName: row.venue_name ?? null,
           photoUrl: row.photo_url ?? null,
           photoAttribution: row.photo_attribution ?? null,
           kind: row.venue_kind ?? null,

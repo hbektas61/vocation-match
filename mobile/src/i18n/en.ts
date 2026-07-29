@@ -556,6 +556,9 @@ export const en = {
     aroundYou: 'Around you',
     noVenues: 'No listed places here yet. Search the place you are at by name below.',
     searchFallback: 'Your place not listed? Search it by name.',
+    /** D-048: the anchor that always exists — where you are standing. */
+    hereLabel: 'Where you are',
+    hereCta: "I'm here — see who is around",
     searchPlaceholder: 'Search a place or neighbourhood',
     listSubtitle: 'Discover the places near you and meet the people who are there.',
     idleSubtitle: 'Meet the holidaymakers near you — an instant bond at the same place.',
