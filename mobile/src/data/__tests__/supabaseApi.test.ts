@@ -142,6 +142,67 @@ describe('hotel search', () => {
   });
 });
 
+describe('nearby venue lookup', () => {
+  const CACHED_VENUE = {
+    id: '33333333-3333-4333-8333-333333333333',
+    name: 'Cached Cafe',
+    city: 'Kadikoy',
+    country: 'Turkiye',
+    address: null,
+    photo_url: null,
+    photo_attribution: null,
+    venue_kind: 'cafe',
+  };
+
+  function nearbyApi(handler: (url: string) => Response) {
+    global.fetch = jest.fn(async (input: RequestInfo | URL) =>
+      handler(String(input)),
+    ) as unknown as typeof fetch;
+    return new SupabaseApi({ url: URL, anonKey: ANON_KEY }, createMemoryStorage());
+  }
+
+  it('uses cached catalogue venues when the world lookup is down', async () => {
+    const api = nearbyApi((url) => {
+      if (url.includes('/functions/v1/venues-nearby')) {
+        return jsonResponse({ error: 'sweep unavailable' }, 503);
+      }
+      if (url.includes('/rpc/nearby_venues')) {
+        return jsonResponse([CACHED_VENUE]);
+      }
+      throw new Error(`unexpected call: ${url}`);
+    });
+
+    await expect(api.nearbyVenues(40.99, 29.03)).resolves.toEqual([
+      {
+        id: CACHED_VENUE.id,
+        name: CACHED_VENUE.name,
+        city: CACHED_VENUE.city,
+        country: CACHED_VENUE.country,
+        address: null,
+        photoUrl: null,
+        photoAttribution: null,
+        kind: 'cafe',
+      },
+    ]);
+  });
+
+  it('does not describe a failed sweep and an empty cache as an empty world', async () => {
+    const api = nearbyApi((url) => {
+      if (url.includes('/functions/v1/venues-nearby')) {
+        return jsonResponse({ error: 'sweep unavailable' }, 503);
+      }
+      if (url.includes('/rpc/nearby_venues')) {
+        return jsonResponse([]);
+      }
+      throw new Error(`unexpected call: ${url}`);
+    });
+
+    await expect(api.nearbyVenues(47.5391, 19.0489)).rejects.toMatchObject({
+      code: 'NETWORK',
+    });
+  });
+});
+
 describe('SupabaseApi phone OTP', () => {
   function otpApi(handler: (url: string, init?: RequestInit) => Response) {
     const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) =>

@@ -12,12 +12,21 @@ import { act, fireEvent, screen } from '@testing-library/react-native';
 
 import { COPY } from '../copy';
 import { cellOf } from '../domain/cell';
-import { FakeApi, setApi } from '../data';
+import { ApiError, FakeApi, setApi, type HotelCard } from '../data';
 import { onboard } from '../testSupport/onboarding';
 
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
 /** Hajógyári-sziget, mid-island: trees, a festival, and no catalogue row. */
 const ISLAND = { latitude: 47.5391, longitude: 19.0489 };
+
+class FailingNearbyApi extends FakeApi {
+  override async nearbyVenues(
+    _latitude: number,
+    _longitude: number,
+  ): Promise<HotelCard[]> {
+    throw new ApiError('NETWORK', 'The venue sweep did not answer.');
+  }
+}
 
 describe('the cell grid', () => {
   it('agrees with itself: every point in a cell resolves to the same cell', () => {
@@ -133,5 +142,34 @@ describe('the screen offers the here-anchor beside the list, not only under an e
     // And the room it opens says where-you-are rather than a positional key.
     expect(await screen.findByText(COPY.checkin.hereLabel)).toBeTruthy();
     delete process.env.EXPO_PUBLIC_USE_FAKE_API;
+  });
+
+  it('keeps "I am here" reachable when the venue sweep fails', async () => {
+    process.env.EXPO_PUBLIC_USE_FAKE_API = 'true';
+    setApi(new FailingNearbyApi({ now: () => FIXED }));
+
+    try {
+      await onboard('Deniz', '+905551119006');
+
+      await act(async () => {
+        fireEvent.press(await screen.findByTestId('tab-Nearby'));
+      });
+      await act(async () => {
+        fireEvent.press(await screen.findByTestId('checkin-simulate-shore'));
+      });
+
+      // A provider outage is reported honestly, but it cannot take the
+      // geometry-backed room away.
+      expect(await screen.findByText(COPY.errors.network)).toBeTruthy();
+      const here = await screen.findByTestId('checkin-here');
+
+      await act(async () => {
+        fireEvent.press(here);
+      });
+
+      expect(await screen.findByText(COPY.checkin.hereLabel)).toBeTruthy();
+    } finally {
+      delete process.env.EXPO_PUBLIC_USE_FAKE_API;
+    }
   });
 });

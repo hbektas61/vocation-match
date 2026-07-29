@@ -316,6 +316,10 @@ export function CheckinScreen({
   const lookAround = async (source: ForegroundLocationReader) => {
     setBusy(true);
     setNotice(null);
+    // Never leave a previous reading armed while a fresh permission/location
+    // request is in flight. If consent is denied or the device cannot produce
+    // a fix, the old point must not remain usable for a new check-in.
+    setReading(null);
     const read = await source.read();
     if (read.status === 'denied') {
       setNotice({ message: COPY.hereNow.permissionDenied, tone: 'error' });
@@ -327,9 +331,14 @@ export function CheckinScreen({
       setBusy(false);
       return;
     }
+    // D-048/D-049: the foreground reading is enough to check in "here".
+    // Venue discovery is enrichment, not a prerequisite. Move to the list
+    // state before asking the provider so a 503 still leaves the guaranteed
+    // here-anchor reachable.
+    setReading({ latitude: read.latitude, longitude: read.longitude });
+    setNearby([]);
     try {
       const found = await getApi().nearbyVenues(read.latitude, read.longitude);
-      setReading({ latitude: read.latitude, longitude: read.longitude });
       setNearby(found);
     } catch (err) {
       setNotice({
@@ -648,8 +657,8 @@ export function CheckinScreen({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={COPY.checkin.hereCta}
-          accessibilityState={{ disabled: busy }}
-          disabled={busy}
+          accessibilityState={{ disabled: !reading || busy }}
+          disabled={!reading || busy}
           onPress={checkInHere}
           style={({ pressed }) => [
             shown.length === 0 ? styles.bigFilled : styles.bigOutline,

@@ -2918,3 +2918,28 @@ Also recorded, because my sequencing was wrong: the bulk ingest was proposed
 alone had already solved the reported Espressolab case. Overture is parked.
 The 28k-place read sits in a cache file, so a future decision costs minutes,
 not fifteen. tsc, eslint, 430 jest.
+
+## 2026-07-30 — a failed venue sweep no longer blocks the guaranteed room
+
+D-048 and D-049 were correct in the database but not end to end in the app.
+`venues-nearby` deliberately returns 503 when the public Overpass sweep fails,
+and `checkin_here` deliberately does not depend on that sweep. The screen,
+however, stored the foreground reading only *after* venue discovery succeeded.
+On a provider or network failure it therefore discarded the one fact
+`checkin_here` needed and never rendered the "Buradayım" action.
+
+The screen now arms the geometry-backed here-anchor as soon as the foreground
+read succeeds, treats the named venue list as optional enrichment, and clears
+any previous reading before a new permission request so a denied rescan cannot
+reuse stale location. The real Supabase client also stopped translating an
+edge 503 plus an empty catalogue into `[]`: it still serves cached catalogue
+rows when they exist, but reports a network failure when neither source
+answered. In both failure cases the honest error and the "Buradayım" check-in
+coexist.
+
+Pinned at both seams: a component test drives a failed sweep through onboarding
+and completes a cell check-in, while Supabase client tests prove cached fallback
+and failed-sweep/empty-cache behaviour separately. Focused suites: 27/27.
+`scripts/check.sh --mobile` is green end to end: auth configuration and its
+negative controls, dependency health, TypeScript, zero-warning ESLint, the
+complete 433/433 mobile suite, and the Expo web bundle.

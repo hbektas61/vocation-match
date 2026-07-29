@@ -712,7 +712,11 @@ export class SupabaseApi implements VocationApi {
 
   async nearbyVenues(latitude: number, longitude: number): Promise<HotelCard[]> {
     // Edge function first (catalogue plus the world, like searchHotels);
-    // the direct RPC is the degraded-but-correct fallback.
+    // the direct RPC is the degraded-but-correct fallback. Keep track of a
+    // failed world lookup: if the catalogue is empty too, returning [] would
+    // turn "we could not check" into the false claim "nothing is here"
+    // (D-049).
+    let worldLookupFailed = false;
     try {
       const { data, error } = await this.client.functions.invoke('venues-nearby', {
         body: { latitude, longitude },
@@ -720,7 +724,9 @@ export class SupabaseApi implements VocationApi {
       if (!error && Array.isArray(data?.venues)) {
         return (data.venues as HotelRow[]).map(toHotelCard);
       }
+      worldLookupFailed = true;
     } catch {
+      worldLookupFailed = true;
       // Fall through to the catalogue.
     }
     const { data, error } = await this.client.rpc('nearby_venues', {
@@ -730,7 +736,11 @@ export class SupabaseApi implements VocationApi {
     if (error) {
       throw toApiError(error, 'Could not look around.');
     }
-    return ((data ?? []) as HotelRow[]).map(toHotelCard);
+    const catalogue = ((data ?? []) as HotelRow[]).map(toHotelCard);
+    if (catalogue.length === 0 && worldLookupFailed) {
+      throw new ApiError('NETWORK', 'Could not look around just now.');
+    }
+    return catalogue;
   }
 
   async recordCheckin(venueId: string, latitude: number, longitude: number): Promise<CheckinAnswer> {
