@@ -2649,3 +2649,21 @@ bar took the sheet's exact clothes — the .92 wash, the 0.14 hairline,
 kutusu". Verified by fresh screenshots of both. The one full-suite
 jest failure is the known timer-sensitive R-003 flake; it passes in
 isolation, twice.
+
+## 2026-07-29 — the declare screen, to the Figma sheet
+
+Node 13:112 ("Tarih Beyanı") applied to UpcomingScreen, and the owner's
+complaint honoured: the "Gizliliğin bizim için önemli" shield card left
+the screen entirely. The sheet's shape now stands — 28 head, the 13
+subtitle in the sheet's own words ("Belge yok, kanıt yok — beyanın
+yeter."), two glass date cards with the tracked pink label over the
+long date, the one shield-line privacy card ("Tarihlerini yalnız
+tarihleri çakışanlar bilir…"), the gradient save and the outlined
+withdraw. Also gone per the sheet: the back pill (platform gestures
+carry the way back), the form heading, the "Beyan ettin" badge (the
+prefilled pickers and the withdraw button say the same), the info
+strip, and the withdraw explainer. The trust audit still bites: EN
+explainer keeps self-declared + no-reservation/ID in denial form, and
+the TR assertion now accepts the owner's "belge/kanıt" denial words.
+tsc, eslint, 419 jest green; verified against the sheet in the running
+web app.

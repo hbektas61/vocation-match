@@ -275,8 +275,7 @@ export const tr: Copy = {
   upcoming: {
     roomTitle: 'Tatilden Önce',
     statusBadge: 'Kendi beyanınla yaklaşan konaklama',
-    explainer:
-      'Konaklama tarihlerini sen beyan edersin. Kimseden rezervasyon, rezervasyon numarası ya da kimlik istenmez — senden de istenmez.',
+    explainer: 'Konaklama tarihlerini beyan et. Belge yok, kanıt yok — beyanın yeter.',
     formTitle: 'Bu otelde ne zaman olacaksın?',
     checkInLabel: 'Giriş tarihi',
     checkOutLabel: 'Çıkış tarihi',
@@ -286,6 +285,7 @@ export const tr: Copy = {
     saveButton: 'Tarihleri kaydet',
     updateButton: 'Tarihleri güncelle',
     privacyNote: 'Rezervasyon numarası veya kimlik bilgisi gerekmez, kimseyle paylaşılmaz.',
+    datesPrivacy: 'Tarihlerini yalnız tarihleri çakışanlar bilir; kimseye belge gösterilmez.',
     updateLater: 'Tarihleri daha sonra güncelleyebilirsin.',
     pickDate: 'Tarih seç',
     invalidFormat: 'İki tarihi de YYYY-AA-GG biçiminde gir.',

@@ -187,7 +187,9 @@ describe('what the app is allowed to claim, in Turkish', () => {
   it('Yaklaşan odasını kendi beyanın olarak anlatır', () => {
     expect(tr.upcoming.statusBadge).toMatch(/beyan/i);
     expect(tr.upcoming.explainer).toMatch(/beyan/i);
-    expect(tr.upcoming.explainer).toMatch(/rezervasyon|kimlik/i);
+    // The owner's Figma wording (2026-07-29, 13:114) names the absence as
+    // "belge yok, kanıt yok" — the same denial, in the sheet's words.
+    expect(tr.upcoming.explainer).toMatch(/belge|kanıt|rezervasyon|kimlik/i);
   });
 
   it('Oteldeyim ekranı tek seferlik kontrolü anlatır, metre anlatmaz', () => {

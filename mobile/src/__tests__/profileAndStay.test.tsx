@@ -155,7 +155,6 @@ async function pickDate(testID: string, iso: string): Promise<void> {
     await openUpcoming();
 
     expect(await screen.findByTestId('upcoming-check-in')).toBeTruthy();
-    expect(screen.queryByTestId('upcoming-current')).toBeNull();
     expect(screen.queryByTestId('upcoming-withdraw')).toBeNull();
   });
 
@@ -196,7 +195,9 @@ async function pickDate(testID: string, iso: string): Promise<void> {
     const dayOf = (raw: unknown) => new Date(raw as number).toISOString().slice(0, 10);
     expect(dayOf((await screen.findByTestId('upcoming-check-in')).props.date)).toBe('2026-08-01');
     expect(dayOf(screen.getByTestId('upcoming-check-out').props.date)).toBe('2026-08-08');
-    expect(screen.getByTestId('upcoming-current')).toBeTruthy();
+    // An existing declaration shows itself through the prefilled pickers
+    // above and the withdraw action below — there is no separate badge.
+    expect(screen.getByTestId('upcoming-withdraw')).toBeTruthy();
   });
 
   it('can be withdrawn, and closes the room when it is', async () => {

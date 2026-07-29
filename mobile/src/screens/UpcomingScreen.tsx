@@ -4,19 +4,24 @@ import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 
-import { Body, Button, Caption, Field, Gap, Heading, Notice, Screen, Title } from '../components/ui';
-import { ShieldLock } from '../components/RoomIllustrations';
+import { Button, Field, Notice, Screen } from '../components/ui';
 import { todayIsoDate } from '../clock';
 import { apiErrorMessage, COPY, upperCase } from '../copy';
 import { ApiError, getApi, type UpcomingStay } from '../data';
 import { validateStayDates } from '../domain/upcoming';
 import type { RootScreenProps } from '../navigation/types';
-import { color, font, fontFamily, radius, spacing } from '../theme';
+import { color, fontFamily, glass } from '../theme';
 
 const CalendarGlyph = () => (
-  <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <Rect x={3} y={5} width={18} height={16} rx={3} />
-    <Path d="M8 3v4M16 3v4M3 11h18M8 15h.01M12 15h.01M16 15h.01M8 18h.01M12 18h.01" />
+    <Path d="M8 3v4M16 3v4M3 11h18" />
+  </Svg>
+);
+
+const ShieldGlyph = () => (
+  <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={color.inkMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
   </Svg>
 );
 
@@ -30,12 +35,21 @@ function fromIso(value: string): Date {
   return new Date(`${value}T12:00:00`);
 }
 
+/** "12 Ağustos 2026", the way the sheet prints a date (13:117). */
+function longDate(value: string): string {
+  return fromIso(value).toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
 /**
- * One date, as the designer's field card — with the platform's own picker
- * behind it (owner, 2026-07-28: nobody should type "2026" by hand). iOS
- * shows its compact calendar control in place; Android opens its dialog
- * from the pressable value. The web fallback keeps the typed field, since
- * the community picker has no web half.
+ * One date, as the sheet's card (13:115): the tracked pink label over the
+ * long date — with the platform's own picker behind it (owner, 2026-07-28:
+ * nobody should type "2026" by hand). iOS shows its compact calendar control
+ * in place; Android opens its dialog from the pressable value. The web
+ * fallback keeps the typed field, since the community picker has no web half.
  */
 function DateCard({
   label,
@@ -63,63 +77,60 @@ function DateCard({
 
   return (
     <View style={styles.dateCard}>
-      <View style={styles.dateDisc}>
-        <CalendarGlyph />
-      </View>
-      <View style={styles.dateField}>
-        <Text style={styles.dateLabel}>{upperCase(label)}</Text>
-        {Platform.OS === 'web' ? (
-          <Field
-            label={label}
-            hideLabel
-            hint={COPY.upcoming.dateHint}
-            value={value}
-            onChangeText={onChange}
-            placeholder="2026-08-01"
-            keyboardType="numbers-and-punctuation"
-            autoCapitalize="none"
-            editable={editable}
+      <Text style={styles.dateLabel}>{upperCase(label)}</Text>
+      {Platform.OS === 'web' ? (
+        <Field
+          label={label}
+          hideLabel
+          hint={COPY.upcoming.dateHint}
+          value={value}
+          onChangeText={onChange}
+          placeholder="2026-08-01"
+          keyboardType="numbers-and-punctuation"
+          autoCapitalize="none"
+          editable={editable}
+          testID={testID}
+        />
+      ) : Platform.OS === 'ios' ? (
+        <View style={styles.valueRow}>
+          <CalendarGlyph />
+          <DateTimePicker
+            value={date}
+            mode="date"
+            display="compact"
+            minimumDate={minimumDate}
+            disabled={!editable}
+            onChange={picked}
+            accessibilityLabel={label}
             testID={testID}
           />
-        ) : Platform.OS === 'ios' ? (
-          <View style={styles.pickerRow}>
+        </View>
+      ) : (
+        <>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            disabled={!editable}
+            onPress={() => setAndroidOpen(true)}
+            style={({ pressed }) => [styles.valueRow, pressed && styles.pressed]}
+            testID={testID}
+          >
+            <CalendarGlyph />
+            <Text style={styles.valueText}>
+              {value ? longDate(value) : COPY.upcoming.pickDate}
+            </Text>
+          </Pressable>
+          {androidOpen ? (
             <DateTimePicker
               value={date}
               mode="date"
-              display="compact"
+              display="default"
               minimumDate={minimumDate}
-              disabled={!editable}
               onChange={picked}
-              accessibilityLabel={label}
-              testID={testID}
             />
-          </View>
-        ) : (
-          <>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={label}
-              disabled={!editable}
-              onPress={() => setAndroidOpen(true)}
-              style={({ pressed }) => [styles.androidValue, pressed && styles.pressed]}
-              testID={testID}
-            >
-              <Text style={styles.androidValueText}>
-                {value ? value.split('-').reverse().join('.') : COPY.upcoming.pickDate}
-              </Text>
-            </Pressable>
-            {androidOpen ? (
-              <DateTimePicker
-                value={date}
-                mode="date"
-                display="default"
-                minimumDate={minimumDate}
-                onChange={picked}
-              />
-            ) : null}
-          </>
-        )}
-      </View>
+          ) : null}
+        </>
+      )}
     </View>
   );
 }
@@ -217,41 +228,17 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
     }
   };
 
+  // The Figma sheet (13:112) draws no chrome of its own: the way back is the
+  // platform's — the iOS edge swipe and the Android back button.
   return (
     <Screen safeTop testID="screen-upcoming">
-      {/* The designer's back pill, since the native header is gone. */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={COPY.rooms.plainTitle}
-        onPress={() => navigation.goBack()}
-        style={({ pressed }) => [styles.backPill, pressed && styles.pressed]}
-        testID="upcoming-back"
-      >
-        <Text style={styles.backChevron}>‹</Text>
-        <Text style={styles.backLabel}>{COPY.rooms.plainTitle}</Text>
-      </Pressable>
-
-      <Title>{COPY.upcoming.roomTitle}</Title>
-      <Body>{COPY.upcoming.explainer}</Body>
-
-      <View style={styles.privacyCard}>
-        <ShieldLock />
-        <View style={styles.privacyWords}>
-          <Text style={styles.privacyTitle}>{COPY.rooms.privacyTitle}</Text>
-          <Caption>{COPY.upcoming.privacyNote}</Caption>
-        </View>
-      </View>
+      <Text accessibilityRole="header" style={styles.title}>{COPY.upcoming.roomTitle}</Text>
+      <Text style={styles.subtitle}>{COPY.upcoming.explainer}</Text>
 
       {existing === undefined ? (
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="upcoming-loading" />
       ) : null}
-      {existing ? (
-        <Caption testID="upcoming-current">
-          {`${COPY.upcoming.currentPrefix} ${existing.startDate} → ${existing.endDate}.`}
-        </Caption>
-      ) : null}
 
-      <Heading>{COPY.upcoming.formTitle}</Heading>
       <DateCard
         label={COPY.upcoming.checkInLabel}
         value={checkIn}
@@ -269,17 +256,13 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
         testID="upcoming-check-out"
       />
 
-      <View style={styles.infoStrip}>
-        <View style={styles.infoDot}>
-          <Text style={styles.infoGlyph}>i</Text>
-        </View>
-        <View style={styles.infoWords}>
-          <Caption>{COPY.upcoming.updateLater}</Caption>
-        </View>
+      {/* The sheet's one privacy line (13:121), in place of the old card. */}
+      <View style={styles.noteCard}>
+        <ShieldGlyph />
+        <Text style={styles.noteText}>{COPY.upcoming.datesPrivacy}</Text>
       </View>
 
       {error ? <Notice message={error} tone="error" testID="upcoming-error" /> : null}
-      <Gap size="sm" />
       <Button
         label={
           submitting
@@ -294,130 +277,76 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
         testID="save-upcoming"
       />
       {existing ? (
-        <>
-          <Gap size="sm" />
-          {/* A presence answer can already be taken back. Taking back
-              something you said about yourself should not be harder. */}
-          <Body>{COPY.upcoming.withdrawExplainer}</Body>
-          <Button
-            label={withdrawing ? COPY.upcoming.withdrawing : COPY.upcoming.withdrawButton}
-            variant="danger"
-            busy={withdrawing}
-            disabled={busy}
-            onPress={withdraw}
-            testID="upcoming-withdraw"
-          />
-        </>
+        <Button
+          label={withdrawing ? COPY.upcoming.withdrawing : COPY.upcoming.withdrawButton}
+          variant="secondary"
+          busy={withdrawing}
+          disabled={busy}
+          onPress={withdraw}
+          testID="upcoming-withdraw"
+        />
       ) : null}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  backPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-    backgroundColor: color.surface,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    shadowColor: '#000000',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
   pressed: { opacity: 0.8 },
-  backChevron: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.heading,
-    lineHeight: font.heading + 2,
-    color: color.accentDeep,
-  },
-  backLabel: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.body,
-    color: color.accentDeep,
-  },
-  privacyCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: 'rgba(236, 72, 153, 0.05)',
-    borderRadius: radius.md,
-    padding: spacing.md,
-  },
-  privacyWords: { flex: 1, gap: 2 },
-  privacyTitle: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.body,
+  /** The sheet's head (13:113): 28, left, on the night ground. */
+  title: {
+    fontFamily: fontFamily.display,
+    fontSize: 28,
+    lineHeight: 28 * 1.2,
     color: color.ink,
   },
-  dateCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: color.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  dateDisc: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: color.veil,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dateField: { flex: 1, gap: 6 },
-  dateLabel: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.label,
-    letterSpacing: 1.2,
+  subtitle: {
+    fontFamily: fontFamily.body,
+    fontSize: 13,
+    lineHeight: 13 * 1.5,
     color: color.inkMuted,
   },
-  pickerRow: { alignItems: 'flex-start' },
-  androidValue: {
-    minHeight: 48,
-    justifyContent: 'center',
-    borderRadius: radius.sm,
-    borderWidth: 1.5,
-    borderColor: color.border,
-    paddingHorizontal: spacing.md,
-    backgroundColor: color.surface,
+  /** The date card (13:115): glass, 20 corners, 16 inside, 10 between. */
+  dateCard: {
+    backgroundColor: glass.fill,
+    borderWidth: 1,
+    borderColor: glass.edge,
+    borderRadius: 20,
+    padding: 16,
+    gap: 10,
   },
-  androidValueText: {
-    fontFamily: fontFamily.body,
-    fontSize: font.body,
-    color: color.ink,
+  dateLabel: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 11,
+    letterSpacing: 1.4,
+    color: color.accentDeep,
   },
-  infoStrip: {
+  valueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm + 2,
-    backgroundColor: 'rgba(236, 72, 153, 0.05)',
-    borderRadius: radius.md,
-    padding: spacing.sm + 4,
+    gap: 8,
+    alignSelf: 'flex-start',
   },
-  infoDot: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: color.accentDeep,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  infoGlyph: {
+  valueText: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: font.caption,
-    color: '#FFFFFF',
+    fontSize: 17,
+    color: color.ink,
   },
-  infoWords: { flex: 1 },
+  /** The privacy line's card (13:121). */
+  noteCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: glass.fill,
+    borderWidth: 1,
+    borderColor: glass.edge,
+    borderRadius: 20,
+    padding: 16,
+  },
+  noteText: {
+    flex: 1,
+    fontFamily: fontFamily.body,
+    fontSize: 12,
+    lineHeight: 12 * 1.45,
+    color: color.inkMuted,
+  },
 });

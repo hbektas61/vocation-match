@@ -273,8 +273,7 @@ export const en = {
   upcoming: {
     roomTitle: 'Before the trip',
     statusBadge: 'Self-declared upcoming stay',
-    explainer:
-      'Your stay dates are self-declared. Nobody is asked for a reservation, a booking number, or an ID — and neither are you.',
+    explainer: 'Your stay dates are self-declared. No reservation, no documents, no ID — your word is enough.',
     formTitle: 'When will you be at this hotel?',
     checkInLabel: 'Check-in date',
     checkOutLabel: 'Check-out date',
@@ -284,6 +283,7 @@ export const en = {
     saveButton: 'Save stay dates',
     /** The designer's screen furniture (2026-07-27). */
     privacyNote: 'No booking number or ID details are needed, and nothing is shared with anyone.',
+    datesPrivacy: 'Only people whose dates overlap yours learn them; no documents are shown to anyone.',
     updateLater: 'You can update the dates later.',
     pickDate: 'Pick a date',
     invalidFormat: 'Enter both dates as YYYY-MM-DD.',
