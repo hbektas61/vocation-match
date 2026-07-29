@@ -54,6 +54,7 @@ import {
   ROOM_COUNT_THRESHOLD,
   type ProfilePhoto,
   type ShowMe,
+  type GooglePlaceHit,
 } from './contracts';
 
 import { buildPhotoPath, isProfilePhotoPath, photoExtensionFor } from './photos';
@@ -108,7 +109,13 @@ export class FakeApi implements VocationApi {
   /** D-039: one present-tense check-in per user, venue-anchored. */
   private readonly checkins = new Map<
     string,
-    { venueId: string; checkedAt: number; expiresAt: number }
+    {
+      venueId: string;
+      checkedAt: number;
+      expiresAt: number;
+      /** D-052: a Google label, and never a Google name. */
+      googlePlaceId: string | null;
+    }
   >();
   private readonly swipes = new Map<
     string,
@@ -670,11 +677,22 @@ export class FakeApi implements VocationApi {
       return { withinRange: false, expiresAt: null };
     }
     const expiresAt = this.now() + 3 * 60 * 60 * 1000;
-    this.checkins.set(userId, { venueId, checkedAt: this.now(), expiresAt });
+    // A catalogue pick clears any Google label: one row never mixes the two
+    // providers (D-052).
+    this.checkins.set(userId, {
+      venueId,
+      checkedAt: this.now(),
+      expiresAt,
+      googlePlaceId: null,
+    });
     return { withinRange: true, expiresAt };
   }
 
-  async checkinHere(latitude: number, longitude: number): Promise<CheckinAnswer> {
+  async checkinHere(
+    latitude: number,
+    longitude: number,
+    googlePlaceId?: string,
+  ): Promise<CheckinAnswer> {
     const userId = await this.requireUserId();
     if (
       !Number.isFinite(latitude) ||
@@ -690,8 +708,31 @@ export class FakeApi implements VocationApi {
     const venueId = `cell-${cell.key}`;
     this.cellVenues.set(venueId, { latitude: cell.latitude, longitude: cell.longitude });
     const expiresAt = this.now() + 3 * 60 * 60 * 1000;
-    this.checkins.set(userId, { venueId, checkedAt: this.now(), expiresAt });
+    this.checkins.set(userId, {
+      venueId,
+      checkedAt: this.now(),
+      expiresAt,
+      googlePlaceId: googlePlaceId ?? null,
+    });
     return { withinRange: true, expiresAt };
+  }
+
+  /**
+   * D-052: the fake has no Google, and says so the same way the real one does
+   * when no key is configured — null, meaning "do not offer this option".
+   * Tests that need the option present stub this deliberately.
+   */
+  async googlePlacesNearby(
+    _latitude: number,
+    _longitude: number,
+  ): Promise<GooglePlaceHit[] | null> {
+    await this.requireUserId();
+    return null;
+  }
+
+  async resolveGooglePlace(_placeId: string): Promise<string | null> {
+    await this.requireUserId();
+    return null;
   }
 
   async clearCheckin(): Promise<void> {
@@ -711,6 +752,7 @@ export class FakeApi implements VocationApi {
         photoUrl: null,
         photoAttribution: null,
         kind: venue.kind ?? null,
+        googlePlaceId: checkin.googlePlaceId ?? null,
         expiresAt: checkin.expiresAt,
       };
     }
@@ -723,6 +765,7 @@ export class FakeApi implements VocationApi {
         photoUrl: null,
         photoAttribution: null,
         kind: 'cell',
+        googlePlaceId: checkin.googlePlaceId ?? null,
         expiresAt: checkin.expiresAt,
       };
     }
@@ -1221,7 +1264,9 @@ export class FakeApi implements VocationApi {
     );
   }
 
-  private freshCheckin(userId: string): { venueId: string; expiresAt: number } | null {
+  private freshCheckin(
+    userId: string,
+  ): { venueId: string; expiresAt: number; googlePlaceId: string | null } | null {
     const checkin = this.checkins.get(userId);
     return checkin && checkin.expiresAt > this.now() ? checkin : null;
   }

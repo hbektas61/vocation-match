@@ -34,6 +34,7 @@ import {
   readBackendConfig,
   type ActiveCheckin,
   type ForegroundLocationReader,
+  type GooglePlaceHit,
   type HotelCard,
 } from '../data';
 import { getHotelById } from '../fixtures/hotels';
@@ -274,6 +275,22 @@ export function CheckinScreen({
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ message: string; tone: 'error' | 'info' } | null>(null);
   const searchSeq = useRef(0);
+  /**
+   * D-052: Google's list, opened by hand and never on arrival. `null` means
+   * the option is not on offer — no key configured, or the month's allowance
+   * spent — which is a different fact from an empty street. The catalogue
+   * answers the second one.
+   */
+  const [googlePlaces, setGooglePlaces] = useState<GooglePlaceHit[] | null>(null);
+  const [googleTried, setGoogleTried] = useState(false);
+  /**
+   * Google names resolved for display, for this session only. The schema
+   * stores a Place ID and nothing else (D-052), so this map is the entire
+   * lifetime of a Google name inside the app — and it exists so one name is
+   * fetched once rather than per render.
+   */
+  const resolvedNames = useRef<Map<string, string>>(new Map());
+  const [activeLabel, setActiveLabel] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -291,6 +308,36 @@ export function CheckinScreen({
       cancelled = true;
     };
   }, []);
+
+  /**
+   * A Google-labelled check-in arrives from the server as an id (D-052), so
+   * the name is fetched once here and kept in session memory. If it cannot be
+   * resolved the card falls back to "where you are" — never to a blank.
+   */
+  useEffect(() => {
+    const placeId = checkin?.googlePlaceId ?? null;
+    if (!placeId) {
+      setActiveLabel(null);
+      return;
+    }
+    const remembered = resolvedNames.current.get(placeId);
+    if (remembered) {
+      setActiveLabel(remembered);
+      return;
+    }
+    let cancelled = false;
+    getApi()
+      .resolveGooglePlace(placeId)
+      .then((name) => {
+        if (cancelled || !name) return;
+        resolvedNames.current.set(placeId, name);
+        setActiveLabel(name);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [checkin?.googlePlaceId]);
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -365,6 +412,8 @@ export function CheckinScreen({
           photoUrl: venue.photoUrl,
           photoAttribution: venue.photoAttribution,
           kind: venue.kind,
+          // A catalogue pick carries no Google label (D-052).
+          googlePlaceId: null,
           expiresAt: answer.expiresAt ?? Date.now(),
         };
         lastSeenExpiry = active.expiresAt;
@@ -407,6 +456,59 @@ export function CheckinScreen({
         setReading(null);
         setQuery('');
         setResults([]);
+      }
+    } catch (err) {
+      setNotice({
+        message: err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown,
+        tone: 'error',
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /**
+   * D-052: the third step of the picker, and only on a press. Google is asked
+   * for the ten nearest places, shown in their own list with the attribution
+   * their terms require, and nothing about the answer is stored.
+   */
+  const askGoogle = async () => {
+    if (!reading || busy) return;
+    setBusy(true);
+    setGoogleTried(true);
+    try {
+      const places = await getApi().googlePlacesNearby(reading.latitude, reading.longitude);
+      setGooglePlaces(places);
+      for (const place of places ?? []) resolvedNames.current.set(place.placeId, place.name);
+      if (places === null) {
+        // Honest about which "no" this is: the option is unavailable, the
+        // street is not empty.
+        setNotice({ message: COPY.checkin.googleUnavailable, tone: 'info' });
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** A Google-labelled check-in: the anchor is still our own cell. */
+  const checkInAtGoogle = async (place: GooglePlaceHit) => {
+    if (!reading || busy) return;
+    setBusy(true);
+    setNotice(null);
+    try {
+      await getApi().checkinHere(reading.latitude, reading.longitude, place.placeId);
+      const active = await getApi().getCheckin();
+      if (active) {
+        resolvedNames.current.set(place.placeId, place.name);
+        setActiveLabel(place.name);
+        lastSeenExpiry = active.expiresAt;
+        setCheckin(active);
+        setNearby(null);
+        setReading(null);
+        setQuery('');
+        setResults([]);
+        setGooglePlaces(null);
+        setGoogleTried(false);
       }
     } catch (err) {
       setNotice({
@@ -527,8 +629,12 @@ export function CheckinScreen({
             </View>
             <View style={styles.activeWords}>
               <Text style={styles.activeName}>
-                {checkin.venueName ?? COPY.checkin.hereLabel}
+                {checkin.venueName ?? activeLabel ?? COPY.checkin.hereLabel}
               </Text>
+              {/* Google's terms ask for the credit wherever its answer shows. */}
+              {checkin.googlePlaceId && activeLabel ? (
+                <Text style={styles.attribution}>{COPY.checkin.googleAttribution}</Text>
+              ) : null}
               <View style={styles.activeChip}>
                 <View style={styles.activeChipDot} />
                 <Text style={styles.activeChipText}>{COPY.checkin.activeChip}</Text>
@@ -650,6 +756,47 @@ export function CheckinScreen({
           </Text>
         ) : (
           shown.map((venue) => venueRow(venue, searching ? 'found' : 'near'))
+        )}
+
+        {/* Step three (D-052): opened by hand, after our own catalogue and the
+            written search have both had their turn. Google's answers stay in
+            their own list, credited, and nothing about them is stored. */}
+        {googlePlaces && googlePlaces.length > 0 ? (
+          <View style={styles.googleBlock} testID="checkin-google-list">
+            <Text style={styles.attribution}>{COPY.checkin.googleAttribution}</Text>
+            {googlePlaces.map((place) => (
+              <Pressable
+                key={place.placeId}
+                accessibilityRole="button"
+                accessibilityLabel={place.name}
+                disabled={busy}
+                onPress={() => checkInAtGoogle(place)}
+                style={({ pressed }) => [styles.venueRow, pressed && styles.pressed]}
+                testID={`checkin-google-${place.placeId}`}
+              >
+                <View style={[styles.venueDisc, { backgroundColor: 'rgba(244, 114, 182, 0.18)' }]}>
+                  <PinIcon tone={DEEP} size={18} />
+                </View>
+                <View style={styles.venueWords}>
+                  <Text style={styles.venueName} numberOfLines={1}>{place.name}</Text>
+                </View>
+                <Text style={styles.chevron}>›</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : googleTried ? null : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={COPY.checkin.googleMore}
+            accessibilityState={{ disabled: busy }}
+            disabled={busy}
+            onPress={askGoogle}
+            style={({ pressed }) => [styles.bigOutline, pressed && styles.pressed]}
+            testID="checkin-google-more"
+          >
+            <MagnifierIcon />
+            <Text style={styles.bigOutlineLabel}>{COPY.checkin.googleMore}</Text>
+          </Pressable>
         )}
 
         {/* Always here, never only under an emptiness: the map missing the
@@ -1208,6 +1355,13 @@ const styles = StyleSheet.create({
     backgroundColor: color.veil,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  googleBlock: { gap: spacing.sm },
+  /** Small, quiet, and never omitted where Google's answer is drawn. */
+  attribution: {
+    fontFamily: fontFamily.body,
+    fontSize: 11,
+    color: color.inkMuted,
   },
   safeTitle: {
     fontFamily: fontFamily.bodySemi,

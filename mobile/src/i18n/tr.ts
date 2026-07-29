@@ -529,6 +529,11 @@ export const tr: Copy = {
     /** D-048: the anchor that always exists — where you are standing. */
     hereLabel: 'Bulunduğun yer',
     hereCta: 'Buradayım — çevremi gör',
+    /** D-052: the picker's third step, opened by hand and never on arrival. */
+    googleMore: 'Google ile daha fazla mekân ara',
+    googleUnavailable: 'Şu an ek arama yapılamıyor. Listeden seçebilir ya da buradayım diyebilirsin.',
+    /** Required whenever Google's answer is on screen. */
+    googleAttribution: 'Google tarafından sağlanır',
     searchPlaceholder: 'Mekân veya mahalle ara',
     listSubtitle: 'Sana yakın mekânları keşfet, aynı yerde olan insanlarla tanış.',
     idleSubtitle: 'Yakınındaki tatilcilerle tanış, aynı mekânda anlık bağ kur.',

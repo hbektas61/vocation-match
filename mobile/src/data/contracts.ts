@@ -227,6 +227,17 @@ export interface RoomHeadcount {
  * D-039 — a venue check-in: present tense only. One per user, three hours,
  * venue-anchored (never a coordinate), and readable only by its owner.
  */
+/**
+ * A place Google answered with (D-052). Never stored: the name lives in the
+ * session that drew it, and only the `placeId` is ever written down.
+ */
+export interface GooglePlaceHit {
+  placeId: string;
+  name: string;
+  /** For ordering the picker. Never shown, and never stored. */
+  metres: number | null;
+}
+
 export interface ActiveCheckin {
   venueId: string;
   /**
@@ -239,6 +250,12 @@ export interface ActiveCheckin {
   photoUrl: string | null;
   photoAttribution: string | null;
   kind: string | null;
+  /**
+   * Set when the check-in was labelled from Google (D-052). The name is not
+   * here on purpose — resolve it with `resolveGooglePlace` when a screen is
+   * about to draw it, and keep the answer in memory only.
+   */
+  googlePlaceId: string | null;
   /** Epoch milliseconds. */
   expiresAt: number;
 }
@@ -419,7 +436,25 @@ export interface VocationApi {
    * cell — so this is the answer at a concert in a forest or on a beach
    * nobody has mapped.
    */
-  checkinHere(latitude: number, longitude: number): Promise<CheckinAnswer>;
+  checkinHere(
+    latitude: number,
+    longitude: number,
+    /**
+     * A Google Place ID to label the check-in with (D-052). The anchor is
+     * still the caller's own cell — the label says *where* somebody is, the
+     * cell decides *who is near* them, and the two stay independent.
+     */
+    googlePlaceId?: string,
+  ): Promise<CheckinAnswer>;
+  /**
+   * The ten nearest places Google knows, for the picker's second list — only
+   * ever called when somebody has pressed check-in (D-052). Returns null when
+   * the option is unavailable: no key configured, or the month's allowance
+   * spent. Null means "do not offer this", never "there is nothing here".
+   */
+  googlePlacesNearby(latitude: number, longitude: number): Promise<GooglePlaceHit[] | null>;
+  /** A Place ID back into a name, for drawing it. Null when unavailable. */
+  resolveGooglePlace(placeId: string): Promise<string | null>;
   clearCheckin(): Promise<void>;
   getCheckin(): Promise<ActiveCheckin | null>;
 

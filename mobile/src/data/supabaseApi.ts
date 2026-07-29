@@ -37,6 +37,7 @@ import {
   type SwipeResult,
   type UpcomingStay,
   type VocationApi,
+  type GooglePlaceHit,
 } from './contracts';
 import type { BackendConfig } from './config';
 import { isE164Phone, normalizePhone } from './phone';
@@ -758,20 +759,53 @@ export class SupabaseApi implements VocationApi {
     };
   }
 
-  async checkinHere(latitude: number, longitude: number): Promise<CheckinAnswer> {
+  async checkinHere(
+    latitude: number,
+    longitude: number,
+    googlePlaceId?: string,
+  ): Promise<CheckinAnswer> {
     // D-048: no venue argument, because the anchor is the caller's own cell.
     // The reading still leaves the device once, as an argument; what the
     // server keeps is the cell it falls in, which is coarser than the name of
     // the café it would otherwise have stored.
     const row = await this.rpcSingle<{ within_range: boolean; expires_at: string | null }>(
       'checkin_here',
-      { p_latitude: latitude, p_longitude: longitude },
+      {
+        p_latitude: latitude,
+        p_longitude: longitude,
+        p_google_place_id: googlePlaceId ?? null,
+      },
       'Could not check you in.',
     );
     return {
       withinRange: row.within_range,
       expiresAt: row.expires_at ? Date.parse(row.expires_at) : null,
     };
+  }
+
+  /**
+   * D-052: the picker's second list. Everything about this is a deliberate
+   * "no" — no key in the app, no call except on a check-in press, no result
+   * written anywhere. A null answer means the option should not be offered:
+   * unconfigured, out of allowance, or the provider is unwell. It never means
+   * the street is empty, which is what the catalogue is for.
+   */
+  async googlePlacesNearby(latitude: number, longitude: number): Promise<GooglePlaceHit[] | null> {
+    const { data, error } = await this.client.functions.invoke('places-google', {
+      body: { op: 'nearby', latitude, longitude },
+    });
+    if (error || !Array.isArray(data?.places)) return null;
+    return (data.places as { placeId: string; name: string; metres: number | null }[]).map(
+      (place) => ({ placeId: place.placeId, name: place.name, metres: place.metres ?? null }),
+    );
+  }
+
+  async resolveGooglePlace(placeId: string): Promise<string | null> {
+    const { data, error } = await this.client.functions.invoke('places-google', {
+      body: { op: 'resolve', placeId },
+    });
+    if (error || typeof data?.name !== 'string') return null;
+    return data.name;
   }
 
   async clearCheckin(): Promise<void> {
@@ -794,6 +828,7 @@ export class SupabaseApi implements VocationApi {
           photo_url: string | null;
           photo_attribution: string | null;
           venue_kind: string | null;
+          google_place_id: string | null;
           expires_at: string;
         }
       | undefined;
@@ -804,6 +839,7 @@ export class SupabaseApi implements VocationApi {
           photoUrl: row.photo_url ?? null,
           photoAttribution: row.photo_attribution ?? null,
           kind: row.venue_kind ?? null,
+          googlePlaceId: row.google_place_id ?? null,
           expiresAt: Date.parse(row.expires_at),
         }
       : null;

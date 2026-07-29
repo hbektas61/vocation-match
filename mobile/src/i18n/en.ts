@@ -559,6 +559,11 @@ export const en = {
     /** D-048: the anchor that always exists — where you are standing. */
     hereLabel: 'Where you are',
     hereCta: "I'm here — see who is around",
+    /** D-052: the picker's third step, opened by hand and never on arrival. */
+    googleMore: 'Search more places with Google',
+    googleUnavailable: "The extra search is unavailable right now. Pick from the list, or say you are here.",
+    /** Required whenever Google's answer is on screen. */
+    googleAttribution: 'Powered by Google',
     searchPlaceholder: 'Search a place or neighbourhood',
     listSubtitle: 'Discover the places near you and meet the people who are there.',
     idleSubtitle: 'Meet the holidaymakers near you — an instant bond at the same place.',

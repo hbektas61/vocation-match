@@ -2919,6 +2919,47 @@ alone had already solved the reported Espressolab case. Overture is parked.
 The 28k-place read sits in a cache file, so a future decision costs minutes,
 not fifteen. tsc, eslint, 430 jest.
 
+## 2026-07-30 — Google enters for one screen only (D-052)
+
+The owner reversed part of D-050 and specified the architecture themselves,
+rejecting my proposal to match a Google pick against an Overture row and store
+that. They were right twice over: it is fairly read as producing new content
+from Google Content, and it does not work — one Istanbul bounding box in our
+own ingest held **forty** rows named "Espressolab", so name-plus-proximity is a
+coin toss between branches. Withdrawn.
+
+Built and live on staging:
+
+  · `checkins.google_place_id`, the only Google field permitted to persist.
+    The name is nowhere in the schema. `checkin_here` takes it as an optional
+    label while the anchor stays the caller's own cell, and `record_checkin`
+    clears it — one row never mixes providers.
+  · `places-google`, the single door: `nearby` (field-masked to id,
+    displayName, location; ten nearest, distance-ranked) and `resolve` (a
+    Place ID back to a name for whoever is drawing it). The key lives in the
+    function and nowhere else. With no key it answers 503 `unconfigured`,
+    which the app reads as "do not offer the option" — verified, along with
+    401 for an unauthenticated caller.
+  · `app.metered_calls` plus `claim_metered_call`, claimed *before* the paid
+    call rather than counted after it. The first version had a real bug — it
+    guarded the increment but tested `used <= allowance`, so the call after
+    the last one was told yes. The test is now the UPDATE's own WHERE, and the
+    row lock makes it atomic. Verified: allowance 3 → yes, yes, yes, no, no.
+    service_role only; an anon key gets 42501.
+  · The picker in the owner's order: catalogue → written search → Google's own
+    list behind a press, credited → the cell as last resort. A Google label is
+    resolved once per session into a ref, never written down, and the card
+    falls back to "where you are" if it cannot be resolved.
+
+Still the owner's to do, because it needs their Google Cloud account:
+create the project, enable Places API (New), make a key **restricted to this
+backend**, set the daily quota near 150, then set the secrets:
+
+    supabase secrets set GOOGLE_PLACES_KEY=…
+    supabase secrets set GOOGLE_PLACES_MONTHLY_ALLOWANCE=4500
+
+Until those exist the screen behaves exactly as it does when the allowance is
+spent, which is the point. tsc, eslint, 435 jest.
 ## 2026-07-30 — a failed venue sweep no longer blocks the guaranteed room
 
 D-048 and D-049 were correct in the database but not end to end in the app.
