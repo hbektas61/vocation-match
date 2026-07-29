@@ -2707,3 +2707,16 @@ eşleşme yok" at 22 over the 13 sentence, then the gradient
 Button pair replacing the old BigActionButtons, whose centred float,
 icons and 26/16 type left with the design. All copy already matched
 the sheet word for word. tsc, eslint, 419 jest green.
+
+## 2026-07-29 — the promise step, to the Figma sheet
+
+Node 8:84 ("05 Söz") applied — and since the promise wears the shared
+scaffold, every onboarding step straightened with it: the back arrow
+and the gradient progress bar share one row now, the headline is the
+sheet's 28 over the 13 body on the 20-aside column, and the action
+became the sheets' hundred-tall gradient pill with the pink glow —
+still plainly present and flat when the form is not ready. The
+promise's rules moved into the sheet's glass card at 20/16/12 with the
+pink points and 13 ink lines. The solid band behind the footer left
+with the design. Verified in the running web app; tsc, eslint, 419
+jest green.

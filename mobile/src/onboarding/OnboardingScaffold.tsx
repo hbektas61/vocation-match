@@ -28,7 +28,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Button, Notice, useScreenChangeAnnouncement } from '../components/ui';
+import { Notice, useScreenChangeAnnouncement } from '../components/ui';
 import { COPY } from '../copy';
 import { color, font, fontFamily, gradient, MIN_TOUCH, radius, spacing, backgroundGradient } from '../theme';
 
@@ -109,7 +109,8 @@ export function OnboardingScaffold({
         style={StyleSheet.absoluteFillObject}
         pointerEvents="none"
       />
-      <OnboardingProgress step={step} total={total} />
+      {/* The sheet's one head row (8:85): the arrow and the progress side
+          by side — and the skip, on the steps honest enough to offer one. */}
       <View style={styles.bar}>
         {onBack ? (
           <Pressable
@@ -125,6 +126,9 @@ export function OnboardingScaffold({
         ) : (
           <View style={styles.barButton} />
         )}
+        <View style={styles.progressSeat}>
+          <OnboardingProgress step={step} total={total} />
+        </View>
         {onSkip ? (
           <Pressable
             accessibilityRole="button"
@@ -136,9 +140,7 @@ export function OnboardingScaffold({
           >
             <Text style={styles.barSkip}>{COPY.onboarding.skip}</Text>
           </Pressable>
-        ) : (
-          <View style={styles.barButton} />
-        )}
+        ) : null}
       </View>
 
       <KeyboardAvoidingView
@@ -160,13 +162,35 @@ export function OnboardingScaffold({
 
         <View style={styles.footer}>
           {footer}
-          <Button
-            label={actionLabel}
+          {/* The sheets' outsized action (8:108): the warm gradient, a
+              hundred tall, the pink glow under it. Plainly there and plainly
+              inactive when the form is not ready — never vanishing. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={actionLabel}
+            accessibilityState={{ disabled: !actionEnabled || actionBusy, busy: actionBusy }}
+            disabled={!actionEnabled || actionBusy}
             onPress={onAction}
-            disabled={!actionEnabled}
-            busy={actionBusy}
+            style={({ pressed }) => [
+              styles.cta,
+              (!actionEnabled || actionBusy) && styles.ctaDisabled,
+              pressed && actionEnabled && !actionBusy && styles.ctaPressed,
+            ]}
             testID={actionTestID}
-          />
+          >
+            {actionEnabled && !actionBusy ? (
+              <LinearGradient
+                colors={[...gradient.primary]}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={StyleSheet.absoluteFillObject}
+                pointerEvents="none"
+              />
+            ) : null}
+            <Text style={[styles.ctaLabel, (!actionEnabled || actionBusy) && styles.ctaLabelDisabled]}>
+              {actionLabel}
+            </Text>
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -176,57 +200,82 @@ export function OnboardingScaffold({
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   screen: { flex: 1, backgroundColor: color.background },
+  /** The sheet's track (3:9): 6 tall over the rule colour, gradient fill. */
   progressTrack: {
     height: 6,
     backgroundColor: color.rule,
-    marginHorizontal: spacing.md,
     borderRadius: radius.pill,
     overflow: 'hidden',
   },
   progressFill: { height: 6, borderRadius: radius.pill },
   bar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: spacing.sm,
     paddingHorizontal: spacing.sm,
     paddingTop: spacing.sm,
   },
+  progressSeat: { flex: 1 },
   barButton: {
     minWidth: MIN_TOUCH,
     minHeight: MIN_TOUCH,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  barGlyph: { fontSize: 24, lineHeight: 28, color: color.ink },
+  barGlyph: { fontSize: 22, lineHeight: 26, color: color.ink },
   barSkip: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.body,
     color: color.accentDeep,
   },
+  /** The sheet's column (8:84): 20 aside, 14 between. */
   content: {
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: 20,
     paddingTop: spacing.sm,
     paddingBottom: spacing.lg,
-    gap: spacing.md,
+    gap: 14,
   },
   headline: {
     fontFamily: fontFamily.display,
-    fontSize: font.display,
-    lineHeight: font.display * 1.15,
+    fontSize: 28,
+    lineHeight: 28 * 1.2,
     color: color.ink,
     textAlign: 'left',
   },
   body: {
     fontFamily: fontFamily.body,
-    fontSize: font.body,
-    lineHeight: font.body * 1.45,
+    fontSize: 13,
+    lineHeight: 13 * 1.5,
     color: color.inkMuted,
   },
   footer: {
     gap: spacing.sm,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: 20,
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
-    backgroundColor: color.background,
   },
+  cta: {
+    alignSelf: 'stretch',
+    height: 100,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: color.accent,
+    overflow: 'hidden',
+    shadowColor: '#EC4899',
+    shadowOpacity: 0.45,
+    shadowRadius: 11,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
+  },
+  ctaPressed: { opacity: 0.85 },
+  /** A real state rather than a fade: flat fill, grey label — "the form,
+      not you". The glow goes out with it. */
+  ctaDisabled: { backgroundColor: color.accentSoft, shadowOpacity: 0, elevation: 0 },
+  ctaLabel: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 16,
+    color: color.onAccent,
+  },
+  ctaLabelDisabled: { color: color.inkMuted },
 });

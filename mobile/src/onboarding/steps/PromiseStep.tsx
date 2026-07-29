@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { COPY } from '../../copy';
-import { color, font, fontFamily, spacing } from '../../theme';
+import { color, fontFamily, glass } from '../../theme';
 import { OnboardingScaffold } from '../OnboardingScaffold';
 import type { StepProps } from './types';
 
@@ -26,7 +26,9 @@ export function PromiseStep({ step, total, go, onBack }: StepProps) {
       onAction={() => go('phone')}
       testID="screen-onboarding-promise"
     >
-      <View style={styles.points}>
+      {/* The sheet's rules card (8:91): glass at 20, the pink point before
+          each promise, every word in ink at 13. */}
+      <View style={styles.rulesCard}>
         {COPY.onboarding.promise.points.map((point) => (
           <View key={point} style={styles.point}>
             <View style={styles.dot} />
@@ -39,20 +41,27 @@ export function PromiseStep({ step, total, go, onBack }: StepProps) {
 }
 
 const styles = StyleSheet.create({
-  points: { gap: spacing.md, marginTop: spacing.xs },
-  point: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
+  rulesCard: {
+    backgroundColor: glass.fill,
+    borderWidth: 1,
+    borderColor: glass.edge,
+    borderRadius: 20,
+    padding: 16,
+    gap: 12,
+  },
+  point: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   dot: {
     width: 7,
     height: 7,
     borderRadius: 4,
     backgroundColor: color.accentDeep,
-    marginTop: 8,
+    marginTop: 6,
   },
   pointText: {
     flex: 1,
     fontFamily: fontFamily.body,
-    fontSize: font.body,
-    lineHeight: font.body * 1.45,
+    fontSize: 13,
+    lineHeight: 13 * 1.45,
     color: color.ink,
   },
 });
