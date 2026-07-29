@@ -2545,3 +2545,15 @@ own chat bubbles (dark ink text), match-screen face rings and heart
 badge, the deck's like button. Frosted-glass look is translucency +
 light edge + shadow, not native blur — recorded as the performance
 trade in D-045. 419 jest, lint 0.
+
+## 2026-07-29 — the sunset ground (D-046)
+
+Three device reports fixed in one pass: the white band behind the tab
+bar (transparent dock over the navigator's default white — the dock now
+wears the gradient's warm end), Tatilim's quick-options strip removed
+(with its dead icons and lastQuery bookkeeping), and the ground itself
+re-lit: backgroundGradient indigo→violet→coral painted by Screen, the
+onboarding scaffold and welcome, base lifted to #2A2350, panels to
+#3A3168, audit re-pinned. Known R-003 flake under full-suite load
+reappeared once and passed clean on rerun — still noted, still not
+masked. 419 jest, lint 0.

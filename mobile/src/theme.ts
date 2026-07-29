@@ -33,10 +33,13 @@ export const palette = {
   coral: '#FB7185',
   /** The owner's navy, kept as the deep end of the night ground. */
   navy: '#0F1B3D',
-  /** The night ground itself: navy with the designer's violet lean. */
-  midnight: '#12162E',
-  /** A card floating on the ground. Light text on it is 13.9:1. */
-  panel: '#1C2242',
+  /**
+   * The ground's base indigo (D-046): lifted well out of "developer dark"
+   * per the owner, and the top stop of the sunset gradient below.
+   */
+  midnight: '#2A2350',
+  /** A card floating on the ground. Light text on it is 10.4:1. */
+  panel: '#3A3168',
   /** A pink-washed selected surface on the night ground. */
   pinkSoft: '#321F45',
 
@@ -73,6 +76,15 @@ export const palette = {
  * the night ground, a one-pixel light edge, and depth from shadow. Read as
  * frosted glass against the navy without costing a native blur pass.
  */
+/**
+ * The sunset ground (D-046, from the owner's reference): indigo falling
+ * through violet into a warm coral glow at the foot of every screen. The
+ * solid `color.background` is the same family's base and the fallback.
+ */
+export const backgroundGradient = ['#241E49', '#3A2B63', '#8A4A6F', '#D97B52'] as const;
+/** The gradient's warm end — the ground the floating tab bar sits on. */
+export const warmEnd = '#D97B52';
+
 export const glass = {
   fill: 'rgba(255, 255, 255, 0.06)',
   strong: 'rgba(255, 255, 255, 0.10)',

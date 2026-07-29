@@ -31,7 +31,7 @@ function contrast(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-const GROUND = '#12162E';
+const GROUND = '#2A2350';
 
 describe('the owner’s palette', () => {
   it('uses exactly the rendevuu hexes that were specified (D-043/D-044)', () => {
@@ -59,9 +59,9 @@ describe('the owner’s palette', () => {
     }
   });
 
-  it('puts the night navy under everything (D-044)', () => {
-    expect(color.background).toBe('#12162E');
-    expect(color.surface).toBe('#1C2242');
+  it('puts the lifted indigo under everything (D-046)', () => {
+    expect(color.background).toBe('#2A2350');
+    expect(color.surface).toBe('#3A3168');
   });
 });
 

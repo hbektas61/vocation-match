@@ -40,7 +40,6 @@ function destinationSource(cityKey: string) {
   };
 }
 
-const QUICK_CITIES = ['İstanbul', 'Antalya'];
 const EMPTY_DISC = require('../../assets/dark-hotel-disc.png');
 
 /** "12 Ağu – 17 Ağu" in the device's language — dates, never documents. */
@@ -83,21 +82,6 @@ const CalendarSmallIcon = () => (
   <Svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <Rect x={3} y={5} width={18} height={16} rx={3} />
     <Path d="M8 3v4M16 3v4M3 11h18" />
-  </Svg>
-);
-
-const ClockIcon = () => (
-  <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <Circle cx={12} cy={12} r={9} />
-    <Path d="M12 7v5l3 2" />
-  </Svg>
-);
-
-const CityIcon = () => (
-  <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <Path d="M10 12h4m-4-4h4m0 13v-3a2 2 0 0 0-4 0v3" />
-    <Path d="M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2" />
-    <Path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" />
   </Svg>
 );
 
@@ -153,8 +137,6 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
    * here" points at a person.
    */
   const [roomCounts, setRoomCounts] = useState<RoomHeadcount[] | null>(null);
-  /** What "Son arama" re-runs: the last query that actually searched. */
-  const [lastQuery, setLastQuery] = useState<string | null>(null);
   /** The declared window, shown on the active card (D-040). */
   const [stay, setStay] = useState<UpcomingStay | null>(null);
 
@@ -246,7 +228,6 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       if (ticket !== sequence.current) return;
       dispatch({ type: 'HOTELS_LOADED', hotels });
       setResults(hotels);
-      setLastQuery(text);
     } catch (err) {
       if (ticket !== sequence.current) return;
       setSearchError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
@@ -593,35 +574,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
             testID="room-here-now-locked"
             buttonTestID="vacation-choose-for-here-now"
           />
-          <Text style={styles.sectionTitle}>{COPY.hotel.quickOptions}</Text>
-          <View style={styles.chipRow}>
-            {QUICK_CITIES.map((city) => (
-              <Pressable
-                key={city}
-                accessibilityRole="button"
-                accessibilityLabel={city}
-                onPress={() => changeQuery(city)}
-                style={({ pressed }) => [styles.quickChip, pressed && styles.resultPressed]}
-                testID={`quick-${city}`}
-              >
-                <CityIcon />
-                <Text style={styles.quickChipLabel}>{city}</Text>
-              </Pressable>
-            ))}
-            {lastQuery && !QUICK_CITIES.includes(lastQuery) ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${COPY.hotel.lastSearch}: ${lastQuery}`}
-                onPress={() => changeQuery(lastQuery)}
-                style={({ pressed }) => [styles.quickChip, pressed && styles.resultPressed]}
-                testID="quick-last-search"
-              >
-                <ClockIcon />
-                <Text style={styles.quickChipLabel}>{COPY.hotel.lastSearch}</Text>
-              </Pressable>
-            ) : null}
-          </View>
-            </>
+                      </>
           )}
           <Text style={styles.sectionTitle}>{COPY.hotel.popularTitle}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.destinationRow}>

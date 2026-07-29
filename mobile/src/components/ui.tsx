@@ -29,7 +29,7 @@ import {
   radius,
   roomTone,
   spacing,
-  gradient, glass } from '../theme';
+  gradient, glass, backgroundGradient } from '../theme';
 
 export function Screen({
   children,
@@ -89,6 +89,14 @@ export function Screen({
   );
   return (
     <SafeAreaView style={styles.screen} edges={safeTop ? ['top', 'bottom'] : ['bottom']} testID={testID}>
+      <LinearGradient
+        colors={[...backgroundGradient]}
+        locations={[0, 0.45, 0.78, 1]}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
       {content}
     </SafeAreaView>
   );

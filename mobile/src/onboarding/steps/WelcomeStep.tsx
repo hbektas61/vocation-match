@@ -8,7 +8,7 @@ import { LanguageSwitch } from '../../components/LanguageSwitch';
 import { Button } from '../../components/ui';
 import { COPY } from '../../copy';
 import { useAppStore } from '../../state/AppStore';
-import { color, font, fontFamily, radius, spacing, glass } from '../../theme';
+import { color, font, fontFamily, radius, spacing, glass, backgroundGradient } from '../../theme';
 import type { StepProps } from './types';
 
 /**
@@ -54,6 +54,14 @@ export function WelcomeStep({ go }: StepProps) {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']} testID="screen-welcome">
+      <LinearGradient
+        colors={[...backgroundGradient]}
+        locations={[0, 0.45, 0.78, 1]}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.heroWrap}>
           <Image

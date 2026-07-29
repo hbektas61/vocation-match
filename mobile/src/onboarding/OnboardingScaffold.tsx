@@ -30,7 +30,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button, Notice, useScreenChangeAnnouncement } from '../components/ui';
 import { COPY } from '../copy';
-import { color, font, fontFamily, gradient, MIN_TOUCH, radius, spacing } from '../theme';
+import { color, font, fontFamily, gradient, MIN_TOUCH, radius, spacing, backgroundGradient } from '../theme';
 
 export function OnboardingProgress({ step, total }: { step: number; total: number }) {
   const ratio = Math.max(0, Math.min(1, total > 0 ? step / total : 0));
@@ -101,6 +101,14 @@ export function OnboardingScaffold({
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']} testID={testID}>
+      <LinearGradient
+        colors={[...backgroundGradient]}
+        locations={[0, 0.45, 0.78, 1]}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
       <OnboardingProgress step={step} total={total} />
       <View style={styles.bar}>
         {onBack ? (

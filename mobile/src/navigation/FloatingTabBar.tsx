@@ -14,7 +14,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import { color, font, fontFamily, radius, spacing } from '../theme';
+import { color, font, fontFamily, radius, spacing, warmEnd } from '../theme';
 
 function iconFor(routeName: string, active: boolean) {
   const stroke = active ? color.accentDeep : color.inkMuted;
@@ -115,15 +115,18 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
 
 const styles = StyleSheet.create({
   /** The floating card sits on the ground, not glued to the screen edge. */
+  /* The dock wears the gradient's warm end, so the bar never floats on a
+     stray white band (the owner's screenshot bug) and the glass reads like
+     the reference. */
   dock: {
-    backgroundColor: 'transparent',
+    backgroundColor: warmEnd,
     paddingHorizontal: spacing.sm,
   },
   bar: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(28, 34, 66, 0.92)',
+    backgroundColor: 'rgba(42, 35, 80, 0.55)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.14)',
+    borderColor: 'rgba(255, 255, 255, 0.35)',
     borderRadius: radius.lg,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.xs,
