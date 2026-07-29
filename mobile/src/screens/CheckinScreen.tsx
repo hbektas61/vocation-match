@@ -123,6 +123,14 @@ const WavesIcon = ({ tone = '#0E8A78' }: { tone?: string }) => (
   </Svg>
 );
 
+/** A crowd's place (D-049): a stage under its arch. */
+const StageIcon = ({ tone = DEEP }: { tone?: string }) => (
+  <Svg {...stroke(tone)}>
+    <Path d="M3 21h18M5 21V10l7-5 7 5v11" />
+    <Path d="M9 21v-5h6v5" />
+  </Svg>
+);
+
 /** The locate button on the list header. */
 const LocateIcon = ({ tone = DEEP }: { tone?: string }) => (
   <Svg {...stroke(tone)}>
@@ -208,6 +216,8 @@ const KIND_META: Record<string, { label: () => string; tint: string; tone: strin
   restaurant: { label: () => COPY.checkin.kindRestaurant, tint: 'rgba(251, 113, 133, 0.18)', tone: '#FB7185' },
   bar: { label: () => COPY.checkin.kindBar, tint: 'rgba(244, 114, 182, 0.18)', tone: DEEP },
   beach: { label: () => COPY.checkin.kindBeach, tint: 'rgba(52, 211, 153, 0.18)', tone: '#34D399' },
+  // D-049: places built for a crowd — arenas, açıkhavas, parks, museums.
+  venue: { label: () => COPY.checkin.kindVenue, tint: 'rgba(251, 191, 36, 0.18)', tone: '#FBBF24' },
 };
 
 function kindMeta(kind: string | null) {
@@ -234,6 +244,8 @@ function KindArt({ kind, tone }: { kind: string | null; tone: string }) {
       return <WavesIcon tone={tone} />;
     case 'hotel':
       return <BuildingIcon tone={tone} />;
+    case 'venue':
+      return <StageIcon tone={tone} />;
     default:
       return <PinIcon tone={tone} />;
   }

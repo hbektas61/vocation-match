@@ -2807,3 +2807,39 @@ halls, arenas, parks — verified all rejected today), honest failure when
 Overpass 504s (it did, on the first real request), the hardcoded "Türkiye"
 in venues-nearby, cell-label enrichment from reverse geocoding, and the
 density/duration decisions for festivals.
+
+## 2026-07-30 — a second provider, and the sweep's three wrongs (D-049)
+
+Overture Maps is in, as an ingest rather than an API — it publishes places as
+GeoParquet on S3, so `scripts/overture-ingest.py` queries it with DuckDB over
+HTTP range requests and pre-fills a region through the one write boundary
+(`provider='overture'`). Verified against the real dataset on a Kadıköy bbox:
+800 rows read, 315 kept, and the venues OSM misses are all there —
+Espressolab Kadıköy, PTT Cafe, Baylan, Kebo, Şükrü Saraçoğlu Stadı. The
+category mapper was rewritten mid-build after the dry run filed a hairdresser
+as a bar (`barber`) and an events agency as a concert hall
+(`event_planning`): exact category names only, read off the real taxonomy,
+plus one `*_restaurant` suffix rule. The write path needs the service role key
+and is therefore the owner's to run; its shape is verified (an anon key gets a
+clean 42501 rather than a malformed-call error).
+
+Honest result to record: the owner's own "Kral Expresso" is in *neither* OSM
+nor Overture. Coverage improves a great deal; it does not become total, which
+is exactly why D-048's here-anchor had to exist first.
+
+The three sweep fixes, all live on staging:
+  · `out center 30` is gone. Overpass returns its own internal order, so the
+    cap threw away 138 of 168 venues within 500 m — including the café the
+    owner stood in. Sorted by distance, cut at 40. Verified: Espressolab now
+    comes back *first* at that coordinate.
+  · The vocabulary took an eighth kind, `venue`, for places built for a crowd.
+    Verified: "volkswagen arena" now returns both the Sarıyer and the
+    Wolfsburg one (the latter thanks to D-047), tagged `venue`.
+  · A failed sweep returns 503 instead of an empty street plus a
+    neighbourhood row that implies "nothing here". Checking in where you
+    stand is untouched by this, by design.
+
+tsc, eslint, 427 jest. Still open: cell-label enrichment from reverse
+geocoding, cross-provider dedup, the density/duration decisions for
+festivals, and a self-hosted or commercial Overpass endpoint before real
+traffic.

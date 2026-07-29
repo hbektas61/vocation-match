@@ -48,18 +48,42 @@ const HOTEL_TYPES = new Set([
   "hotel",
   "motel",
   "guest_house",
+  "hostel",
   "resort",
   "beach_resort",
   "beach",
   "bar",
+  "pub",
   "nightclub",
+  "cafe",
+  "restaurant",
+  // D-049: places built for a crowd. Every big Istanbul concert venue was in
+  // OSM and every one was refused here, which is why "konsere gittim, mekân
+  // yok" was our answer rather than the map's.
+  "theatre",
+  "arts_centre",
+  "events_venue",
+  "conference_centre",
+  "cinema",
+  "stadium",
+  "sports_centre",
+  "arena",
+  "theme_park",
+  "attraction",
+  "water_park",
+  "zoo",
+  "aquarium",
+  "museum",
 ]);
 
 /** The category chip's truth (D-041), from Nominatim's own type. */
 function kindOfType(type: string): string | null {
   if (type === "cafe") return "cafe";
   if (type === "restaurant") return "restaurant";
-  if (/^(bar|pub|nightclub)$/.test(type)) return "bar";
+  if (/^(bar|pub|nightclub|biergarten)$/.test(type)) return "bar";
+  if (/^(theatre|arts_centre|events_venue|conference_centre|cinema|stadium|sports_centre|arena|theme_park|attraction|water_park|zoo|aquarium|museum)$/.test(type)) {
+    return "venue";
+  }
   if (/^(hotel|motel|guest_house|resort)$/.test(type)) return "hotel";
   if (/^(beach|beach_resort)$/.test(type)) return "beach";
   return null;
