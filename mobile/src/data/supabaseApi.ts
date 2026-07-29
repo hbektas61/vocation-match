@@ -790,14 +790,25 @@ export class SupabaseApi implements VocationApi {
    * unconfigured, out of allowance, or the provider is unwell. It never means
    * the street is empty, which is what the catalogue is for.
    */
-  async googlePlacesNearby(latitude: number, longitude: number): Promise<GooglePlaceHit[] | null> {
+  async googlePlaceSearch(
+    query: string,
+    latitude: number,
+    longitude: number,
+  ): Promise<GooglePlaceHit[] | null> {
     const { data, error } = await this.client.functions.invoke('places-google', {
-      body: { op: 'nearby', latitude, longitude },
+      body: { op: 'search', query, latitude, longitude },
     });
     if (error || !Array.isArray(data?.places)) return null;
-    return (data.places as { placeId: string; name: string; metres: number | null }[]).map(
-      (place) => ({ placeId: place.placeId, name: place.name, metres: place.metres ?? null }),
-    );
+    return (data.places as { placeId: string; name: string }[]).map((place) => ({
+      placeId: place.placeId,
+      name: place.name,
+    }));
+  }
+
+  async googleFindsRemaining(): Promise<number> {
+    const { data, error } = await this.client.rpc('google_finds_remaining');
+    if (error || typeof data !== 'number') return 0;
+    return data;
   }
 
   async resolveGooglePlace(placeId: string): Promise<string | null> {

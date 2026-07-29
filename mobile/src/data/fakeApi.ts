@@ -702,6 +702,16 @@ export class FakeApi implements VocationApi {
     ) {
       throw new ApiError('INVALID_INPUT', 'That location reading is not usable.');
     }
+    if (googlePlaceId) {
+      // D-053: a labelled check-in spends one of the month's finds, and a
+      // spent allowance refuses the label rather than the check-in.
+      const allowance = this.isPremiumNow(userId) ? 10 : 3;
+      const used = this.googleFinds.get(userId) ?? 0;
+      if (used >= allowance) {
+        throw new ApiError('FORBIDDEN', 'No advanced place finds left this month.');
+      }
+      this.googleFinds.set(userId, used + 1);
+    }
     // D-048: the anchor is built around the reading, so there is no geometry
     // left to fail — this is the branch that cannot answer "nowhere".
     const cell = cellOf(latitude, longitude);
@@ -722,12 +732,20 @@ export class FakeApi implements VocationApi {
    * when no key is configured — null, meaning "do not offer this option".
    * Tests that need the option present stub this deliberately.
    */
-  async googlePlacesNearby(
+  async googlePlaceSearch(
+    _query: string,
     _latitude: number,
     _longitude: number,
   ): Promise<GooglePlaceHit[] | null> {
     await this.requireUserId();
     return null;
+  }
+
+  /** D-053: three a month free, ten on Premium — the fake mirrors the rule. */
+  async googleFindsRemaining(): Promise<number> {
+    const userId = await this.requireUserId();
+    const allowance = this.isPremiumNow(userId) ? 10 : 3;
+    return Math.max(allowance - (this.googleFinds.get(userId) ?? 0), 0);
   }
 
   async resolveGooglePlace(_placeId: string): Promise<string | null> {
@@ -1247,6 +1265,9 @@ export class FakeApi implements VocationApi {
    * two people standing in one cell share one anchor.
    */
   private cellVenues = new Map<string, { latitude: number; longitude: number }>();
+
+  /** D-053: advanced finds spent this run, per user. Spent on a find only. */
+  private readonly googleFinds = new Map<string, number>();
 
   /** An anchor's point, whether it is a catalogue fixture or a cell. */
   private venuePoint(venueId: string): { latitude: number; longitude: number } | null {

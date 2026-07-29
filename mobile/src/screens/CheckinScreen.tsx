@@ -473,11 +473,16 @@ export function CheckinScreen({
    * their terms require, and nothing about the answer is stored.
    */
   const askGoogle = async () => {
-    if (!reading || busy) return;
+    // D-053: a *typed* name, so there is nothing to ask until one exists.
+    if (!reading || busy || query.trim().length < 2) return;
     setBusy(true);
     setGoogleTried(true);
     try {
-      const places = await getApi().googlePlacesNearby(reading.latitude, reading.longitude);
+      const places = await getApi().googlePlaceSearch(
+        query.trim(),
+        reading.latitude,
+        reading.longitude,
+      );
       setGooglePlaces(places);
       for (const place of places ?? []) resolvedNames.current.set(place.placeId, place.name);
       if (places === null) {

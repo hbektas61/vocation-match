@@ -2984,3 +2984,48 @@ and failed-sweep/empty-cache behaviour separately. Focused suites: 27/27.
 `scripts/check.sh --mobile` is green end to end: auth configuration and its
 negative controls, dependency health, TypeScript, zero-warning ESLint, the
 complete 433/433 mobile suite, and the Expo web bundle.
+
+## 2026-07-30 — no Nearby, an entitled written search, and a monthly sync (D-053)
+
+The owner refined D-052 the day it landed and the refinement is better on both
+axes. Nearby is gone: by the time Google is reached the user has already typed
+the name, so this is a text search's question and a text search is the cheaper
+SKU. On their own 5–10% assumption at 100k users the arithmetic lands near
+**$65 a month** against the Nearby model's $14,400 — two orders of magnitude.
+And because the anchor is our own cell, the field mask shrank again: we ask for
+`place_id` and a name, never a coordinate.
+
+I flagged the hole in "spend the right only on completion" — it is fair to the
+user but bounds nothing, since fifty searches that select nothing are fifty
+searches we pay for. So there are two counters doing two jobs: the entitlement
+(3 free, 10 Premium) counts *finds* and is claimed inside `checkin_here`, the
+only moment it is fair to spend; a per-user rate limit (10/hour) counts
+*attempts*. The service ceiling from D-052 sits above both. The rate-limit
+number and the monthly reset are my recommendation, taken because the owner's
+reply came back as a verbatim echo of my own message — both are one-line
+changes if they want different ones.
+
+Verified live on staging: a Premium account's ten finds ran out at the
+eleventh with `PP002`, `google_finds_remaining` walked 5 → 0, and the
+here-anchor kept working with the entitlement spent, which is the point.
+
+Two real bugs found by that test, both fixed:
+  · D-052 left `checkin_here` overloaded (two- and three-argument forms both
+    resolvable), and PostgREST refused to choose — so the *unlabelled* call,
+    the one path that must never fail, was broken. The old form is dropped.
+  · My first entitlement test read as passing because the fake hands every new
+    profile a year of Premium. The test now takes it away and checks both
+    tiers.
+
+Monthly sync: `deactivate_missing_places` retires what a fresh read no longer
+contains, and refuses three ways — never `provider='cell'`, never on an empty
+read (far likelier a failed download than a city that lost every venue), and
+never outside the box actually read. It sets `is_active = false`, never
+deletes: `checkins` and `user_active_hotel` hold `on delete restrict` and
+matches reference a venue for months. `--sync` on the ingest script drives it.
+All three refusals verified, plus 42501 for an anon key.
+
+tsc, eslint, 440 jest. Still the owner's: the Google Cloud key, restricted to
+the backend, with the daily quota near 150 —
+`supabase secrets set GOOGLE_PLACES_KEY=…`. Until it exists the advanced find
+is simply not offered.

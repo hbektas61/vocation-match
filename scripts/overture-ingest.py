@@ -195,6 +195,30 @@ def upsert(place: dict, kind: str, url: str, key: str) -> None:
         response.read()
 
 
+def retire_missing(present_ids: list[str], bbox: str, url: str, key: str) -> int:
+    west, south, east, north = (float(part) for part in bbox.split(","))
+    payload = json.dumps({
+        "p_provider": "overture",
+        "p_present_ids": present_ids,
+        "p_west": west,
+        "p_south": south,
+        "p_east": east,
+        "p_north": north,
+    }).encode()
+    request = urllib.request.Request(
+        f"{url}/rest/v1/rpc/deactivate_missing_places",
+        data=payload,
+        headers={
+            "apikey": key,
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=120) as response:
+        return int(json.loads(response.read() or b"0") or 0)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Pre-fill the catalogue from Overture places.")
     parser.add_argument("--bbox", required=True, help="west,south,east,north in degrees")
@@ -212,6 +236,15 @@ def main() -> None:
         help="Overture's own confidence floor; below it a row is a guess.",
     )
     parser.add_argument("--dry-run", action="store_true", help="report, write nothing")
+    parser.add_argument(
+        "--sync",
+        action="store_true",
+        help=(
+            "After writing, retire places this read no longer contains (D-053). "
+            "Retiring means is_active = false, never a delete: a venue is "
+            "referenced by check-ins and by matches for months."
+        ),
+    )
     parser.add_argument(
         "--cache",
         help=(
@@ -312,6 +345,13 @@ def finish(places: list[dict], args) -> None:
                 if failed <= 5:
                     print(f"  ! {place['name'][:40]}: {error}", file=sys.stderr)
     print(f"written: {written}/{len(kept)}" + (f", failed: {failed}" if failed else ""))
+
+    if args.sync:
+        # Only the ids this run actually saw, inside only the box it read, so a
+        # partial or failed download can never retire a city it never opened.
+        present = [place["id"] for place in places]
+        retired = retire_missing(present, args.bbox, url, key)
+        print(f"retired (is_active=false): {retired}")
 
 
 if __name__ == "__main__":

@@ -234,8 +234,6 @@ export interface RoomHeadcount {
 export interface GooglePlaceHit {
   placeId: string;
   name: string;
-  /** For ordering the picker. Never shown, and never stored. */
-  metres: number | null;
 }
 
 export interface ActiveCheckin {
@@ -447,12 +445,21 @@ export interface VocationApi {
     googlePlaceId?: string,
   ): Promise<CheckinAnswer>;
   /**
-   * The ten nearest places Google knows, for the picker's second list — only
-   * ever called when somebody has pressed check-in (D-052). Returns null when
-   * the option is unavailable: no key configured, or the month's allowance
-   * spent. Null means "do not offer this", never "there is nothing here".
+   * The advanced find (D-053): a name the user has *typed*, biased to where
+   * they are, so the right branch of a chain surfaces first. There is no
+   * "nearby" call — what is around somebody is our catalogue's question.
+   *
+   * Returns null when the option is unavailable: no key, the month's service
+   * ceiling reached, or this user searching too often. Null means "do not
+   * offer this", never "there is nothing by that name".
    */
-  googlePlacesNearby(latitude: number, longitude: number): Promise<GooglePlaceHit[] | null>;
+  googlePlaceSearch(
+    query: string,
+    latitude: number,
+    longitude: number,
+  ): Promise<GooglePlaceHit[] | null>;
+  /** How many advanced finds are left this month (3 free, 10 premium). */
+  googleFindsRemaining(): Promise<number>;
   /** A Place ID back into a name, for drawing it. Null when unavailable. */
   resolveGooglePlace(placeId: string): Promise<string | null>;
   clearCheckin(): Promise<void>;

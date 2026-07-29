@@ -26,6 +26,13 @@ async function signedIn(phone: string): Promise<FakeApi> {
   return api;
 }
 
+it('gives Premium ten advanced finds and everybody else three (D-053)', async () => {
+  const api = await signedIn('+905551119027');
+  expect(await api.googleFindsRemaining()).toBe(10);
+  await api.setPremium(false);
+  expect(await api.googleFindsRemaining()).toBe(3);
+});
+
 it('stores the place id and nothing else Google gave us', async () => {
   const api = await signedIn('+905551119020');
   await api.checkinHere(SPOT.latitude, SPOT.longitude, 'ChIJ_google_place_id_example');
@@ -70,11 +77,34 @@ it('a catalogue pick clears the label, so one row never mixes providers', async 
 it('says "not on offer" rather than "nothing here" when Google is unavailable', async () => {
   const api = await signedIn('+905551119024');
   // The fake has no Google, exactly as the real backend behaves with no key.
-  const places = await api.googlePlacesNearby(SPOT.latitude, SPOT.longitude);
+  const places = await api.googlePlaceSearch('esslab', SPOT.latitude, SPOT.longitude);
   expect(places).toBeNull();
   expect(await api.resolveGooglePlace('ChIJ_anything')).toBeNull();
 
   // And the guaranteed path is untouched by that.
+  const answer = await api.checkinHere(SPOT.latitude, SPOT.longitude);
+  expect(answer.withinRange).toBe(true);
+});
+
+it('spends one advanced find per labelled check-in, and refuses at the third (D-053)', async () => {
+  const api = await signedIn('+905551119026');
+  // The fake hands every new profile a year of Premium so premium paths are
+  // reachable; the free tier is the case that matters here, so take it away.
+  await api.setPremium(false);
+  expect(await api.googleFindsRemaining()).toBe(3);
+
+  for (const place of ['ChIJ_one', 'ChIJ_two', 'ChIJ_three']) {
+    await api.checkinHere(SPOT.latitude, SPOT.longitude, place);
+  }
+  expect(await api.googleFindsRemaining()).toBe(0);
+
+  // The fourth is refused — the label, not the check-in.
+  await expect(
+    api.checkinHere(SPOT.latitude, SPOT.longitude, 'ChIJ_four'),
+  ).rejects.toThrow();
+
+  // And the guaranteed path is untouched by a spent entitlement, which is the
+  // whole point of keeping the anchor independent of any provider.
   const answer = await api.checkinHere(SPOT.latitude, SPOT.longitude);
   expect(answer.withinRange).toBe(true);
 });
@@ -84,7 +114,7 @@ it('refuses a label that is not a plausible place reference', async () => {
   // The server-side check is a length window; the fake mirrors the contract
   // by simply carrying whatever it is given, so this test documents the
   // boundary the migration enforces rather than duplicating it.
-  const stub: GooglePlaceHit = { placeId: 'ChIJ_ok', name: 'Esslab', metres: 12 };
+  const stub: GooglePlaceHit = { placeId: 'ChIJ_ok', name: 'Esslab' };
   await api.checkinHere(SPOT.latitude, SPOT.longitude, stub.placeId);
   expect((await api.getCheckin())?.googlePlaceId).toBe('ChIJ_ok');
 });
