@@ -5,9 +5,11 @@
  * come from a provider feed — but until now the only provider was a seed file
  * with five hotels in it, so every search was really a search of those five.
  * This function is the provider feed. When the catalogue answers thinly, it
- * asks OpenStreetMap's Nominatim for hotels by that name in Turkey, writes
- * what it finds through `upsert_hotel_from_provider` (the single write
- * boundary the schema was built around), and searches again.
+ * asks OpenStreetMap's Nominatim for venues by that name — anywhere in the
+ * world (D-047) — writes what it finds through `upsert_hotel_from_provider`
+ * (the single write boundary the schema was built around), and searches
+ * again. The search is destination-first: the place someone is going lives
+ * in their query, so no location or country bias is applied here.
  *
  * The catalogue therefore grows lazily: only hotels somebody actually searched
  * for are ever stored, which is bounded by the real world rather than by the
@@ -91,7 +93,8 @@ function roleOf(authorization: string): string | null {
 }
 
 function cityOf(address: Record<string, string> | undefined): string {
-  if (!address) return "Türkiye";
+  if (!address) return "—";
+
   return (
     address.city ??
     address.town ??
@@ -100,17 +103,21 @@ function cityOf(address: Record<string, string> | undefined): string {
     address.district ??
     address.province ??
     address.state ??
-    "Türkiye"
+    address.country ??
+    "—"
   );
 }
 
 async function askNominatimOnce(query: string): Promise<NominatimHit[]> {
   const url = new URL(NOMINATIM);
   url.searchParams.set("q", query);
-  // Owner decision, 2026-07-27: the pilot region is Türkiye plus Cyprus —
-  // the island carries the KKTC resorts (Cratos, Elexus, Merit…) that a
-  // Turkish holiday audience expects to find.
-  url.searchParams.set("countrycodes", "tr,cy");
+  // D-047 (owner, 2026-07-29): the search is global. The earlier tr,cy lock
+  // was the pilot's scope, not the product's — someone in Germany plans a
+  // Türkiye trip from home, and the destination lives in the *query*, never
+  // in where the phone happens to be. Deliberately no viewbox and no
+  // location bias here: text relevance and Nominatim's own importance rank
+  // the world, and the result card's city/country line does the
+  // disambiguation. Proximity stays what Çevremde is for.
   url.searchParams.set("format", "jsonv2");
   url.searchParams.set("limit", "10");
   url.searchParams.set("addressdetails", "1");
@@ -121,7 +128,15 @@ async function askNominatimOnce(query: string): Promise<NominatimHit[]> {
   });
   if (!response.ok) return [];
   const hits = (await response.json()) as NominatimHit[];
-  return hits.filter((hit) => HOTEL_TYPES.has(hit.type) && (hit.name ?? "").length > 0);
+  // A country is required downstream (the catalogue's own constraint asks
+  // for one); with addressdetails=1 it is virtually always present, and a
+  // hit without one is not a venue anyone can plan a trip around.
+  return hits.filter(
+    (hit) =>
+      HOTEL_TYPES.has(hit.type) &&
+      (hit.name ?? "").length > 0 &&
+      (hit.address?.country ?? "").length >= 2,
+  );
 }
 
 /**
@@ -300,7 +315,7 @@ Deno.serve(async (req) => {
         p_provider_hotel_id: `${hit.osm_type}/${hit.osm_id}`,
         p_name: hit.name,
         p_city: cityOf(hit.address),
-        p_country: hit.address?.country ?? "Türkiye",
+        p_country: hit.address?.country ?? "Unknown",
         p_latitude: Number(hit.lat),
         p_longitude: Number(hit.lon),
         p_address: hit.address?.road ?? null,

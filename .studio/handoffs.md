@@ -2751,3 +2751,20 @@ and shows a loading face — never the empty card — while the card is in
 flight; Discovery treats "account still loading" as loading. Pinned by
 a new relaunch test that mocks the search to emptiness and expects the
 chosen hotel's card anyway. tsc, eslint, 420 jest green.
+
+## 2026-07-29 — hotel search went global (D-047)
+
+The countrycodes=tr,cy lock left the hotel-search function: Nominatim
+is now asked about the whole world, with deliberately no viewbox, no
+proximity bias and no IP filter — the destination lives in the query
+(the Germany-user-books-Türkiye scenario the owner raised), the result
+card's city/country line disambiguates, and Çevremde keeps location to
+itself. Hits without a country are dropped before the catalogue (its
+constraint requires one) and the Türkiye fallbacks left with the lock.
+Deployed to staging and verified live: "adlon kempinski" → Berlin,
+Deutschland; "hotel sacher wien" → Wien, Österreich; "fontainebleau
+miami" → Miami Beach, United States — each found at OSM, cached
+through upsert_hotel_from_provider, and answered from the catalogue on
+repeat. Scale note in D-047: a real global launch moves this function
+off the public Nominatim endpoint and adds declared-context and
+popularity ranking ahead of any locale hint.
