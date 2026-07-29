@@ -119,6 +119,9 @@ def connect():
         sys.exit("duckdb is required: pip install duckdb")
     con = duckdb.connect()
     con.execute("install httpfs; load httpfs; set s3_region='us-west-2';")
+    # A city's worth of range requests over a public bucket will hit a slow
+    # one; the defaults give up too early for a run that takes minutes.
+    con.execute("set http_timeout = 120000; set http_retries = 5; set http_keep_alive = true;")
     return con
 
 
@@ -231,7 +234,20 @@ def main() -> None:
     places = []
     seen_ids = set()
     for index, tile in enumerate(tiles_of((west, south, east, north), args.grid), start=1):
-        found = fetch(con, tile, args.limit)
+        # One flaky object should not throw away the tiles already read, so a
+        # tile is retried and then skipped rather than killing the run. What
+        # was read stays in the cache either way.
+        found = []
+        for attempt in range(1, 4):
+            try:
+                found = fetch(con, tile, args.limit)
+                break
+            except Exception as error:  # noqa: BLE001 — DuckDB raises IOException
+                print(f"  tile {index}: attempt {attempt} failed ({str(error)[:80]})", flush=True)
+                if attempt == 3:
+                    print(f"  tile {index}: skipped", flush=True)
+                else:
+                    con = connect()
         fresh = [place for place in found if place["id"] not in seen_ids]
         seen_ids.update(place["id"] for place in fresh)
         places.extend(fresh)
