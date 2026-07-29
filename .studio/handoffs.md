@@ -2695,3 +2695,15 @@ face) with the first name at 12 under it; conversation rows became the
 sheet's 18-corner glass cards — the 46 face, 14 name over the 12
 preview, the clock at 11 on the right. Closed conversations keep their
 dimmed treatment and label. tsc, eslint, 419 jest green.
+
+## 2026-07-29 — the inbox's empty state, to the Figma sheet
+
+Node 12:137 applied and verified with a fresh account in the running
+web app. The empty inbox now stands top-anchored the way the sheet
+draws it: the 13 line under the head ("Eşleşmelerin ve sohbetlerin."),
+the lobby render filling the sheet's 180 band at 20 corners, "Henüz
+eşleşme yok" at 22 over the 13 sentence, then the gradient
+"Keşfetmeye başla" and the outlined "Tatilimi ayarla" — the shared
+Button pair replacing the old BigActionButtons, whose centred float,
+icons and 26/16 type left with the design. All copy already matched
+the sheet word for word. tsc, eslint, 419 jest green.

@@ -3,15 +3,14 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Avatar, Notice, Screen } from '../components/ui';
-import { BigActionButton } from '../components/BigActionButton';
+import { Avatar, Button, Notice, Screen } from '../components/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
 import { ApiError, getApi, type MatchSummary } from '../data';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
-import { color, font, fontFamily, radius, spacing, glass } from '../theme';
+import { color, font, fontFamily, glass } from '../theme';
 
 /** The owner's own 3D lobby render (2026-07-28), bundled — not a redrawing. */
 const INBOX_HERO = require('../../assets/dark-inbox-chat.png');
@@ -83,37 +82,32 @@ export function InboxScreen() {
       ) : matches === null ? (
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="inbox-loading" />
       ) : matches.length === 0 ? (
-        /* The designer's empty inbox (2026-07-27): the two bubbles and the
-           heart, why it is empty in one sentence, and both ways to change
-           that — discovery, or the rooms that open it. */
+        /* The sheet's empty inbox (12:137): the line under the head, the
+           lobby art in the 180 band, why it is empty in one sentence, and
+           both ways to change that — top-anchored, not floated. */
         <View style={styles.empty} testID="inbox-empty">
+          <Text style={styles.subtitle}>{COPY.inbox.subtitle}</Text>
           <Image
             source={INBOX_HERO}
             style={styles.emptyHero}
-            resizeMode="contain"
+            resizeMode="cover"
             accessibilityIgnoresInvertColors
           />
-          <View style={styles.emptyWords}>
-            <Text accessibilityRole="header" style={styles.emptyTitle}>
-              {COPY.inbox.emptyTitle}
-            </Text>
-            <Text style={styles.emptyBody}>{COPY.inbox.emptyBody}</Text>
-          </View>
-          <View style={styles.emptyActions}>
-            <BigActionButton
-              label={COPY.inbox.startDiscovering}
-              icon="sparkle"
-              filled
-              onPress={() => tabNavigation.navigate('Discovery')}
-              testID="inbox-start-discovering"
-            />
-            <BigActionButton
-              label={COPY.inbox.viewRooms}
-              icon="door"
-              onPress={() => tabNavigation.navigate('Vacation')}
-              testID="inbox-view-rooms"
-            />
-          </View>
+          <Text accessibilityRole="header" style={styles.emptyTitle}>
+            {COPY.inbox.emptyTitle}
+          </Text>
+          <Text style={styles.emptyBody}>{COPY.inbox.emptyBody}</Text>
+          <Button
+            label={COPY.inbox.startDiscovering}
+            onPress={() => tabNavigation.navigate('Discovery')}
+            testID="inbox-start-discovering"
+          />
+          <Button
+            label={COPY.inbox.viewRooms}
+            variant="secondary"
+            onPress={() => tabNavigation.navigate('Vacation')}
+            testID="inbox-view-rooms"
+          />
         </View>
       ) : (
         <>
@@ -247,33 +241,32 @@ function firstName(name: string): string {
 }
 
 const styles = StyleSheet.create({
-  empty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.sm,
+  /** The sheet's empty column (12:137): top-anchored, 12 between. */
+  empty: { alignSelf: 'stretch', gap: 12 },
+  subtitle: {
+    fontFamily: fontFamily.body,
+    fontSize: 13,
+    lineHeight: 13 * 1.5,
+    color: color.inkMuted,
   },
-  emptyWords: { alignItems: 'center', gap: spacing.sm },
   emptyTitle: {
     fontFamily: fontFamily.display,
-    fontSize: font.title,
+    fontSize: 22,
     color: color.ink,
     textAlign: 'center',
   },
   emptyBody: {
     fontFamily: fontFamily.body,
-    fontSize: font.body,
-    lineHeight: font.body * 1.5,
+    fontSize: 13,
+    lineHeight: 13 * 1.5,
     color: color.inkMuted,
     textAlign: 'center',
-    maxWidth: 280,
   },
-  emptyActions: { alignSelf: 'stretch', gap: spacing.sm },
+  /** The lobby art in the sheet's 180 band (12:142). */
   emptyHero: {
     width: '100%',
-    aspectRatio: 398 / 172,
-    borderRadius: radius.lg,
+    height: 180,
+    borderRadius: 20,
   },
   /** The sheet's head row (12:167). */
   headRow: {
