@@ -419,16 +419,38 @@ the gate was not run — there was nothing in it to exercise.
 
 Test count went 595 → 612.
 
-### Not yet done
+### Also done
 
-- **§9 Etkinlikler restyle.** The screen is functionally complete from D-056 and
-  now carries the profile ring, but it has not been moved onto the glass/sunset
-  surfaces frame-for-frame, and the non-destructive refresh (`E-06`) and the
-  first-class no-image card (`E-20`) are designed but not implemented.
-- **§7 Tatilim frames.** The destination-first flow itself shipped with D-054;
-  what remains is the frame-for-frame styling pass against `T-01`…`T-22`.
+| Increment | Commit | What landed |
+| --- | --- | --- |
+| Etkinlikler surfaces | `69e1e66` | Non-destructive refresh (`E-06`) — a filter change keeps the list up, an area change still clears it; imageless card as a first-class layout plus a fallback for a lease that lapses mid-list (`E-20`); the memberships list reads the leased name instead of printing a provider id, falling back to "Geçmiş etkinlik" (`E-11`); missing venue name gets the app's own sentence (`E-19`); standing glass area header (`E-05`); section counts; status as word + glyph + dim, never hidden (`E-18`). 4 new tests. |
+| Tatilim empty state | this commit | `T-01` shows **both** features shut with their reasons. Only Tatilden Önce was drawn, so somebody who had not yet chosen a place could not learn Oteldeyim existed. 1 new test. |
+
+Test count 595 → 617.
+
+### Two things not delivered as drawn, and why
+
+**`N-07` / `N-08` — the remaining advanced-search allowance.** The frames show
+"Bu ay 3 gelişmiş arama hakkın kaldı" and a distinct exhausted state. The
+client API exposes no remaining-entitlement value; D-053's 3/10 monthly count is
+enforced server-side and never returned. Showing it needs one narrow addition to
+the check-in contract. Not invented client-side — a number we guessed would be
+worse than no number. **Open for the owner:** add it, or drop the count from the
+design and keep only the existing "hak bitti" refusal, which does work.
+
+**`NAV-08` — the profile menu.** The ring opens Settings directly rather than a
+menu whose rows are the same rows Settings already shows. Drawing it as
+designed would put the same list on two consecutive screens, which is the
+duplication §2 of this document set out to remove. Recorded as a deliberate
+departure rather than made silently. **Open for the owner:** say the word and
+the menu goes in.
+
+### Still not done
+
+- **§7/§8 frame-for-frame styling.** Tatilim and Çevremde carry every state the
+  frames specify — including `T-19` `LOCATION_INACCURATE`, `T-11` the switch
+  confirmation, `N-05`–`N-10` the Google fallback chain and "Buradayım" — but
+  they have not been walked pixel by pixel against the frames.
 - **§14 device verification.** 320 px, large-text and safe-area behaviour are
-  specified on `R-01`…`R-06` and honoured in the components, but have not been
-  checked on a real device or against the Figma renders side by side.
-
-Nothing above changes the approved design; it is remaining execution.
+  honoured in the components and specified on `R-01`…`R-06`, but have not been
+  checked on a real device or rendered side by side with Figma.

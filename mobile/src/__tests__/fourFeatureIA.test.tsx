@@ -11,7 +11,7 @@ import { act, fireEvent, screen } from '@testing-library/react-native';
 
 import { COPY, matchSource, roomPlate } from '../copy';
 import { FakeApi, getApi, setApi, type RoomKey } from '../data';
-import { onboardWithHotel } from '../testSupport/onboarding';
+import { onboard, onboardWithHotel } from '../testSupport/onboarding';
 
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
 
@@ -273,5 +273,18 @@ describe('D-057 Etkinlikler (§9)', () => {
       COPY.events.notEverything,
     );
     expect(screen.getByTestId('events-attribution')).toHaveTextContent(COPY.events.attribution);
+  });
+});
+
+describe('D-057 Tatilim (§7)', () => {
+  it('shows both features, both shut, before a place is chosen (T-01)', async () => {
+    // A fresh account with no active venue: the tab's whole job here is to
+    // say what choosing a place gets you, so neither feature may be missing.
+    // `onboard` finishes the wizard without choosing a place — an active
+    // venue is not part of finishing (D-040).
+    await onboard('Deniz');
+
+    expect(await screen.findByTestId('room-upcoming-locked')).toBeTruthy();
+    expect(await screen.findByTestId('room-here-now-locked')).toBeTruthy();
   });
 });

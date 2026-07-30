@@ -527,6 +527,10 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           that exists before any venue does, honestly shut behind the one
           thing it needs. */}
       {!picking && !activeId && !onActivated && !loadingActive ? (
+        /* T-01: both features, both shut, both saying why. Only Tatilden Önce
+           was here, so somebody who had not yet chosen a place could not learn
+           Oteldeyim existed — the tab's whole job at that moment is to say
+           what choosing a place gets you. */
         <View style={styles.idle} testID="hotel-search-prompt">
           <VacationFeatureCard
             room="UPCOMING"
@@ -537,6 +541,17 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
             onOpen={() => setPicking(true)}
             testID="room-upcoming-locked"
             buttonTestID="vacation-choose-for-upcoming"
+          />
+          <VacationFeatureCard
+            room="HERE_NOW"
+            status={null}
+            tag={COPY.vacation.premiumTag}
+            lead={COPY.rooms.hereNowLead}
+            body={COPY.vacation.hereNowFeatureBody}
+            buttonLabel={COPY.vacation.chooseFirst}
+            onOpen={() => setPicking(true)}
+            testID="room-here-now-locked"
+            buttonTestID="vacation-choose-for-here-now"
           />
         </View>
       ) : null}
