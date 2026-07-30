@@ -222,7 +222,14 @@ export function VenuePicker({
     ? COPY.venue.destinationChosen(destination.name)
     : COPY.venue.destinationTitle;
   const noResults = destination ? COPY.venue.venueNoResults : COPY.venue.destinationNoResults;
-  const prompt = destination ? COPY.venue.venuePrompt : COPY.venue.destinationHint;
+  /**
+   * The line under the empty field. On the destination step it used to repeat
+   * `destinationHint` — which is already printed above the field — so the same
+   * sentence appeared twice on one screen and the one thing somebody actually
+   * needs to know, that nothing is searched under three characters, was said
+   * nowhere. The venue step's own prompt is not a repeat, so it stays.
+   */
+  const prompt = destination ? COPY.venue.venuePrompt : COPY.venue.minQuery;
 
   return (
     <View testID={`venue-picker-${step}`}>

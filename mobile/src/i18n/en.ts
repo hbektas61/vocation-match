@@ -364,7 +364,7 @@ export const en = {
     destinationChosen: (name: string) => `Where will you be in ${name}?`,
     changeDestination: 'Change destination',
     venueLabel: 'Search places',
-    venuePlaceholder: 'Hotel, resort, beach or beach club',
+    venuePlaceholder: 'Hotel, resort or beach',
     venueNoResults: 'Nothing by that name in this area.',
     venuePrompt: 'Type the name of the place you will stay at.',
     chipAll: 'All',

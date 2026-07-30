@@ -346,7 +346,7 @@ export const tr: Copy = {
     destinationChosen: (name: string) => `${name}'da nerede olacaksın?`,
     changeDestination: 'Destinasyonu değiştir',
     venueLabel: 'Mekân ara',
-    venuePlaceholder: 'Otel, resort, beach veya beach club ara',
+    venuePlaceholder: 'Otel, resort veya plaj ara',
     venueNoResults: 'Bu bölgede bu adla bir yer yok.',
     venuePrompt: 'Kalacağın yerin adını yaz.',
     chipAll: 'Tümü',
