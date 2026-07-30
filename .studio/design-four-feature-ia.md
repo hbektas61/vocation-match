@@ -1,7 +1,8 @@
 # D-057 — Four-Feature IA (design handoff)
 
-**Status:** Phase 1 complete, awaiting owner approval. **No application code, database,
-function, migration or test has been touched.**
+**Status:** Approved by the owner on 2026-07-30 and recorded as **D-057**.
+Implementation is under way — see §13 for what has shipped and what has not.
+The design below is the approved reference and does not change as code lands.
 
 **Figma file:** <https://www.figma.com/design/wIc8HyZwV1rD2IY3csJa49/Vacation-Match-%E2%80%94-Flows>
 **Page:** `D-057 — Four-Feature IA` — node `25:71`
