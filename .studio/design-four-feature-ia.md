@@ -446,12 +446,28 @@ duplication §2 of this document set out to remove. Recorded as a deliberate
 departure rather than made silently. **Open for the owner:** say the word and
 the menu goes in.
 
+### Frame-by-frame accounting
+
+| Group | Frames | State in the app |
+| --- | --- | --- |
+| NAV-01…07 | 7 | done |
+| NAV-08 | 1 | deliberately collapsed into the ring (above) |
+| T-01…T-22 | 22 | every state present, including `T-11` switch confirmation and `T-19` `LOCATION_INACCURATE`; `T-01` corrected in `61eaadf` |
+| N-01…N-14 | 14 | every state present except `N-07`'s remaining count (above); `N-08`'s refusal itself works |
+| E-01…E-20 | 20 | done — `69e1e66` |
+| E-21…E-36 | 16 | all eight verification outcomes were already handled; `E-22` and `E-24` added in `2667c97` |
+| D-01…D-06, M-01…M-04, I-01…I-02, C-01…C-03 | 15 | done — `9d0f580`, `945d204` |
+| S-01…S-07 | 7 | screens exist and are reachable from the ring |
+| R-01…R-06 | 6 | honoured in the components; not yet measured on a device |
+
+So **106 of 108** frames have their behaviour in the app. The two that do not are
+`NAV-08` and `N-07`, both above, both owner decisions rather than oversights.
+
 ### Still not done
 
-- **§7/§8 frame-for-frame styling.** Tatilim and Çevremde carry every state the
-  frames specify — including `T-19` `LOCATION_INACCURATE`, `T-11` the switch
-  confirmation, `N-05`–`N-10` the Google fallback chain and "Buradayım" — but
-  they have not been walked pixel by pixel against the frames.
+- **Pixel-by-pixel comparison.** Every state exists and carries the right words;
+  no screen has been rendered beside its frame at 390×844 and corrected for
+  spacing, weight and radius. This is the remaining §17.10–11 work.
 - **§14 device verification.** 320 px, large-text and safe-area behaviour are
   honoured in the components and specified on `R-01`…`R-06`, but have not been
-  checked on a real device or rendered side by side with Figma.
+  checked on real hardware.
