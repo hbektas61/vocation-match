@@ -762,7 +762,7 @@ export class SupabaseApi implements VocationApi {
   async checkinHere(
     latitude: number,
     longitude: number,
-    googlePlaceId?: string,
+    selectionToken?: string,
   ): Promise<CheckinAnswer> {
     // D-048: no venue argument, because the anchor is the caller's own cell.
     // The reading still leaves the device once, as an argument; what the
@@ -773,7 +773,7 @@ export class SupabaseApi implements VocationApi {
       {
         p_latitude: latitude,
         p_longitude: longitude,
-        p_google_place_id: googlePlaceId ?? null,
+        p_selection_token: selectionToken ?? null,
       },
       'Could not check you in.',
     );
@@ -794,15 +794,25 @@ export class SupabaseApi implements VocationApi {
     query: string,
     latitude: number,
     longitude: number,
-  ): Promise<GooglePlaceHit[] | null> {
+    sessionId?: string,
+  ): Promise<{ places: GooglePlaceHit[]; sessionId: string } | null> {
     const { data, error } = await this.client.functions.invoke('places-google', {
-      body: { op: 'search', query, latitude, longitude },
+      body: { op: 'search', query, latitude, longitude, sessionId },
     });
-    if (error || !Array.isArray(data?.places)) return null;
-    return (data.places as { placeId: string; name: string }[]).map((place) => ({
-      placeId: place.placeId,
-      name: place.name,
-    }));
+    if (error || !Array.isArray(data?.places) || typeof data?.sessionId !== 'string') {
+      // Null is "do not offer this": unconfigured, a ceiling, a rate limit, or
+      // an unwell provider. It never means "there is nothing by that name".
+      return null;
+    }
+    return {
+      sessionId: data.sessionId as string,
+      places: (data.places as { selectionToken: string; name: string; detail: string | null }[])
+        .map((place) => ({
+          selectionToken: place.selectionToken,
+          name: place.name,
+          detail: place.detail ?? null,
+        })),
+    };
   }
 
   async googleFindsRemaining(): Promise<number> {

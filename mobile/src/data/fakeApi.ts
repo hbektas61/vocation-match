@@ -691,7 +691,7 @@ export class FakeApi implements VocationApi {
   async checkinHere(
     latitude: number,
     longitude: number,
-    googlePlaceId?: string,
+    selectionToken?: string,
   ): Promise<CheckinAnswer> {
     const userId = await this.requireUserId();
     if (
@@ -702,7 +702,7 @@ export class FakeApi implements VocationApi {
     ) {
       throw new ApiError('INVALID_INPUT', 'That location reading is not usable.');
     }
-    if (googlePlaceId) {
+    if (selectionToken) {
       // D-053: a labelled check-in spends one of the month's finds, and a
       // spent allowance refuses the label rather than the check-in.
       const allowance = this.isPremiumNow(userId) ? 10 : 3;
@@ -722,7 +722,10 @@ export class FakeApi implements VocationApi {
       venueId,
       checkedAt: this.now(),
       expiresAt,
-      googlePlaceId: googlePlaceId ?? null,
+      // The fake has no Google, so a token can only be a test's own: it is
+      // carried as the label rather than resolved, which keeps the entitlement
+      // and refusal paths testable without a provider.
+      googlePlaceId: selectionToken ?? null,
     });
     return { withinRange: true, expiresAt };
   }
@@ -736,7 +739,8 @@ export class FakeApi implements VocationApi {
     _query: string,
     _latitude: number,
     _longitude: number,
-  ): Promise<GooglePlaceHit[] | null> {
+    _sessionId?: string,
+  ): Promise<{ places: GooglePlaceHit[]; sessionId: string } | null> {
     await this.requireUserId();
     return null;
   }

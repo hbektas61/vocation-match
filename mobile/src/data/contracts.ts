@@ -231,9 +231,17 @@ export interface RoomHeadcount {
  * A place Google answered with (D-052). Never stored: the name lives in the
  * session that drew it, and only the `placeId` is ever written down.
  */
+/**
+ * One Autocomplete prediction (D-053). Note what is *not* here: a Place ID.
+ * The client never learns one, so it cannot assert a label it did not receive
+ * — `selectionToken` is a single-use reference the backend issued and will
+ * validate against the search it actually performed.
+ */
 export interface GooglePlaceHit {
-  placeId: string;
+  selectionToken: string;
   name: string;
+  /** The secondary line that tells two branches of a chain apart, if any. */
+  detail: string | null;
 }
 
 export interface ActiveCheckin {
@@ -438,11 +446,12 @@ export interface VocationApi {
     latitude: number,
     longitude: number,
     /**
-     * A Google Place ID to label the check-in with (D-052). The anchor is
-     * still the caller's own cell — the label says *where* somebody is, the
-     * cell decides *who is near* them, and the two stay independent.
+     * A selection token from `googlePlaceSearch` (D-053). The anchor is still
+     * the caller's own cell — the label says *where* somebody is, the cell
+     * decides *who is near* them. The server refuses a token that is unknown,
+     * another user's, expired, or already spent.
      */
-    googlePlaceId?: string,
+    selectionToken?: string,
   ): Promise<CheckinAnswer>;
   /**
    * The advanced find (D-053): a name the user has *typed*, biased to where
@@ -457,7 +466,9 @@ export interface VocationApi {
     query: string,
     latitude: number,
     longitude: number,
-  ): Promise<GooglePlaceHit[] | null>;
+    /** Continues an open session so Google bills one, not one per keystroke. */
+    sessionId?: string,
+  ): Promise<{ places: GooglePlaceHit[]; sessionId: string } | null>;
   /** How many advanced finds are left this month (3 free, 10 premium). */
   googleFindsRemaining(): Promise<number>;
   /** A Place ID back into a name, for drawing it. Null when unavailable. */

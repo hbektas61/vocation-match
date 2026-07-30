@@ -284,6 +284,11 @@ export function CheckinScreen({
   const [googlePlaces, setGooglePlaces] = useState<GooglePlaceHit[] | null>(null);
   const [googleTried, setGoogleTried] = useState(false);
   /**
+   * The open advanced-search session (D-053). Carried back so Google bills one
+   * session rather than a request per keystroke; the server owns its limits.
+   */
+  const [googleSession, setGoogleSession] = useState<string | null>(null);
+  /**
    * Google names resolved for display, for this session only. The schema
    * stores a Place ID and nothing else (D-052), so this map is the entire
    * lifetime of a Google name inside the app — and it exists so one name is
@@ -474,18 +479,20 @@ export function CheckinScreen({
    */
   const askGoogle = async () => {
     // D-053: a *typed* name, so there is nothing to ask until one exists.
-    if (!reading || busy || query.trim().length < 2) return;
+    // D-053 §3: three non-whitespace characters, enforced again on the server.
+    if (!reading || busy || query.trim().replace(/\s+/g, '').length < 3) return;
     setBusy(true);
     setGoogleTried(true);
     try {
-      const places = await getApi().googlePlaceSearch(
+      const answer = await getApi().googlePlaceSearch(
         query.trim(),
         reading.latitude,
         reading.longitude,
+        googleSession ?? undefined,
       );
-      setGooglePlaces(places);
-      for (const place of places ?? []) resolvedNames.current.set(place.placeId, place.name);
-      if (places === null) {
+      setGooglePlaces(answer?.places ?? null);
+      if (answer) setGoogleSession(answer.sessionId);
+      if (answer === null) {
         // Honest about which "no" this is: the option is unavailable, the
         // street is not empty.
         setNotice({ message: COPY.checkin.googleUnavailable, tone: 'info' });
@@ -495,16 +502,22 @@ export function CheckinScreen({
     }
   };
 
-  /** A Google-labelled check-in: the anchor is still our own cell. */
+  /**
+   * A Google-labelled check-in. The anchor is still our own cell, and what
+   * travels is the single-use selection token the backend issued — the client
+   * never holds a Place ID, so it cannot assert a label it was not given.
+   */
   const checkInAtGoogle = async (place: GooglePlaceHit) => {
     if (!reading || busy) return;
     setBusy(true);
     setNotice(null);
     try {
-      await getApi().checkinHere(reading.latitude, reading.longitude, place.placeId);
+      await getApi().checkinHere(reading.latitude, reading.longitude, place.selectionToken);
       const active = await getApi().getCheckin();
       if (active) {
-        resolvedNames.current.set(place.placeId, place.name);
+        // The prediction text is good enough to show *this* user right away,
+        // and it stays in session memory only (D-053 §5).
+        if (active.googlePlaceId) resolvedNames.current.set(active.googlePlaceId, place.name);
         setActiveLabel(place.name);
         lastSeenExpiry = active.expiresAt;
         setCheckin(active);
@@ -514,6 +527,7 @@ export function CheckinScreen({
         setResults([]);
         setGooglePlaces(null);
         setGoogleTried(false);
+        setGoogleSession(null);
       }
     } catch (err) {
       setNotice({
@@ -771,25 +785,30 @@ export function CheckinScreen({
             <Text style={styles.attribution}>{COPY.checkin.googleAttribution}</Text>
             {googlePlaces.map((place) => (
               <Pressable
-                key={place.placeId}
+                key={place.selectionToken}
                 accessibilityRole="button"
-                accessibilityLabel={place.name}
+                accessibilityLabel={
+                  place.detail ? `${place.name}, ${place.detail}` : place.name
+                }
                 disabled={busy}
                 onPress={() => checkInAtGoogle(place)}
                 style={({ pressed }) => [styles.venueRow, pressed && styles.pressed]}
-                testID={`checkin-google-${place.placeId}`}
+                testID={`checkin-google-${place.selectionToken}`}
               >
                 <View style={[styles.venueDisc, { backgroundColor: 'rgba(244, 114, 182, 0.18)' }]}>
                   <PinIcon tone={DEEP} size={18} />
                 </View>
                 <View style={styles.venueWords}>
                   <Text style={styles.venueName} numberOfLines={1}>{place.name}</Text>
+                  {place.detail ? (
+                    <Text style={styles.venueCity} numberOfLines={1}>{place.detail}</Text>
+                  ) : null}
                 </View>
                 <Text style={styles.chevron}>›</Text>
               </Pressable>
             ))}
           </View>
-        ) : googleTried || query.trim().length < 2 || shown.length > 0 ? null : (
+        ) : googleTried || query.trim().replace(/\s+/g, '').length < 3 || shown.length > 0 ? null : (
           /* D-053's order, exactly: this appears only once a name has been
              typed *and* our own catalogue came up empty — "kullanıcı
              bulamazsa". A button that cannot do anything yet is a button that

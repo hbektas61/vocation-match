@@ -2989,11 +2989,17 @@ complete 433/433 mobile suite, and the Expo web bundle.
 
 The owner refined D-052 the day it landed and the refinement is better on both
 axes. Nearby is gone: by the time Google is reached the user has already typed
-the name, so this is a text search's question and a text search is the cheaper
-SKU. On their own 5–10% assumption at 100k users the arithmetic lands near
-**$65 a month** against the Nearby model's $14,400 — two orders of magnitude.
-And because the anchor is our own cell, the field mask shrank again: we ask for
-`place_id` and a name, never a coordinate.
+the name, so this is Autocomplete's question, and Autocomplete is the cheaper
+SKU. And because the anchor is our own cell, the field mask shrank again: we ask
+for an id and a name, never a coordinate.
+
+**Correction, same day (see D-053a):** the sentence that stood here quoted
+"about $65 a month at 100k users". That figure is withdrawn. It conflated
+Autocomplete *sessions* with individual upstream requests, omitted
+abandoned-session pricing and the field tier of any terminating Place Details
+call, and ignored repeated label resolutions per deck. No cost forecast is
+recorded as accepted; the protection is metering plus per-operation ceilings,
+and the instrumentation the brief lists has to come before any scale estimate.
 
 I flagged the hole in "spend the right only on completion" — it is fair to the
 user but bounds nothing, since fifty searches that select nothing are fifty
@@ -3029,3 +3035,72 @@ tsc, eslint, 440 jest. Still the owner's: the Google Cloud key, restricted to
 the backend, with the daily quota near 150 —
 `supabase secrets set GOOGLE_PLACES_KEY=…`. Until it exists the advanced find
 is simply not offered.
+
+## 2026-07-30 — D-053 brief read properly, and two real defects fixed (D-053a)
+
+The owner pointed at the approved brief, which I had not read. Two divergences
+mattered and both are now corrected; the key stays unset until they are, which
+was the right call.
+
+**Wrong endpoint.** I had used `places:searchText` with a location *bias*. The
+brief specifies Autocomplete (New) — `places:autocomplete` with `input`, a
+per-session `sessionToken`, and a 1,500 m `locationRestriction`. Different SKU,
+and a restriction rather than a hint, so a distant answer cannot arrive at all.
+The field mask is now exactly the three approved paths: `placeId`,
+`structuredFormat.mainText.text`, `structuredFormat.secondaryText.text`.
+
+**Forgeable labels.** `checkin_here` took `p_google_place_id` from the client.
+Since that label is shown to other people, anybody could have claimed to be
+anywhere. Provenance now exists: the backend records what Autocomplete actually
+returned into `app.place_selections`, bound to the user who searched,
+single-use, ten-minute expiry, and hands back opaque tokens. `checkin_here`
+accepts a token and the old text form is dropped outright — D-052 already taught
+us that leaving two resolvable signatures makes PostgREST refuse to choose.
+
+Also corrected: two calendar-month ceilings instead of one (Autocomplete 9,000,
+Place Details 4,500, both env-configurable) where a single counter had hidden
+two very different prices; a three-character minimum enforced server-side;
+rolling session limits of 10/hour and 30/24h counted per *session*; a
+twelve-request per-session upstream cap; a three-minute idle expiry; and the
+Google session token minted server-side, one per session, never reused.
+
+**Verified live on staging, without any Google key** — everything below is
+database logic:
+  · invented token → P0003; another user's token → P0003; valid own token →
+    accepted; replay of that same token → P0003; unlabelled here-anchor →
+    accepted throughout.
+  · entitlement moved 3 → 2 on the one accepted find, on a free account.
+  · after a labelled check-in, `my_checkin` returns the Place ID and
+    `venue_name` is **null** — Google's name is stored nowhere.
+  · the eleventh new session in an hour → `too_many_sessions_hour`.
+  · expiry is the one refusal not executed (it would need a ten-minute wait);
+    it shares the same single UPDATE as the three that were, and a static test
+    now fails if the clause is removed.
+
+**Cost claim withdrawn.** The `$65/month at 100k users` line is gone from both
+`decisions.md` and this file, with the reason recorded: it conflated sessions
+with upstream requests, omitted abandoned-session pricing and the tier of a
+terminating Place Details call, and ignored repeated label resolutions. No
+forecast is recorded as accepted. The instrumentation the brief lists in §9 must
+come before any scale estimate — that is **deferred**, and named as such.
+
+**Also deferred, deliberately, from the brief:** the §9 metrics set, identical
+normalized-input deduplication inside a session, the one-active-session rule
+(sessions are per-id today, and the limits bound them), Terms/Privacy copy for
+Google content (§6), and the Overture `source_release`/`last_seen_at`/run-record
+metadata from §8 — the deactivation half of §8 is built and tested.
+
+Preserved as instructed: the entitlement, the unlabelled `Buradayım`, the
+Overture sync and its retire-not-delete rule.
+
+Gates: `scripts/check.sh --mobile` all green — auth configuration and its
+negative controls, dependency health, typecheck, zero-warning lint, **465/465**
+mobile tests, and the Expo web bundle. Migrations applied to staging and the
+function deployed.
+
+Still the owner's, and only now safe to do:
+    supabase secrets set GOOGLE_PLACES_KEY=…
+    supabase secrets set GOOGLE_AUTOCOMPLETE_MONTHLY_ALLOWANCE=9000
+    supabase secrets set GOOGLE_DETAILS_MONTHLY_ALLOWANCE=4500
+with the key restricted to this backend and Cloud quotas kept below the
+financial ceiling as the second line of defence.

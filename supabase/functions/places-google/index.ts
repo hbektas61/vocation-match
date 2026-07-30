@@ -1,85 +1,88 @@
 /**
- * The one door Google is allowed through (D-052).
- *
- * Feature three only, and only when somebody has pressed check-in. The key
- * lives here and never in the app, so it can be restricted to this backend;
- * the month's allowance is claimed before any paid request leaves, so a
- * ceiling exists rather than an alarm that tells you afterwards.
+ * The one door Google is allowed through (D-052, corrected by D-053).
  *
  * Two operations, and deliberately no others:
  *
- *   search  — a *typed* name, biased to the caller's location, for the
- *             advanced find (D-053). Nearby is deliberately gone: by the time
- *             Google is reached the user has already typed the name, so
- *             "what is around me" belongs to our catalogue and this belongs to
- *             a text search — which is also the cheaper SKU. Field-masked to
- *             id and displayName only; we never ask for Google's coordinate,
- *             because the anchor is the caller's own cell.
- *   resolve — a Place ID back into a name, for a screen that is about to draw
- *             it. This is how a Google label is displayed without our ever
- *             storing Google's name (see the migration).
+ *   search  — Autocomplete (New). A *typed* name, restricted to 1,500 m around
+ *             the caller, inside a session that bills as one session. Neither
+ *             Nearby Search nor Text Search is used: by the time this is
+ *             reached the user has typed a name, and Autocomplete is both the
+ *             right tool and the cheaper SKU. The response carries an opaque
+ *             selection token per prediction rather than a bare Place ID.
+ *   resolve — a Place ID back into a name for a screen about to draw it. This
+ *             is how a Google label is displayed without our storing Google's
+ *             name anywhere.
  *
- * What this function must never do: write a place into our catalogue, or
- * return a coordinate that then gets stored. The response carries names for
- * display; the anchor is always the caller's own cell.
+ * Three rules this file exists to keep:
+ *
+ *   1. The key never leaves the backend, so it can be restricted to it.
+ *   2. Nothing is spent without being claimed first, and the two Google
+ *      operations have *separate* monthly ceilings — one is cheap and frequent,
+ *      the other is not, and a single counter hid that.
+ *   3. A Place ID the client invented must never become a label. The backend
+ *      records what Autocomplete actually returned, bound to the user who
+ *      searched, and hands back a single-use token; `checkin_here` accepts the
+ *      token and nothing else.
  *
  * With no key configured it answers 503 `unconfigured`, which the app reads as
- * "do not offer the Google option at all" — so the screen degrades to the
- * catalogue, the written search and the cell, exactly as it does when the
- * allowance is spent.
+ * "do not offer the advanced find" — the same shape as a spent allowance, so
+ * the screen degrades to the catalogue, its own search, and the cell anchor.
  */
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const PLACES_TEXT = "https://places.googleapis.com/v1/places:searchText";
+/**
+ * Autocomplete (New). Deliberately not `places:searchText` and not
+ * `places:searchNearby`; a static contract test fails if either reappears.
+ */
+const PLACES_AUTOCOMPLETE = "https://places.googleapis.com/v1/places:autocomplete";
 const PLACES_DETAILS = "https://places.googleapis.com/v1/places";
 
-/** Owner decision (D-052): under the free tier, not at it. */
-const MONTHLY_ALLOWANCE = Number(Deno.env.get("GOOGLE_PLACES_MONTHLY_ALLOWANCE") ?? "4500");
-/** How far the bias reaches. The same street Çevremde already means. */
-const BIAS_METERS = 500;
-const MAX_RESULTS = 10;
+/**
+ * Pilot ceilings (D-053 §3): configuration rather than product limits, and
+ * separate per operation, because Autocomplete requests are many and cheap
+ * while label resolutions are fewer and dearer.
+ */
+const AUTOCOMPLETE_ALLOWANCE = Number(
+  Deno.env.get("GOOGLE_AUTOCOMPLETE_MONTHLY_ALLOWANCE") ?? "9000",
+);
+const DETAILS_ALLOWANCE = Number(
+  Deno.env.get("GOOGLE_DETAILS_MONTHLY_ALLOWANCE") ?? "4500",
+);
+/** Restriction, not bias: a result outside the area is not an answer here. */
+const RESTRICT_METERS = Number(Deno.env.get("GOOGLE_SEARCH_RADIUS_METERS") ?? "1500");
+/** Below this there is nothing to search for (D-053 §3). */
+const MIN_QUERY = 3;
 
-/** The role claim, read without a network round trip. */
-function roleOf(authorization: string): string | null {
+/** A claim in the caller's token, read without a network round trip. */
+function claimOf(authorization: string, field: string): string | null {
   const token = authorization.replace(/^Bearer\s+/i, "");
   const parts = token.split(".");
   if (parts.length !== 3) return null;
   try {
     const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
-    return typeof payload.role === "string" ? payload.role : null;
+    return typeof payload[field] === "string" ? payload[field] : null;
   } catch {
     return null;
   }
 }
 
-interface GooglePlace {
-  id?: string;
-  displayName?: { text?: string };
-}
-
-/** The caller's own id, out of their token — no round trip. */
-function subjectOf(authorization: string): string | null {
-  const token = authorization.replace(/^Bearer\s+/i, "");
-  const parts = token.split(".");
-  if (parts.length !== 3) return null;
-  try {
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
-    return typeof payload.sub === "string" ? payload.sub : null;
-  } catch {
-    return null;
-  }
+interface PlacePrediction {
+  placeId?: string;
+  structuredFormat?: {
+    mainText?: { text?: string };
+    secondaryText?: { text?: string };
+  };
 }
 
 Deno.serve(async (req) => {
-  const role = roleOf(req.headers.get("Authorization") ?? "");
+  const authorization = req.headers.get("Authorization") ?? "";
+  const role = claimOf(authorization, "role");
   if (role !== "authenticated" && role !== "service_role") {
     return Response.json({ error: "Sign in to continue." }, { status: 401 });
   }
 
   const key = Deno.env.get("GOOGLE_PLACES_KEY");
   if (!key) {
-    // Not an error the owner has to fix at 3am: the app simply does not offer
-    // the extra search until a key exists.
     return Response.json({ error: "unconfigured" }, { status: 503 });
   }
 
@@ -91,22 +94,30 @@ Deno.serve(async (req) => {
   }
   const operation = String(body.op ?? "");
 
+  const userId = claimOf(authorization, "sub");
+  if (!userId) {
+    return Response.json({ error: "Sign in to continue." }, { status: 401 });
+  }
+
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  /** Claimed before the request, never after: this is the ceiling. */
-  const claim = async (service: string): Promise<{ allowed: boolean; remaining: number }> => {
+  /**
+   * Claimed before the upstream request, never counted after it. A counter we
+   * cannot reach means the paid call does not happen: failing closed is the
+   * entire point of having a ceiling.
+   */
+  const claim = async (
+    service: string,
+    allowance: number,
+  ): Promise<{ allowed: boolean; remaining: number }> => {
     const { data, error } = await admin.rpc("claim_metered_call", {
       p_service: service,
-      p_allowance: MONTHLY_ALLOWANCE,
+      p_allowance: allowance,
     });
-    if (error) {
-      // A counter we cannot reach is a ceiling we cannot enforce, so the
-      // paid call does not happen. Failing closed is the whole point.
-      return { allowed: false, remaining: 0 };
-    }
+    if (error) return { allowed: false, remaining: 0 };
     const row = (data ?? [])[0] as { allowed?: boolean; remaining?: number } | undefined;
     return { allowed: row?.allowed === true, remaining: row?.remaining ?? 0 };
   };
@@ -115,8 +126,12 @@ Deno.serve(async (req) => {
     const query = String(body.query ?? "").trim();
     const latitude = Number(body.latitude);
     const longitude = Number(body.longitude);
-    if (query.length < 2) {
-      return Response.json({ error: "Type a little more." }, { status: 400 });
+    const sessionIn = typeof body.sessionId === "string" && body.sessionId.length > 0
+      ? body.sessionId
+      : null;
+
+    if (query.replace(/\s+/g, "").length < MIN_QUERY) {
+      return Response.json({ error: "query_too_short", minimum: MIN_QUERY }, { status: 400 });
     }
     if (
       !Number.isFinite(latitude) || !Number.isFinite(longitude) ||
@@ -125,39 +140,51 @@ Deno.serve(async (req) => {
       return Response.json({ error: "That location reading is not usable." }, { status: 400 });
     }
 
-    // D-053: attempts are limited per user, because the entitlement counts
-    // finds and would otherwise let somebody search fifty times for free at
-    // our expense. The caller's id comes from their own token.
-    const userId = subjectOf(req.headers.get("Authorization") ?? "");
-    if (!userId) {
-      return Response.json({ error: "Sign in to continue." }, { status: 401 });
+    // The session is the unit the rolling limits count — ten an hour, thirty a
+    // day — and it also carries the per-session upstream cap and the Google
+    // session token. All of it is decided server-side.
+    const { data: sessionRows, error: sessionError } = await admin.rpc("open_search_session", {
+      p_user: userId,
+      p_session: sessionIn,
+    });
+    if (sessionError) {
+      return Response.json({ error: "Could not start a search." }, { status: 503 });
     }
-    const { data: allowedSearch } = await admin.rpc("claim_google_search", { p_user: userId });
-    if (allowedSearch !== true) {
-      return Response.json({ error: "too_many_searches" }, { status: 429 });
+    const session = (sessionRows ?? [])[0] as
+      | { allowed?: boolean; session_id?: string; google_token?: string; reason?: string }
+      | undefined;
+    if (!session?.allowed || !session.session_id || !session.google_token) {
+      return Response.json({ error: session?.reason ?? "search_unavailable" }, { status: 429 });
     }
 
-    const allowance = await claim("google_places_text");
+    const allowance = await claim("google_autocomplete", AUTOCOMPLETE_ALLOWANCE);
     if (!allowance.allowed) {
       return Response.json({ error: "allowance_spent", remaining: 0 }, { status: 429 });
     }
 
-    const response = await fetch(PLACES_TEXT, {
+    const response = await fetch(PLACES_AUTOCOMPLETE, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": key,
-        // The narrowest possible ask: an id and a name. No coordinate, no
-        // photo, no rating — all of which cost more and none of which we use.
-        "X-Goog-FieldMask": "places.id,places.displayName",
+        // The narrowest mask the picker can work from: an id, the name, and the
+        // secondary line that tells two branches of a chain apart. No
+        // coordinate is requested — the anchor is the caller's own cell.
+        "X-Goog-FieldMask": [
+          "suggestions.placePrediction.placeId",
+          "suggestions.placePrediction.structuredFormat.mainText.text",
+          "suggestions.placePrediction.structuredFormat.secondaryText.text",
+        ].join(","),
       },
       body: JSON.stringify({
-        textQuery: query,
-        maxResultCount: MAX_RESULTS,
-        // Bias, not restriction: the right branch of a chain should surface
-        // first without hiding a place just over the line.
-        locationBias: {
-          circle: { center: { latitude, longitude }, radius: BIAS_METERS },
+        input: query,
+        // One token for the whole session, so Google bills a session rather
+        // than a request per keystroke.
+        sessionToken: session.google_token,
+        // Restriction rather than bias: a place outside the area is not an
+        // answer to "what am I sitting in".
+        locationRestriction: {
+          circle: { center: { latitude, longitude }, radius: RESTRICT_METERS },
         },
       }),
       signal: AbortSignal.timeout(8_000),
@@ -165,12 +192,49 @@ Deno.serve(async (req) => {
     if (!response.ok) {
       return Response.json({ error: "Could not search just now." }, { status: 503 });
     }
-    const parsed = (await response.json()) as { places?: GooglePlace[] };
-    const places = (parsed.places ?? [])
-      .filter((place) => place.id && place.displayName?.text)
-      .map((place) => ({ placeId: place.id!, name: place.displayName!.text! }));
 
-    return Response.json({ places, remaining: allowance.remaining, attribution: "Powered by Google" });
+    const parsed = (await response.json()) as {
+      suggestions?: { placePrediction?: PlacePrediction }[];
+    };
+    const predictions = (parsed.suggestions ?? [])
+      .map((suggestion) => suggestion.placePrediction)
+      .filter((prediction): prediction is PlacePrediction =>
+        Boolean(prediction?.placeId && prediction.structuredFormat?.mainText?.text)
+      );
+
+    // Provenance. The backend records what Google actually returned and hands
+    // back one single-use token per prediction, so the client never learns a
+    // bare Place ID and cannot invent one.
+    const { data: selections, error: selectionError } = await admin.rpc(
+      "record_place_selections",
+      {
+        p_user: userId,
+        p_session: session.session_id,
+        p_place_ids: predictions.map((prediction) => prediction.placeId!),
+      },
+    );
+    if (selectionError) {
+      return Response.json({ error: "Could not hold that search." }, { status: 503 });
+    }
+    const tokenByPlace = new Map<string, string>();
+    for (const row of (selections ?? []) as { token: string; google_place_id: string }[]) {
+      tokenByPlace.set(row.google_place_id, row.token);
+    }
+
+    const places = predictions
+      .map((prediction) => ({
+        selectionToken: tokenByPlace.get(prediction.placeId!) ?? null,
+        name: prediction.structuredFormat!.mainText!.text!,
+        detail: prediction.structuredFormat?.secondaryText?.text ?? null,
+      }))
+      .filter((place) => place.selectionToken !== null);
+
+    return Response.json({
+      places,
+      sessionId: session.session_id,
+      remaining: allowance.remaining,
+      attribution: "Powered by Google",
+    });
   }
 
   if (operation === "resolve") {
@@ -179,7 +243,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: "That place reference is not usable." }, { status: 400 });
     }
 
-    const allowance = await claim("google_places_details");
+    const allowance = await claim("google_place_details", DETAILS_ALLOWANCE);
     if (!allowance.allowed) {
       return Response.json({ error: "allowance_spent" }, { status: 429 });
     }
@@ -195,9 +259,12 @@ Deno.serve(async (req) => {
     if (!response.ok) {
       return Response.json({ error: "Could not read that place." }, { status: 503 });
     }
-    const place = (await response.json()) as GooglePlace;
-    const name = place.displayName?.text ?? null;
-    return Response.json({ placeId, name, attribution: "Powered by Google" });
+    const place = (await response.json()) as { displayName?: { text?: string } };
+    return Response.json({
+      placeId,
+      name: place.displayName?.text ?? null,
+      attribution: "Powered by Google",
+    });
   }
 
   return Response.json({ error: "Unknown operation." }, { status: 400 });

@@ -77,13 +77,13 @@ it('a catalogue pick clears the label, so one row never mixes providers', async 
 it('says "not on offer" rather than "nothing here" when Google is unavailable', async () => {
   const api = await signedIn('+905551119024');
   // The fake has no Google, exactly as the real backend behaves with no key.
-  const places = await api.googlePlaceSearch('esslab', SPOT.latitude, SPOT.longitude);
-  expect(places).toBeNull();
+  const search = await api.googlePlaceSearch('esslab', SPOT.latitude, SPOT.longitude);
+  expect(search).toBeNull();
   expect(await api.resolveGooglePlace('ChIJ_anything')).toBeNull();
 
   // And the guaranteed path is untouched by that.
-  const answer = await api.checkinHere(SPOT.latitude, SPOT.longitude);
-  expect(answer.withinRange).toBe(true);
+  const checkin = await api.checkinHere(SPOT.latitude, SPOT.longitude);
+  expect(checkin.withinRange).toBe(true);
 });
 
 it('spends one advanced find per labelled check-in, and refuses at the third (D-053)', async () => {
@@ -114,7 +114,7 @@ it('refuses a label that is not a plausible place reference', async () => {
   // The server-side check is a length window; the fake mirrors the contract
   // by simply carrying whatever it is given, so this test documents the
   // boundary the migration enforces rather than duplicating it.
-  const stub: GooglePlaceHit = { placeId: 'ChIJ_ok', name: 'Esslab' };
-  await api.checkinHere(SPOT.latitude, SPOT.longitude, stub.placeId);
-  expect((await api.getCheckin())?.googlePlaceId).toBe('ChIJ_ok');
+  const stub: GooglePlaceHit = { selectionToken: 'tok_ok', name: 'Esslab', detail: null };
+  await api.checkinHere(SPOT.latitude, SPOT.longitude, stub.selectionToken);
+  expect((await api.getCheckin())?.googlePlaceId).toBe('tok_ok');
 });
