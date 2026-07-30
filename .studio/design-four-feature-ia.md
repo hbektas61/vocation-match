@@ -463,11 +463,50 @@ the menu goes in.
 So **106 of 108** frames have their behaviour in the app. The two that do not are
 `NAV-08` and `N-07`, both above, both owner decisions rather than oversights.
 
+### The visual pass — method and coverage
+
+Expo web with `EXPO_PUBLIC_USE_FAKE_API=1` at a 390×844 viewport, a fresh
+in-memory account driven from the welcome screen by
+`.playwright-mcp/onboard.js`, screenshotted and put beside the exported frame.
+Captures are in `.playwright-mcp/app-*.png` and `figma-T-01.png`.
+
+**Compared in the running app (14 frames):** `T-01`, `T-02`, `T-03`, `T-05`,
+`T-07`, `T-10`, `T-12`/`T-13`, `T-16`, `N-01`, `N-03`, `E-01`, `E-09`, `E-21`,
+`S-02`.
+
+**Not yet compared (94 frames):** the rest. Their behaviour exists and is
+covered by tests; their layout has not been looked at beside its frame.
+
+What the 14 found — none of it visible from the code or the tests:
+
+| Defect | Frame |
+| --- | --- |
+| "Ayarlar" printed twice; `safeTop` taking the inset under a header that had it | `S-02` |
+| "Oteldeyim" printed twice, same cause | `T-16` |
+| "Powered by Google" rendered as the venue's address, behind a location pin — and gone entirely once dates existed | `T-10` |
+| Nine `otel` strings left in sentences only the screen shows | `T-01`, `T-16` |
+| The same hint printed above and below the destination field, while "at least three characters" was said nowhere | `T-02` |
+| The venue placeholder cut mid-word at 390 px | `T-05` |
+| Çevremde's corner held a decorative pin, so the tab had no route to Settings at all | `N-01` |
+| No OpenStreetMap/Overture credit anywhere, while Google's was on two surfaces (ODbL) | `N-03` |
+| The event detail screen carried a name and no date or venue | `E-21` |
+| The profile ring was an empty circle | all five |
+
+Three things the comparison found where **the frame was wrong, not the app**,
+and were deliberately not "fixed": the bottom-bar icons (my frames used emoji
+as placeholders; the app's drawn SVGs are correct), the Çevremde intro
+(the app has D-041's licensed photograph and how-it-works rows, which the frame
+abstracted away), and the declare screen's date hint appearing twice on web
+only — iOS and Android use the native picker and show no hint at all.
+
 ### Still not done
 
-- **Pixel-by-pixel comparison.** Every state exists and carries the right words;
-  no screen has been rendered beside its frame at 390×844 and corrected for
-  spacing, weight and radius. This is the remaining §17.10–11 work.
-- **§14 device verification.** 320 px, large-text and safe-area behaviour are
-  honoured in the components and specified on `R-01`…`R-06`, but have not been
-  checked on real hardware.
+- **The remaining 94 frames' layout.** Same method, screen by screen.
+- **`T-17`–`T-22`.** The simulate controls are absent in the web build, so the
+  Here Now outcomes could not be reached in a browser. Covered by tests, not by
+  eye.
+- **`D-01`–`D-06`, `M-01`–`M-04`, `I-01`, `I-02`, `C-01`–`C-03`.** Not reached:
+  react-navigation's web header back button is not clickable through the
+  harness, so a pushed screen is a dead end there. Needs a run that goes to the
+  tabs directly.
+- **§14 device verification.** 320 px, large text, safe areas — on hardware.
