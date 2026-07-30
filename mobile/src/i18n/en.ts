@@ -60,7 +60,7 @@ export const en = {
     welcome: {
       headline: 'Meet the people already at your hotel.',
       body:
-        'Pick the hotel you are at — or the one you are going to — and match with the people there when you are. One hotel at a time.',
+        'Pick the place you are at — or the one you are going to — and match with the people there when you are. One place at a time.',
       continueWithPhone: 'Continue with phone',
       trustTitle: 'Safe and private',
       trustBody: 'Your identity stays private. No reservation, document, or ID is asked for.',
@@ -130,8 +130,8 @@ export const en = {
       done: 'Done',
     },
     hotel: {
-      headline: 'Which hotel are you at?',
-      body: 'Or which one are you going to. You can be in one hotel at a time, and you can change it whenever you like.',
+      headline: 'Where are you staying?',
+      body: 'Or where are you going. You can be at one vacation place at a time, and you can change it whenever you like.',
       confirm: 'Continue',
     },
 
@@ -431,7 +431,7 @@ export const en = {
     checkButton: 'Check place proximity',
     realCheckIntro: 'Use your current location for a one-time foreground check. Nothing runs in the background.',
     realCheckButton: 'Use my current location',
-    inRange: 'You are in. At the Hotel is open for this hotel.',
+    inRange: 'You are in. At the Hotel is open for this place.',
     goToDiscovery: 'Go to discovery',
     stopSharingError:
       'We could not stop sharing your presence. Try again — until this succeeds, At the Hotel may stay open.',
@@ -439,7 +439,7 @@ export const en = {
     simulateAtHotel: 'Simulate: I am at the hotel',
     simulateFarAway: 'Simulate: I am far away',
     simulateDeny: 'Simulate: deny location permission',
-    tooFar: 'That check could not find you near the hotel. Try again when you are there.',
+    tooFar: 'That check could not find you near the place. Try again when you are there.',
     unavailable: 'We could not read your location. Check your device settings and try again.',
     /**
      * D-055a: a fix too vague to settle the question is neither "you are here"

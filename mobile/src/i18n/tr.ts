@@ -67,7 +67,7 @@ export const tr: Copy = {
     welcome: {
       headline: 'Otelindeki insanlarla şimdi tanış.',
       body:
-        'Şu an olduğun ya da gideceğin oteli seç; aynı tarihlerde orada olanlarla eşleş. Aynı anda tek otel.',
+        'Şu an olduğun ya da gideceğin tatil mekânını seç; aynı tarihlerde orada olanlarla eşleş. Aynı anda tek mekân.',
       continueWithPhone: 'Telefonla devam et',
       trustTitle: 'Güvenli ve gizli',
       trustBody: 'Kimliğin gizli kalır. Rezervasyon, belge ya da kimlik istenmez.',
@@ -136,8 +136,8 @@ export const tr: Copy = {
       done: 'Bitti',
     },
     hotel: {
-      headline: 'Hangi oteldesin?',
-      body: 'Ya da hangisine gidiyorsun. Aynı anda tek otelde olabilirsin ve istediğin zaman değiştirebilirsin.',
+      headline: 'Nerede kalacaksın?',
+      body: 'Ya da nereye gidiyorsun. Aynı anda tek tatil mekânında olabilirsin ve istediğin zaman değiştirebilirsin.',
       confirm: 'Devam et',
     },
   },
@@ -271,9 +271,9 @@ export const tr: Copy = {
     noResults: 'Bu aramayla eşleşen otel yok.',
     loadError: 'Oteller yüklenemedi. Tekrar dene.',
     activatedNote: 'Bu senin aktif tatil mekânın.',
-    switchedNotice: 'Otel değiştirildi. Önceki otelinin odaları artık kapalı.',
+    switchedNotice: 'Tatil mekânı değiştirildi. Önceki mekânının odaları artık kapalı.',
     activateError: 'Bu otel etkinleştirilemedi. Tekrar dene.',
-    keepCurrent: 'Mevcut oteli koru',
+    keepCurrent: 'Mevcut mekânı koru',
   },
 
   events: {
@@ -381,7 +381,7 @@ export const tr: Copy = {
     withdrawButton: 'Beyanımı geri çek',
     withdrawing: 'Geri çekiliyor…',
     withdrawExplainer:
-      'Geri çekmek beyan ettiğin tarihleri siler ve bu oteldeki Tatilden Önce odasını kapatır. Mevcut eşleşmelerin ve konuşmaların durur.',
+      'Geri çekmek beyan ettiğin tarihleri siler ve bu mekândaki Tatilden Önce odasını kapatır. Mevcut eşleşmelerin ve konuşmaların durur.',
     withdrawError: 'Beyanın geri çekilemedi. Tekrar dene.',
     loadError: 'Beyan ettiğin konaklama yüklenemedi.',
   },
@@ -406,7 +406,7 @@ export const tr: Copy = {
     checkButton: 'Mekân yakınlığını kontrol et',
     realCheckIntro: 'Mevcut konumun tek seferlik, ön planda bir kontrol için kullanılır. Arka planda hiçbir şey çalışmaz.',
     realCheckButton: 'Mevcut konumumu kullan',
-    inRange: 'İçerdesin. Oteldeyim bu otel için açık.',
+    inRange: 'İçerdesin. Oteldeyim bu mekân için açık.',
     goToDiscovery: 'Keşfete git',
     stopSharingError:
       'Yakınlık bilgini kapatamadık. Tekrar dene — bu başarılana kadar Oteldeyim açık kalabilir.',
@@ -414,7 +414,7 @@ export const tr: Copy = {
     simulateAtHotel: 'Simüle et: oteldeyim',
     simulateFarAway: 'Simüle et: uzaktayım',
     simulateDeny: 'Simüle et: konum iznini reddet',
-    tooFar: 'Bu kontrol seni otelin yakınında bulamadı. Oteldeyken tekrar dene.',
+    tooFar: 'Bu kontrol seni mekânın yakınında bulamadı. Oradayken tekrar dene.',
     unavailable: 'Konumun okunamadı. Cihaz ayarlarını kontrol edip tekrar dene.',
     inaccurate: 'Konum yeterince hassas değil. Açık alanda tekrar dene.',
     permissionDenied:

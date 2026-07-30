@@ -57,6 +57,9 @@ if [ "$RUN_MOBILE" = "1" ]; then
   run "mobile — lint"       npx eslint . --max-warnings 0
   run "mobile — tests"      npx jest
   run "mobile — web bundle" npx expo export --platform web
+  # D-057: the visual harness is dev-only, and that is a claim about the built
+  # bundle rather than about a comment, so it is checked against the export.
+  run "visual harness excluded from the bundle" node "$ROOT/scripts/verify-harness-absent.js"
 fi
 
 printf '\n\033[1m── summary ──\033[0m\n'
