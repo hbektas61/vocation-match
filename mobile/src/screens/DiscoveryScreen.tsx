@@ -94,6 +94,9 @@ const ROOM_LABEL: Record<RoomKey, string> = {
   UPCOMING: COPY.upcoming.roomTitle,
   HERE_NOW: COPY.hereNow.roomTitle,
   NEARBY: COPY.checkin.roomTitle,
+  // D-056: the same deck, two more rooms.
+  EVENT_UPCOMING: COPY.events.joinUpcoming,
+  EVENT_HERE_NOW: COPY.events.joinHereNow,
 };
 
 export function DiscoveryScreen() {

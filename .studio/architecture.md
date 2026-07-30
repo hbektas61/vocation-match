@@ -265,3 +265,41 @@ eight numbers the owner asked for. It derives no cost and changes no ceiling.
 `023_nothing_persisted.sql` walks every column in `public` and `app` and fails
 if a coordinate, a location history or a Google-content-shaped column appears
 anywhere outside the three places argued for in writing.
+
+## ADR-019 Events are a fourth room subject, not a fourth application (D-056)
+
+`public.events` holds `(provider, provider_event_id)` and nothing else of
+Ticketmaster's; its unique constraint is the whole of the identity rule. The
+room engine is *generalized*, exactly as it was for `NEARBY` in D-039:
+
+- `swipes` and `matches` gained a nullable `event_id` beside a now-nullable
+  `hotel_id`, with `check ((hotel_id is not null) <> (event_id is not null))` —
+  a row is about one subject, never both and never neither.
+- The room vocabulary gained `EVENT_UPCOMING` and `EVENT_HERE_NOW`.
+- `app.event_room_eligible` is a sibling of `app.room_eligible` rather than an
+  overload of it: the second argument would otherwise be a uuid pointing at one
+  of two tables depending on the third, which is how a hotel guest eventually
+  ends up in a concert.
+- `discovery_feed` and `swipe` gained one branch each. The event branch returns
+  early rather than sharing the venue query — no region pool, no neighbour
+  labels, nothing to leak.
+
+**Provider content is a lease.** `app.event_content` carries the payload, the
+status, the schedule, the venue coordinate, `fetched_at`, `expires_at` and
+`purge_requested_at`. `public.event_content()` serves nothing expired or
+flagged, and `purge_event_content()` can empty it — by id for a takedown, or
+sweeping — without being able to reach a membership, a match or a message.
+
+**The provider is bounded before it is called.** `app.event_search_cache` is
+keyed on provider · area · bucket · classification · locale · page and holds no
+user and no coordinate; `take_event_search_cache` returns `hit`, `wait` or
+`fill` so one caller goes upstream and the rest wait. Then
+`claim_provider_second`, `claim_metered_call('ticketmaster_daily')`, a timeout,
+`provider_breaker`, and two switches — `EVENTS_FEATURE_ENABLED` and
+`TICKETMASTER_PROVIDER_ENABLED` — any of which off leaves the app whole.
+
+**`EVENT_HERE_NOW` reuses D-055a.** `app.reading_problem` is the same validator
+the hotel rooms use; the live window is computed from the lease
+(2 h early / 3 h after the end / 8 h default duration) and a date-only event has
+no window rather than an invented one. The verification expires at the earlier
+of its TTL and the window's end.

@@ -22,9 +22,15 @@ import {
 } from '../domain/hereNow';
 import { distanceBucket, haversineMeters } from '../domain/location';
 import { isUpcomingEligible, validateStayDates } from '../domain/upcoming';
-import type { HereNowCheck, UpcomingDeclaration } from '../domain/types';
+import type { HereNowCheck, RoomKey as DomainRoomKey, UpcomingDeclaration } from '../domain/types';
 import { CANDIDATES, ROOM_CROWD } from '../fixtures/candidates';
 import { getHotelById as getHotelFixtureById, HOTELS, searchHotels as searchHotelFixtures } from '../fixtures/hotels';
+import {
+  FAKE_CLASSIFICATION,
+  FAKE_EVENTS,
+  eventById,
+  type FakeEvent,
+} from '../fixtures/events';
 import {
   FAKE_VENUE_TYPES,
   foldForMatch,
@@ -72,6 +78,14 @@ import {
   type DestinationChoice,
   type VenueSearchMode,
   GOOGLE_VENUE_KIND,
+  type EventArea,
+  type EventBucket,
+  type EventCard,
+  type EventCategory,
+  type EventContent,
+  type EventPresenceAnswer,
+  type EventSearchResult,
+  type MyEvent,
 } from './contracts';
 
 import { buildPhotoPath, isProfilePhotoPath, photoExtensionFor } from './photos';
@@ -1205,10 +1219,384 @@ export class FakeApi implements VocationApi {
     });
   }
 
+  /* ------------------------------------------------------- events, D-056 */
+
+  /** Server-controlled switches, mirrored. Tests flip them like the operator. */
+  private readonly flags = new Map<string, boolean>([
+    ['EVENTS_FEATURE_ENABLED', true],
+    ['TICKETMASTER_PROVIDER_ENABLED', true],
+  ]);
+  /** Both true today; the free/premium mapping is a later decision (§13). */
+  private readonly capabilities = new Map<string, boolean>([
+    ['can_join_event_upcoming', true],
+    ['can_join_event_here_now', true],
+  ]);
+  private readonly eventSubjects = new Map<string, string>();
+  private readonly eventSelections = new Map<
+    string,
+    { userId: string; providerEventId: string; status: string; used: boolean }
+  >();
+  /** user → (event → withdrawnAt, null while it stands). */
+  private readonly eventMemberships = new Map<string, Map<string, number | null>>();
+  private readonly eventFocus = new Map<string, { eventId: string; room: RoomKey }>();
+  private readonly eventPresence = new Map<
+    string,
+    { eventId: string; withinRange: boolean; expiresAt: number }
+  >();
+  /**
+   * Cache key → what the provider said, so a repeat search makes no upstream
+   * call. Deliberately the *events*, not the cards: a card carries a selection
+   * token minted for one person, and serving a cached one to somebody else
+   * would hand them a token that is not theirs.
+   */
+  private readonly eventSearchCache = new Map<string, FakeEvent[]>();
+  private eventSelectionSeq = 0;
+  private providerRequests = 0;
+  private providerDailyCeiling = 4500;
+
+  /**
+   * How many upstream requests the fake has made. The cost-control tests read
+   * this to prove a cache hit really did stop one — a saved request is
+   * invisible on screen and visible only here.
+   */
+  providerRequestCount(): number {
+    return this.providerRequests;
+  }
+
+  setFeatureFlag(flag: string, enabled: boolean): void {
+    this.flags.set(flag, enabled);
+  }
+
+  setEventCapability(capability: string, allowed: boolean): void {
+    this.capabilities.set(capability, allowed);
+  }
+
+  /** `0` is an exhausted day: discovery closes and nothing else does. */
+  setProviderCeiling(remaining: number): void {
+    this.providerDailyCeiling = this.providerRequests + Math.max(0, remaining);
+  }
+
+  async getFeatureFlags(): Promise<Record<string, boolean>> {
+    return Object.fromEntries(this.flags);
+  }
+
+  async getEventCapabilities(): Promise<Record<string, boolean>> {
+    await this.requireUserId();
+    return Object.fromEntries(this.capabilities);
+  }
+
+  /** The canonical identity rule as arithmetic: one provider id, one subject. */
+  private eventSubject(providerEventId: string): string {
+    const existing = this.eventSubjects.get(providerEventId);
+    if (existing) return existing;
+    const id = `event-${providerEventId}`;
+    this.eventSubjects.set(providerEventId, id);
+    return id;
+  }
+
+  private mintEventTokens(userId: string, events: FakeEvent[]): EventCard[] {
+    return events.map((event) => {
+      const token = `evsel-${(this.eventSelectionSeq += 1)}`;
+      this.eventSelections.set(token, {
+        userId,
+        providerEventId: event.id,
+        status: event.status,
+        used: false,
+      });
+      return {
+        selectionToken: token,
+        name: event.name,
+        startsAt: event.startsAt,
+        localDate: event.localDate,
+        localTime: event.localTime,
+        dateTbd: event.dateTbd,
+        status: event.status,
+        venueName: event.venueName,
+        city: event.city,
+        country: event.country,
+        imageUrl: event.imageUrl,
+        classification: event.classification,
+      };
+    });
+  }
+
+  async searchEvents(
+    area: EventArea,
+    bucket: EventBucket,
+    category: EventCategory,
+    page = 0,
+  ): Promise<EventSearchResult> {
+    const userId = await this.requireUserId();
+    if (this.flags.get('EVENTS_FEATURE_ENABLED') !== true) return { kind: 'disabled' };
+
+    const areaKey = area.kind === 'city'
+      ? `city:${area.city.toLocaleLowerCase('tr-TR')}`
+      // A coarse cell, never the precise reading (§3.2).
+      : `geo:${area.latitude.toFixed(1)},${area.longitude.toFixed(1)}`;
+    const cacheKey = [areaKey, bucket, category, `p${page}`].join('|');
+
+    const cached = this.eventSearchCache.get(cacheKey);
+    if (cached) {
+      const cards = this.mintEventTokens(userId, cached);
+      return cards.length === 0
+        ? { kind: 'empty' }
+        : { kind: 'ok', events: cards, totalPages: 1 };
+    }
+
+    if (this.flags.get('TICKETMASTER_PROVIDER_ENABLED') !== true) return { kind: 'unavailable' };
+    if (this.providerRequests >= this.providerDailyCeiling) return { kind: 'ceiling' };
+    this.providerRequests += 1;
+
+    const wanted = FAKE_CLASSIFICATION[category] ?? null;
+    const today = new Date(this.now()).toISOString().slice(0, 10);
+    const hits = FAKE_EVENTS
+      // A provider test fixture is not an event and never leaves here (§16.5).
+      .filter((event) => event.test !== true)
+      .filter((event) =>
+        area.kind === 'city'
+          ? event.city.toLocaleLowerCase('tr-TR') === area.city.toLocaleLowerCase('tr-TR')
+          : haversineMeters(
+              event.latitude ?? 0, event.longitude ?? 0, area.latitude, area.longitude,
+            ) <= 50_000)
+      .filter((event) => (wanted ? event.classification === wanted : true))
+      // §16.1: "Bugün" is the local day, not "soon".
+      .filter((event) => (bucket === 'today'
+        ? event.localDate === today
+        : event.localDate >= today))
+      // §16.2: ascending by start. A date-only event sorts last, because it
+      // has no start to sort by and guessing one is the thing we do not do.
+      .sort((a, b) => (a.startsAt ?? '9999').localeCompare(b.startsAt ?? '9999'));
+
+    this.eventSearchCache.set(cacheKey, hits);
+    const cards = this.mintEventTokens(userId, hits);
+    return cards.length === 0 ? { kind: 'empty' } : { kind: 'ok', events: cards, totalPages: 1 };
+  }
+
+  private takeEventSelection(userId: string, token: string): FakeEvent | null {
+    const selection = this.eventSelections.get(token);
+    if (!selection || selection.used || selection.userId !== userId) return null;
+    selection.used = true;
+    return eventById(selection.providerEventId) ?? null;
+  }
+
+  async openEvent(
+    selectionToken: string,
+  ): Promise<{ selectionToken: string; event: EventCard } | null> {
+    const userId = await this.requireUserId();
+    const event = this.takeEventSelection(userId, selectionToken);
+    if (!event) return null;
+    if (this.flags.get('TICKETMASTER_PROVIDER_ENABLED') !== true) return null;
+    if (this.providerRequests >= this.providerDailyCeiling) return null;
+    this.providerRequests += 1;
+    // A fresh single-use token for the join that follows, carrying the status
+    // as of this second rather than the one the search saw.
+    const [card] = this.mintEventTokens(userId, [event]);
+    return { selectionToken: card.selectionToken, event: card };
+  }
+
+  async joinEventUpcoming(selectionToken: string): Promise<MyEvent> {
+    const userId = await this.requireUserId();
+    if (this.flags.get('EVENTS_FEATURE_ENABLED') !== true) {
+      throw new ApiError('NOT_FOUND', 'Events are not open yet.');
+    }
+    if (this.capabilities.get('can_join_event_upcoming') !== true) {
+      throw new ApiError('PREMIUM_REQUIRED', 'Joining events is not available on your account.');
+    }
+    const event = this.takeEventSelection(userId, selectionToken);
+    if (!event) {
+      throw new ApiError('INVALID_INPUT', 'That event selection is not usable.');
+    }
+    if (event.status.toLowerCase() === 'cancelled') {
+      throw new ApiError('CONFLICT', 'That event has been cancelled.');
+    }
+
+    const eventId = this.eventSubject(event.id);
+    const mine = this.eventMemberships.get(userId) ?? new Map<string, number | null>();
+    mine.set(eventId, null);
+    this.eventMemberships.set(userId, mine);
+    this.eventFocus.set(userId, { eventId, room: 'EVENT_UPCOMING' });
+
+    const rows = await this.getMyEvents();
+    return rows.find((row) => row.eventId === eventId)!;
+  }
+
+  async withdrawFromEvent(eventId: string): Promise<void> {
+    const userId = await this.requireUserId();
+    // Closes the room and deletes nothing else — the matches and the
+    // conversations that came out of it stay (§8.1).
+    this.eventMemberships.get(userId)?.set(eventId, this.now());
+    if (this.eventFocus.get(userId)?.eventId === eventId) this.eventFocus.delete(userId);
+  }
+
+  async setEventFocus(eventId: string, room: RoomKey): Promise<void> {
+    const userId = await this.requireUserId();
+    if (!this.eventRoomEligible(userId, eventId, room)) {
+      throw new ApiError('FORBIDDEN', 'You do not have access to this room yet.');
+    }
+    this.eventFocus.set(userId, { eventId, room });
+  }
+
+  private eventRoomEligible(userId: string, eventId: string, room: RoomKey): boolean {
+    if (room === 'EVENT_UPCOMING') {
+      if (this.capabilities.get('can_join_event_upcoming') !== true) return false;
+      return this.eventMemberships.get(userId)?.get(eventId) === null;
+    }
+    if (room === 'EVENT_HERE_NOW') {
+      if (this.capabilities.get('can_join_event_here_now') !== true) return false;
+      const check = this.eventPresence.get(userId);
+      return Boolean(
+        check && check.eventId === eventId && check.withinRange && check.expiresAt > this.now(),
+      );
+    }
+    return false;
+  }
+
+  private liveWindow(event: FakeEvent): { opens: number; closes: number } | null {
+    // §8.2: a date-only event has no window, and one is never invented.
+    if (event.dateTbd || !event.startsAt) return null;
+    const starts = Date.parse(event.startsAt);
+    const ends = event.endsAt ? Date.parse(event.endsAt) : starts + 480 * 60_000;
+    return { opens: starts - 120 * 60_000, closes: ends + 180 * 60_000 };
+  }
+
+  async getMyEvents(): Promise<MyEvent[]> {
+    const userId = await this.requireUserId();
+    const mine = this.eventMemberships.get(userId) ?? new Map<string, number | null>();
+    const focus = this.eventFocus.get(userId);
+    const rows: MyEvent[] = [];
+    for (const [eventId, withdrawnAt] of mine) {
+      if (withdrawnAt !== null) continue;
+      const providerEventId = eventId.replace(/^event-/, '');
+      const event = eventById(providerEventId);
+      const window = event ? this.liveWindow(event) : null;
+      const check = this.eventPresence.get(userId);
+      rows.push({
+        eventId,
+        providerEventId,
+        declaredAt: this.now(),
+        focused: focus?.eventId === eventId,
+        upcomingOpen: this.eventRoomEligible(userId, eventId, 'EVENT_UPCOMING'),
+        hereNowOpen: this.eventRoomEligible(userId, eventId, 'EVENT_HERE_NOW'),
+        hereNowUntil: check && check.eventId === eventId && check.expiresAt > this.now()
+          ? check.expiresAt
+          : null,
+        liveOpensAt: window?.opens ?? null,
+        liveClosesAt: window?.closes ?? null,
+      });
+    }
+    return rows;
+  }
+
+  async getEventContent(eventIds: string[]): Promise<EventContent[]> {
+    await this.requireUserId();
+    return eventIds
+      .map((eventId) => ({ eventId, event: eventById(eventId.replace(/^event-/, '')) }))
+      .filter((row): row is { eventId: string; event: FakeEvent } => Boolean(row.event))
+      .map(({ eventId, event }) => ({
+        eventId,
+        providerEventId: event.id,
+        name: event.name,
+        startsAt: event.startsAt,
+        dateTbd: event.dateTbd,
+        status: event.status,
+        venueName: event.venueName,
+        city: event.city,
+        country: event.country,
+        imageUrl: event.imageUrl,
+      }));
+  }
+
+  async verifyEventPresence(
+    eventId: string,
+    latitude: number,
+    longitude: number,
+    accuracyMeters?: number | null,
+  ): Promise<EventPresenceAnswer> {
+    const userId = await this.requireUserId();
+    if (this.capabilities.get('can_join_event_here_now') !== true) {
+      throw new ApiError('PREMIUM_REQUIRED', 'That is not available on your account.');
+    }
+    if (this.eventMemberships.get(userId)?.get(eventId) !== null) {
+      throw new ApiError('NOT_FOUND', 'Join this event first.');
+    }
+    const event = eventById(eventId.replace(/^event-/, ''));
+    if (!event) throw new ApiError('NOT_FOUND', 'Unknown event.');
+
+    const refuse = (outcome: EventPresenceAnswer['outcome']): EventPresenceAnswer => ({
+      outcome,
+      withinRange: false,
+      expiresAt: null,
+    });
+
+    if (event.status.toLowerCase() === 'cancelled') return refuse('EVENT_CANCELLED');
+
+    const window = this.liveWindow(event);
+    if (!window) return refuse('EVENT_TIME_UNCONFIRMED');
+    if (this.now() < window.opens) return refuse('EVENT_NOT_STARTED');
+    if (this.now() > window.closes) return refuse('EVENT_FINISHED');
+
+    // The shared D-055a rule. The event room does not get its own.
+    if (readingProblem(accuracyMeters) !== null) return refuse('LOCATION_INACCURATE');
+
+    if (event.latitude == null || event.longitude == null) {
+      // §9: absent provider coordinates fail visibly rather than falling back
+      // to the city centre, which would be a much weaker claim wearing the
+      // same words.
+      return refuse('EVENT_LOCATION_UNAVAILABLE');
+    }
+
+    const within = haversineMeters(event.latitude, event.longitude, latitude, longitude) <= 500;
+    if (!within) return refuse('TOO_FAR');
+
+    // §8.2: the earlier of the TTL and the window's end.
+    const expiresAt = Math.min(this.now() + 180 * 60_000, window.closes);
+    // One live event at a time — and the hotel's presence answer and any
+    // Çevremde check-in are deliberately untouched by this line.
+    this.eventPresence.set(userId, { eventId, withinRange: true, expiresAt });
+    this.eventFocus.set(userId, { eventId, room: 'EVENT_HERE_NOW' });
+    return { outcome: 'IN_RANGE', withinRange: true, expiresAt };
+  }
+
   /* -------------------------------------------------------------- discovery */
 
   async getDiscoveryFeed(room: RoomKey, limit = 20): Promise<CandidateCard[]> {
     const userId = await this.requireUserId();
+    // D-056: an event deck is anchored on the event being looked at, and never
+    // shares a query with the venue rooms — which is what keeps a hotel guest
+    // out of a concert.
+    if (room === 'EVENT_UPCOMING' || room === 'EVENT_HERE_NOW') {
+      const focus = this.eventFocus.get(userId);
+      if (!focus || focus.room !== room) {
+        throw new ApiError('NOT_FOUND', 'Choose an event first.');
+      }
+      if (!this.eventRoomEligible(userId, focus.eventId, room)) {
+        throw new ApiError('FORBIDDEN', 'You do not have access to this room yet.');
+      }
+      const self = this.profiles.get(userId);
+      return [...this.eventMemberships.keys()]
+        .filter((otherId) => otherId !== userId
+          && this.eventRoomEligible(otherId, focus.eventId, room))
+        .map((otherId) => this.profiles.get(otherId))
+        .filter((profile): profile is StoredProfile => Boolean(profile))
+        .filter((profile) => showMeMatches(self?.showMe ?? null, profile.gender)
+          && showMeMatches(profile.showMe ?? null, self?.gender ?? null))
+        .slice(0, Math.min(Math.max(limit, 1), 50))
+        .map((profile) => ({
+          userId: profile.id,
+          displayName: profile.displayName,
+          age: ageYears(profile.birthdate, this.today()) ?? 0,
+          bio: profile.bio ?? null,
+          photoPath: profile.photoPath ?? null,
+          photoPaths: [],
+          interests: profile.interests,
+          gender: profile.showGender ? profile.gender : null,
+          orientations: profile.showOrientation ? profile.orientations : [],
+          venueName: null,
+          venuePlaceId: null,
+          sameVenue: true,
+        }));
+    }
+
 
     // D-039: Çevremde is anchored to the check-in, not the active hotel, and
     // mutuality is structural — no fresh check-in, no looking.
@@ -1384,7 +1772,10 @@ export class FakeApi implements VocationApi {
       : CANDIDATES.find(
           (entry) =>
             entry.id === targetUserId &&
-            entry.rooms.includes(room) &&
+            // The fixture candidates live in the venue rooms; an event room
+            // never reaches this branch, so the narrowing is a fact rather
+            // than an assumption.
+            entry.rooms.includes(room as DomainRoomKey) &&
             // D-038 / D-039: reachable within the region for the rooms, or
             // within the 1 km street for Çevremde.
             (room === 'NEARBY'

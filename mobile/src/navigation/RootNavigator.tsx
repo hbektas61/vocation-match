@@ -10,6 +10,8 @@ import { ChatScreen } from '../screens/ChatScreen';
 import { ChooseHotelScreen } from '../screens/ChooseHotelScreen';
 import { DiscoveryScreen } from '../screens/DiscoveryScreen';
 import { EditProfileScreen } from '../screens/EditProfileScreen';
+import { EventDetailScreen } from '../screens/EventDetailScreen';
+import { EventsScreen } from '../screens/EventsScreen';
 import { CheckinScreen } from '../screens/CheckinScreen';
 import { HereNowScreen } from '../screens/HereNowScreen';
 import { HotelDetailsScreen } from '../screens/HotelDetailsScreen';
@@ -74,6 +76,8 @@ function MainTabs() {
     >
       <Tabs.Screen name="Vacation" component={HotelScreen} options={{ title: COPY.tabs.vacation }} />
       <Tabs.Screen name="Nearby" component={CheckinScreen} options={{ title: COPY.tabs.nearbyTab }} />
+      {/* D-056: the fourth primary feature, beside the other three. */}
+      <Tabs.Screen name="Events" component={EventsScreen} options={{ title: COPY.events.tab }} />
       <Tabs.Screen name="Discovery" component={DiscoveryScreen} options={{ title: COPY.tabs.discovery }} />
       <Tabs.Screen name="Inbox" component={InboxScreen} options={{ title: COPY.tabs.inbox }} />
       <Tabs.Screen name="Settings" component={SettingsScreen} options={{ title: COPY.tabs.settings }} />
@@ -140,6 +144,11 @@ export function RootNavigator() {
         name="HotelDetails"
         component={HotelDetailsScreen}
         options={{ title: COPY.hotel.detailsTitle }}
+      />
+      <Stack.Screen
+        name="EventDetail"
+        component={EventDetailScreen}
+        options={{ title: COPY.events.title }}
       />
       <Stack.Screen
         name="HereNow"

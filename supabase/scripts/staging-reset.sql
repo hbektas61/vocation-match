@@ -16,7 +16,7 @@
 --
 --   * refuses to run anywhere but staging,
 --   * returns the named test accounts to "no venue, no stay, no check-in, no
---     presence answer, no open search session",
+--     presence answer, no open search session, no event membership",
 --   * clears the venue-region contributions those runs produced, and the
 --     coarse cells that were derived from them,
 --   * retires the Google venue rows the runs created, when nothing references
@@ -98,6 +98,15 @@ begin
   delete from app.place_selections     where user_id = any (v_ids);
   delete from app.search_sessions      where user_id = any (v_ids);
 
+  -- D-056: the event rooms a run built. Memberships and focus go; the event
+  -- *identities* stay, because a match or a swipe may point at one and that
+  -- history is not this script's to rewrite — the same reasoning as the
+  -- Google venues below.
+  delete from public.event_presence_checks where user_id = any (v_ids);
+  delete from public.user_event_focus      where user_id = any (v_ids);
+  delete from public.event_memberships     where user_id = any (v_ids);
+  delete from app.event_selections         where user_id = any (v_ids);
+
   -- ------------------------------------------------- the venues they created
   -- A Google venue is created by the first person who picks it, so a test run
   -- mints them. Retire the ones nothing references any more.
@@ -151,6 +160,11 @@ begin
   select count(*) into v_survivors from public.hotels where provider = 'google';
   raise notice 'google venues: % removed, % deactivated, % kept because history points at them',
     v_deleted, v_retired, v_survivors;
+  -- The provider lease is not per-user, so it is swept rather than targeted:
+  -- anything expired or flagged goes, which is what the routine purge does
+  -- anyway (§10.1).
+  perform public.purge_event_content();
+
   raise notice 'profiles, matches, messages, blocks and reports were not touched';
   raise notice 'metrics were not touched: app.provider_events is a record of what happened';
 end;

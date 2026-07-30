@@ -44,6 +44,15 @@ function iconFor(routeName: string, active: boolean) {
           <Circle cx={12} cy={10} r={3} />
         </Svg>
       );
+    case 'Events':
+      // A ticket stub with its perforation — the object an event is, without
+      // claiming we sell one.
+      return (
+        <Svg {...common}>
+          <Path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 6 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-6Z" />
+          <Path d="M14 7v10" />
+        </Svg>
+      );
     case 'Discovery':
       return (
         <Svg {...common}>

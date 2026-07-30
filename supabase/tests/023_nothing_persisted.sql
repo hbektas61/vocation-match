@@ -30,6 +30,12 @@ select no_plan();
  *                              the two assertions after this one keep it that
  *                              way: no client can read it, and it does not
  *                              outlive a day.
+ *   event_content.venue_*      where a *concert hall* is, leased from
+ *                              Ticketmaster with an expiry (D-056 §10). It is
+ *                              a published address of a public building, it is
+ *                              needed to measure 500 m against, it is
+ *                              unreachable by any client, and it is purged
+ *                              when the lease ends or a takedown arrives.
  *
  * Nothing else, anywhere. In particular nothing keyed to a *person*: that is
  * what "no raw GPS" means, and a table of user positions would fail here even
@@ -47,7 +53,9 @@ select is(
       and not (c.table_name = 'hotels'
                and c.column_name in ('location', 'coarse_region_point'))
       and not (c.table_name = 'search_sessions'
-               and c.column_name like 'dest\_%')),
+               and c.column_name like 'dest\_%')
+      and not (c.table_name = 'event_content'
+               and c.column_name in ('venue_latitude', 'venue_longitude'))),
   '',
   'no coordinate is stored anywhere but the two columns on hotels that are allowed one'
 );
@@ -65,6 +73,22 @@ select ok(
      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and p.proname = 'open_search_session'),
   'and a search session is deleted rather than left to become a catalogue'
+);
+
+-- The event venue's two guards, the same shape as the destination box's.
+select is(
+  (select count(*)::int from information_schema.table_privileges
+    where table_schema = 'app' and table_name = 'event_content'
+      and grantee in ('anon', 'authenticated')),
+  0,
+  'the leased event venue coordinate is unreachable by any client'
+);
+select is(
+  (select count(*)::int from information_schema.columns
+    where table_schema = 'app' and table_name = 'event_content'
+      and column_name = 'expires_at' and is_nullable = 'NO'),
+  1,
+  'and every row of it has to expire'
 );
 
 select is(

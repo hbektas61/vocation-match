@@ -277,6 +277,64 @@ export const en = {
    * may be a hotel, a resort, a beach club or a named beach, so nothing here
    * says "hotel".
    */
+  /** The fourth primary feature (D-056). */
+  events: {
+    tab: 'Events',
+    title: 'Events',
+    subtitle: 'Match with the people going to the same event.',
+    todayHeading: 'Today',
+    upcomingHeading: 'Upcoming events',
+    areaLabel: 'Event area',
+    changeArea: 'Change location',
+    useMyLocation: 'Use my current location',
+    chooseArea: 'Choose where to look',
+    areaPlaceholder: 'İstanbul, London, Las Vegas…',
+    chipAll: 'All',
+    chipMusic: 'Music & festivals',
+    chipSports: 'Sports',
+    chipArts: 'Stage & comedy',
+    /** Required wherever provider content is drawn. */
+    attribution: 'Powered by Ticketmaster',
+    /**
+     * §3.4 — nine distinct states, because a spinner that means all of them
+     * is a screen that looks broken in eight.
+     */
+    noResults: 'No events found here for these dates.',
+    notEverything: 'Not every event is listed here.',
+    providerUnavailable: 'Event search is unavailable right now. Try again later.',
+    ceilingReached: 'Event search has reached today’s limit. Try again tomorrow.',
+    offline: 'No connection. Try again.',
+    disabled: 'Events are not open yet.',
+    permissionDenied: 'Location permission is needed to search around you.',
+    joinUpcoming: 'I am going',
+    joinHereNow: 'I am at the event now',
+    roomChoiceTitle: 'How do you want to join this event?',
+    joined: 'You are going. The room is open.',
+    joinedRoomCta: 'See who is going',
+    liveRoomCta: 'See who is here now',
+    withdraw: 'I am not going any more',
+    cancelled: 'This event has been cancelled.',
+    postponed: 'This event has been postponed.',
+    dateTbd: 'The date is not confirmed yet.',
+    /** §8.2: a date-only event gets UPCOMING and an honest no for the rest. */
+    hereNowUnavailableTbd:
+      'The live room opens once the event time is confirmed.',
+    hereNowLocationUnavailable:
+      'This event’s location is not published, so the live room cannot open.',
+    hereNowNotStarted: 'The live room opens two hours before the event.',
+    hereNowFinished: 'This event is over.',
+    hereNowInaccurate: 'Your location is not precise enough. Step outside and try again.',
+    hereNowTooFar: 'That check could not find you at the event. Try again when you are there.',
+    hereNowOpen: 'You are in. The live room is open.',
+    /** §10.2: after the lease ends there is nothing of theirs left to draw. */
+    pastEvent: 'Past event',
+    /** D-007's rule, in the event room's own words. */
+    noTicketClaim: 'A location check is not a ticket, and nobody is asked for one.',
+    myEvents: 'Your events',
+    emptyTitle: 'No events yet',
+    emptyBody: 'Choose where to look, then pick an event to meet the people going.',
+  },
+
   venue: {
     destinationTitle: 'Where are you going?',
     destinationHint: 'Search for a city, island or holiday area',

@@ -381,6 +381,48 @@ client work; the server already allowed every one of them.
 - [x] S-013 Explicit schema assertions that no location-derived column or table
       is reachable by a client.
 
+## Done — Etkinlikler, the fourth feature (D-056, 2026-07-31)
+
+- [x] E-001 `public.events`: canonical `(provider, provider_event_id)`, unique,
+      concurrency-safe first selection.
+- [x] E-002 The room engine generalized — nullable `event_id` beside a nullable
+      `hotel_id`, exactly-one-subject, two more room values, one branch each in
+      `discovery_feed` and `swipe`. No second matching or chat system.
+- [x] E-003 `app.event_content`: the expiring lease, with takedown and sweep.
+- [x] E-004 Provider boundary: Discovery v2 behind the edge function, shared
+      cache, in-flight coalescing, per-second limit, daily ceiling, timeout,
+      circuit breaker, kill switch, schema validation, test-event rejection.
+- [x] E-005 Server-issued selection tokens; a client can never create a room
+      from an id it invented.
+- [x] E-006 `EVENT_UPCOMING`, with no ticket and no proof, withdrawable without
+      losing a match.
+- [x] E-007 `EVENT_HERE_NOW`: fresh status, live window in the venue's own
+      timezone, provider venue coordinate, the shared D-055a reading rule, the
+      same 500 m test, expiry clamped to the window.
+- [x] E-008 Events tab with Bugün / Yaklaşan, explicit area selection, chips,
+      and all nine failure states in both languages.
+- [x] E-009 Capabilities `can_join_event_upcoming` / `can_join_event_here_now`.
+- [x] E-010 §16 coverage: 36 mobile cases and 50 pgTAP assertions.
+
+## Next — Etkinlikler, what is left
+
+- [ ] E-011 **Blocked on the owner:** obtain a Ticketmaster Discovery key for
+      staging (`TICKETMASTER_DISCOVERY_API_KEY`), then run §17 Scenario A —
+      coverage across İstanbul, İzmir/Alaçatı, Dubai, Las Vegas, Miami, Ibiza,
+      Mykonos, London, Berlin, Paris — and record what is genuinely absent.
+- [ ] E-012 **Blocked on the owner:** written Ticketmaster commercial-use
+      approval or an approved affiliate agreement, before any paid production
+      launch. Implementation and staging need neither.
+- [ ] E-013 Decide the free/premium mapping for the two event modes. The
+      capabilities exist and both answer true; copying the hotel's D-036 rule
+      across would be a product decision, and so would promising both are free.
+- [ ] E-014 Turn `EVENTS_FEATURE_ENABLED` on once E-011 has been walked. It is
+      an operator action, deliberately not a deploy.
+- [ ] E-015 A scheduled sweep for `purge_event_content()`. The function and the
+      takedown path exist and are tested; nothing calls the sweep on a timer
+      yet, so expired rows linger until something asks. They are never *served*
+      — `event_content()` refuses them — so this is tidiness, not a leak.
+
 ## Superseded — the wording these replaced
 
 - [x] V-010 A Google venue cannot join the D-038 region pool, because it has no

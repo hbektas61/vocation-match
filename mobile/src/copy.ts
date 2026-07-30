@@ -106,6 +106,12 @@ export function apiErrorMessage(code: ApiErrorCode): string {
  * decision D-007 — never claims a reservation or hotel approval).
  */
 export function roomStatusExplanation(room: RoomKey, status: RoomStatus): string {
+  if (room === 'EVENT_UPCOMING' || room === 'EVENT_HERE_NOW') {
+    // The event screen carries its own, far more specific vocabulary — a live
+    // window, a cancellation, an unconfirmed date. Reusing the hotel's reasons
+    // here would describe the wrong thing.
+    return status.eligible ? COPY.events.joined : COPY.events.emptyBody;
+  }
   if (room === 'NEARBY') {
     // Çevremde's status is its own vocabulary (D-039): a check-in clock,
     // not a stay or a proximity answer.
@@ -121,6 +127,9 @@ export function roomStatusExplanation(room: RoomKey, status: RoomStatus): string
 export function roomPlate(room: RoomKey): string {
   if (room === 'UPCOMING') return COPY.rooms.upcomingPlate;
   if (room === 'HERE_NOW') return COPY.rooms.hereNowPlate;
+  // D-056: an event room's plate names the event mode, not a venue.
+  if (room === 'EVENT_UPCOMING') return COPY.events.joinUpcoming;
+  if (room === 'EVENT_HERE_NOW') return COPY.events.joinHereNow;
   return COPY.rooms.nearbyPlate;
 }
 

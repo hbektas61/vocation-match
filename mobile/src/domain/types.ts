@@ -9,6 +9,14 @@
 
 /** UPCOMING and HERE_NOW are the hotel rooms; NEARBY is the free
  * check-in street (D-039). */
+/**
+ * The rooms the domain layer reasons about.
+ *
+ * Deliberately the venue rooms only: an event room's eligibility is a question
+ * about a provider's schedule and a membership, which is the server's to answer
+ * and has no pure-function form here (D-056). The API boundary's `RoomKey` is
+ * the wider vocabulary.
+ */
 export type RoomKey = 'UPCOMING' | 'HERE_NOW' | 'NEARBY';
 
 export interface Hotel {

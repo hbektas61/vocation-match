@@ -3480,3 +3480,90 @@ staging reset afterwards and Deniz's temporary Premium removed.
 
 Ceilings untouched. Ready for the events milestone, which inherits
 `app.reading_problem` rather than writing its own.
+
+## 2026-07-31 — Etkinlikler, the fourth feature (D-056)
+
+Ticketmaster Discovery v2 joins as an event *discovery* provider, and a selected
+event becomes the shared identity of an app-owned social room. We sell,
+reserve, issue and validate nothing, and no copy anywhere claims a location
+check is a ticket.
+
+**Not a second application.** `swipes` and `matches` gained a nullable
+`event_id` beside a now-nullable `hotel_id`, with a check that exactly one is
+set; the room vocabulary gained two values; `room_eligible`, `discovery_feed`
+and `swipe` gained a branch each. That is the whole structural change — the
+same shape `NEARBY` arrived in. Both endpoints were copied verbatim from their
+current definitions and patched in named places, because rewriting them by hand
+is how the NEARBY branch or the match-attribution rule quietly disappears.
+
+**Events do not touch the hotel.** There is deliberately no `user_active_event`
+mirroring `user_active_hotel`: that would import the one-at-a-time rule the
+hotel needs and events must not have. Several future events coexist; which deck
+you are *looking* at is `user_event_focus`, a viewing choice that deletes
+nothing when it changes. Only the live verification is one at a time, and
+starting a second expires the first *event* answer while leaving the hotel's
+and Çevremde's alone.
+
+**Provider content is a lease.** `app.event_content` holds the payload, the
+status, the schedule and the venue coordinate with `fetched_at`, `expires_at`
+and `purge_requested_at`. Nothing from it is copied into a room, a membership,
+a match or a message; `event_content()` refuses anything expired or flagged;
+`purge_event_content()` empties it by id for a takedown or sweeps what has
+lapsed, and is structurally incapable of reaching an app-owned row.
+
+**Bounded before it is called.** A shared cache keyed on area · bucket ·
+classification · locale · page with no user and no coordinate in it;
+`take_event_search_cache` hands exactly one caller the fill and makes the rest
+wait; then the per-second limit, the daily ceiling (4,500, under Ticketmaster's
+5,000), a 5 s timeout, a circuit breaker, and two switches.
+
+**`EVENT_HERE_NOW` inherits D-055a** rather than writing its own rule, which is
+the reason that validator was made a function. Live window in the venue's own
+timezone, 2 h early / 3 h after the end / 8 h default duration, the 500 m
+PostGIS test, and an expiry clamped to the earlier of the TTL and the window.
+A date-only event gets Yaklaşan and an honest refusal for the live room.
+
+**Verified live on staging, without a key.** The migrations are applied and the
+function deployed.
+
+    switch off                     → search refuses `events_disabled`
+    switch on, no key              → `unconfigured`, not a crash
+    invented selection token       → P0003
+    deck with no event chosen      → P0002
+    two accounts, one provider id  → one subject `35d6d5cf…`, and Deniz's deck
+                                     shows Ece
+    the hotel                      → untouched throughout
+    cancelled event                → P0005 on join; the room that existed is
+                                     unchanged
+    event_content / event_selections / event_search_cache / feature_flags
+                                   → not exposed to a client at all
+    public.events                  → id and provider id only
+
+Staging was then reset (the script learned the event tables) and both switches
+returned to their safe state: `EVENTS_FEATURE_ENABLED` **off**.
+
+**The external blocker, exactly.** There is no `TICKETMASTER_DISCOVERY_API_KEY`
+on staging, so §17 Scenario A — the ten-market coverage measurement — has not
+been run, and no coverage number is claimed. Nothing about the provider's real
+ranking, availability or field shapes has been observed; every automated test
+uses deterministic fakes, as §16 requires. Setting the secret is owner work:
+
+    supabase secrets set TICKETMASTER_DISCOVERY_API_KEY=…
+
+Separately and more importantly, the **paid production launch gate** stands:
+written Ticketmaster commercial-use approval, or an approved affiliate
+agreement, before Ticketmaster-backed event rooms ship as part of a paid
+product. Implementation and staging need neither. Record the approval date,
+version, contact and obligations in a private owner-controlled compliance
+record — never in this repository.
+
+Also open and named rather than assumed: the free/premium mapping for the two
+event modes (E-013 — both capabilities answer true today), and a timer for the
+content sweep (E-015 — the function and the takedown are tested, but nothing
+calls the sweep on a schedule yet; expired rows are never *served*, so this is
+tidiness rather than a leak).
+
+Gates: `scripts/check.sh` all green — **609 SQL assertions** across 25 pgTAP
+files plus concurrency and performance, the client↔database contract, migration
+replay, storage drain, typecheck, zero-warning lint, **580 mobile tests** across
+47 suites, and the Expo web bundle.

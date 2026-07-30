@@ -16,6 +16,11 @@ Vocation Match is a React Native/Expo mobile app that lets adults discover and m
 - Never expose exact coordinates or live distance to another user.
 - Switching venues immediately deactivates discovery in the previous venue.
 - Overture/OSM stays the catalogue behind Çevremde and behind every venue already chosen; it is no longer required for choosing a vacation venue.
+- There are exactly four primary features: **Otele Gidecekler**, **Oteldeyim**, **Çevremde**, and **Etkinlikler** (D-056). Profile, swipe, match, chat, notifications, blocking and reporting are shared capabilities used by all four — not features of their own.
+- An event room's canonical external identity is `(provider='ticketmaster', provider_event_id)`. Ticketmaster is an event *discovery* provider: Vacation Match does not sell, reserve, issue or validate tickets, and a location check is never a claim that somebody holds one.
+- Event membership never deactivates a vacation venue, and several future events may be declared at once; only the *live* event verification is one at a time.
+- Ticketmaster Event Content lives only in an expiring lease and is never copied into a room, membership, match or message. After the lease ends, a past event shows the app-owned label "Geçmiş etkinlik".
+- Do not enable Ticketmaster-backed event rooms in a **paid production** offering before written commercial approval or an approved affiliate agreement (D-056 launch gate).
 - Payment and premium features are a later phase. Do not add billing, paywalls, RevenueCat, or premium entitlement until `.studio/decisions.md` explicitly advances that phase.
 
 ## Current milestone

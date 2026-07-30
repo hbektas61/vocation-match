@@ -250,8 +250,119 @@ export interface PhotoUpload {
   mimeType: string;
 }
 
-/** The two hotel rooms plus the free check-in street (D-039). */
-export type RoomKey = 'UPCOMING' | 'HERE_NOW' | 'NEARBY';
+/**
+ * Every room the one engine knows (D-039, D-056).
+ *
+ * The two event rooms are the same vocabulary, not a second system: they swipe,
+ * match and chat through exactly the endpoints the hotel rooms use.
+ */
+export type RoomKey =
+  | 'UPCOMING'
+  | 'HERE_NOW'
+  | 'NEARBY'
+  | 'EVENT_UPCOMING'
+  | 'EVENT_HERE_NOW';
+
+/** Which event rooms a room key belongs to. */
+export const EVENT_ROOMS: RoomKey[] = ['EVENT_UPCOMING', 'EVENT_HERE_NOW'];
+
+/**
+ * One event as a search returned it (D-056 §3.1).
+ *
+ * Everything here except `selectionToken` is Ticketmaster's Event Content on a
+ * short lease — it is drawn and forgotten, never written down by the client
+ * and never stored beside a room, a match or a message.
+ */
+export interface EventCard {
+  /** Single-use, ours, and the only way to open or join this event. */
+  selectionToken: string;
+  name: string | null;
+  /** ISO instant when the provider gave a confirmed one. */
+  startsAt: string | null;
+  localDate: string | null;
+  localTime: string | null;
+  /** The provider has not settled the date or the time yet (§8.2). */
+  dateTbd: boolean;
+  status: string;
+  venueName: string | null;
+  city: string | null;
+  country: string | null;
+  imageUrl: string | null;
+  classification: string | null;
+}
+
+/** Where the user asked to look. Never derived from a passive GPS read. */
+export type EventArea =
+  | { kind: 'city'; city: string; countryCode?: string; label: string }
+  | { kind: 'here'; latitude: number; longitude: number; label: string };
+
+export type EventBucket = 'today' | 'upcoming';
+/** Chips. Configurable server-side; adding one is not a migration (§4). */
+export type EventCategory = 'all' | 'music' | 'sports' | 'arts';
+
+/**
+ * What a search answered — including all the ways it honestly could not.
+ *
+ * The refusals are distinct because §3.4 requires them to be: "nothing here"
+ * and "we could not ask" and "we have asked too much today" are three
+ * different things to say to somebody, and a spinner that means all three is a
+ * screen that looks broken in two of them.
+ */
+export type EventSearchResult =
+  | { kind: 'ok'; events: EventCard[]; totalPages: number }
+  | { kind: 'empty' }
+  | { kind: 'unavailable' }
+  | { kind: 'ceiling' }
+  | { kind: 'disabled' }
+  | { kind: 'offline' };
+
+/** An event this account has declared for. */
+export interface MyEvent {
+  eventId: string;
+  providerEventId: string;
+  declaredAt: number;
+  /** Whose deck the app is currently drawing. A viewing choice, not a state. */
+  focused: boolean;
+  upcomingOpen: boolean;
+  hereNowOpen: boolean;
+  /** Epoch ms, or null when the live answer is not open. */
+  hereNowUntil: number | null;
+  liveOpensAt: number | null;
+  liveClosesAt: number | null;
+}
+
+/**
+ * The provider's lease on one event, read back for a screen. Absent when it
+ * has expired or been taken down — which is what makes the UI say "Geçmiş
+ * etkinlik" instead of drawing a name it no longer holds (§10.2).
+ */
+export interface EventContent {
+  eventId: string;
+  providerEventId: string;
+  name: string | null;
+  startsAt: string | null;
+  dateTbd: boolean;
+  status: string;
+  venueName: string | null;
+  city: string | null;
+  country: string | null;
+  imageUrl: string | null;
+}
+
+/** The answer to one live-event check (D-056 §9). */
+export interface EventPresenceAnswer {
+  outcome:
+    | 'IN_RANGE'
+    | 'TOO_FAR'
+    | 'LOCATION_INACCURATE'
+    | 'EVENT_NOT_STARTED'
+    | 'EVENT_FINISHED'
+    | 'EVENT_CANCELLED'
+    | 'EVENT_TIME_UNCONFIRMED'
+    | 'EVENT_LOCATION_UNAVAILABLE';
+  withinRange: boolean;
+  expiresAt: number | null;
+}
 
 export type RoomReason =
   | 'ELIGIBLE'
@@ -639,6 +750,39 @@ export interface VocationApi {
   resolveGooglePlace(placeId: string): Promise<string | null>;
   clearCheckin(): Promise<void>;
   getCheckin(): Promise<ActiveCheckin | null>;
+
+  /* events (D-056) */
+  /** Which server-controlled switches are on. The tab is not drawn when off. */
+  getFeatureFlags(): Promise<Record<string, boolean>>;
+  /** What this account may do in the event rooms — server-authoritative. */
+  getEventCapabilities(): Promise<Record<string, boolean>>;
+  /**
+   * Events for an area the user explicitly chose. Never called because a tab
+   * focused, a GPS refreshed, or the app launched (§3.2).
+   */
+  searchEvents(
+    area: EventArea,
+    bucket: EventBucket,
+    category: EventCategory,
+    page?: number,
+  ): Promise<EventSearchResult>;
+  /** Confirms a selection and refreshes its lease; returns a fresh join token. */
+  openEvent(selectionToken: string): Promise<{ selectionToken: string; event: EventCard } | null>;
+  /** "Etkinliğe Gideceğim" — a declaration, with no ticket and no proof. */
+  joinEventUpcoming(selectionToken: string): Promise<MyEvent>;
+  withdrawFromEvent(eventId: string): Promise<void>;
+  /** Which event's deck to draw. Deletes nothing when it changes. */
+  setEventFocus(eventId: string, room: RoomKey): Promise<void>;
+  getMyEvents(): Promise<MyEvent[]>;
+  /** The provider's lease for these events, or fewer rows than asked for. */
+  getEventContent(eventIds: string[]): Promise<EventContent[]>;
+  /** "Şu An Etkinlikteyim" — decided by the server on every axis. */
+  verifyEventPresence(
+    eventId: string,
+    latitude: number,
+    longitude: number,
+    accuracyMeters?: number | null,
+  ): Promise<EventPresenceAnswer>;
 
   /* discovery */
   getDiscoveryFeed(room: RoomKey, limit?: number): Promise<CandidateCard[]>;

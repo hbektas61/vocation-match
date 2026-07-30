@@ -42,6 +42,14 @@ import {
   type DestinationChoice,
   type VenueSearchMode,
   GOOGLE_VENUE_KIND,
+  type EventArea,
+  type EventBucket,
+  type EventCard,
+  type EventCategory,
+  type EventContent,
+  type EventPresenceAnswer,
+  type EventSearchResult,
+  type MyEvent,
 } from './contracts';
 import type { BackendConfig } from './config';
 import { isE164Phone, normalizePhone } from './phone';
@@ -1032,6 +1040,190 @@ export class SupabaseApi implements VocationApi {
           expiresAt: Date.parse(row.expires_at),
         }
       : null;
+  }
+
+
+  /* --------------------------------------------------------- events, D-056 */
+
+  async getFeatureFlags(): Promise<Record<string, boolean>> {
+    const { data, error } = await this.client.rpc('feature_flags');
+    if (error) return {};
+    return Object.fromEntries(
+      ((data ?? []) as { flag: string; enabled: boolean }[]).map((row) => [row.flag, row.enabled]),
+    );
+  }
+
+  async getEventCapabilities(): Promise<Record<string, boolean>> {
+    const { data, error } = await this.client.rpc('my_event_capabilities');
+    if (error) return {};
+    return Object.fromEntries(
+      ((data ?? []) as { capability: string; allowed: boolean }[])
+        .map((row) => [row.capability, row.allowed]),
+    );
+  }
+
+  /**
+   * The provider is reached only through the edge function, and only because
+   * somebody asked for an area. Every refusal has its own name, because §3.4
+   * requires the screen to be able to tell them apart.
+   */
+  async searchEvents(
+    area: EventArea,
+    bucket: EventBucket,
+    category: EventCategory,
+    page = 0,
+  ): Promise<EventSearchResult> {
+    const body: Record<string, unknown> = { op: 'search', bucket, category, page };
+    if (area.kind === 'city') {
+      body.city = area.city;
+      if (area.countryCode) body.countryCode = area.countryCode;
+    } else {
+      // The edge function rounds this to a coarse cell before it becomes a
+      // cache key or reaches Ticketmaster (§3.2).
+      body.latitude = area.latitude;
+      body.longitude = area.longitude;
+    }
+
+    const { data, error } = await this.client.functions.invoke('events-ticketmaster', { body });
+    if (error) {
+      const response = (error as { context?: Response }).context;
+      const detail = response && typeof response.json === 'function'
+        ? await response.json().catch(() => null)
+        : null;
+      const code = typeof detail?.error === 'string' ? detail.error : '';
+      if (code === 'events_disabled') return { kind: 'disabled' };
+      if (code === 'allowance_spent' || code === 'ceiling_unknown') return { kind: 'ceiling' };
+      if (code === 'provider_disabled' || code === 'provider_unavailable'
+          || code === 'unconfigured' || code === 'rate_limited') {
+        return { kind: 'unavailable' };
+      }
+      return { kind: 'offline' };
+    }
+    const events = (data?.events ?? []) as EventCard[];
+    if (events.length === 0) return { kind: 'empty' };
+    return { kind: 'ok', events, totalPages: Number(data?.totalPages ?? 1) };
+  }
+
+  async openEvent(
+    selectionToken: string,
+  ): Promise<{ selectionToken: string; event: EventCard } | null> {
+    const { data, error } = await this.client.functions.invoke('events-ticketmaster', {
+      body: { op: 'detail', selectionToken },
+    });
+    if (error || typeof data?.selectionToken !== 'string' || !data?.event) return null;
+    const raw = data.event as Record<string, unknown>;
+    return {
+      selectionToken: data.selectionToken as string,
+      event: {
+        selectionToken: data.selectionToken as string,
+        name: (raw.name as string) ?? null,
+        startsAt: (raw.startsAt as string) ?? null,
+        localDate: (raw.localDate as string) ?? null,
+        localTime: (raw.localTime as string) ?? null,
+        dateTbd: raw.dateTbd === true,
+        status: (raw.status as string) ?? 'unknown',
+        venueName: (raw.venueName as string) ?? null,
+        city: (raw.city as string) ?? null,
+        country: (raw.country as string) ?? null,
+        imageUrl: (raw.imageUrl as string) ?? null,
+        classification: (raw.classification as string) ?? null,
+      },
+    };
+  }
+
+  async joinEventUpcoming(selectionToken: string): Promise<MyEvent> {
+    await this.rpcSingle<{ event_id: string }>(
+      'join_event_upcoming',
+      { p_selection_token: selectionToken },
+      'Could not join that event.',
+    );
+    const mine = await this.getMyEvents();
+    const joined = mine.find((row) => row.focused) ?? mine[0];
+    if (!joined) throw new ApiError('UNKNOWN', 'Could not join that event.');
+    return joined;
+  }
+
+  async withdrawFromEvent(eventId: string): Promise<void> {
+    const { error } = await this.client.rpc('withdraw_from_event', { p_event: eventId });
+    if (error) throw toApiError(error, 'Could not leave that event.');
+  }
+
+  async setEventFocus(eventId: string, room: RoomKey): Promise<void> {
+    const { error } = await this.client.rpc('set_event_focus', {
+      p_event: eventId,
+      p_room: room,
+    });
+    if (error) throw toApiError(error, 'Could not open that room.');
+  }
+
+  async getMyEvents(): Promise<MyEvent[]> {
+    const { data, error } = await this.client.rpc('my_events');
+    if (error) throw toApiError(error, 'Could not load your events.');
+    return ((data ?? []) as Record<string, string | boolean | null>[]).map((row) => ({
+      eventId: row.event_id as string,
+      providerEventId: row.provider_event_id as string,
+      declaredAt: Date.parse(row.declared_at as string),
+      focused: row.focused === true,
+      upcomingOpen: row.upcoming_open === true,
+      hereNowOpen: row.here_now_open === true,
+      hereNowUntil: row.here_now_until ? Date.parse(row.here_now_until as string) : null,
+      liveOpensAt: row.live_opens_at ? Date.parse(row.live_opens_at as string) : null,
+      liveClosesAt: row.live_closes_at ? Date.parse(row.live_closes_at as string) : null,
+    }));
+  }
+
+  /**
+   * The provider's lease, read back. Fewer rows than asked for is the normal
+   * answer for an event whose content has expired or been taken down — the
+   * screen says "Geçmiş etkinlik" rather than drawing a name we no longer hold.
+   */
+  async getEventContent(eventIds: string[]): Promise<EventContent[]> {
+    if (eventIds.length === 0) return [];
+    const { data, error } = await this.client.rpc('event_content', { p_event_ids: eventIds });
+    if (error) return [];
+    return ((data ?? []) as Record<string, unknown>[]).map((row) => {
+      const payload = (row.payload ?? {}) as Record<string, unknown>;
+      return {
+        eventId: row.event_id as string,
+        providerEventId: row.provider_event_id as string,
+        name: (payload.name as string) ?? null,
+        startsAt: (row.starts_at as string) ?? null,
+        dateTbd: row.date_tbd === true,
+        status: (row.provider_status as string) ?? 'unknown',
+        venueName: (payload.venueName as string) ?? null,
+        city: (payload.city as string) ?? null,
+        country: (payload.country as string) ?? null,
+        imageUrl: (payload.imageUrl as string) ?? null,
+      };
+    });
+  }
+
+  async verifyEventPresence(
+    eventId: string,
+    latitude: number,
+    longitude: number,
+    accuracyMeters?: number | null,
+  ): Promise<EventPresenceAnswer> {
+    const { data, error } = await this.client.functions.invoke('events-ticketmaster', {
+      body: { op: 'verify', eventId, latitude, longitude, accuracyMeters },
+    });
+    if (error) {
+      const response = (error as { context?: Response }).context;
+      const detail = response && typeof response.json === 'function'
+        ? await response.json().catch(() => null)
+        : null;
+      const code = typeof detail?.error === 'string' ? detail.error : '';
+      if (code === 'PP001') {
+        throw new ApiError('PREMIUM_REQUIRED', 'That is not available on your account.');
+      }
+      if (code === 'P0002') throw new ApiError('NOT_FOUND', 'Join this event first.');
+      throw new ApiError('UNKNOWN', 'Could not check where you are.');
+    }
+    return {
+      outcome: (data?.outcome ?? 'TOO_FAR') as EventPresenceAnswer['outcome'],
+      withinRange: data?.withinRange === true,
+      expiresAt: typeof data?.expiresAt === 'string' ? Date.parse(data.expiresAt) : null,
+    };
   }
 
   /* -------------------------------------------------------------- discovery */
