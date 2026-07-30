@@ -9,7 +9,7 @@ import { PhotoGrid } from '../components/PhotoGrid';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 
-import { Avatar, Body, Button, Caption, Card, EmptyState, Heading, Notice, Screen, SectionLabel, Title } from '../components/ui';
+import { Avatar, Body, Button, Caption, Card, EmptyState, Heading, Notice, Screen, SectionLabel } from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type BlockedUser, type ProfilePhoto } from '../data';
 import { resetDeckLabels } from '../data/venueLabels';
@@ -127,8 +127,11 @@ export function SettingsScreen() {
   };
 
   return (
-    <Screen safeTop testID="screen-settings">
-      <Title>{COPY.settings.title}</Title>
+    /* D-057: Settings is a pushed screen now, not a tab. The stack header
+       supplies the title and the way back, so drawing the title again here
+       printed "Ayarlar" twice — and `safeTop` took the status-bar inset a
+       second time under a header that had already taken it. */
+    <Screen testID="screen-settings">
       {state.profile ? (
         <Card testID="settings-profile">
           {/* The face first: this screen's subject is the person, and a card

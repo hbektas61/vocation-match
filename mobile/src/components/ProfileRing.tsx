@@ -19,11 +19,12 @@
  */
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { COPY } from '../copy';
+import { COPY, upperCase } from '../copy';
 import type { RootStackParamList } from '../navigation/types';
-import { color } from '../theme';
+import { useAppStore } from '../state/AppStore';
+import { color, fontFamily } from '../theme';
 
 export function ProfileRing({
   /**
@@ -38,6 +39,16 @@ export function ProfileRing({
   testID?: string;
 }) {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const { state } = useAppStore();
+  // The frame draws the initials rather than an empty circle: an empty ring in
+  // the corner reads as a loading spinner that never finished.
+  const initials = (state.profile?.displayName ?? '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('');
   return (
     <Pressable
       accessibilityRole="button"
@@ -47,6 +58,7 @@ export function ProfileRing({
       testID={testID ?? 'profile-ring'}
     >
       {alert ? <View style={styles.dot} /> : null}
+      {initials ? <Text style={styles.initials}>{upperCase(initials)}</Text> : null}
     </Pressable>
   );
 }
@@ -59,16 +71,23 @@ const styles = StyleSheet.create({
     borderRadius: 23,
     borderWidth: 1.4,
     borderColor: 'rgba(244, 114, 182, 0.5)',
-    alignItems: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  initials: {
+    fontFamily: fontFamily.displaySemi,
+    fontSize: 15,
+    color: color.ink,
   },
   ringAlert: { borderWidth: 2, borderColor: color.accent },
   dot: {
+    position: 'absolute',
+    top: -1,
+    right: -1,
     width: 10,
     height: 10,
     borderRadius: 5,
     backgroundColor: color.accent,
-    marginTop: -2,
-    marginRight: -2,
   },
   pressed: { opacity: 0.8 },
 });
