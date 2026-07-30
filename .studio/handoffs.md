@@ -3567,3 +3567,136 @@ Gates: `scripts/check.sh` all green — **609 SQL assertions** across 25 pgTAP
 files plus concurrency and performance, the client↔database contract, migration
 replay, storage drain, typecheck, zero-warning lint, **580 mobile tests** across
 47 suites, and the Expo web bundle.
+
+## 2026-07-31 — E-015 and E-011 closed, with the real key
+
+### E-015 — the lease is collected on a clock
+
+`app.purge_event_content_run()` runs hourly under pg_cron as
+`event-content-purge`. Idempotent by construction: the migration unschedules by
+name before it schedules, so applying it twice leaves one job — verified on
+staging by doing exactly that (`jobs: 1`).
+
+Every run writes to `app.cron_runs`: when, whether it worked, how many rows it
+took, and the error if it did not. The function never raises, because a
+scheduled job that throws is one pg_cron retries into the same failure and the
+useful record of that is a row rather than a log line. `public.cron_health()`
+is the four numbers an operator wants at two in the morning, including
+`overdue`, which is deliberately **true** for a job that has never run — "never
+installed" and "stopped" need the same response, so they read the same.
+
+`docs/runbook-event-content-purge.md` covers all of it: what it can and cannot
+reach, how to tell "stopped running" from "ran and found nothing", how to
+re-create the schedule, and how to pause it.
+
+The blast radius is asserted rather than described: the pgTAP test counts
+`events`, `event_memberships`, `swipes`, `matches`, `messages`, `blocks` and
+`reports` across a purge and fails if any number moves. On staging the first
+run swept 0 and recorded itself; `cron_health` reads `runs_24h 1, failures_24h
+0, overdue false`.
+
+### E-011 — §17 Scenario A, ten markets, real key
+
+`EVENTS_FEATURE_ENABLED` turned on **for staging only**. Counts are the
+provider's own `totalElements` where it gave one; `music`, `tbd`, `odd` and the
+timings are of the first page.
+
+| market | Bugün | 30 d | 90 d | music (p1) | date TBD | cancelled/postponed | cold ms | warm ms |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| İstanbul | 3 | 181 | 454 | 16/20 | 0 | 0 | 1439 | 598 |
+| İzmir / Alaçatı | 2 | 47 | 98 | 18/20 | 0 | 1 | 1424 | 590 |
+| Dubai | 0 | 0 | 10 | 4/10 | 0 | 0 | 1336 | 623 |
+| Las Vegas | 20 | 4 771 | 10 000+ | 0/20 | 0 | 0 | 1278 | 660 |
+| Miami | 20 | 1 187 | 2 349 | 0/20 | 0 | 0 | 1352 | 523 |
+| **Ibiza** | 0 | 0 | **0** | — | — | — | 1954 | 503 |
+| **Mykonos** | 0 | 1 | **1** | 1/1 | 0 | 0 | 1124 | 643 |
+| London | 20 | 6 593 | 10 000+ | 1/20 | 0 | 1 | 1521 | 551 |
+| Berlin | 2 | 126 | 393 | 2/20 | 1 | 1 | 1231 | 561 |
+| **Paris** | 0 | 0 | **1** | 1/1 | 1 | 0 | 1107 | 581 |
+
+**What this says, honestly.** Ticketmaster is strong where it sells tickets and
+absent where it does not. Las Vegas, Miami and London are effectively
+unbounded; İstanbul and İzmir are healthy and *heavily music* (16/20 and 18/20
+on the first page), which is exactly the audience this app is for. **Ibiza
+returns nothing at all**, and Mykonos and Paris return one event each — the
+island club scene and much of the French market are simply not in this
+provider. That is coverage, not a defect, and the Events tab says so: the
+"Not every event is listed here" line is on every result set. E-016 records the
+decision this raises.
+
+Las Vegas and Miami show 0/20 music on page one because those markets are
+sports-dominated at the top of a date-ascending sort — the chip finds music
+there when asked.
+
+**Missing coordinates and unsettled dates.** Twelve real events were leased
+across İstanbul, Berlin, London and Las Vegas: **12/12 carried a venue
+coordinate**, 0 had an unsettled date, 0 were cancelled or postponed. Berlin's
+first page showed 18/20 without a *venue name*, which is a display gap rather
+than a location gap. So the `EVENT_LOCATION_UNAVAILABLE` path is real and
+tested but appears rare in these markets.
+
+**Cache.** Cold ≈ 1.1–1.9 s, warm ≈ 0.5–0.7 s. Over the whole run: 41 cache
+hits against 46 misses, 41 search requests and 18 detail requests upstream —
+so roughly **47 % of searches cost nothing**, on a run where almost every key
+was asked for the first time. A real user population repeats areas far more.
+
+### Item 4 — one real event, two accounts, one room
+
+`Chalet Garden Az Acılı` at Swissotel The Bosphorus, provider id
+`ZaHyzZyMZkQG7I-ZK`. Both accounts searched independently, opened it
+independently, and joined: both landed on internal subject
+`3402adeb-99c4-4886-801c-79a3346b9396`, and A's `EVENT_UPCOMING` deck showed
+Ece.
+
+### Item 5 — the live check, against real provider venue data
+
+No fixture was needed and none was used: that event's window was genuinely open
+(opens 14:30 UTC, closes 03:30 UTC; checked at 15:20 UTC) and its venue
+coordinate is Ticketmaster's own (41.041866, 28.998155). Nothing about the
+production checks was relaxed.
+
+    900 m accuracy, at the venue   → LOCATION_INACCURATE
+    no stated accuracy             → LOCATION_INACCURATE
+    12 m accuracy, ~5.5 km north   → TOO_FAR
+    12 m accuracy, at the venue    → IN_RANGE, expires 18:20 UTC
+
+`my_events` then reads `here_now_open: true` and the live deck opens. The
+expiry is the three-hour TTL because the window closes later than that — the
+clamp is exercised in the pgTAP suite where the arithmetic can be controlled.
+
+**No raw GPS persisted.** `event_presence_checks` is
+`checked_at, event_id, expires_at, user_id, within_range` — five columns, none
+of them a place. A schema sweep for any latitude/longitude/accuracy column
+outside the three argued exceptions returns **0**.
+
+### Item 6 — the three failure modes, with a live room
+
+| state | uncached area | cached area | live room | my events | matches | capabilities |
+| --- | --- | --- | --- | --- | --- | --- |
+| provider killed | `provider_disabled` | 200 | 200 | 1 | ok | unchanged |
+| daily ceiling spent | `allowance_spent` | 200 | 200 | 1 | ok | unchanged |
+| circuit breaker open | `provider_unavailable` | 200 | 200 | 1 | ok | unchanged |
+
+In every case new discovery stops and nothing else does — and an area already
+in the shared cache keeps answering, which is §12's "serve unexpired cached
+event content when permitted". No entitlement was consumed by any refusal.
+
+### Item 7 — production stays shut
+
+`EVENTS_FEATURE_ENABLED` seeds **false** and the seed is `on conflict do
+nothing`, so re-applying the migration can never flip it on. A pgTAP assertion
+now holds that a fresh database — which production will be — ships with events
+off. Staging is on; nothing else is.
+
+**Still deferred, deliberately:** E-012 (written Ticketmaster commercial
+approval before any paid production launch) and E-013 (the free/premium mapping
+for the two event modes — both capabilities answer true today, and choosing
+otherwise is a product decision).
+
+Staging test accounts were reset afterwards; the daily counter and the breaker
+were restored.
+
+Gates: `scripts/check.sh` all green — **622 SQL assertions** across 25 pgTAP
+files plus concurrency and performance, contract, replay, storage drain,
+typecheck, zero-warning lint, **595 mobile tests** across 48 suites, and the
+Expo web bundle.

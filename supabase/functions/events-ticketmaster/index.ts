@@ -97,8 +97,19 @@ function coarseArea(reading: Reading): { key: string; geoPoint: string } {
   return { key: `geo:${lat.toFixed(1)},${lng.toFixed(1)}`, geoPoint: `${lat},${lng}` };
 }
 
-/** Today, tomorrow, or the ninety-day window — the buckets the tab offers. */
-function dateWindow(bucket: string): { start: string; end: string; ttl: number } {
+/**
+ * The window a bucket covers.
+ *
+ * `days` is how far "Yaklaşan" reaches, bounded and configurable rather than
+ * hardcoded (§20). The tab asks for the default; the coverage measurement asks
+ * for thirty as well as ninety, which is the reason it is a parameter and not
+ * a constant — a measurement that cannot vary the window cannot say whether
+ * a market is thin or merely far off.
+ */
+const DEFAULT_WINDOW_DAYS = 90;
+const MAX_WINDOW_DAYS = 180;
+
+function dateWindow(bucket: string, days: number): { start: string; end: string; ttl: number } {
   const now = new Date();
   const iso = (d: Date) => `${d.toISOString().slice(0, 19)}Z`;
   if (bucket === "today") {
@@ -107,7 +118,7 @@ function dateWindow(bucket: string): { start: string; end: string; ttl: number }
     return { start: iso(now), end: iso(end), ttl: TTL_TODAY_SECONDS };
   }
   const end = new Date(now);
-  end.setUTCDate(end.getUTCDate() + 90);
+  end.setUTCDate(end.getUTCDate() + days);
   return { start: iso(now), end: iso(end), ttl: TTL_UPCOMING_SECONDS };
 }
 
@@ -260,6 +271,10 @@ Deno.serve(async (req) => {
       : "all";
     const locale = typeof body.locale === "string" ? body.locale.slice(0, 5) : "*";
     const page = Math.min(Math.max(Number(body.page ?? 0) | 0, 0), MAX_PAGE);
+    const days = Math.min(
+      Math.max(Number(body.days ?? DEFAULT_WINDOW_DAYS) | 0, 1),
+      MAX_WINDOW_DAYS,
+    );
 
     // The area is either a place the user named, or a coarse cell derived from
     // a reading they explicitly offered. Never a precise coordinate, and never
@@ -288,11 +303,13 @@ Deno.serve(async (req) => {
       return Response.json({ error: "area_required" }, { status: 400 });
     }
 
-    const window = dateWindow(bucket);
+    const window = dateWindow(bucket, days);
+    // The window is part of the key: a thirty-day answer is not a ninety-day
+    // answer, and serving one for the other would be a cache that lies.
     const cacheKey = [
       "ticketmaster",
       areaKey,
-      bucket,
+      bucket === "today" ? "today" : `d${days}`,
       category,
       locale,
       `p${page}`,
@@ -347,7 +364,14 @@ Deno.serve(async (req) => {
         .map(normalize)
         .filter((event): event is Record<string, unknown> => event !== null);
 
-      payload = { events, totalPages: Math.min(raw.page?.totalPages ?? 1, MAX_PAGE + 1) };
+      payload = {
+        events,
+        totalPages: Math.min(raw.page?.totalPages ?? 1, MAX_PAGE + 1),
+        // What the provider says exists behind the page we are allowed to
+        // fetch. Reported so a count of twenty is readable as "a page of them"
+        // rather than as "twenty in the world".
+        totalElements: raw.page?.totalElements ?? null,
+      };
       await admin.rpc("put_event_search_cache", {
         p_key: cacheKey,
         p_payload: payload,
@@ -387,6 +411,7 @@ Deno.serve(async (req) => {
         classification: event.classification,
       })).filter((event) => event.selectionToken !== null),
       totalPages: (payload as { totalPages?: number })?.totalPages ?? 1,
+      totalElements: (payload as { totalElements?: number })?.totalElements ?? null,
       attribution: "Powered by Ticketmaster",
     });
   }

@@ -406,22 +406,28 @@ client work; the server already allowed every one of them.
 
 ## Next — Etkinlikler, what is left
 
-- [ ] E-011 **Blocked on the owner:** obtain a Ticketmaster Discovery key for
-      staging (`TICKETMASTER_DISCOVERY_API_KEY`), then run §17 Scenario A —
-      coverage across İstanbul, İzmir/Alaçatı, Dubai, Las Vegas, Miami, Ibiza,
-      Mykonos, London, Berlin, Paris — and record what is genuinely absent.
+- [x] E-011 Key added by the owner; §17 Scenario A run across all ten markets
+      on 2026-07-31 and recorded in the handoff. Ibiza is empty, Mykonos and
+      Paris are effectively empty, and that is Ticketmaster's coverage rather
+      than a defect — see the handoff for what it means for a pilot.
 - [ ] E-012 **Blocked on the owner:** written Ticketmaster commercial-use
       approval or an approved affiliate agreement, before any paid production
       launch. Implementation and staging need neither.
 - [ ] E-013 Decide the free/premium mapping for the two event modes. The
       capabilities exist and both answer true; copying the hotel's D-036 rule
       across would be a product decision, and so would promising both are free.
-- [ ] E-014 Turn `EVENTS_FEATURE_ENABLED` on once E-011 has been walked. It is
-      an operator action, deliberately not a deploy.
-- [ ] E-015 A scheduled sweep for `purge_event_content()`. The function and the
-      takedown path exist and are tested; nothing calls the sweep on a timer
-      yet, so expired rows linger until something asks. They are never *served*
-      — `event_content()` refuses them — so this is tidiness, not a leak.
+- [x] E-014 `EVENTS_FEATURE_ENABLED` is **on for staging**. It ships **off**
+      and a fresh database — which production will be — starts off; a pgTAP
+      assertion holds that, so nobody has to remember it.
+- [ ] E-016 Ibiza returns nothing at all and Mykonos/Paris return one event
+      each. Decide whether the pilot markets are the ones Ticketmaster actually
+      covers (İstanbul, İzmir, London, Berlin, Las Vegas, Miami) or whether the
+      island markets need a second provider — which would be its own decision,
+      not a widening of this one.
+- [x] E-015 Hourly pg_cron sweep, idempotent by name, with a run ledger
+      (`app.cron_runs`), a health view (`public.cron_health`), a runbook
+      (`docs/runbook-event-content-purge.md`) and tests that count every
+      app-owned table across a purge.
 
 ## Superseded — the wording these replaced
 

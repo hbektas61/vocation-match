@@ -66,6 +66,25 @@ grant execute on function tests.lease_event(
   to anon, authenticated, service_role;
 
 select tests.authenticate_as_service();
+
+-- Before anything else: a fresh database ships with events **off**. Production
+-- is a fresh database, so this is the assertion that keeps item 7 true without
+-- anybody having to remember it — and `on conflict do nothing` in the seed
+-- means re-applying the migration can never flip it on either.
+-- Read through the function rather than the table: the table is granted to
+-- nobody, which is the point, and the function is how the app asks.
+select is(
+  (select f.enabled from public.feature_flags() f where f.flag = 'EVENTS_FEATURE_ENABLED'),
+  false,
+  'the events feature ships off, everywhere, until an operator turns it on'
+);
+select is(
+  (select count(*)::int from public.feature_flags() f
+    where f.flag = 'EVENTS_FEATURE_ENABLED'),
+  1,
+  'and the seed is idempotent — one row, however many times it is applied'
+);
+
 select public.set_feature_flag('EVENTS_FEATURE_ENABLED', true);
 
 -- ------------------------------------------------- §2.1 canonical identity
@@ -445,6 +464,101 @@ select results_eq(
   $$select state from public.take_event_search_cache('k1')$$,
   $$values ('hit'::text)$$,
   'and everybody after that is served from the cache'
+);
+
+-- ------------------------------------------------- E-015 the scheduled sweep
+-- A lease that has lapsed, and one flagged for takedown, beside a full set of
+-- app-owned records. The sweep must take exactly the first two.
+select tests.authenticate_as_service();
+select tests.lease_event('tm-sweep-a', now(), now() + interval '2 hours');
+select tests.lease_event('tm-sweep-b', now(), now() + interval '2 hours');
+select public.request_event_takedown('tm-sweep-b');
+
+select tests.clear_auth();
+update app.event_content
+   set fetched_at = now() - interval '2 hours', expires_at = now() - interval '1 minute'
+ where event_id = (select e.id from public.events e where e.provider_event_id = 'tm-sweep-a');
+
+create temp table before_sweep as
+  select (select count(*) from public.events)               as events,
+         (select count(*) from public.event_memberships)    as memberships,
+         (select count(*) from public.swipes)               as swipes,
+         (select count(*) from public.matches)              as matches,
+         (select count(*) from public.messages)             as messages,
+         (select count(*) from public.blocks)               as blocks,
+         (select count(*) from public.reports)              as reports,
+         (select count(*) from app.event_content)           as leases;
+grant select on before_sweep to anon, authenticated, service_role;
+
+-- Three, not two: the lease aged for the §16.35 assertion above is still
+-- sitting there expired, and the sweep is exactly the thing that collects it.
+select is(
+  app.purge_event_content_run(),
+  3,
+  'the sweep takes every expired lease and every flagged one'
+);
+
+select is(
+  (select b.events || '/' || b.memberships || '/' || b.swipes || '/' || b.matches
+          || '/' || b.messages || '/' || b.blocks || '/' || b.reports
+     from before_sweep b),
+  ((select count(*) from public.events) || '/' ||
+   (select count(*) from public.event_memberships) || '/' ||
+   (select count(*) from public.swipes) || '/' ||
+   (select count(*) from public.matches) || '/' ||
+   (select count(*) from public.messages) || '/' ||
+   (select count(*) from public.blocks) || '/' ||
+   (select count(*) from public.reports)),
+  'and touches no event identity, membership, swipe, match, message, block or report'
+);
+select is(
+  (select b.leases - 3 from before_sweep b),
+  (select count(*) from app.event_content),
+  'exactly three leases fewer, and nothing else'
+);
+
+-- The run is recorded either way, which is what makes a silent failure loud.
+select is(
+  (select ok from app.cron_runs order by ran_at desc limit 1),
+  true,
+  'a successful run is written to the ledger'
+);
+select is(
+  (select rows_affected from app.cron_runs order by ran_at desc limit 1),
+  3,
+  'with the number of rows it took'
+);
+
+select tests.authenticate_as_service();
+select is(
+  (select failures_24h::int from public.cron_health('event_content_purge')),
+  0,
+  'and the runbook view says nothing has failed'
+);
+select is(
+  (select overdue from public.cron_health('event_content_purge')),
+  false,
+  'nor is it overdue'
+);
+select is(
+  (select overdue from public.cron_health('a-job-that-never-ran')),
+  true,
+  'while a job that has never run reads as overdue rather than as healthy'
+);
+
+-- A second run with nothing to take is a no-op that still records itself.
+select is(app.purge_event_content_run(), 0, 'a sweep with nothing to do takes nothing');
+select is(
+  (select runs_24h::int from public.cron_health('event_content_purge')),
+  2,
+  'and is still counted, so "it stopped running" is distinguishable from "it found nothing"'
+);
+
+select tests.authenticate_as('00000000-0000-0000-0000-00000000e001');
+select throws_ok(
+  $$select 1 from app.cron_runs limit 1$$,
+  '42501', null,
+  'the ledger is not a client''s to read'
 );
 
 select * from finish(true);
