@@ -110,6 +110,107 @@ describe('provenance', () => {
 });
 
 /**
+ * D-054 §3/§4 — the destination-first flow, guarded the same way.
+ *
+ * The rule that matters most here cannot be caught by any test that mocks
+ * Google, because it is about the *request*: a type restriction on the default
+ * venue search would silently lose every beach club Google files under `bar`,
+ * and the loss would look like "Google does not know that place". So it is
+ * asserted against the source.
+ */
+describe('the destination and venue steps', () => {
+  it('asks for geocoding results, so a business can never be a destination', () => {
+    expect(source).toContain('const DESTINATION_TYPES = ["geocode"]');
+  });
+
+  it('does not narrow destinations to cities, which would lose Alaçatı', () => {
+    expect(code).not.toContain('(cities)');
+  });
+
+  it('sends no type restriction at all on the default venue search', () => {
+    // `all` is the default mode, and its entry must stay null. A list here
+    // would be the exact regression the brief forbids.
+    expect(source).toMatch(/const VENUE_TYPES[\s\S]*?all:\s*null/);
+  });
+
+  it('offers no chip whose mask would hide a beach club', () => {
+    // Measured on staging: with the five types the brief lists, "Before
+    // Sunset" in Alaçatı came back empty while the unrestricted default
+    // returned it first. Google's primary type for a beach club is not
+    // reliably any of them, so the refinement was removed rather than shipped
+    // broken. Only lodging — the one category Google is reliable about —
+    // remains.
+    expect(source).not.toMatch(/beach:\s*\[/);
+    expect(source).toMatch(/stay:\s*\["lodging"/);
+  });
+
+  it('never asks for a query prediction, which is not a place', () => {
+    expect(source).toContain('includeQueryPredictions: false');
+  });
+
+  it('restricts the venue search to the destination the server is holding', () => {
+    // The box comes from `session_destination`, not from the request body: a
+    // client-supplied rectangle is a client-supplied search area.
+    expect(source).toContain('session_destination');
+    expect(source).toMatch(/rectangle:\s*\{/);
+  });
+
+  it('deduplicates predictions before minting a token for each', () => {
+    // Every place a token is minted must have deduplicated first, so counting
+    // the guards against the mint sites is the assertion — a new operation
+    // that forgot would drop the count.
+    const mints = source.match(/record_place_selections/g) ?? [];
+    const guards = source.match(/\.add\(prediction\.placeId!\)/g) ?? [];
+    expect(mints.length).toBeGreaterThanOrEqual(2);
+    expect(guards).toHaveLength(mints.length);
+  });
+
+  it('asks Place Details only for a search area, and only for a position', () => {
+    // Two masks, both minimal. Anything else would be content we may not keep.
+    expect(source).toContain('"X-Goog-FieldMask": "id,location,viewport,types"');
+    expect(source).toContain('"X-Goog-FieldMask": "id,location"');
+  });
+
+  it('measures the Here Now venue before it records anything', () => {
+    // A provider failure must return before the check is written, so it
+    // consumes nothing and corrupts nothing (§8.23).
+    const failAt = source.indexOf('"venue_unreachable"');
+    const recordAt = source.indexOf('record_presence_verified');
+    expect(failAt).toBeGreaterThan(-1);
+    expect(recordAt).toBeGreaterThan(failAt);
+  });
+});
+
+/**
+ * D-054 §2 — the migration may not create a place to put Google's content.
+ */
+describe('what the venue row is allowed to hold', () => {
+  const migration = readFileSync(
+    join(__dirname, '../../../supabase/migrations/20260730001300_google_venue_identity.sql'),
+    'utf8',
+  );
+
+  it('writes a placeholder rather than a name', () => {
+    expect(migration).toContain("'(google)', '(google)', '(google)'");
+  });
+
+  it('writes no coordinate for a Google venue, and still demands one elsewhere', () => {
+    expect(migration).toContain('alter column location drop not null');
+    expect(migration).toContain("check (location is not null or provider = 'google')");
+  });
+
+  it('settles two concurrent first selections in one statement', () => {
+    expect(migration).toMatch(
+      /insert into public\.hotels[\s\S]*?on conflict \(provider, provider_hotel_id\) do update[\s\S]*?returning h\.id/,
+    );
+  });
+
+  it('adds no column that could hold Google display content', () => {
+    expect(migration).not.toMatch(/add column\s+\w*(display_name|formatted_address|photo_ref|rating)/i);
+  });
+});
+
+/**
  * The selection guard, read as text.
  *
  * Three of its four refusals were executed against staging — an invented

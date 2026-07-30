@@ -123,16 +123,57 @@ select is(
   'no user-facing table stores latitude/longitude'
 );
 
--- 7. No API function hands a coordinate or a distance back to a caller (D-005).
+-- 7. No API function hands a coordinate or a distance back to a *client*
+--    (D-005).
+--
+-- "Client" is the operative word, and it is checked rather than assumed: a
+-- function is exempt only if neither `authenticated`, nor `anon`, nor PUBLIC
+-- can execute it — i.e. only our own backend, holding the service role, can
+-- ever call it. D-054 needs exactly one such function: the destination's
+-- Google viewport, which the edge function reads back to scope the venue
+-- search. That box is the outline of a town, not anybody's position, and no
+-- client can obtain it.
+--
+-- The exemption is deliberately expressed as an ACL test rather than a name
+-- allowlist, so it cannot be widened by naming a new function — it can only
+-- be widened by removing a grant, which is the property that matters.
 select is(
   (select count(*)::int
      from pg_proc p
      join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public'
       and p.prokind = 'f'
-      and pg_get_function_result(p.oid) ~* '(geography|geometry|latitude|longitude|distance|meters|location)'),
+      and pg_get_function_result(p.oid) ~* '(geography|geometry|latitude|longitude|distance|meters|location)'
+      and (
+        p.proacl is null
+        or exists (
+          select 1
+            from aclexplode(p.proacl) a
+           where a.privilege_type = 'EXECUTE'
+             and (a.grantee = 0 or pg_get_userbyid(a.grantee) in ('authenticated', 'anon'))
+        )
+      )),
   0,
-  'no public function returns coordinates, a location, or a distance'
+  'no public function returns coordinates, a location, or a distance to a client'
+);
+
+-- And the negative control for the exemption: it must not be empty forever
+-- without anyone noticing, and the one function using it must really be shut
+-- to clients.
+select is(
+  (select count(*)::int
+     from pg_proc p
+     join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname = 'session_destination'
+      and exists (
+        select 1
+          from aclexplode(p.proacl) a
+         where a.privilege_type = 'EXECUTE'
+           and (a.grantee = 0 or pg_get_userbyid(a.grantee) in ('authenticated', 'anon'))
+      )),
+  0,
+  'the destination viewport is reachable by the backend alone'
 );
 
 -- 8. No table records a location history for a user.

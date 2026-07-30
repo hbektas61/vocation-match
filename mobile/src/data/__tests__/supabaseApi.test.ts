@@ -91,8 +91,8 @@ afterEach(() => {
 });
 
 describe('hotel search', () => {
-  const HOTEL = { id: '11111111-1111-4111-8111-111111111111', name: 'Rixos Tekirova', city: 'Kemer', country: 'Turkiye', address: null, photoUrl: null, photoAttribution: null, kind: null };
-  const CATALOGUE = { id: '22222222-2222-4222-8222-222222222222', name: 'Lara Shore Resort', city: 'Antalya', country: 'Turkiye', address: null, photoUrl: null, photoAttribution: null, kind: null };
+  const HOTEL = { id: '11111111-1111-4111-8111-111111111111', provider: null, name: 'Rixos Tekirova', city: 'Kemer', country: 'Turkiye', address: null, photoUrl: null, photoAttribution: null, kind: null };
+  const CATALOGUE = { id: '22222222-2222-4222-8222-222222222222', provider: null, name: 'Lara Shore Resort', city: 'Antalya', country: 'Turkiye', address: null, photoUrl: null, photoAttribution: null, kind: null };
 
   function searchApi(handler: (url: string) => Response) {
     const fetchMock = jest.fn(async (input: RequestInfo | URL) => handler(String(input)));
@@ -175,6 +175,7 @@ describe('nearby venue lookup', () => {
     await expect(api.nearbyVenues(40.99, 29.03)).resolves.toEqual([
       {
         id: CACHED_VENUE.id,
+        provider: null,
         name: CACHED_VENUE.name,
         city: CACHED_VENUE.city,
         country: CACHED_VENUE.country,

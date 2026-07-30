@@ -107,7 +107,11 @@ for f in "$SUPA_DIR"/migrations/*.sql; do
     psql_as "$STEPPED_CONTAINER" postgres -c "
       select tests.create_member('replay-a@example.test', '00000000-0000-0000-0000-0000000000e1');
       select tests.create_member('replay-b@example.test', '00000000-0000-0000-0000-0000000000e2');
-      select tests.create_hotel('replay', 41.0369, 28.9850);
+      -- The write boundary directly, and positionally, rather than through
+      -- tests.create_hotel: the helper tracks today's signature, while this
+      -- runs at a point in history where the function had fewer arguments.
+      select public.upsert_hotel_from_provider(
+        'replay', 'replay', 'replay', 'Istanbul', 'Turkiye', 41.0369, 28.9850);
     " >/dev/null
     seeded=1
   fi

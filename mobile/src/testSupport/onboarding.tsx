@@ -13,7 +13,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import React from 'react';
 
 import App from '../../App';
-import { FAKE_PHONE_OTP } from '../data';
+import { FAKE_PHONE_OTP, getApi } from '../data';
 
 /** What the server stores. */
 export const ADULT_BIRTHDATE = '1994-03-01';
@@ -99,20 +99,57 @@ export async function onboardToSettings(name = 'Deniz'): Promise<void> {
 }
 
 /**
- * Picks a hotel from the Hotel tab.
+ * Puts a *catalogue* venue on the account.
  *
- * Onboarding no longer asks for one, so any test that needs a room has to come
- * through here — which is the point: it makes "needs a hotel" visible in the
- * test rather than something onboarding quietly did for everybody.
+ * Since D-054 the trip tab chooses a venue through Google, and a Google venue
+ * deliberately carries no coordinate of ours — so it cannot stand in for the
+ * fixture hotels that the room, discovery and region-pool tests are anchored
+ * to. Those tests are not about picking; they are about what a chosen venue
+ * makes possible. So this now sets the venue through the API rather than
+ * through the screen, which keeps their subject intact and stops a change to
+ * the picker breaking forty tests that never mention it.
+ *
+ * The picker itself is driven end-to-end in `venueSelection.test.tsx`, through
+ * `chooseGoogleVenue` below.
  */
 export async function activateHotel(hotelId = PILOT_HOTEL): Promise<void> {
+  await act(async () => {
+    await getApi().setActiveHotel(hotelId);
+  });
+  // Away and back, so the trip tab's focus effect re-reads the account. The
+  // screen learns its venue from the server on focus, not from whoever set it.
+  await press('tab-Settings');
+  await press('tab-Vacation');
+}
+
+/**
+ * The real D-054 flow, through the screen: open the picker, choose a
+ * destination, then choose a venue inside it.
+ *
+ * `destinationQuery` and `venueQuery` are what somebody types; the indices are
+ * which prediction they tap. Nothing here knows a Place ID, which is the
+ * point — neither does the app.
+ */
+export async function chooseGoogleVenue({
+  destinationQuery = 'Alaçatı',
+  venueQuery = 'Biblos',
+  destinationIndex = 0,
+  venueIndex = 0,
+  chip,
+}: {
+  destinationQuery?: string;
+  venueQuery?: string;
+  destinationIndex?: number;
+  venueIndex?: number;
+  chip?: 'all' | 'stay';
+} = {}): Promise<void> {
   await fireEvent.press(await screen.findByTestId('tab-Vacation'));
-  await type('hotel-search', 'lara');
-  await press(`activate-${hotelId}`);
-  // Back to where the rooms are, which is where somebody who came here to use
-  // one would expect to end up. By role, because "Rooms" is also a heading on
-  // the screen itself and the plain text query matches both.
-  await fireEvent.press(await screen.findByTestId('tab-Vacation'));
+  await press('venue-open-picker');
+  await type('destination-search', destinationQuery);
+  await press(`destination-option-${destinationIndex}`);
+  if (chip) await press(`venue-chip-${chip}`);
+  await type('venue-search', venueQuery);
+  await press(`venue-option-${venueIndex}`);
 }
 
 /**

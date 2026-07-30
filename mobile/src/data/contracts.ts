@@ -23,6 +23,12 @@ export type ApiErrorCode =
   | 'RATE_LIMITED'
   /** The server refused because the action is part of Premium (D-036). */
   | 'PREMIUM_REQUIRED'
+  /**
+   * The venue search has no destination behind it any more — the session
+   * lapsed (D-054). Its own code because the repair is a step back, not a
+   * retry: nothing the user types will work until a destination is chosen.
+   */
+  | 'DESTINATION_REQUIRED'
   | 'NETWORK'
   | 'UNKNOWN';
 
@@ -115,6 +121,17 @@ export interface ProfileInput {
 /** A hotel as the client may see it. Coordinates are deliberately absent. */
 export interface HotelCard {
   id: string;
+  /**
+   * Which feed this row came from: 'osm', 'overture', 'cell', 'manual', or
+   * 'google'. A Google venue (D-054) carries the placeholder name below and
+   * must have its real one resolved live from its Place ID, so a screen has to
+   * be able to tell — that is the whole reason this is on the card.
+   */
+  provider?: string | null;
+  /**
+   * The venue's name — except for a Google venue, where it is the `(google)`
+   * placeholder, because Google's display name is not ours to store (D-054).
+   */
   name: string;
   city: string;
   country: string;
@@ -138,6 +155,55 @@ export interface ActiveHotel {
   hotelId: string;
   /** Epoch milliseconds. */
   activatedAt: number;
+}
+
+/**
+ * The caller's own active vacation venue, and which provider stands behind it
+ * (D-054). `googlePlaceId` is set only for a Google venue and only for its
+ * owner: it is what lets this device resolve the venue's name for a screen it
+ * is about to draw, since the name is deliberately not stored.
+ */
+export interface ActiveVenue {
+  hotelId: string;
+  provider: string;
+  googlePlaceId: string | null;
+  kind: string | null;
+  /** Epoch milliseconds. */
+  activatedAt: number;
+}
+
+/**
+ * Which venues the optional chips ask Google for (D-054 §3).
+ *
+ * Two, not three. A `Beach & Club` chip was built and removed on live
+ * evidence: restricted to the types the brief lists, a staging search for
+ * "Before Sunset" in Alaçatı returned nothing while the unrestricted default
+ * returned it first. Google does not classify beach clubs consistently enough
+ * for any five-type mask, and a chip that hides what it is named after is
+ * worse than no chip.
+ */
+export type VenueSearchMode = 'all' | 'stay';
+
+/**
+ * Our own category for a venue chosen under each chip.
+ *
+ * Read off the chip, never off Google's `types` — those are Google Content and
+ * are neither requested nor stored (D-054 §2). `all` says nothing, because
+ * under `Tümü` the product genuinely does not know, and a guessed chip is
+ * worse than none (the D-041 rule).
+ */
+export const GOOGLE_VENUE_KIND: Record<VenueSearchMode, string | null> = {
+  all: null,
+  stay: 'hotel',
+};
+
+/**
+ * A destination search session, opened by choosing a prediction in step A.
+ * The viewport that scopes step B lives on the server against this id — the
+ * client is never told the box, so it cannot widen it.
+ */
+export interface DestinationChoice {
+  sessionId: string;
 }
 
 export interface ActivationResult {
@@ -407,6 +473,50 @@ export interface VocationApi {
   getHotelById(hotelId: string): Promise<HotelCard | null>;
   getActiveHotel(): Promise<ActiveHotel | null>;
   setActiveHotel(hotelId: string): Promise<ActivationResult>;
+
+  /* vacation venue, destination-first (D-054) */
+  /**
+   * Step A. A city, island, district or resort area — worldwide, and never a
+   * business. Null means the step is unavailable (no key, a ceiling, a rate
+   * limit, an unwell provider); it never means "no such place".
+   */
+  searchDestinations(query: string, sessionId?: string): Promise<GooglePlaceAnswer | null>;
+  /**
+   * Commits step A. Spends the prediction's selection token and opens the
+   * venue session scoped to that destination. Null when the choice could not
+   * be committed — including when the prediction turned out to be a business
+   * rather than a place.
+   */
+  chooseDestination(selectionToken: string): Promise<DestinationChoice | null>;
+  /**
+   * Step B. Venues inside the chosen destination only. `mode` is the chip:
+   * 'all' sends no type restriction at all, which is what keeps a beach club
+   * findable when Google files it under `bar`.
+   *
+   * Throws `ApiError('DESTINATION_REQUIRED')` when the venue session has
+   * lapsed, so the screen can send the user back to step A instead of
+   * silently searching the whole planet.
+   */
+  searchVacationVenues(
+    query: string,
+    sessionId: string,
+    mode: VenueSearchMode,
+  ): Promise<GooglePlaceAnswer | null>;
+  /**
+   * Makes the selected Google place the caller's one active vacation venue.
+   * Two people who select the same Place ID reach the same internal venue, and
+   * the previous venue's discovery closes immediately (D-003, D-004).
+   */
+  activateGoogleVenue(selectionToken: string, mode: VenueSearchMode): Promise<ActivationResult>;
+  /** The caller's own active venue and its provider (D-054). */
+  getActiveVenue(): Promise<ActiveVenue | null>;
+  /**
+   * The Here Now check for a venue whose coordinate is not ours to keep: the
+   * backend resolves it from Google, measures in PostGIS, and forgets it. Same
+   * answer shape as `recordPresenceCheck` — a boolean and an expiry, never a
+   * coordinate and never a distance.
+   */
+  verifyPresenceAtVenue(latitude: number, longitude: number): Promise<PresenceAnswer>;
 
   /* rooms */
   declareUpcomingStay(startDate: string, endDate: string): Promise<UpcomingStay>;

@@ -90,6 +90,8 @@ export function apiErrorMessage(code: ApiErrorCode): string {
       return COPY.errors.rateLimited;
     case 'PREMIUM_REQUIRED':
       return COPY.errors.premiumRequired;
+    case 'DESTINATION_REQUIRED':
+      return COPY.errors.destinationRequired;
     case 'NETWORK':
       return COPY.errors.network;
     case 'UNKNOWN':

@@ -3252,3 +3252,88 @@ fails the fourth.
 Gate: `scripts/check.sh --mobile` all green — **495/495** mobile tests,
 typecheck, zero-warning lint, web bundle. No migration and no function change:
 this was entirely a client-state bug.
+
+## 2026-07-30 — the vacation venue becomes a Google Place ID (D-054, D-054a)
+
+The owner's brief (`GOOGLE_DESTINATION_VENUE_IMPLEMENTATION_BRIEF.md`) replaces
+the catalogue hotel search on the trip tab with a destination-first Google flow,
+and widens the anchor from "a hotel" to "a vacation venue". Implemented, tested,
+deployed to staging and verified there against the real key.
+
+**What changed, in one line each.**
+
+*Identity.* A Google venue is a `hotels` row with `provider='google'` and the
+Place ID as `provider_hotel_id`, so the table's existing unique key is the
+canonical identity the brief asks for. `upsert_google_venue` settles a
+concurrent first selection in one statement; `activate_google_venue` takes the
+D-053a selection token — never a client-supplied Place ID — and reuses
+`set_active_hotel`, so D-003 and D-004 are untouched.
+
+*Emptiness.* `hotels.location` is nullable for `provider='google'` and for
+nothing else (`hotels_location_present`). The name is the `(google)`
+placeholder, excluded from `app.search_places` the way a cell is, and resolved
+live per screen. Verified on staging: all four Google venues read back as
+`(google)|(google)|(google)`, address null, and nothing of Google's anywhere.
+
+*Here Now.* `record_presence_check` refuses a Google venue with `P0004`;
+`record_presence_verified` (service_role only) takes the coordinate the edge
+function just resolved and runs the same `ST_DWithin(..., 500)`, the same
+30-minute expiry and the same D-036 premium gate. The coordinate is never
+stored. The security baseline was tightened rather than loosened to allow the
+one function that must return a viewport: the exemption is an **ACL** test — a
+coordinate-shaped result is permitted only where no client role can execute it.
+
+*Cost.* Three-character floor, 350 ms debounce, one request in flight with the
+newest query queued rather than dropped, ticket-based stale rejection,
+per-session Google tokens, dedup before the request cap, per-kind rolling
+session limits (40/hour for the core flow, D-053's tighter 10/hour untouched for
+the check-in find), and the two per-operation monthly ceilings. Choosing a venue
+spends **no** D-053 entitlement — it is the core flow, not the escape hatch.
+
+**Two things the live key found, and both were mine.** Recorded as D-054a.
+(1) Google's viewport for a sublocality is the built-up outline of the town, so
+a strict restriction answered the brief's own Scenario A with a currency
+exchange; the box is now padded by half its span, floored at ~5.5 km and capped
+at ~28 km. (2) The `Beach & Club` chip, built exactly as §4 describes, returned
+**nothing** for Before Sunset while the unrestricted default returned it first —
+Google does not classify beach clubs consistently enough for any five-type mask,
+so the chip is gone rather than shipped broken. Chips are now Tümü | Konaklama.
+
+**Staging acceptance (§9), live, with the real key.**
+
+- A. `Alaçatı` → `Biblos` → *Biblos Beach Resort Alaçatı*. Two accounts chose it
+  independently and both landed on venue `766f847f…`. With stays 12–17 and
+  15–20 Aug, A saw B; moving B to 1–3 Sep emptied A's deck. D-035 holds.
+- B. `Alaçatı` → `Before Sunset` → *Before Sunset Beach* under `Tümü` (and
+  nothing under `Konaklama`, which is the chip working). A second account
+  selecting it reached the same venue `d8bb55ad…`.
+- C. `Çeşme` → `Ilıca Plajı` → the named public beach, first result, selectable.
+- D. On a Google venue, `record_presence_check` refuses and the verified path
+  answers. Free member: `PP001` on both paths, before any location is used.
+  Premium member at *Galata Kulesi*: a reading at the tower → `withinRange:true`
+  and `HERE_NOW` `ELIGIBLE`; a reading 5 km north → `false` and `TOO_FAR`. The
+  response carries a boolean and an expiry, and nothing else.
+  (The tower is used as an approved fixture precisely because the design gives
+  no client — including the operator — a venue's coordinate.)
+
+**Two pre-existing breaks fixed on the way.** `supabase/tests/002_hotels.sql`
+had been failing since D-051 made `venue_kind` load-bearing: `tests.create_hotel`
+made hotels with no kind, which the lodging search then rightly refused. And
+the helper is now `plpgsql`, because the migration-replay harness installs it
+part-way through history where a `language sql` body would not type-check.
+
+Gates: `scripts/check.sh` all green — auth configuration and its negative
+controls, dependency health, **502 SQL assertions** across 22 pgTAP files plus
+concurrency and performance, the client↔database contract, migration replay,
+storage drain, typecheck, zero-warning lint, **528 mobile tests** across 45
+suites, and the Expo web bundle. Migration `20260730001300` applied to staging
+and `places-google` deployed.
+
+Left for the owner, and named rather than assumed:
+
+- The D-038 region pool cannot include a Google venue (V-010).
+- A neighbour's card costs a Place Details call to label (V-011).
+- The cost estimate the brief refuses to guess at is now measurable (V-012).
+- Staging test data was moved by this run: `+90 555 111 00 04` and
+  `+90 555 111 00 05` sit at Biblos/Ilıca, and `+90 555 112 23 33` at Galata
+  Kulesi. Reset them before any demo that expects the old seed.

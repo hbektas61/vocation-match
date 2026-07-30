@@ -6,6 +6,7 @@ import { COPY } from '../copy';
 import { ApiError, FakeApi, getApi, setApi } from '../data';
 import {
   authenticateWithPhone,
+  chooseGoogleVenue,
   onboardWithHotel,
   requestPhoneCode,
 } from '../testSupport/onboarding';
@@ -126,10 +127,10 @@ describe('rooms and hotel switching', () => {
     ).toBeTruthy();
 
     await fireEvent.press(screen.getByTestId('tab-Vacation'));
-    // The search box still holds what the first hotel was found with, and the
-    // list only ever shows what the query returned.
-    await fireEvent.changeText(await screen.findByTestId('hotel-search'), 'bosphorus');
-    await fireEvent.press(await screen.findByTestId('activate-hotel-bosphorus-garden'));
+    // D-054: switching means choosing again, destination first. Confirming is
+    // still its own step, because the previous venue's discovery closes the
+    // moment this lands (D-004).
+    await chooseGoogleVenue({ destinationQuery: 'Çeşme', venueQuery: 'Ilıca' });
     await fireEvent.press(await screen.findByTestId('confirm-switch'));
 
     // Choosing lands on the rooms now, where the consequence of the switch

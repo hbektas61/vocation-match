@@ -173,19 +173,38 @@ $$;
 
 -- A hotel at a given point, created through the same provider entry point a
 -- real feed would use.
+--
+-- The kind is declared because D-051 made it load-bearing: `search_hotels`
+-- asks for lodging, and a row whose provider never said what it was is not
+-- lodging as far as that filter is concerned. The helper is called
+-- `create_hotel`, so it says so — before this, every hotel it made was
+-- invisible to the very search these tests assert on.
 create or replace function tests.create_hotel(
-  p_name      text,
-  p_latitude  double precision,
-  p_longitude double precision,
-  p_city      text default 'Istanbul'
+  p_name       text,
+  p_latitude   double precision,
+  p_longitude  double precision,
+  p_city       text default 'Istanbul',
+  p_venue_kind text default 'hotel'
 )
 returns uuid
-language sql
+-- plpgsql rather than sql, so the body is resolved when it is *called* rather
+-- than when it is created. The migration-replay harness installs these helpers
+-- part-way through history, at a point where the provider boundary had fewer
+-- arguments, and a `language sql` body is type-checked the moment it is
+-- defined — which made merely installing the helpers fail there.
+language plpgsql
 security definer
 set search_path = ''
 as $$
+declare
+  v_id uuid;
+begin
   select public.upsert_hotel_from_provider(
-    'test', p_name, p_name, p_city, 'Turkiye', p_latitude, p_longitude);
+    'test', p_name, p_name, p_city, 'Turkiye', p_latitude, p_longitude,
+    p_venue_kind => p_venue_kind)
+    into v_id;
+  return v_id;
+end;
 $$;
 
 grant usage on schema tests to anon, authenticated, service_role;

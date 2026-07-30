@@ -186,8 +186,15 @@ describe('the refusal path', () => {
     expect(fn).toContain('allowance_spent');
   });
 
-  it('refuses both operations, not just the cheap one', () => {
-    expect(fn.match(/if \(!allowance\.allowed\)/g)).toHaveLength(2);
+  it('guards every claim, not just the cheap one', () => {
+    // Counting the guards against the claims rather than against a fixed
+    // number: D-054 added three more paid call sites, and a rule that says
+    // "two" would have had to be edited rather than enforced. Every claim must
+    // be followed by its refusal, whatever the total is.
+    const claims = fn.match(/await claim\(/g) ?? [];
+    const guards = fn.match(/if \(!allowance\.allowed\)/g) ?? [];
+    expect(claims.length).toBeGreaterThanOrEqual(2);
+    expect(guards).toHaveLength(claims.length);
   });
 
   it('treats an unreachable counter as a refusal, so failure is closed', () => {
@@ -247,6 +254,19 @@ describe('the provider disclosure', () => {
     ['Turkish', tr.settings],
   ])('names the retention window in %s, rather than gesturing at one', (_language, settings) => {
     expect(settings.providersRetention).toMatch(/3 (hours|saat)/);
+  });
+
+  it.each([
+    ['English', en.settings],
+    ['Turkish', tr.settings],
+  ])('admits in %s that choosing a venue goes through Google too (D-054)', (_language, settings) => {
+    // Before D-054 the disclosure could honestly say Google was reached only
+    // on a check-in press. It is now the whole venue-selection path, and a
+    // privacy note that describes the previous version of the product is not
+    // a privacy note.
+    expect(settings.providersVenue).toMatch(/Google/);
+    expect(settings.providersVenue).toMatch(/identifier|kimliği/i);
+    expect(settings.providersVenue).toMatch(/never|asla/i);
   });
 });
 

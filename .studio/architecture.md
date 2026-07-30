@@ -169,3 +169,45 @@ raise a `FLAGGED` row automatically. A moderator (service_role only) reads
 `profiles.suspended_at`, which removes the account from every room and stops it
 sending messages. Reports survive account deletion (`on delete set null`) so the
 history cannot be erased by deleting the account.
+
+## ADR-015 The vacation venue is a Google Place ID (D-054)
+
+The trip tab no longer searches our catalogue. It asks Google Places (New) in
+two steps — a destination, then a place inside that destination's own area —
+and what comes back is a Place ID.
+
+**Identity.** A Google venue is an ordinary `public.hotels` row with
+`provider = 'google'` and `provider_hotel_id = <place id>`. The table's existing
+`unique (provider, provider_hotel_id)` is exactly the canonical key the product
+needs, so there is no parallel "venue" concept: two users who select the same
+Place ID reach the same row because the index says so, and
+`upsert_google_venue` settles a concurrent first selection in a single
+`insert … on conflict … returning`.
+
+**Emptiness.** That row may hold nothing of Google's. `hotels.location` is
+nullable *for this provider only* (`hotels_location_present` keeps every other
+provider as strict as before); the name is the `(google)` placeholder, the same
+shape as `(cell)`; and `app.search_places` excludes `provider = 'google'`, so a
+placeholder can never be an answer to a name search. The real name is resolved
+from the Place ID by whichever screen is about to draw it and lives in that
+screen's memory alone.
+
+**A destination is session state.** `app.search_sessions` gained a `kind`
+(`checkin` | `destination` | `venue`) and the chosen destination's viewport.
+The box never reaches the client — a client-supplied rectangle would be a
+client-supplied search area — and sessions older than a day are deleted, which
+is what keeps a viewport from quietly becoming a destination catalogue.
+
+**Here Now without a stored coordinate.** `record_presence_check` refuses a
+Google venue with `P0004` rather than measuring against a null. The edge
+function resolves the venue's current position from Google, hands it to
+`record_presence_verified`, and the same `ST_DWithin(..., 500)`, the same
+30-minute freshness and the same premium gate run there. The coordinate is an
+argument and is never written down, so ADR-012's promise is unchanged — and
+`000_security_baseline.sql` now enforces it as an ACL test: a function may
+mention a coordinate in its result type only if no client role can execute it.
+
+**Two consequences, recorded rather than hidden.** A Google venue has no stored
+coordinate, so it cannot join the D-038 15 km region pool; and another user's
+card can only carry a venue name the viewer's own session resolved, which costs
+a Place Details call per screen rather than a column read.

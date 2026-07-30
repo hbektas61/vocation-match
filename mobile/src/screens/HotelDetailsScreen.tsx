@@ -6,14 +6,14 @@
  * the data comes from. No stars, no price, no amenities — inventing those
  * would be lying about a business.
  */
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Body, Caption, Screen, Title } from '../components/ui';
 import { HotelBuilding } from '../components/HotelIllustrations';
 import { COPY, upperCase } from '../copy';
-import { readBackendConfig } from '../data';
+import { getApi, readBackendConfig } from '../data';
 import type { RootScreenProps } from '../navigation/types';
 import { useAppStore } from '../state/AppStore';
 import { color, font, fontFamily, radius, spacing } from '../theme';
@@ -29,6 +29,32 @@ export function HotelDetailsScreen({ route }: RootScreenProps<'HotelDetails'>) {
   const { state } = useAppStore();
   const hotel = state.hotels.find((h) => h.id === route.params.hotelId) ?? null;
   const config = readBackendConfig();
+  const isGoogle = hotel?.provider === 'google';
+  /**
+   * D-054: a Google venue's name is not stored, so it is resolved once for
+   * this screen and kept in memory. `false` is "Google could not answer",
+   * which the screen says outright rather than inventing a name.
+   */
+  const [googleName, setGoogleName] = useState<string | null | false>(null);
+
+  useEffect(() => {
+    if (!isGoogle) return;
+    let cancelled = false;
+    (async () => {
+      const api = getApi();
+      const venue = await api.getActiveVenue().catch(() => null);
+      const placeId = venue?.hotelId === route.params.hotelId ? venue.googlePlaceId : null;
+      if (!placeId) {
+        if (!cancelled) setGoogleName(false);
+        return;
+      }
+      const name = await api.resolveGooglePlace(placeId).catch(() => null);
+      if (!cancelled) setGoogleName(name ?? false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isGoogle, route.params.hotelId]);
 
   if (!hotel) {
     return (
@@ -61,18 +87,28 @@ export function HotelDetailsScreen({ route }: RootScreenProps<'HotelDetails'>) {
           <HotelBuilding size={96} />
         </View>
       )}
-      <Title>{hotel.name}</Title>
-      <View style={styles.placeRow}>
-        <PinIcon />
-        <Body>{`${hotel.city}, ${hotel.country}`}</Body>
-      </View>
-      {hotel.address ? (
+      <Title>
+        {isGoogle
+          ? googleName === false
+            ? COPY.venue.nameUnavailable
+            : (googleName ?? COPY.common.loading)
+          : hotel.name}
+      </Title>
+      {/* A Google venue's address and city are Google's content, so there is
+          nothing of ours to print — the attribution stands in their place. */}
+      {isGoogle ? null : (
+        <View style={styles.placeRow}>
+          <PinIcon />
+          <Body>{`${hotel.city}, ${hotel.country}`}</Body>
+        </View>
+      )}
+      {!isGoogle && hotel.address ? (
         <View style={styles.block}>
           <Text style={styles.blockLabel}>{upperCase(COPY.hotel.addressLabel)}</Text>
           <Body>{hotel.address}</Body>
         </View>
       ) : null}
-      <Caption>{COPY.hotel.attribution}</Caption>
+      <Caption>{isGoogle ? COPY.venue.attribution : COPY.hotel.attribution}</Caption>
     </Screen>
   );
 }

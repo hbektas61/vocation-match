@@ -4,15 +4,18 @@ This repository is a Claude Studio project. Read the global Studio playbook and 
 
 ## Product truth
 
-Vocation Match is a React Native/Expo mobile app that lets adults discover and match with people connected to one hotel.
+Vocation Match is a React Native/Expo mobile app that lets adults discover and match with people connected to one vacation venue.
 
-- A user can have exactly one active hotel at a time.
-- `UPCOMING` means the user self-declared a future stay at the active hotel.
-- `HERE_NOW` means a foreground location check placed the user within 500 meters of the active hotel.
+- A user can have exactly one active vacation venue at a time.
+- A vacation venue may be a hotel, resort, hostel, guest house, beach club, or named beach — not lodging only (D-054).
+- The venue is chosen destination-first through Google Places (New): a destination, then a place inside it. **Google Place ID is the canonical external venue identity for new selections**, and it is the only thing of Google's that is ever stored — never Google's name, address, photograph, rating, coordinate or viewport (D-054).
+- `UPCOMING` means the user self-declared a future stay at the active venue.
+- `HERE_NOW` means a foreground location check placed the user within 500 meters of the active venue. For a Google venue the backend resolves the venue's coordinate from its Place ID at check time, measures in PostGIS, and stores neither coordinate.
 - Do not request or store reservation documents, reservation numbers, passport/ID data, hotel confirmation, room number, or strict identity verification in the MVP.
 - Do not require an upcoming declaration before `HERE_NOW`; proximity is sufficient.
 - Never expose exact coordinates or live distance to another user.
-- Switching hotels immediately deactivates discovery in the previous hotel.
+- Switching venues immediately deactivates discovery in the previous venue.
+- Overture/OSM stays the catalogue behind Çevremde and behind every venue already chosen; it is no longer required for choosing a vacation venue.
 - Payment and premium features are a later phase. Do not add billing, paywalls, RevenueCat, or premium entitlement until `.studio/decisions.md` explicitly advances that phase.
 
 ## Current milestone

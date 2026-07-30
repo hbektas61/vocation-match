@@ -16,13 +16,24 @@ import { ageYears, isAdult, parseIsoDate } from '../domain/age';
 import {
   evaluateForegroundCheck,
   HERE_NOW_FRESHNESS_MS,
+  HERE_NOW_RADIUS_METERS,
   isHereNowEligible,
 } from '../domain/hereNow';
-import { haversineMeters } from '../domain/location';
+import { distanceBucket, haversineMeters } from '../domain/location';
 import { isUpcomingEligible, validateStayDates } from '../domain/upcoming';
 import type { HereNowCheck, UpcomingDeclaration } from '../domain/types';
 import { CANDIDATES, ROOM_CROWD } from '../fixtures/candidates';
 import { getHotelById as getHotelFixtureById, HOTELS, searchHotels as searchHotelFixtures } from '../fixtures/hotels';
+import {
+  FAKE_VENUE_TYPES,
+  foldForMatch,
+  GOOGLE_DESTINATIONS,
+  GOOGLE_VENUES,
+  insideViewport,
+  isGeographic,
+  matchesQuery,
+  type FakeGooglePlace,
+} from '../fixtures/googlePlaces';
 import { cellOf } from '../domain/cell';
 import {
   ApiError,
@@ -55,6 +66,11 @@ import {
   type ProfilePhoto,
   type ShowMe,
   type GooglePlaceAnswer,
+  type GooglePlaceHit,
+  type ActiveVenue,
+  type DestinationChoice,
+  type VenueSearchMode,
+  GOOGLE_VENUE_KIND,
 } from './contracts';
 
 import { buildPhotoPath, isProfilePhotoPath, photoExtensionFor } from './photos';
@@ -63,6 +79,21 @@ import { isE164Phone, normalizePhone } from './phone';
 const SESSION_LIFETIME_MS = 60 * 60 * 1000;
 export const FAKE_PHONE_OTP = '123456';
 const MAX_DECLARATION_YEARS_AHEAD = 2;
+/** The server's three-character floor, mirrored (D-053 §3, D-054 §6). */
+const GOOGLE_MIN_QUERY = 3;
+/** A ceiling high enough to be irrelevant until a test lowers it. */
+const GOOGLE_CEILING_DEFAULT = 9000;
+
+interface FakeGoogleSession {
+  userId: string;
+  kind: 'destination' | 'venue';
+  /** Normalized queries already asked, so a repeat costs nothing. */
+  asked: Set<string>;
+  destination: {
+    placeId: string;
+    box: { lowLat: number; lowLng: number; highLat: number; highLng: number };
+  } | null;
+}
 
 interface FakeUser {
   id: string;
@@ -516,10 +547,27 @@ export class FakeApi implements VocationApi {
 
   async getHotelById(hotelId: string): Promise<HotelCard | null> {
     await this.requireUserId();
+    // D-054: a Google venue holds no name, no city and no coordinate — only
+    // its Place ID. The card carries the placeholder and the provider, and the
+    // screen resolves the real name live.
+    if (this.googleVenues.has(hotelId)) {
+      return {
+        id: hotelId,
+        provider: 'google',
+        name: '(google)',
+        city: '(google)',
+        country: '(google)',
+        address: null,
+        photoUrl: null,
+        photoAttribution: null,
+        kind: this.googleVenueKinds.get(hotelId) ?? null,
+      };
+    }
     const hotel = getHotelFixtureById(hotelId);
     if (!hotel) return null;
     return {
       id: hotel.id,
+      provider: 'osm',
       name: hotel.name,
       city: hotel.city,
       country: hotel.country,
@@ -537,7 +585,7 @@ export class FakeApi implements VocationApi {
 
   async setActiveHotel(hotelId: string): Promise<ActivationResult> {
     const userId = await this.requireUserId();
-    if (!getHotelFixtureById(hotelId)) {
+    if (!getHotelFixtureById(hotelId) && !this.googleVenues.has(hotelId)) {
       throw new ApiError('NOT_FOUND', 'That hotel is not available.');
     }
     const current = this.activeHotels.get(userId) ?? null;
@@ -549,6 +597,232 @@ export class FakeApi implements VocationApi {
     // Switching hotels closes the previous hotel's access immediately (D-004).
     const presenceCleared = previousHotelId !== null && this.presence.delete(userId);
     return { hotelId, previousHotelId, presenceCleared: presenceCleared === true };
+  }
+
+  /* ------------------------------------------- vacation venue, D-054 */
+
+  /**
+   * The internal identity of a Google place, and the whole of the brief's
+   * §2 invariant in one line: the id is a pure function of the Place ID, so
+   * two users who select the same place reach the same venue, and two places
+   * with the same display name but different ids never do.
+   *
+   * The real system gets this from `unique (provider, provider_hotel_id)`
+   * rather than from string arithmetic. The property being asserted is the
+   * same one, which is what makes the fake a fair rehearsal for it.
+   */
+  private venueIdForPlace(placeId: string): string {
+    return `google-${placeId}`;
+  }
+
+  private openGoogleSession(userId: string, kind: 'destination' | 'venue'): string {
+    // One open session per user per kind, and choosing a destination retires
+    // the venue session scoped to the old one — the server's rule, mirrored.
+    for (const [id, session] of this.googleSessions) {
+      if (session.userId !== userId) continue;
+      if (session.kind === kind || (kind === 'destination' && session.kind === 'venue')) {
+        this.googleSessions.delete(id);
+      }
+    }
+    const sessionId = `gs-${kind}-${(this.googleSessionSeq += 1)}`;
+    this.googleSessions.set(sessionId, { userId, kind, asked: new Set(), destination: null });
+    return sessionId;
+  }
+
+  /**
+   * One upstream request, or a refusal. The ceiling is checked *before* the
+   * call, so an exhausted month costs nothing and, crucially, spends none of
+   * the user's own allowance (§6, and the D-053b rule it inherits).
+   */
+  private spendGoogleCall(): boolean {
+    if (this.googleCallsUsed >= this.googleCeiling) return false;
+    this.googleCallsUsed += 1;
+    return true;
+  }
+
+  private mintSelections(
+    userId: string,
+    sessionId: string,
+    places: FakeGooglePlace[],
+  ): GooglePlaceHit[] {
+    return places.map((place) => {
+      const token = `sel-${(this.googleSelectionSeq += 1)}`;
+      this.placeSelections.set(token, { userId, sessionId, placeId: place.placeId, used: false });
+      return { selectionToken: token, name: place.name, detail: place.detail };
+    });
+  }
+
+  /** Spends a selection token, or refuses: unknown, another user's, replayed. */
+  private takeSelection(userId: string, token: string): { placeId: string; sessionId: string } | null {
+    const selection = this.placeSelections.get(token);
+    if (!selection || selection.used || selection.userId !== userId) return null;
+    selection.used = true;
+    return { placeId: selection.placeId, sessionId: selection.sessionId };
+  }
+
+  async searchDestinations(query: string, sessionId?: string): Promise<GooglePlaceAnswer | null> {
+    const userId = await this.requireUserId();
+    if (query.trim().replace(/\s+/g, '').length < GOOGLE_MIN_QUERY) return null;
+
+    const existing = sessionId ? this.googleSessions.get(sessionId) : undefined;
+    const live = existing && existing.userId === userId && existing.kind === 'destination'
+      ? sessionId!
+      : this.openGoogleSession(userId, 'destination');
+    const session = this.googleSessions.get(live)!;
+
+    const fingerprint = foldForMatch(query);
+    if (session.asked.has(fingerprint)) {
+      // Nothing asked upstream, nothing metered: the caller keeps the
+      // predictions it already holds (§6).
+      return { sessionId: live, duplicate: true, places: [] };
+    }
+    if (!this.spendGoogleCall()) return null;
+    session.asked.add(fingerprint);
+
+    const hits = GOOGLE_DESTINATIONS.filter(
+      (place) => isGeographic(place) && matchesQuery(place, query),
+    );
+    return { sessionId: live, duplicate: false, places: this.mintSelections(userId, live, hits) };
+  }
+
+  async chooseDestination(selectionToken: string): Promise<DestinationChoice | null> {
+    const userId = await this.requireUserId();
+    const taken = this.takeSelection(userId, selectionToken);
+    if (!taken) return null;
+
+    const place = [...GOOGLE_DESTINATIONS, ...GOOGLE_VENUES].find(
+      (candidate) => candidate.placeId === taken.placeId,
+    );
+    // A business is not a destination, however it was reached (§3).
+    if (!place || !isGeographic(place) || !place.viewport) return null;
+    if (!this.spendGoogleCall()) return null;
+
+    const sessionId = this.openGoogleSession(userId, 'venue');
+    this.googleSessions.get(sessionId)!.destination = {
+      placeId: place.placeId,
+      box: place.viewport,
+    };
+    return { sessionId };
+  }
+
+  async searchVacationVenues(
+    query: string,
+    sessionId: string,
+    mode: VenueSearchMode,
+  ): Promise<GooglePlaceAnswer | null> {
+    const userId = await this.requireUserId();
+    if (query.trim().replace(/\s+/g, '').length < GOOGLE_MIN_QUERY) return null;
+
+    const session = this.googleSessions.get(sessionId);
+    if (!session || session.userId !== userId || session.kind !== 'venue' || !session.destination) {
+      throw new ApiError('DESTINATION_REQUIRED', 'Choose where you are going first.');
+    }
+
+    const fingerprint = `${mode}:${foldForMatch(query)}`;
+    if (session.asked.has(fingerprint)) {
+      return { sessionId, duplicate: true, places: [] };
+    }
+    if (!this.spendGoogleCall()) return null;
+    session.asked.add(fingerprint);
+
+    const allowedTypes = FAKE_VENUE_TYPES[mode] ?? null;
+    const box = session.destination.box;
+    const seen = new Set<string>();
+    const hits = GOOGLE_VENUES.filter((place) => {
+      if (!matchesQuery(place, query)) return false;
+      // The destination's own box. A same-named venue elsewhere is not a
+      // local answer, whatever Google thinks of its relevance (§8.8).
+      if (!insideViewport(place, box)) return false;
+      // `all` sends no type restriction at all — the rule the whole default
+      // mode exists to keep (§4, §8.9).
+      if (allowedTypes && !place.types.some((type) => allowedTypes.includes(type))) return false;
+      // One row per Place ID (§8.10).
+      if (seen.has(place.placeId)) return false;
+      seen.add(place.placeId);
+      return true;
+    });
+
+    return {
+      sessionId,
+      duplicate: false,
+      places: this.mintSelections(userId, sessionId, hits),
+    };
+  }
+
+  async activateGoogleVenue(
+    selectionToken: string,
+    mode: VenueSearchMode,
+  ): Promise<ActivationResult> {
+    const userId = await this.requireUserId();
+    const taken = this.takeSelection(userId, selectionToken);
+    if (!taken) {
+      throw new ApiError('INVALID_INPUT', 'That place selection is not usable.');
+    }
+    const venueId = this.venueIdForPlace(taken.placeId);
+    this.googleVenues.set(venueId, taken.placeId);
+    const kind = GOOGLE_VENUE_KIND[mode];
+    // A later `Tümü` pick never erases what an earlier chip knew.
+    if (kind && !this.googleVenueKinds.has(venueId)) {
+      this.googleVenueKinds.set(venueId, kind);
+    }
+    return this.setActiveHotel(venueId);
+  }
+
+  async getActiveVenue(): Promise<ActiveVenue | null> {
+    const userId = await this.requireUserId();
+    const active = this.activeHotels.get(userId);
+    if (!active) return null;
+    const placeId = this.googleVenues.get(active.hotelId) ?? null;
+    return {
+      hotelId: active.hotelId,
+      provider: placeId ? 'google' : 'osm',
+      googlePlaceId: placeId,
+      kind: this.googleVenueKinds.get(active.hotelId)
+        ?? getHotelFixtureById(active.hotelId)?.kind
+        ?? null,
+      activatedAt: active.activatedAt,
+    };
+  }
+
+  async verifyPresenceAtVenue(latitude: number, longitude: number): Promise<PresenceAnswer> {
+    const userId = await this.requireUserId();
+    const hotelId = await this.requireActiveHotelId(userId);
+    const placeId = this.googleVenues.get(hotelId);
+    if (!placeId) {
+      throw new ApiError('CONFLICT', 'That venue is checked the ordinary way.');
+    }
+    if (
+      !Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+      Math.abs(latitude) > 90 || Math.abs(longitude) > 180
+    ) {
+      throw new ApiError('INVALID_INPUT', 'That location reading is not usable.');
+    }
+    // D-036, in the same position as the catalogue path: a free member's
+    // location is never taken for a room they cannot enter.
+    if (!this.isPremiumNow(userId)) {
+      throw new ApiError('PREMIUM_REQUIRED', 'Here Now is for Premium members.');
+    }
+    const place = GOOGLE_VENUES.find((candidate) => candidate.placeId === placeId);
+    if (!place || this.googleResolutionBroken || !this.spendGoogleCall()) {
+      // §8.23: the provider being unreachable must consume nothing and
+      // corrupt nothing. The stored answer is untouched, so a check that
+      // already succeeded still counts and the room, the membership and the
+      // chat are exactly as they were.
+      throw new ApiError('UNKNOWN', 'Could not check where you are.');
+    }
+
+    // The reading and the resolved venue coordinate are both consumed here and
+    // discarded: what is stored is the same boolean-and-bucket the catalogue
+    // path stores, and no coordinate of either kind (D-005).
+    const meters = haversineMeters(place.latitude, place.longitude, latitude, longitude);
+    const check: HereNowCheck = {
+      hotelId,
+      checkedAt: this.now(),
+      withinRange: meters <= HERE_NOW_RADIUS_METERS,
+      bucket: distanceBucket(meters, HERE_NOW_RADIUS_METERS),
+    };
+    this.presence.set(userId, check);
+    return { withinRange: check.withinRange, expiresAt: check.checkedAt + HERE_NOW_FRESHNESS_MS };
   }
 
   /* ------------------------------------------------------------------ rooms */
@@ -595,6 +869,12 @@ export class FakeApi implements VocationApi {
   async recordPresenceCheck(latitude: number, longitude: number): Promise<PresenceAnswer> {
     const userId = await this.requireUserId();
     const hotelId = await this.requireActiveHotelId(userId);
+    if (this.googleVenues.has(hotelId)) {
+      // D-054: this venue's coordinate is not ours to hold, so the check goes
+      // through the provider boundary instead. Refused before anything is
+      // measured or spent, exactly as the SQL does.
+      throw new ApiError('CONFLICT', 'That place needs the verified check.');
+    }
     const hotel = getHotelFixtureById(hotelId);
     if (
       !hotel ||
@@ -752,9 +1032,21 @@ export class FakeApi implements VocationApi {
     return Math.max(allowance - (this.googleFinds.get(userId) ?? 0), 0);
   }
 
-  async resolveGooglePlace(_placeId: string): Promise<string | null> {
+  /**
+   * A Place ID back into a name, for a screen about to draw it.
+   *
+   * Null is the honest answer whenever Google cannot be reached or the month's
+   * ceiling is gone — the screen then says the venue's details are unavailable
+   * rather than inventing a name (§4). D-053's check-in labels are the tokens
+   * the fake carries as ids and have no fixture, so they answer null too.
+   */
+  async resolveGooglePlace(placeId: string): Promise<string | null> {
     await this.requireUserId();
-    return null;
+    if (this.googleResolutionBroken || !this.spendGoogleCall()) return null;
+    const place = [...GOOGLE_VENUES, ...GOOGLE_DESTINATIONS].find(
+      (candidate) => candidate.placeId === placeId,
+    );
+    return place?.name ?? null;
   }
 
   async clearCheckin(): Promise<void> {
@@ -1272,6 +1564,43 @@ export class FakeApi implements VocationApi {
 
   /** D-053: advanced finds spent this run, per user. Spent on a find only. */
   private readonly googleFinds = new Map<string, number>();
+
+  /* -------------------------------------------- the fake Google, D-054 */
+
+  /** Internal venue id → the Place ID behind it. The only Google fact kept. */
+  private readonly googleVenues = new Map<string, string>();
+  /** Our own category for that venue, read off the chip it was found under. */
+  private readonly googleVenueKinds = new Map<string, string>();
+  private readonly googleSessions = new Map<string, FakeGoogleSession>();
+  private readonly placeSelections = new Map<
+    string,
+    { userId: string; sessionId: string; placeId: string; used: boolean }
+  >();
+  private googleSessionSeq = 0;
+  private googleSelectionSeq = 0;
+  private googleCallsUsed = 0;
+  private googleCeiling = GOOGLE_CEILING_DEFAULT;
+  private googleResolutionBroken = false;
+
+  /** How many upstream calls the fake has made — the cost-control tests read
+   * this to prove a debounce or a duplicate really did stop a request. */
+  googleCallCount(): number {
+    return this.googleCallsUsed;
+  }
+
+  /**
+   * Lowers the monthly service ceiling. `0` is an exhausted month: the Google
+   * door closes and nothing else does — the catalogue, the rooms, the matches
+   * and the chat carry on (§6, §8.28).
+   */
+  setGoogleCeiling(remaining: number): void {
+    this.googleCeiling = this.googleCallsUsed + Math.max(0, remaining);
+  }
+
+  /** Makes the provider unreachable, for the "a failure corrupts nothing" case. */
+  breakGoogleResolution(broken: boolean): void {
+    this.googleResolutionBroken = broken;
+  }
 
   /** An anchor's point, whether it is a catalogue fixture or a cell. */
   private venuePoint(venueId: string): { latitude: number; longitude: number } | null {

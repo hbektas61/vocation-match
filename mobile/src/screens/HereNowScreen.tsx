@@ -107,7 +107,15 @@ export function HereNowScreen({
 
     dispatch({ type: 'SET_LOCATION_PERMISSION', permission: 'granted' });
     try {
-      const answer = await getApi().recordPresenceCheck(reading.latitude, reading.longitude);
+      const api = getApi();
+      // D-054: a Google venue has no coordinate of ours to measure against, so
+      // the backend resolves its position from the Place ID and runs the same
+      // 500 m test there. Both paths answer identically — a boolean and an
+      // expiry — and neither ever returns a coordinate or a distance.
+      const venue = await api.getActiveVenue().catch(() => null);
+      const answer = venue?.provider === 'google'
+        ? await api.verifyPresenceAtVenue(reading.latitude, reading.longitude)
+        : await api.recordPresenceCheck(reading.latitude, reading.longitude);
       setOutcome({ kind: answer.withinRange ? 'in-range' : 'too-far' });
     } catch (err) {
       setOutcome({

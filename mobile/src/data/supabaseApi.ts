@@ -38,6 +38,10 @@ import {
   type UpcomingStay,
   type VocationApi,
   type GooglePlaceAnswer,
+  type ActiveVenue,
+  type DestinationChoice,
+  type VenueSearchMode,
+  GOOGLE_VENUE_KIND,
 } from './contracts';
 import type { BackendConfig } from './config';
 import { isE164Phone, normalizePhone } from './phone';
@@ -570,7 +574,7 @@ export class SupabaseApi implements VocationApi {
     // authenticated (never `location`), scoped by the is_active policy.
     const { data, error } = await this.client
       .from('hotels')
-      .select('id, name, city, country, address, photo_url, photo_attribution, venue_kind')
+      .select('id, provider, name, city, country, address, photo_url, photo_attribution, venue_kind')
       .eq('id', hotelId)
       .maybeSingle();
     if (error) {
@@ -604,6 +608,134 @@ export class SupabaseApi implements VocationApi {
       hotelId: row.hotel_id,
       previousHotelId: row.previous_hotel_id,
       presenceCleared: row.presence_cleared,
+    };
+  }
+
+  /* -------------------------------------------- vacation venue, D-054 */
+
+  /**
+   * The two search steps share one shape: an answer, or null meaning "do not
+   * offer this". Null is unconfigured, a ceiling, a rate limit or an unwell
+   * provider — never "there is no such place", which is a real empty list.
+   */
+  private async askPlaces(body: Record<string, unknown>): Promise<GooglePlaceAnswer | null> {
+    const { data, error } = await this.client.functions.invoke('places-google', { body });
+    if (error) {
+      // The function's 409 is the one refusal the screen can act on, and it
+      // arrives here as a FunctionsHttpError whose body has to be read back.
+      const response = (error as { context?: Response }).context;
+      if (response && typeof response.json === 'function') {
+        const detail = await response.json().catch(() => null);
+        if (detail?.error === 'destination_required') {
+          throw new ApiError('DESTINATION_REQUIRED', 'Choose where you are going first.');
+        }
+      }
+      return null;
+    }
+    if (!Array.isArray(data?.places) || typeof data?.sessionId !== 'string') {
+      return null;
+    }
+    return {
+      sessionId: data.sessionId as string,
+      duplicate: data.duplicate === true,
+      places: (data.places as { selectionToken: string; name: string; detail: string | null }[])
+        .map((place) => ({
+          selectionToken: place.selectionToken,
+          name: place.name,
+          detail: place.detail ?? null,
+        })),
+    };
+  }
+
+  async searchDestinations(query: string, sessionId?: string): Promise<GooglePlaceAnswer | null> {
+    return this.askPlaces({ op: 'destination_search', query, sessionId });
+  }
+
+  async chooseDestination(selectionToken: string): Promise<DestinationChoice | null> {
+    const { data, error } = await this.client.functions.invoke('places-google', {
+      body: { op: 'destination_choose', selectionToken },
+    });
+    if (error || typeof data?.sessionId !== 'string') return null;
+    return { sessionId: data.sessionId as string };
+  }
+
+  async searchVacationVenues(
+    query: string,
+    sessionId: string,
+    mode: VenueSearchMode,
+  ): Promise<GooglePlaceAnswer | null> {
+    return this.askPlaces({ op: 'venue_search', query, sessionId, mode });
+  }
+
+  async activateGoogleVenue(
+    selectionToken: string,
+    mode: VenueSearchMode,
+  ): Promise<ActivationResult> {
+    const row = await this.rpcSingle<ActivationRow>(
+      'activate_google_venue',
+      // The kind is ours, read off the chip the search ran under — never off
+      // Google's types, which we neither ask for nor keep (D-054).
+      { p_selection_token: selectionToken, p_venue_kind: GOOGLE_VENUE_KIND[mode] },
+      'Could not choose that place.',
+    );
+    return {
+      hotelId: row.hotel_id,
+      previousHotelId: row.previous_hotel_id,
+      presenceCleared: row.presence_cleared,
+    };
+  }
+
+  async getActiveVenue(): Promise<ActiveVenue | null> {
+    const { data, error } = await this.client.rpc('my_active_venue');
+    if (error) {
+      throw toApiError(error, 'Could not load your venue.');
+    }
+    const row = (data ?? [])[0] as
+      | {
+          hotel_id: string;
+          provider: string;
+          google_place_id: string | null;
+          venue_kind: string | null;
+          activated_at: string;
+        }
+      | undefined;
+    if (!row) return null;
+    return {
+      hotelId: row.hotel_id,
+      provider: row.provider,
+      googlePlaceId: row.google_place_id ?? null,
+      kind: row.venue_kind ?? null,
+      activatedAt: Date.parse(row.activated_at),
+    };
+  }
+
+  async verifyPresenceAtVenue(latitude: number, longitude: number): Promise<PresenceAnswer> {
+    const { data, error } = await this.client.functions.invoke('places-google', {
+      body: { op: 'verify_presence', latitude, longitude },
+    });
+    if (error) {
+      const response = (error as { context?: Response }).context;
+      const detail = response && typeof response.json === 'function'
+        ? await response.json().catch(() => null)
+        : null;
+      const code = typeof detail?.error === 'string' ? detail.error : '';
+      if (code === 'PP001') {
+        throw new ApiError('PREMIUM_REQUIRED', 'Here Now is for Premium members.');
+      }
+      if (code === 'P0002' || code === 'no_active_venue') {
+        throw new ApiError('NOT_FOUND', 'Choose where you are staying first.');
+      }
+      if (code === '54000' || code === 'allowance_spent') {
+        throw new ApiError('RATE_LIMITED', 'Too many checks just now.');
+      }
+      throw new ApiError('UNKNOWN', 'Could not check where you are.');
+    }
+    if (typeof data?.withinRange !== 'boolean') {
+      throw new ApiError('UNKNOWN', 'Could not check where you are.');
+    }
+    return {
+      withinRange: data.withinRange as boolean,
+      expiresAt: typeof data.expiresAt === 'string' ? Date.parse(data.expiresAt) : 0,
     };
   }
 
@@ -1050,6 +1182,7 @@ export class SupabaseApi implements VocationApi {
 
 interface HotelRow {
   id: string;
+  provider?: string | null;
   name: string;
   city: string;
   country: string;
@@ -1062,6 +1195,7 @@ interface HotelRow {
 function toHotelCard(row: HotelRow): HotelCard {
   return {
     id: row.id,
+    provider: row.provider ?? null,
     name: row.name,
     city: row.city,
     country: row.country,

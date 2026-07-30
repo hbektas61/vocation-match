@@ -273,6 +273,26 @@ export const tr: Copy = {
     keepCurrent: 'Mevcut oteli koru',
   },
 
+  venue: {
+    destinationTitle: 'Nereye gidiyorsun?',
+    destinationHint: 'Şehir, ada veya tatil bölgesi ara',
+    destinationLabel: 'Destinasyon ara',
+    destinationPlaceholder: 'Alaçatı, Çeşme, Mykonos…',
+    destinationNoResults: 'Bu aramayla eşleşen yer yok.',
+    destinationChosen: (name: string) => `${name}'da nerede olacaksın?`,
+    changeDestination: 'Destinasyonu değiştir',
+    venueLabel: 'Mekân ara',
+    venuePlaceholder: 'Otel, resort, beach veya beach club ara',
+    venueNoResults: 'Bu bölgede bu adla bir yer yok.',
+    venuePrompt: 'Kalacağın yerin adını yaz.',
+    chipAll: 'Tümü',
+    chipStay: 'Konaklama',
+    minQuery: 'En az üç harf yaz.',
+    attribution: 'Powered by Google',
+    unavailable: 'Mekân araması şu anda kullanılamıyor. Sonra tekrar dene.',
+    nameUnavailable: 'Mekân bilgisi şu anda alınamıyor',
+  },
+
   upcoming: {
     roomTitle: 'Tatilden Önce',
     statusBadge: 'Kendi beyanınla yaklaşan konaklama',
@@ -466,6 +486,8 @@ export const tr: Copy = {
       'Bir mekânı açık katalogda bulamadığında “Google ile gelişmiş ara” seçeneğini kullanabilirsin. Yalnız o an, yalnız yazdığın metin ve o anki konumun Google Places servisine gider — arka planda hiçbir çağrı yapılmaz.',
     providersGoogleStorage:
       'Google’dan gelen mekân adını saklamayız. Yalnız Google’ın mekân kimliğini (Place ID) tutarız; ad, gösterilmesi gerektiği anda çözülür ve yalnız o oturumun belleğinde kalır. Google’ın koordinatını hiç istemez ve hiç saklamayız — yakınlık hesabı kendi verimizle yapılır.',
+    providersVenue:
+      'Kalacağın yeri seçmek de Google Places üzerinden yapılır: önce destinasyon, sonra oradaki mekân. Seçtiğin yerden yalnız Google’ın mekân kimliği saklanır — Google’ın adı, adresi, fotoğrafı ve koordinatı asla. Kartındaki ad, bir ekranın onu göstermesi gerektiği anda yeniden alınır.',
     providersRetention:
       'Check-in kaydın 3 saat sonra kendiliğinden düşer. Konum okuman kaba bir alana yuvarlanarak tutulur; ham konumun hiçbir zaman yazılmaz ve kimseye gösterilmez.',
     providersTerms:
@@ -599,6 +621,7 @@ export const tr: Copy = {
     rateLimited: 'Bunu çok sık yapıyorsun. Biraz bekleyip tekrar dene.',
     premiumRequired:
       'Bunun için Premium gerekli. Ücretsiz üyelikte Tatilden Önce odasında 3 beğeni ve 5 geçiş hakkın var.',
+    destinationRequired: 'Önce nereye gittiğini seç.',
     network: 'Bağlantı yok. Tekrar dene.',
     suspended: 'Hesabın askıya alındı. Engelleme, bildirme ve konuşmalarını okuma yine açık.',
     unknown: 'Bir şeyler ters gitti. Tekrar dene.',

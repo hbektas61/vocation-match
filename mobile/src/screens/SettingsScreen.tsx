@@ -211,6 +211,7 @@ export function SettingsScreen() {
         <Body>{COPY.settings.providersOpen}</Body>
         <Body>{COPY.settings.providersGoogle}</Body>
         <Body>{COPY.settings.providersGoogleStorage}</Body>
+        <Body>{COPY.settings.providersVenue}</Body>
         <Body>{COPY.settings.providersRetention}</Body>
         <Body>{COPY.settings.providersTerms}</Body>
       </Card>

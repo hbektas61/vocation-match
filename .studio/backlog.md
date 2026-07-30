@@ -340,6 +340,42 @@ client work; the server already allowed every one of them.
       D-036). Needs a pre-match conversation model the recipient can refuse,
       safety rules, and screens — the named next premium slice.
 
+## Done — destination-first vacation venue (D-054, 2026-07-30)
+
+- [x] V-001 Provider-aware venue identity: `(provider='google', place_id)` is
+      the canonical key; `hotels.location` nullable for that provider only.
+- [x] V-002 Destination Autocomplete (New), worldwide, geocoding results only,
+      so a business can never be a destination and a sublocality can.
+- [x] V-003 Venue Autocomplete (New) restricted to the destination's padded
+      viewport; the default mode sends no type restriction.
+- [x] V-004 `activate_google_venue` from a single-use selection token, not
+      entitlement-gated (§6) and reusing `set_active_hotel` for D-003/D-004.
+- [x] V-005 Here Now for a coordinate we may not keep:
+      `record_presence_verified`, same radius, same expiry, same privacy.
+- [x] V-006 Live name resolution on the trip tab and the details screen, with a
+      stated absence when Google cannot answer.
+- [x] V-007 Cost controls: 3-character floor, 350 ms debounce, one request in
+      flight with the newest query queued, stale-response rejection, per-session
+      Google tokens, per-kind rolling session limits, per-operation ceilings.
+- [x] V-008 §8 test coverage: 30 mobile cases plus 27 pgTAP assertions.
+- [x] V-009 Provider disclosure extended: Google is now the venue path, not
+      only the check-in escape hatch.
+
+## Next — the consequences D-054 left open
+
+- [ ] V-010 A Google venue cannot join the D-038 region pool, because it has no
+      coordinate of ours. Decide where such a coordinate may legitimately come
+      from — the honest candidate is our *own* users' verified readings, which
+      is app-owned data rather than Google Content — or accept the gap in
+      writing.
+- [ ] V-011 Another user's card cannot be labelled with a Google venue's name
+      without a Place Details call per viewer. Measure how often that actually
+      happens once `provider_event_counts` has a week of real traffic, then
+      decide whether a per-render cache is worth its complexity.
+- [ ] V-012 Build the cost estimate the brief refuses to guess at, from
+      `provider_event_counts` and `search_session_counts` — now that both are
+      running against a real key.
+
 ## Explicitly excluded
 
 - Reservation upload or reservation number.

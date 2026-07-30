@@ -271,6 +271,38 @@ export const en = {
     keepCurrent: 'Keep current hotel',
   },
 
+  /**
+   * Choosing where the holiday is (D-054). Two steps, because they are two
+   * different questions: a destination, and then somewhere inside it — which
+   * may be a hotel, a resort, a beach club or a named beach, so nothing here
+   * says "hotel".
+   */
+  venue: {
+    destinationTitle: 'Where are you going?',
+    destinationHint: 'Search for a city, island or holiday area',
+    destinationLabel: 'Search destinations',
+    destinationPlaceholder: 'Alaçatı, Çeşme, Mykonos…',
+    destinationNoResults: 'No places match that search.',
+    destinationChosen: (name: string) => `Where will you be in ${name}?`,
+    changeDestination: 'Change destination',
+    venueLabel: 'Search places',
+    venuePlaceholder: 'Hotel, resort, beach or beach club',
+    venueNoResults: 'Nothing by that name in this area.',
+    venuePrompt: 'Type the name of the place you will stay at.',
+    chipAll: 'All',
+    chipStay: 'Stay',
+    minQuery: 'Type at least three letters.',
+    /** The attribution Google's policies require wherever its data is drawn. */
+    attribution: 'Powered by Google',
+    unavailable: 'Place search is unavailable right now. Try again later.',
+    /**
+     * The name is not stored — it is fetched for the screen that draws it — so
+     * there is a real state where we have the place and not its name. It says
+     * so rather than inventing one.
+     */
+    nameUnavailable: 'Place details are unavailable right now',
+  },
+
   upcoming: {
     roomTitle: 'Before the trip',
     statusBadge: 'Self-declared upcoming stay',
@@ -479,6 +511,9 @@ export const en = {
       'When a place is missing from the open catalogue you can use “Search more places with Google”. Only then, and only the text you typed plus your current location, goes to Google Places — nothing is ever called in the background.',
     providersGoogleStorage:
       'We do not store the name Google returns. We keep only Google’s place identifier (Place ID); the name is resolved at the moment it must be shown and stays in that session’s memory alone. We never ask for and never store Google’s coordinates — proximity is worked out from our own data.',
+    /** D-054: Google is no longer only the check-in escape hatch. */
+    providersVenue:
+      'Choosing where you are staying also goes through Google Places: a destination first, then a place inside it. Of whatever you choose we keep only Google’s place identifier — never Google’s name, address, photograph or coordinates. The name on your card is fetched again each time a screen needs to show it.',
     providersRetention:
       'Your check-in lapses by itself after 3 hours. Your location reading is kept rounded to a coarse area; the raw reading is never written down and never shown to anyone.',
     providersTerms:
@@ -629,6 +664,7 @@ export const en = {
     rateLimited: 'You are doing that too often. Wait a moment and try again.',
     premiumRequired:
       'That needs Premium. Free members get 3 likes and 5 passes in Before the Trip.',
+    destinationRequired: 'Choose where you are going first.',
     network: 'No connection. Try again.',
     suspended: 'Your account is suspended. You can still block, report, and read your conversations.',
     unknown: 'Something went wrong. Try again.',

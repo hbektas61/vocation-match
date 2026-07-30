@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useNavigation, type NavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,11 +7,22 @@ import Svg, { Circle, Path } from 'react-native-svg';
 
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 
-import { Body, Button, Caption, Card, DoorPlate, EmptyState, Field, Heading, Notice, Screen } from '../components/ui';
+import { Body, Button, Caption, Card, Heading, Notice, Screen } from '../components/ui';
 import { nowMs } from '../clock';
 import { earliestRoomExpiry } from '../state/roomSchedule';
-import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation, upperCase } from '../copy';
-import { ApiError, getApi, readBackendConfig, type HotelCard, type RoomHeadcount, type RoomStatus, type UpcomingStay } from '../data';
+import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation } from '../copy';
+import {
+  ApiError,
+  getApi,
+  readBackendConfig,
+  type ActiveVenue,
+  type HotelCard,
+  type RoomHeadcount,
+  type RoomStatus,
+  type UpcomingStay,
+  type VenueSearchMode,
+} from '../data';
+import { VenuePicker } from '../components/VenuePicker';
 import { VacationFeatureCard } from '../components/VacationFeatureCard';
 import { useAppStore } from '../state/AppStore';
 import { color, fontFamily, glass, radius, spacing } from '../theme';
@@ -30,15 +41,6 @@ function formatStayRange(stay: UpcomingStay): string {
     new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
   return `${part(stay.startDate)} – ${part(stay.endDate)}`;
 }
-
-const MagnifierIcon = () => (
-  <View style={{ marginRight: spacing.sm }}>
-    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={color.inkMuted} strokeWidth={2.2} strokeLinecap="round">
-      <Circle cx={11} cy={11} r={7} />
-      <Path d="M21 21l-4.5-4.5" />
-    </Svg>
-  </View>
-);
 
 const InfoIcon = () => (
   <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2.2} strokeLinecap="round">
@@ -60,19 +62,11 @@ const PinSmallIcon = () => (
   </Svg>
 );
 
-/** Two characters before anything is fetched. */
-const MIN_QUERY = 2;
-
 /**
  * A photo served by our own hotel-photo function needs the platform's JWT
  * gate satisfied; a Commons URL needs nothing. The anon key is already in
  * the app bundle, so sending it is not a disclosure.
  */
-/** Our proxy takes a width; other sources are already sized. */
-function thumbUrl(url: string): string {
-  return url.includes('/functions/v1/hotel-photo') ? `${url}&w=400` : url;
-}
-
 function photoSource(url: string) {
   const config = readBackendConfig();
   if (config && url.includes('/functions/v1/hotel-photo')) {
@@ -95,12 +89,26 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
   const { state, dispatch } = useAppStore();
   const stackNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const tabNavigation = useNavigation<NavigationProp<TabParamList>>();
-  const [query, setQuery] = useState('');
-  // `null` results mean a search is in flight (loading state).
-  const [results, setResults] = useState<HotelCard[] | null>(null);
-  const [searchError, setSearchError] = useState<string | null>(null);
+  /**
+   * The picker is open when there is nothing chosen yet, or when somebody
+   * asked to change it (D-054). It replaced a query-driven screen: the flow is
+   * now two deliberate steps, so "is the user searching" is a state rather
+   * than a length check on a text box.
+   */
+  const [picking, setPicking] = useState(false);
+  /** Which provider is behind the active venue, and its Place ID if Google. */
+  const [activeVenue, setActiveVenue] = useState<ActiveVenue | null>(null);
+  /**
+   * A Google venue's name, resolved live for this screen and kept in memory
+   * only — it is never written down (D-054). `null` while it is being fetched,
+   * `false` when Google could not answer, which the card says plainly rather
+   * than inventing a name.
+   */
+  const [googleName, setGoogleName] = useState<string | null | false>(null);
   const [loadingActive, setLoadingActive] = useState(true);
-  const [pendingSwitch, setPendingSwitch] = useState<HotelCard | null>(null);
+  const [pendingSwitch, setPendingSwitch] = useState<
+    { selectionToken: string; mode: VenueSearchMode; name: string } | null
+  >(null);
   const [switchedNotice, setSwitchedNotice] = useState(false);
   const [activating, setActivating] = useState(false);
   const [activateError, setActivateError] = useState<string | null>(null);
@@ -171,11 +179,28 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         }
         // `getActiveHotel` answers with an id, and the card above it needs a
         // name. Resolved by the id itself — a catalogue search cannot be
-        // trusted to contain it — and merged into the store, never into
-        // `results`, so nothing becomes selectable that nobody searched for.
+        // trusted to contain it — and merged into the store, so nothing
+        // becomes selectable that nobody searched for.
         if (active) {
           const card = await api.getHotelById(active.hotelId).catch(() => null);
           if (!cancelled && card) dispatch({ type: 'HOTELS_LOADED', hotels: [card] });
+
+          // D-054: a Google venue holds no name. Which provider it is decides
+          // whether one has to be fetched, and the answer stays in memory for
+          // as long as this screen is drawn — no longer.
+          const venue = await api.getActiveVenue().catch(() => null);
+          if (cancelled) return;
+          setActiveVenue(venue);
+          if (venue?.provider === 'google' && venue.googlePlaceId) {
+            setGoogleName(null);
+            const resolved = await api.resolveGooglePlace(venue.googlePlaceId).catch(() => null);
+            if (!cancelled) setGoogleName(resolved ?? false);
+          } else {
+            setGoogleName(null);
+          }
+        } else {
+          setActiveVenue(null);
+          setGoogleName(null);
         }
       } finally {
         if (!cancelled) setLoadingActive(false);
@@ -188,61 +213,32 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
   }, [dispatch]));
 
   /**
-   * Two characters, because one letter matches most of a catalogue and the
-   * result is a list nobody asked for.
+   * Commits a Google selection as the one active vacation venue.
+   *
+   * The token is all the client has — it never learned a Place ID — and the
+   * server resolves it to the internal venue, which is what makes two people
+   * who chose the same place land in the same room (D-054 §2).
    */
-  const searchable = (text: string) => text.trim().length >= MIN_QUERY;
-
-  /**
-   * `sequence` is what stops a slow answer to an old query landing on top of a
-   * fast answer to the current one. Typing "lar" then "lara" can return in
-   * either order, and without this the screen settles on whichever the network
-   * happened to finish last.
-   */
-  const sequence = useRef(0);
-
-  const runSearch = useCallback(async (text: string, ticket: number) => {
-    setSearchError(null);
-    try {
-      const hotels = await getApi().searchHotels(text);
-      if (ticket !== sequence.current) return;
-      dispatch({ type: 'HOTELS_LOADED', hotels });
-      setResults(hotels);
-    } catch (err) {
-      if (ticket !== sequence.current) return;
-      setSearchError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
-      setResults([]);
-    }
-  }, [dispatch]);
-
-  const changeQuery = (text: string) => {
-    setQuery(text);
-    // Back to the empty state rather than showing the previous query's hits
-    // under the new one.
-    setResults(searchable(text) ? null : []);
-  };
-
-  // Debounced, so a fast typist does not fire a request per keystroke.
-  useEffect(() => {
-    if (!searchable(query)) return;
-    const ticket = ++sequence.current;
-    const timer = setTimeout(() => {
-      runSearch(query.trim(), ticket);
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [query, runSearch]);
-
-  const activate = async (hotel: HotelCard) => {
+  const activate = async (choice: { selectionToken: string; mode: VenueSearchMode; name: string }) => {
     setPendingSwitch(null);
     setActivating(true);
     setActivateError(null);
     try {
       const api = getApi();
-      const result = await api.setActiveHotel(hotel.id);
+      const result = await api.activateGoogleVenue(choice.selectionToken, choice.mode);
       const active = await api.getActiveHotel();
-      dispatch({ type: 'HOTELS_LOADED', hotels: mergeHotel(state.hotels, hotel) });
-      dispatch({ type: 'HOTEL_ACTIVATED', activeHotel: active ?? { hotelId: hotel.id, activatedAt: nowMs() } });
-      // The feature cards' state words have to describe the hotel just
+      const card = await api.getHotelById(result.hotelId).catch(() => null);
+      if (card) dispatch({ type: 'HOTELS_LOADED', hotels: mergeHotel(state.hotels, card) });
+      dispatch({
+        type: 'HOTEL_ACTIVATED',
+        activeHotel: active ?? { hotelId: result.hotelId, activatedAt: nowMs() },
+      });
+      setActiveVenue(await api.getActiveVenue().catch(() => null));
+      // The name the user just read, kept for this screen only. Resolving it
+      // again from Google would be a second paid call for a string already on
+      // the device.
+      setGoogleName(choice.name);
+      // The feature cards' state words have to describe the venue just
       // activated, not the one from screen-mount.
       api
         .getRooms()
@@ -256,17 +252,16 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         .getUpcomingStay()
         .then(setStay)
         .catch(() => setStay(null));
-      setSwitchedNotice(result.previousHotelId !== null && result.previousHotelId !== hotel.id);
-      // Choosing ends the search: clear the query so the screen settles on
-      // the card of the hotel just chosen rather than the list it came from.
-      setQuery('');
-      setResults([]);
+      setSwitchedNotice(result.previousHotelId !== null && result.previousHotelId !== result.hotelId);
+      // Choosing ends the search: the screen settles on the card of the venue
+      // just chosen rather than the list it came from.
+      setPicking(false);
       if (onActivated) {
         // The gate: choosing finishes the errand it interrupted.
         onActivated();
       }
       // As a tab the screen stays (D-040): the next decision — dates or a
-      // proximity check — is made right here, on the feature cards below.
+      // location check — is made right here, on the feature cards below.
     } catch (err) {
       setActivateError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
     } finally {
@@ -274,14 +269,27 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
     }
   };
 
-  const requestActivation = (hotel: HotelCard) => {
+  const requestActivation = (
+    selectionToken: string,
+    mode: VenueSearchMode,
+    name: string,
+  ) => {
     setSwitchedNotice(false);
-    if (activeId && activeId !== hotel.id) {
-      setPendingSwitch(hotel);
+    if (activeId) {
+      // Switching closes the previous venue's discovery immediately (D-004),
+      // which is worth confirming rather than doing on one tap.
+      setPendingSwitch({ selectionToken, mode, name });
       return;
     }
-    activate(hotel);
+    activate({ selectionToken, mode, name });
   };
+
+  /** What the active card is allowed to call the venue, and nothing more. */
+  const activeName = activeVenue?.provider === 'google'
+    ? googleName === false
+      ? COPY.venue.nameUnavailable
+      : (googleName ?? COPY.common.loading)
+    : (activeHotel?.name ?? null);
 
   const upcomingStatus = roomStates?.find((r) => r.room === 'UPCOMING') ?? null;
   const upcomingOpen = upcomingStatus?.eligible === true;
@@ -327,27 +335,16 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           />
         )}
       </View>
-      {!onActivated && !activeId && !searchable(query) ? (
+      {!onActivated && !activeId && !picking ? (
         <Text style={styles.subtitle}>{COPY.vacation.subtitle}</Text>
       ) : null}
-      {/* The label is printed only where the design prints it (10:76): over
-          the search on the not-yet-chosen screen. The field keeps the name
-          for a screen reader either way. */}
-      {!activeId && !searchable(query) && !loadingActive ? (
-        <Text style={styles.searchLabel}>{upperCase(COPY.hotel.searchLabel)}</Text>
+      {/* D-054: the trip tab's search is the two-step Google picker. It stands
+          where the one catalogue box used to, and it is the only way a
+          vacation venue is chosen. */}
+      {picking ? (
+        <VenuePicker onChosen={requestActivation} busy={activating} />
       ) : null}
-      <Field
-        label={COPY.hotel.searchLabel}
-        hideLabel
-        pill
-        value={query}
-        onChangeText={changeQuery}
-        placeholder={COPY.hotel.searchPlaceholder}
-        prefix={<MagnifierIcon />}
-        style={styles.searchInput}
-        testID="hotel-search"
-      />
-      {searchable(query) ? null : loadingActive || (activeId && !activeHotel) ? (
+      {picking ? null : loadingActive || (activeId && !activeHotel) ? (
         // Either the answer is on its way, or the id is known and its card
         // is still being resolved. Neither is "no hotel chosen".
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="hotel-loading" />
@@ -357,7 +354,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
            way to the hotel's details. */
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${activeHotel.name}. ${COPY.hotel.detailsCta}`}
+          accessibilityLabel={`${activeName ?? activeHotel.name}. ${COPY.hotel.detailsCta}`}
           onPress={() => stackNavigation.navigate('HotelDetails', { hotelId: activeHotel.id })}
           style={({ pressed }) => [styles.hotelCard, pressed && styles.resultPressed]}
           testID="active-hotel-card"
@@ -381,12 +378,20 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
             ) : null}
           </View>
           <View style={styles.hotelCardBody}>
-            <Text style={styles.hotelName}>{activeHotel.name}</Text>
+            {/* D-054: for a Google venue this is a name resolved a moment ago
+                and held in memory, never a stored one. */}
+            <Text style={styles.hotelName} testID="active-hotel-name">
+              {activeName ?? activeHotel.name}
+            </Text>
             <View style={styles.placeRow}>
               <PinSmallIcon />
               <Text style={styles.metaText} testID="active-hotel-dates">
-                {`${activeHotel.city}, ${activeHotel.country}`}
-                {stay ? `   ·   ${formatStayRange(stay)}` : ''}
+                {/* A Google venue has no city or country of ours to print —
+                    they are Google's content, so the line carries only what
+                    the user themselves declared. */}
+                {activeVenue?.provider === 'google'
+                  ? (stay ? formatStayRange(stay) : COPY.venue.attribution)
+                  : `${activeHotel.city}, ${activeHotel.country}${stay ? `   ·   ${formatStayRange(stay)}` : ''}`}
               </Text>
             </View>
             <View style={styles.selectedPill}>
@@ -443,7 +448,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         </Card>
       ) : null}
 
-      {activeId && !searchable(query) && !onActivated ? (
+      {activeId && !picking && !onActivated ? (
         /* D-040 in the Figma card shape (10:124, 10:131): the two features
            right under the hotel they belong to. When Upcoming is live its
            button becomes the deck, and updating the dates steps back to a
@@ -500,94 +505,46 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           />
         </>
       ) : null}
-      {searchError ? (
-        <>
-          <Notice message={searchError} tone="error" testID="hotel-search-error" />
+      {/* The way into the picker, and the way back out of it. Choosing is a
+          step somebody takes deliberately, so it is a button rather than a
+          text box that is always live — which is also what keeps a stray
+          keystroke from reaching a metered provider (§6). */}
+      {picking ? (
+        activeId ? (
           <Button
-            label={COPY.common.retry}
+            label={COPY.common.cancel}
             variant="secondary"
-            onPress={() => runSearch(query.trim(), ++sequence.current)}
-            testID="hotel-search-retry"
+            onPress={() => setPicking(false)}
+            disabled={activating}
+            testID="venue-cancel"
           />
-        </>
-      ) : null}
-      {/* Four states, deliberately distinct. "Type to search" is not the same
-          as "nothing matched", and neither is the same as "still looking" —
-          collapsing any two of them makes the screen look broken in the case
-          it collapsed. */}
-      {searchError ? null : !searchable(query) ? (
-        /* Idle on the not-yet-chosen screen is one card (10:86): the feature
-           that exists before any hotel does, honestly shut behind the one
-           thing it needs. */
-        <View style={styles.idle} testID="hotel-search-prompt">
-          {activeId || onActivated ? null : (
-            <VacationFeatureCard
-              room="UPCOMING"
-              status={null}
-              lead={COPY.rooms.upcomingLead}
-              body={COPY.vacation.upcomingFeatureBody}
-              buttonLabel={COPY.vacation.chooseFirst}
-              onOpen={() => stackNavigation.navigate('ChooseHotel')}
-              testID="room-upcoming-locked"
-              buttonTestID="vacation-choose-for-upcoming"
-            />
-          )}
-        </View>
-      ) : results === null ? (
-        <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="hotel-loading" />
-      ) : results.length === 0 ? (
-        /* ODbL: the licence line stands where the OSM data actually shows —
-           beside results, not on the idle sheet the design keeps clean. */
-        <>
-          <EmptyState message={COPY.hotel.noResults} testID="hotel-no-results" />
-          <Caption>{COPY.hotel.attribution}</Caption>
-        </>
-      ) : (
-        <>
-        {results.map((hotel) => {
-          const isActive = activeId === hotel.id;
-          return (
-            /* Results wear the same card as the active hotel — the designer's
-               one card, in two roles — with a slimmer band so the list stays
-               a list. */
-            <Pressable
-              key={hotel.id}
-              accessibilityRole="button"
-              accessibilityLabel={
-                isActive ? `${hotel.name}. ${COPY.hotel.activatedNote}` : COPY.hotel.activateCta(hotel.name)
-              }
-              accessibilityState={{ disabled: activating || isActive }}
-              disabled={activating || isActive}
-              onPress={() => requestActivation(hotel)}
-              style={({ pressed }) => [styles.hotelCard, pressed && styles.resultPressed]}
-              testID={`activate-${hotel.id}`}
-            >
-              {hotel.photoUrl ? (
-                /* A small photo helps tell two same-brand hotels apart before
-                   choosing — asked for at thumbnail size, not card size. */
-                <Image
-                  source={photoSource(thumbUrl(hotel.photoUrl))}
-                  style={styles.resultPhoto}
-                  resizeMode="cover"
-                  accessibilityIgnoresInvertColors
-                  testID={`result-photo-${hotel.id}`}
-                />
-              ) : (
-                <View style={styles.resultBand} />
-              )}
-              <View style={styles.resultBody}>
-                {isActive ? <DoorPlate>{COPY.hotel.activePlate}</DoorPlate> : null}
-                <View style={styles.hotelCardTitle}>
-                  <Heading>{hotel.name}</Heading>
-                  <Caption>{`${hotel.city}, ${hotel.country}`}</Caption>
-                </View>
-              </View>
-            </Pressable>
-          );
-        })}
-        <Caption>{COPY.hotel.attribution}</Caption>
-        </>
+        ) : null
+      ) : loadingActive ? null : (
+        <Button
+          label={activeId ? COPY.hotel.switchButton : COPY.hotel.chooseCta}
+          variant={activeId ? 'secondary' : 'primary'}
+          onPress={() => setPicking(true)}
+          testID="venue-open-picker"
+        />
       )}
+
+      {/* Idle on the not-yet-chosen screen is one card (10:86): the feature
+          that exists before any venue does, honestly shut behind the one
+          thing it needs. */}
+      {!picking && !activeId && !onActivated && !loadingActive ? (
+        <View style={styles.idle} testID="hotel-search-prompt">
+          <VacationFeatureCard
+            room="UPCOMING"
+            status={null}
+            lead={COPY.rooms.upcomingLead}
+            body={COPY.vacation.upcomingFeatureBody}
+            buttonLabel={COPY.vacation.chooseFirst}
+            onOpen={() => setPicking(true)}
+            testID="room-upcoming-locked"
+            buttonTestID="vacation-choose-for-upcoming"
+          />
+        </View>
+      ) : null}
     </Screen>
   );
 }
