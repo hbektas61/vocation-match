@@ -205,6 +205,10 @@ export function EventsScreen({
       navigation.navigate('EventDetail', {
         selectionToken: opened.selectionToken,
         name: opened.event.name ?? '',
+        when: whenLabel(opened.event),
+        where: [opened.event.venueName ?? COPY.venue.nameUnavailable, opened.event.city]
+          .filter(Boolean)
+          .join(' · '),
       });
     } finally {
       setBusy(false);

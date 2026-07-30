@@ -14,8 +14,13 @@ export type RootStackParamList = {
   Upcoming: undefined;
   HereNow: undefined;
   HotelDetails: { hotelId: string };
-  /** D-056: one event, and the two ways into its room. */
-  EventDetail: { selectionToken: string; name: string };
+  /**
+   * D-056: one event, and the two ways into its room. `when` and `where` are
+   * leased provider content passed for display only — the detail screen showed
+   * a bare name, so the two facts that decide whether somebody is going were
+   * on the list they came from and nowhere else.
+   */
+  EventDetail: { selectionToken: string; name: string; when?: string; where?: string };
   Match: { matchId: string };
   Chat: { matchId: string };
   ReportBlock: { userId: string; displayName?: string; matchId?: string };

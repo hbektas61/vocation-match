@@ -106,6 +106,11 @@ export function EventDetailScreen({
   return (
     <Screen testID="screen-event-detail">
       <Title>{route.params.name || COPY.events.pastEvent}</Title>
+      {/* Where and when. The screen used to carry the name alone, so the two
+          facts a person decides on were only on the list behind them. */}
+      {route.params.where || route.params.when ? (
+        <Body>{[route.params.where, route.params.when].filter(Boolean).join(' · ')}</Body>
+      ) : null}
       <Gap size="sm" />
 
       {joined ? (

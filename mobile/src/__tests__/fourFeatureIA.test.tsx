@@ -300,6 +300,15 @@ describe('D-057 event detail (§9.3)', () => {
     await screen.findByTestId('screen-event-detail');
   }
 
+  it('shows where and when, not just the name (E-21)', async () => {
+    await openFirstEvent();
+    // The two facts somebody decides on used to live only on the list behind
+    // this screen: it carried the event's name and nothing else.
+    await screen.findByTestId('screen-event-detail');
+    // The venue and the date, from the lease, shown rather than stored.
+    expect(await screen.findByText(/Küçükçiftlik/)).toBeTruthy();
+  });
+
   it('says going is a declaration before it is declared (E-22)', async () => {
     await openFirstEvent();
     // The product risk of this whole feature is somebody reading "going" as
