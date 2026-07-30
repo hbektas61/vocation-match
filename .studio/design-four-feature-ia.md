@@ -545,6 +545,27 @@ Measured rather than eyeballed:
   against a real backend — absent for the Google venue, present for the pilot
   hotel, which is the intended split.
 
+### Group 1 — global navigation (risk order, pass 2)
+
+| Frame | Node | Capture | Comparison | Difference found | Fix | Re-verified |
+| --- | --- | --- | --- | --- | --- | --- |
+| Bottom bar, 5 items | `27:190` | `app-bar-390.png`, `app-bar-320.png` | matches | items measured 71×**40** and 57×**40** against a 44 floor | `minHeight: MIN_TOUCH` on the item | 71×44 / 57×44 re-measured; test reads the style |
+| Profile ring | `30:77` | in every capture | matches | was an empty circle | initials, real photo when there is one | present on all five primary screens |
+| Settings transition | `47:938` | seen in the T-01 pass | matches | title printed twice; `safeTop` double inset | screen drops its own title | single title under the stack header |
+| NAV-02 selector closed | `44:674` | `app-NAV-02.png` | matches | none | — | label "Tatilden Önce · Lara Shore Resort · 10 Ağu – 18 Ağu" |
+| NAV-03 selector open | `44:721` | `app-NAV-03.png` | matches | none | — | three rooms listed, each with its own time state |
+| NAV-04 several contexts | `44:767` | `app-NAV-04.png` | partial | the frame shows an *event* context; this account has none, so the deck opened on Çevremde per the D-040 fallback order | none — the ordering is the documented rule | event context deferred to group 4 |
+| NAV-05 no eligible room | `44:814` | `app-NAV-05.png` | matches | none | — | selector `aria-disabled=true`, "Açık odan yok", opens nothing |
+| NAV-06 context lapsed | `44:859` | `app-NAV-06.png` | partial | captured the **expired → fell back** case; the frame draws the *expiring* warning, which needs a room inside its last ten minutes | none | the selector dropped the lapsed room and fell back to Tatilden Önce, which is the designed behaviour |
+| NAV-07 empty / rescan | `44:906` | `app-NAV-07.png` | matches | none | — | radar, "Henüz kimse yok", "Tekrar tara"; selector reads "Çevremde · 3 sa 0 dk kaldı" with no venue name, which is the honest generic check-in |
+
+Two harness faults were found and fixed while doing this, and neither was a
+product defect: a four-hour clock offset aged the fake's *session* as well as
+the room (45 minutes reaches the expiry and nothing else), and swiping a
+populated room away never emptied it — the fake's feed does not exclude passed
+candidates, so the empty room is now reached honestly through D-048's anchor,
+where the fixture has nobody else.
+
 ### Still not done
 
 - **84 frames** not yet compared against a render.

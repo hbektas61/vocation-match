@@ -40,6 +40,7 @@ import {
   type RoomKey,
 } from '../data';
 import { ChatScreen } from '../screens/ChatScreen';
+import { CheckinScreen } from '../screens/CheckinScreen';
 import { DiscoveryScreen } from '../screens/DiscoveryScreen';
 import { HereNowScreen } from '../screens/HereNowScreen';
 import { InboxScreen } from '../screens/InboxScreen';
@@ -66,7 +67,12 @@ export const VISUAL_HARNESS_MARKER = 'VOCATION_VISUAL_HARNESS_ONLY';
  * relative to 2026-08-12 while `nowMs()` returned today, and the live room
  * offered "308 sa 32 dk kaldı". Layout is what these captures are for, and
  * layout does not depend on the date.
+ *
+ * The offset is how a lapsed room is reached: seed while it is open, push the
+ * backend's clock past the expiry, and render. The screens keep reading the
+ * real clock, which is exactly what a person coming back hours later sees.
  */
+let clockOffsetMs = 0;
 const PILOT_HOTEL = 'hotel-lara-shore';
 
 /** A reading inside the radius, and one far outside it. */
@@ -136,10 +142,135 @@ async function talking(): Promise<void> {
   if (matchId) await getApi().sendMessage(matchId, 'Bugün görüşür müyüz?');
 }
 
+
+/** The fake, typed for the seeding hooks the harness uses. */
+function fake(): FakeApi {
+  return getApi() as FakeApi;
+}
+
+/** A declared stay *and* a fresh proximity answer: two rooms open at once. */
+async function twoRoomsOpen(): Promise<void> {
+  await verifiedAtVenue();
+  await getApi().declareUpcomingStay('2026-08-10', '2026-08-18');
+}
+
+/** A named check-in, so Çevremde's own room is open too. */
+async function checkedInNearby(): Promise<void> {
+  await baseAccount();
+  const reading = await AT_VENUE.read();
+  if (reading.status === 'granted') {
+    const venues = await getApi().nearbyVenues(reading.latitude, reading.longitude);
+    if (venues[0]) {
+      await getApi().recordCheckin(venues[0].id, reading.latitude, reading.longitude);
+    }
+  }
+}
+
+/** Every room the deck can draw, open at the same time. */
+async function everyRoomOpen(): Promise<void> {
+  await twoRoomsOpen();
+  const reading = await AT_VENUE.read();
+  if (reading.status === 'granted') {
+    const venues = await getApi().nearbyVenues(reading.latitude, reading.longitude);
+    if (venues[0]) {
+      await getApi().recordCheckin(venues[0].id, reading.latitude, reading.longitude);
+    }
+  }
+}
+
 /** Remembered between the seed and the render, for the scenes that need an id. */
 let seededMatchId: string | null = null;
 
 const SCENES: Record<string, Scene> = {
+  // ------------------------------------------------------------- 3: Çevremde
+  'N-08': {
+    frame: '38:155',
+    label: 'Çevremde — gelişmiş arama hakkı bitti',
+    seed: async () => {
+      await baseAccount();
+      fake().setGoogleCeiling(0);
+    },
+    render: () => <CheckinScreen reader={AT_VENUE} />,
+  },
+  'N-09': {
+    frame: '38:174',
+    label: 'Çevremde — sağlayıcı kapalı',
+    seed: async () => {
+      await baseAccount();
+      fake().breakGoogleResolution(true);
+      fake().setGoogleCeiling(0);
+    },
+    render: () => <CheckinScreen reader={AT_VENUE} />,
+  },
+  'N-11': {
+    frame: '38:207',
+    label: 'Çevremde — adlı mekânda aktif',
+    seed: checkedInNearby,
+    render: () => <CheckinScreen reader={AT_VENUE} />,
+  },
+  'N-12': {
+    frame: '38:254',
+    label: 'Çevremde — genel alanda aktif (çevrede)',
+    seed: async () => {
+      await baseAccount();
+      const reading = await AT_VENUE.read();
+      if (reading.status === 'granted') {
+        // D-048's anchor: a check-in with no venue name at all.
+        await getApi().checkinHere(reading.latitude, reading.longitude);
+      }
+    },
+    render: () => <CheckinScreen reader={AT_VENUE} />,
+  },
+  'NAV-06': {
+    frame: '44:859',
+    label: 'Keşfet — bağlam süresi doldu',
+    seed: async () => {
+      await verifiedAtVenue();
+      // Four hours on: the proximity answer has lapsed and the declared stay
+      // has not, so the selector has to fall back rather than sit on a room
+      // the server would now refuse.
+      await getApi().declareUpcomingStay('2026-08-10', '2026-08-18');
+      // Forty-five minutes: past the proximity answer's own life, and short of
+      // anything else the fake ages — four hours also took the session with it,
+      // which is a harness artefact rather than what a returning person sees.
+      clockOffsetMs = 45 * 60 * 1000;
+    },
+    render: () => <DiscoveryScreen />,
+  },
+  // ---------------------------------------------------- 1: global navigation
+  'NAV-02': {
+    frame: '44:674',
+    label: 'Keşfet — bağlam seçici kapalı',
+    seed: declaredStay,
+    render: () => <DiscoveryScreen />,
+  },
+  'NAV-04': {
+    frame: '44:767',
+    label: 'Keşfet — çoklu bağlam, canlı oda seçili',
+    seed: everyRoomOpen,
+    render: () => <DiscoveryScreen />,
+  },
+  'NAV-05': {
+    frame: '44:814',
+    label: 'Keşfet — uygun oda yok, seçici devre dışı',
+    seed: baseAccount,
+    render: () => <DiscoveryScreen />,
+  },
+  'NAV-07': {
+    frame: '44:906',
+    label: 'Keşfet — oda boş / yeniden tara',
+    seed: async () => {
+      // D-048's anchor puts somebody in a room of their own cell, where the
+      // fixture has nobody else — which is the honest way to an empty room
+      // rather than swiping a populated one away.
+      await baseAccount();
+      const reading = await FAR_AWAY.read();
+      if (reading.status === 'granted') {
+        await getApi().checkinHere(reading.latitude, reading.longitude);
+      }
+    },
+    render: () => <DiscoveryScreen />,
+  },
   'T-19': {
     frame: '36:171',
     label: 'Oteldeyim — konum hassas değil',
@@ -263,7 +394,8 @@ export function VisualHarness() {
     let cancelled = false;
     setSeeded(false);
     setLocale('tr');
-    setApi(new FakeApi());
+    clockOffsetMs = 0;
+    setApi(new FakeApi({ now: () => Date.now() + clockOffsetMs }));
     (async () => {
       await SCENES[id].seed?.();
       if (!cancelled) setSeeded(true);
