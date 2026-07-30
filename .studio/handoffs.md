@@ -3337,3 +3337,73 @@ Left for the owner, and named rather than assumed:
 - Staging test data was moved by this run: `+90 555 111 00 04` and
   `+90 555 111 00 05` sit at Biblos/Ilıca, and `+90 555 112 23 33` at Galata
   Kulesi. Reset them before any demo that expects the old seed.
+
+## 2026-07-30 — V-010, V-011, V-012 closed (D-055)
+
+The owner accepted D-054 and ruled on the three consequences it left open,
+with the privacy rules spelled out. All three are built, tested and live on
+staging.
+
+**V-010 — the region pool.** A Google venue now earns a ~1.5 km cell from the
+app's own successful Here Now checks. Neither Google's coordinate nor anybody's
+raw GPS is stored: the reading is snapped and discarded inside the same
+transaction, and what is kept is a cell key on the *venue*. One contribution
+per person (`primary key (venue_id, user_id)`, insert-only), a rival cell needs
+two distinct people and strictly more of them, and the accuracy ceiling is
+100 m — a fix vaguer than the cell teaches nothing. `coarse_region_point` is
+GENERATED from the key, so the column cannot hold a real coordinate even if
+someone later tries. Used only for D-038 candidacy; the 500 m check still
+measures against the coordinate resolved from Google.
+
+**V-011 — labels.** `discovery_feed` returns `venue_place_id` for a
+neighbour's Google venue and `data/venueLabels.ts` bounds what it costs: never
+the viewer's own venue, once per Place ID per deck session, at most three
+distinct labels, memory only, and a generic "çevrede" for everything else.
+Nine tests hold it there, and the one that matters counts calls rather than
+looks at the screen — a per-render call is invisible on screen and visible only
+on a bill.
+
+**V-012 — measurement.** `provider_events` gained a `quantity` and
+`venue_operations_view()` returns the eight counts. No estimate is derived and
+no ceiling was touched.
+
+**Live on staging, in this order.** A vague fix (900 m) → the check succeeds
+and the venue learns nothing. An out-of-range fix → nothing learned. A good fix
+(10–12 m) at Galata Kulesi → the cell forms. A second account at Karaköy
+Güllüoğlu, ~700 m away, forms its own → and then appears in the first account's
+HERE_NOW deck as `same_venue=false, venue_name=null,
+place=ChIJ9XlKFOi5yhQR2Bo2XTkPPvA`, which resolves to the right name on demand.
+A signed-in client asking for `coarse_region_cell` gets `42501`. The view then
+read: 5 verifications, 4 in range, 2 cells formed, 1 accuracy-refused, 40 % of
+Google venues region-eligible, 1.00 unique Place ID and 1.00 Details call per
+deck session, 0 % generic fallback, 40/9000 Autocomplete and 32/4500 Details.
+
+**The reset.** `scripts/staging-reset.sh` goes through the Supabase CLI, so no
+connection string or password is written down. The SQL refuses to run unless
+the staging test numbers are present, returns the six accounts to no venue /
+no stay / no check-in / no presence / no open session, drops their region
+contributions and recomputes the cells from what is left, and removes only the
+Google venue rows nothing references — a row an activation event points at is
+kept, because that history is not this script's to rewrite, and keeping it is
+also what makes the next person who picks that Place ID land on the same
+venue. Profiles, matches, messages, blocks, reports and the metrics are
+untouched: the metrics are a record of what really happened. Run twice in a
+row against staging; the second run changed nothing.
+
+**The standing proof.** `023_nothing_persisted.sql` tests the *schema* rather
+than a code path: it walks every column in `public` and `app` and every
+function result, and fails if a coordinate, a location-history table, or a
+Google-content-shaped column appears anywhere outside three places argued for
+in writing — `hotels.location`, the generated `hotels.coarse_region_point`, and
+the session-scoped destination viewport (which no client can read and which is
+deleted within a day).
+
+Gates: `scripts/check.sh` all green — **546 SQL assertions** across 24 pgTAP
+files plus concurrency and performance, client↔database contract, migration
+replay, storage drain, typecheck, zero-warning lint, **539 mobile tests** across
+46 suites, and the Expo web bundle. Migrations `20260730001400` and
+`20260730001500` applied to staging and the function redeployed.
+
+Ceilings are untouched, per the ruling: 9,000 Autocomplete and 4,500 Place
+Details a month. The first week of `venue_operations_view()` against real
+traffic is what a cost decision should be built from — not before.

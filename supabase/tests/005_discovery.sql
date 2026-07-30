@@ -134,8 +134,13 @@ select bag_eq(
       join pg_namespace n on n.oid = p.pronamespace
       join unnest(p.proargnames, p.proargmodes) as a(attname, mode) on true
      where n.nspname = 'public' and p.proname = 'discovery_feed' and a.mode = 't'$$,
+  -- V-011 adds `venue_place_id`: the Place ID of a *neighbour's* Google
+  -- venue, which the client turns into the same name D-038 already discloses.
+  -- It is a name in another encoding, not a new class of fact — and this list
+  -- stays exhaustive, so anything beyond it still fails here.
   $$values ('user_id'::text),('display_name'),('age'),('bio'),('photo_path'),('photo_paths'),
-           ('interests'),('gender'),('orientations'),('venue_name'),('same_venue')$$,
+           ('interests'),('gender'),('orientations'),('venue_name'),('venue_place_id'),
+           ('same_venue')$$,
   'the feed returns exactly the card fields — no birthdate, no email, no location, no show_me'
 );
 

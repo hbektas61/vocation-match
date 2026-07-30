@@ -784,6 +784,18 @@ export class FakeApi implements VocationApi {
     };
   }
 
+  /** V-012, mirrored: three counts, kept in memory so a test can read them. */
+  deckLabelReports: { uniquePlaceIds: number; resolved: number; generic: number }[] = [];
+
+  async reportDeckLabels(
+    uniquePlaceIds: number,
+    resolved: number,
+    generic: number,
+  ): Promise<void> {
+    await this.requireUserId();
+    this.deckLabelReports.push({ uniquePlaceIds, resolved, generic });
+  }
+
   async verifyPresenceAtVenue(latitude: number, longitude: number): Promise<PresenceAnswer> {
     const userId = await this.requireUserId();
     const hotelId = await this.requireActiveHotelId(userId);
@@ -1200,6 +1212,9 @@ export class FakeApi implements VocationApi {
             candidate.hotelId === checkin.venueId
               ? null
               : (getHotelFixtureById(candidate.hotelId)?.name ?? null),
+          // A check-in anchor is a cell or a catalogue row, never a Google
+          // venue, so there is never a Place ID to carry here.
+          venuePlaceId: null,
           sameVenue: candidate.hotelId === checkin.venueId,
         }));
     }
@@ -1258,10 +1273,17 @@ export class FakeApi implements VocationApi {
         interests: candidate.interests,
         gender: candidate.showGender ? candidate.gender : null,
         orientations: candidate.showOrientation ? candidate.orientations : [],
+        // A Google venue holds no name, so a neighbour anchored at one is
+        // labelled by its Place ID instead — resolved at most three times per
+        // deck session, and generically otherwise (V-011).
         venueName:
-          candidate.hotelId === hotelId
+          candidate.hotelId === hotelId || this.googleVenues.has(candidate.hotelId)
             ? null
             : (getHotelFixtureById(candidate.hotelId)?.name ?? null),
+        venuePlaceId:
+          candidate.hotelId === hotelId
+            ? null
+            : (this.googleVenues.get(candidate.hotelId) ?? null),
         sameVenue: candidate.hotelId === hotelId,
       }));
   }

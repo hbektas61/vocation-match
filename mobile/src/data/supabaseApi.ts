@@ -709,9 +709,29 @@ export class SupabaseApi implements VocationApi {
     };
   }
 
-  async verifyPresenceAtVenue(latitude: number, longitude: number): Promise<PresenceAnswer> {
+  async reportDeckLabels(
+    uniquePlaceIds: number,
+    resolved: number,
+    generic: number,
+  ): Promise<void> {
+    // Measurement must never break a deck, so a failure is swallowed here
+    // rather than surfaced — the same rule the provider metrics live under.
+    await this.client
+      .rpc('record_deck_labels', {
+        p_unique: uniquePlaceIds,
+        p_resolved: resolved,
+        p_generic: generic,
+      })
+      .then(() => undefined, () => undefined);
+  }
+
+  async verifyPresenceAtVenue(
+    latitude: number,
+    longitude: number,
+    accuracyMeters?: number | null,
+  ): Promise<PresenceAnswer> {
     const { data, error } = await this.client.functions.invoke('places-google', {
-      body: { op: 'verify_presence', latitude, longitude },
+      body: { op: 'verify_presence', latitude, longitude, accuracyMeters },
     });
     if (error) {
       const response = (error as { context?: Response }).context;
@@ -1020,6 +1040,7 @@ export class SupabaseApi implements VocationApi {
       gender: row.gender ?? null,
       orientations: row.orientations ?? [],
       venueName: row.venue_name ?? null,
+      venuePlaceId: row.venue_place_id ?? null,
       sameVenue: row.same_venue ?? true,
     }));
   }
@@ -1241,6 +1262,7 @@ interface CandidateRow {
   gender: string | null;
   orientations: string[] | null;
   venue_name: string | null;
+  venue_place_id?: string | null;
   same_venue: boolean;
 }
 

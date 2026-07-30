@@ -290,6 +290,9 @@ describe('VocationApi contract (in-memory implementation)', () => {
           'sameVenue',
           'userId',
           'venueName',
+          // V-011: a neighbour at a Google venue is labelled by Place ID,
+          // because a Google venue has no name of ours to carry.
+          'venuePlaceId',
         ]);
         expect(card.age).toBeGreaterThanOrEqual(18);
       });

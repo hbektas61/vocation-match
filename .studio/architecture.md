@@ -211,3 +211,57 @@ mention a coordinate in its result type only if no client role can execute it.
 coordinate, so it cannot join the D-038 15 km region pool; and another user's
 card can only carry a venue name the viewer's own session resolved, which costs
 a Place Details call per screen rather than a column read.
+
+## ADR-016 A venue learns roughly where it is (D-055, V-010)
+
+ADR-015 left a Google venue with no position of ours, and therefore outside the
+D-038 region pool. It now earns one, from the app's own users.
+
+**The cell.** `app.region_cell_of` snaps a reading to a ~1.5 km cell —
+deliberately far coarser than D-048's ~200 m check-in cell, because this
+answers "roughly where is this venue" rather than "who is standing with me".
+`record_presence_verified` records one on a *successful* Here Now check at a
+Google venue, when the device reported a fix of 100 m or better, inside the
+same transaction that consumed the reading. The reading is never written down.
+
+**Whose it is.** `app.venue_region_votes` is `primary key (venue_id, user_id)`
+and insert-only, so a person contributes once to a venue and no amount of
+repeat checking moves it. `app.consolidate_region_cell` lets a rival cell
+replace the incumbent only with at least two distinct contributors *and*
+strictly more of them — outliers do not win, and a genuine correction still
+can.
+
+**What is stored.** `hotels.coarse_region_cell` (a key) and
+`hotels.coarse_region_point` (GENERATED from that key). Generated is the whole
+guarantee: the most precise thing the column can hold is the centre of a
+~1.5 km square, because nothing writes it. Neither column is granted to a
+client.
+
+**What it is for, and not for.** `discovery_feed` and `swipe` read
+`coalesce(location, coarse_region_point)` — one anchor, both endpoints, so a
+labelled card cannot invite a like the swipe then refuses. Null means "we do
+not know", which reads as "not a neighbour" rather than "everywhere". The
+500 m check still measures against the coordinate the backend resolved from
+Google seconds earlier; `022_region_cell.sql` puts a venue's cell two
+kilometres from the venue and proves standing in the cell is not standing at
+the venue.
+
+## ADR-017 A neighbour's name is bounded (D-055, V-011)
+
+`discovery_feed` hands back `venue_place_id` for a *neighbour's* Google venue —
+the same disclosure D-038 already makes as a name, in another encoding.
+`data/venueLabels.ts` turns it into a name under four rules the code enforces
+rather than documents: never for the viewer's own venue, once per Place ID per
+deck session however many cards carry it, at most three distinct labels per
+session, and memory only. A ceiling, a provider failure or a fourth venue all
+produce the generic "nearby" label; nothing in the path can reject, so no card,
+swipe or match ever waits on Google.
+
+## ADR-018 Measured, not forecast (D-055, V-012)
+
+`app.provider_events` gained a `quantity`, so a deck can report three counts
+rather than one row per card, and `public.venue_operations_view()` returns the
+eight numbers the owner asked for. It derives no cost and changes no ceiling.
+`023_nothing_persisted.sql` walks every column in `public` and `app` and fails
+if a coordinate, a location history or a Google-content-shaped column appears
+anywhere outside the three places argued for in writing.

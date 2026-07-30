@@ -376,6 +376,13 @@ export interface CandidateCard {
    * new disclosure the region pool makes — a name, never a distance.
    */
   venueName: string | null;
+  /**
+   * V-011: the Place ID behind a neighbour's Google venue, whose name is not
+   * ours to store. Null on own-venue cards and on catalogue venues. The screen
+   * resolves at most three distinct ones per deck session and falls back to
+   * the generic "nearby" label for the rest — a card never waits on it.
+   */
+  venuePlaceId: string | null;
   sameVenue: boolean;
 }
 
@@ -511,12 +518,27 @@ export interface VocationApi {
   /** The caller's own active venue and its provider (D-054). */
   getActiveVenue(): Promise<ActiveVenue | null>;
   /**
+   * V-012: what one deck's labels cost, as three counts and nothing else.
+   * The client is the only place that knows them; no Place ID and no name
+   * travels with them, and a failure here never reaches the user.
+   */
+  reportDeckLabels(uniquePlaceIds: number, resolved: number, generic: number): Promise<void>;
+  /**
    * The Here Now check for a venue whose coordinate is not ours to keep: the
    * backend resolves it from Google, measures in PostGIS, and forgets it. Same
    * answer shape as `recordPresenceCheck` — a boolean and an expiry, never a
    * coordinate and never a distance.
    */
-  verifyPresenceAtVenue(latitude: number, longitude: number): Promise<PresenceAnswer>;
+  verifyPresenceAtVenue(
+    latitude: number,
+    longitude: number,
+    /**
+     * The radius the device believes the fix is good to (V-010). It bounds
+     * nothing the user sees: it only decides whether this reading is allowed
+     * to teach the venue its coarse region cell.
+     */
+    accuracyMeters?: number | null,
+  ): Promise<PresenceAnswer>;
 
   /* rooms */
   declareUpcomingStay(startDate: string, endDate: string): Promise<UpcomingStay>;

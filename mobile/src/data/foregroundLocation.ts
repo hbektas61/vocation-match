@@ -13,7 +13,19 @@
 import * as Location from 'expo-location';
 
 export type LocationOutcome =
-  | { status: 'granted'; latitude: number; longitude: number }
+  | {
+      status: 'granted';
+      latitude: number;
+      longitude: number;
+      /**
+       * The radius the device believes the fix is good to, in metres, or null
+       * when it would not say. Travels no further than the presence check
+       * (V-010): the server refuses to learn a venue's coarse cell from a fix
+       * vaguer than the cell, and a reading with no stated accuracy is not
+       * evidence about anywhere.
+       */
+      accuracyMeters: number | null;
+    }
   | { status: 'denied' }
   | { status: 'unavailable' };
 
@@ -35,6 +47,7 @@ export const deviceLocation: ForegroundLocationReader = {
         status: 'granted',
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
+        accuracyMeters: position.coords.accuracy ?? null,
       };
     } catch {
       // A simulator with no location fix, an airplane-mode device, or a web
@@ -46,8 +59,14 @@ export const deviceLocation: ForegroundLocationReader = {
 };
 
 /** Deterministic reader for tests and for the credential-free demo controls. */
-export function fixedLocation(latitude: number, longitude: number): ForegroundLocationReader {
-  return { read: async () => ({ status: 'granted', latitude, longitude }) };
+export function fixedLocation(
+  latitude: number,
+  longitude: number,
+  accuracyMeters: number | null = 20,
+): ForegroundLocationReader {
+  // A simulated reading claims a good fix by default, because that is what a
+  // real device standing still reports and what the tests are about.
+  return { read: async () => ({ status: 'granted', latitude, longitude, accuracyMeters }) };
 }
 
 export function deniedLocation(): ForegroundLocationReader {

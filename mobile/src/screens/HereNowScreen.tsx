@@ -114,7 +114,11 @@ export function HereNowScreen({
       // expiry — and neither ever returns a coordinate or a distance.
       const venue = await api.getActiveVenue().catch(() => null);
       const answer = venue?.provider === 'google'
-        ? await api.verifyPresenceAtVenue(reading.latitude, reading.longitude)
+        ? await api.verifyPresenceAtVenue(
+            reading.latitude,
+            reading.longitude,
+            reading.accuracyMeters,
+          )
         : await api.recordPresenceCheck(reading.latitude, reading.longitude);
       setOutcome({ kind: answer.withinRange ? 'in-range' : 'too-far' });
     } catch (err) {

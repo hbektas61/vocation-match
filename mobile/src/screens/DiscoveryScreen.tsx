@@ -12,6 +12,7 @@ import { RadarEmpty } from '../components/RadarEmpty';
 import { nowMs } from '../clock';
 import { apiErrorMessage, COPY, COPY_FOR, upperCase, roomPlate } from '../copy';
 import { ApiError, getApi, type CandidateCard, type RoomKey, type RoomStatus } from '../data';
+import { resolveDeckLabels } from '../data/venueLabels';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { color, font, fontFamily, palette, radius, spacing, gradient } from '../theme';
 import { earliestRoomExpiry } from '../state/roomSchedule';
@@ -112,6 +113,8 @@ export function DiscoveryScreen() {
   const [scan, setScan] = useState(0);
   /** A rescan in flight. The radar stays on screen and keeps pulsing. */
   const [rescanning, setRescanning] = useState(false);
+  /** Place ID → name, for this deck session only. Never written down. */
+  const [venueLabels, setVenueLabels] = useState<Map<string, string>>(new Map());
   const lastDeckRoom = useRef<RoomKey | null>(null);
   /** The no-hotel screen's "how does it work?" reveal. */
   const [howOpen, setHowOpen] = useState(false);
@@ -207,6 +210,32 @@ export function DiscoveryScreen() {
       try {
         const feed = await getApi().getDiscoveryFeed(room);
         if (!cancelled) setDeck(feed);
+        // V-011: a Google venue has no stored name, so a neighbour's label has
+        // to be asked for. Once per deck, for at most three distinct venues,
+        // never for the viewer's own venue, and never in a way a card waits
+        // on — the deck is already drawn by the time this resolves, and the
+        // rest stay on the generic "nearby" label.
+        const own = await getApi().getActiveVenue().catch(() => null);
+        const wanted = new Set(
+          feed
+            .map((candidate) => candidate.venuePlaceId)
+            .filter((placeId): placeId is string =>
+              Boolean(placeId) && placeId !== own?.googlePlaceId),
+        );
+        const labels = await resolveDeckLabels(
+          feed.map((candidate) => candidate.venuePlaceId),
+          own?.googlePlaceId ?? null,
+        );
+        if (!cancelled && labels.size > 0) setVenueLabels(new Map(labels));
+        // V-012: three counts, so the fallback rate is measured rather than
+        // assumed. Reported after the deck is on screen and never awaited for
+        // correctness.
+        if (wanted.size > 0) {
+          const named = [...wanted].filter((placeId) => labels.has(placeId)).length;
+          void getApi()
+            .reportDeckLabels(wanted.size, named, wanted.size - named)
+            .catch(() => undefined);
+        }
       } catch (err) {
         if (!cancelled) {
           setDeckError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
@@ -487,9 +516,14 @@ export function DiscoveryScreen() {
               <Text style={styles.sameHotelText} numberOfLines={1}>
                 {candidate.sameVenue
                   ? (room === 'NEARBY' ? checkinName : hotelName) ?? COPY.discovery.sameHotel
-                  : candidate.venueName
-                    ? `${candidate.venueName} · ${COPY.discovery.nearby}`
-                    : COPY.discovery.sameHotel}
+                  : (candidate.venueName
+                      ?? (candidate.venuePlaceId ? venueLabels.get(candidate.venuePlaceId) : null))
+                    ? `${candidate.venueName ?? venueLabels.get(candidate.venuePlaceId!)} · ${COPY.discovery.nearby}`
+                    // The safe fallback (V-011): a ceiling, a provider failure
+                    // or the fourth distinct venue all land here. "Nearby" is
+                    // true and costs nothing; naming the wrong place would be
+                    // neither.
+                    : COPY.discovery.nearby}
               </Text>
             </View>
           </View>

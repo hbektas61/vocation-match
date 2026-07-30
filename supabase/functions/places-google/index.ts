@@ -825,6 +825,13 @@ Deno.serve(async (req) => {
   if (operation === "verify_presence") {
     const latitude = Number(body.latitude);
     const longitude = Number(body.longitude);
+    /**
+     * V-010: how good the device said the reading was. It travels only so the
+     * database can refuse to learn a venue's ~1.5 km cell from a fix that is
+     * vaguer than the cell. A missing or bad value costs the caller nothing —
+     * the check still runs — it simply teaches us nothing.
+     */
+    const accuracy = Number(body.accuracyMeters);
     if (
       !Number.isFinite(latitude) || !Number.isFinite(longitude) ||
       Math.abs(latitude) > 90 || Math.abs(longitude) > 180
@@ -893,6 +900,7 @@ Deno.serve(async (req) => {
       p_longitude: longitude,
       p_venue_latitude: venueLat,
       p_venue_longitude: venueLng,
+      p_accuracy_meters: Number.isFinite(accuracy) && accuracy > 0 ? accuracy : null,
     });
     if (checkError) {
       // The premium gate and the rate limit both arrive here. The code travels

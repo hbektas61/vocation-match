@@ -12,6 +12,7 @@ import Svg, { Path } from 'react-native-svg';
 import { Avatar, Body, Button, Caption, Card, EmptyState, Heading, Notice, Screen, SectionLabel, Title } from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type BlockedUser, type ProfilePhoto } from '../data';
+import { resetDeckLabels } from '../data/venueLabels';
 import type { RootStackParamList } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
@@ -88,6 +89,9 @@ export function SettingsScreen() {
     setSigningOut(true);
     try {
       await getApi().signOut();
+      // V-011: the deck's resolved venue labels are one person's session, and
+      // the next person to sign in on this device gets their own budget.
+      resetDeckLabels();
     } finally {
       dispatch({ type: 'SIGN_OUT' });
     }

@@ -361,9 +361,19 @@ client work; the server already allowed every one of them.
 - [x] V-009 Provider disclosure extended: Google is now the venue path, not
       only the check-in escape hatch.
 
-## Next — the consequences D-054 left open
+## Done — the three consequences, closed (D-055, 2026-07-30)
 
-- [ ] V-010 A Google venue cannot join the D-038 region pool, because it has no
+- [x] V-010 Coarse region cell, learned from verified Here Now readings.
+- [x] V-011 Bounded venue-name resolution: three labels per deck session.
+- [x] V-012 The eight operational counts, with no forecast and no quota change.
+- [x] V-013 `scripts/staging-reset.sh` — safe, idempotent, refuses anywhere
+      but staging, and never touches profiles, matches, chat or the metrics.
+- [x] V-014 `023_nothing_persisted.sql` — the schema itself cannot hold a raw
+      location, a Google coordinate or a Google name.
+
+## Superseded — the wording these replaced
+
+- [x] V-010 A Google venue cannot join the D-038 region pool, because it has no
       coordinate of ours. Decide where such a coordinate may legitimately come
       from — the honest candidate is our *own* users' verified readings, which
       is app-owned data rather than Google Content — or accept the gap in
