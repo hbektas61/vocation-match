@@ -419,15 +419,37 @@ client work; the server already allowed every one of them.
 - [x] E-014 `EVENTS_FEATURE_ENABLED` is **on for staging**. It ships **off**
       and a fresh database — which production will be — starts off; a pgTAP
       assertion holds that, so nobody has to remember it.
-- [ ] E-016 Ibiza returns nothing at all and Mykonos/Paris return one event
-      each. Decide whether the pilot markets are the ones Ticketmaster actually
-      covers (İstanbul, İzmir, London, Berlin, Las Vegas, Miami) or whether the
-      island markets need a second provider — which would be its own decision,
-      not a widening of this one.
+- [x] E-016a **Diagnosed** (2026-07-31, `docs/e016-coverage-diagnosis.md`).
+      Not a query fault: France holds **one** event in the whole dataset, the
+      Balearics hold none of Spain's 10 000+, Greece holds 96 nationally and
+      Mykonos two, and Dubai is simply seasonal (0 / 10 / 26 across 30 / 90 /
+      180 days). `geoPoint` was ruled out as a cause — it filters correctly,
+      accepts both lat/lng and geohash, and agrees with `city` in every market
+      that has inventory. One genuine geo-index gap exists, and it is Paris's
+      single event.
+- [ ] E-016b Decide, on that evidence: pilot in the markets Ticketmaster
+      actually covers (İstanbul, İzmir, London, Berlin, Las Vegas, Miami), or
+      accept thin markets honestly, or open a second-provider decision. Two
+      smaller findings feed it — a longer default window helps seasonal Gulf
+      markets far more than a wider radius, and a location-based search is
+      strictly weaker than a city search in exactly the thin markets. Neither
+      is a change to make before the decision.
 - [x] E-015 Hourly pg_cron sweep, idempotent by name, with a run ledger
       (`app.cron_runs`), a health view (`public.cron_health`), a runbook
       (`docs/runbook-event-content-purge.md`) and tests that count every
       app-owned table across a purge.
+
+## Known flake — worth a real fix
+
+- [ ] Q-001 `profileAndStay.test.tsx` › "can be withdrawn, and closes the room
+      when it is" fails intermittently under a full parallel run
+      (`Unable to find an element with testID: upcoming-withdraw`), and passes
+      every time in isolation and on re-run. Seen twice on 2026-07-30/31, both
+      times in the same test. It is almost certainly a race between the screen's
+      focus effect and the assertion rather than a product bug — but "it passed
+      the second time" is how a real intermittent failure gets dismissed, so it
+      is written down. Fix by awaiting the state the button depends on rather
+      than the button.
 
 ## Superseded — the wording these replaced
 

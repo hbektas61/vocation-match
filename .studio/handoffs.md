@@ -3700,3 +3700,55 @@ Gates: `scripts/check.sh` all green — **622 SQL assertions** across 25 pgTAP
 files plus concurrency and performance, contract, replay, storage drain,
 typecheck, zero-warning lint, **595 mobile tests** across 48 suites, and the
 Expo web bundle.
+
+## 2026-07-31 — E-016 diagnosed: it is coverage, not our query
+
+Diagnostic only, as instructed: no second provider, and no change to the
+provider integration, the schema, the rooms or the matching. The 120-query
+grid plus follow-ups ran through a temporary probe deployed to staging and
+**deleted afterwards** (verified `404`). It used its own path and its own
+counter, so the product's cache and metrics are untouched — `ticketmaster_daily.used`
+reads 40 before and after, and the provider event counts are still the ones the
+§17 run left. The key never appears anywhere: it was attached server-side and
+every request echoed back with `apikey` removed. Full record, including the
+exact parameters of all 120 queries, in `docs/e016-coverage-diagnosis.md`.
+
+**The finding, in one query.** With no city, no radius and no date filter:
+FR = **1** event in the entire dataset, ES = 10 000+, GR = 96, AE = 55,
+TR = 1 453, GB = 10 000+, DE = 3 116, US = 10 000+.
+
+- **Paris** is not a query problem. France has one event. No radius, window,
+  classification or geohash recovers more, because there is no more.
+- **Ibiza** is the Balearics specifically: Spain is huge, Ibiza is zero by every
+  route. `keyword=Ibiza` returns 22 events, all UK/AU *theme nights*;
+  `keyword=Pacha` returns five, in Dubai and New York. The island sells through
+  its own channels.
+- **Mykonos** has two events, and the two routes each find a different one —
+  `geoPoint` finds a basketball season ticket outside any window, `city` finds
+  XLSIOR 2026, whose venue carries **no coordinate**, which is why `geoPoint`
+  cannot see it.
+- **Dubai** is neither broken nor geo-blind — `city` and `geoPoint` agree at 26.
+  It is *seasonal*: 0 in 30 days, 10 in 90, 26 in 180, 16 of them music.
+
+**`geoPoint` was ruled out before any of that was believed.** It filters
+correctly (mid-Atlantic 0; İstanbul 1 km 0, 100 km 623; radii scale 425/452/541),
+accepts both `lat,lng` and a geohash (`sxk97` → 524 İstanbul events), and agrees
+with `city` in every market that has inventory — İstanbul 526/524, Athens 56/47,
+Madrid 3 855/2 355, Barcelona 5 311/5 486, Dubai 26/26.
+
+**One real gap.** Paris's single event carries a venue coordinate and is found
+by `city` and by `keyword`, but by `geoPoint` at **no** radius — including
+800 km, where the same query without a country code returns 10 000 events from
+Belgium and Britain. That event is missing from the geo index.
+
+**Two things this hands to the E-016b decision, neither of them acted on:**
+
+1. In thin markets the *window* matters far more than the radius — Dubai moves
+   0 → 10 → 26 across 30/90/180 days while barely moving across 25/50/100 km.
+   In healthy markets the radius does matter (İstanbul 425 → 541).
+2. A location-based search is strictly weaker than a city search in exactly the
+   markets that are already thin, because that is where the coordinate-less
+   venues and the geo-index gaps are. Where inventory is healthy the two agree.
+
+No parameter combination recovers Paris, Ibiza or the Mykonos club scene.
+Whatever is decided, it is not a query change.
