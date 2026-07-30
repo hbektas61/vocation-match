@@ -361,7 +361,7 @@ export const tr: Copy = {
     roomTitle: 'Tatilden Önce',
     statusBadge: 'Kendi beyanınla yaklaşan konaklama',
     explainer: 'Konaklama tarihlerini beyan et. Belge yok, kanıt yok — beyanın yeter.',
-    formTitle: 'Bu otelde ne zaman olacaksın?',
+    formTitle: 'Bu mekânda ne zaman olacaksın?',
     checkInLabel: 'Giriş tarihi',
     checkOutLabel: 'Çıkış tarihi',
     dateHint: 'YYYY-AA-GG biçimini kullan, örneğin 2026-08-01.',
@@ -402,7 +402,7 @@ export const tr: Copy = {
     roomTitle: 'Oteldeyim',
     statusBadge: 'Şu an otele yakın',
     explainer:
-      'Oteldeyim, uygulama açıkken yapılan tek seferlik bir konum kontrolüyle açılır. Yalnız otelde olduğunu doğrular — tam konumun asla gösterilmez ve saklanmaz.',
+      'Oteldeyim, uygulama açıkken yapılan tek seferlik bir konum kontrolüyle açılır. Yalnız mekânda olduğunu doğrular — tam konumun asla gösterilmez ve saklanmaz.',
     checkButton: 'Mekân yakınlığını kontrol et',
     realCheckIntro: 'Mevcut konumun tek seferlik, ön planda bir kontrol için kullanılır. Arka planda hiçbir şey çalışmaz.',
     realCheckButton: 'Mevcut konumumu kullan',

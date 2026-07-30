@@ -385,7 +385,7 @@ export const en = {
     roomTitle: 'Before the trip',
     statusBadge: 'Self-declared upcoming stay',
     explainer: 'Your stay dates are self-declared. No reservation, no documents, no ID — your word is enough.',
-    formTitle: 'When will you be at this hotel?',
+    formTitle: 'When will you be at this place?',
     checkInLabel: 'Check-in date',
     checkOutLabel: 'Check-out date',
     dateHint: 'Use the format YYYY-MM-DD, for example 2026-08-01.',
@@ -427,7 +427,7 @@ export const en = {
     roomTitle: 'At the hotel',
     statusBadge: 'Near the hotel now',
     explainer:
-      'At the Hotel opens after a one-time location check while the app is open. It only confirms you are at the hotel — your exact location is never shown or stored.',
+      'At the Hotel opens after a one-time location check while the app is open. It only confirms you are at the place — your exact location is never shown or stored.',
     checkButton: 'Check place proximity',
     realCheckIntro: 'Use your current location for a one-time foreground check. Nothing runs in the background.',
     realCheckButton: 'Use my current location',

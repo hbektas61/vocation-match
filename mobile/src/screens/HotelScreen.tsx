@@ -378,21 +378,34 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
             <Text style={styles.hotelName} testID="active-hotel-name">
               {activeName ?? activeHotel.name}
             </Text>
-            <View style={styles.placeRow}>
-              <PinSmallIcon />
-              <Text style={styles.metaText} testID="active-hotel-dates">
-                {/* A Google venue has no city or country of ours to print —
-                    they are Google's content, so the line carries only what
-                    the user themselves declared. */}
-                {activeVenue?.provider === 'google'
-                  ? (stay ? formatStayRange(stay) : COPY.venue.attribution)
-                  : `${activeHotel.city}, ${activeHotel.country}${stay ? `   ·   ${formatStayRange(stay)}` : ''}`}
-              </Text>
-            </View>
+            {/* A Google venue has no city or country of ours to print — they
+                are Google's content — so the line under the name carries only
+                what the user themselves declared, and is absent until they
+                declare it. It used to fall back to the attribution, which put
+                "Powered by Google" behind a location pin as though that were
+                where the place is. */}
+            {activeVenue?.provider !== 'google' || stay ? (
+              <View style={styles.placeRow}>
+                <PinSmallIcon />
+                <Text style={styles.metaText} testID="active-hotel-dates">
+                  {activeVenue?.provider === 'google'
+                    ? formatStayRange(stay!)
+                    : `${activeHotel.city}, ${activeHotel.country}${stay ? `   ·   ${formatStayRange(stay)}` : ''}`}
+                </Text>
+              </View>
+            ) : null}
             <View style={styles.selectedPill}>
               <CheckIcon />
               <Text style={styles.selectedPillText}>{COPY.hotel.selectedActive}</Text>
             </View>
+            {/* The attribution is a credit, not an address: its own quiet line,
+                and present whenever the name on this card came from Google —
+                including once dates exist, when the old code dropped it. */}
+            {activeVenue?.provider === 'google' ? (
+              <Text style={styles.venueAttribution} testID="active-hotel-attribution">
+                {COPY.venue.attribution}
+              </Text>
+            ) : null}
           </View>
         </Pressable>
       ) : (
@@ -637,6 +650,12 @@ const styles = StyleSheet.create({
     color: color.ink,
   },
   placeRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  /** The provider credit: quiet, and never wearing a location pin. */
+  venueAttribution: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: 10,
+    color: color.inkMuted,
+  },
   metaText: {
     fontFamily: fontFamily.body,
     fontSize: 12,

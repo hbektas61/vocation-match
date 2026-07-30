@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { Body, Button, Card, Caption, Gap, Notice, Screen, Title } from '../components/ui';
+import { Body, Button, Card, Caption, Gap, Notice, Screen } from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
 import {
   ApiError,
@@ -55,8 +55,7 @@ export function HereNowScreen({
   if (!state.activeHotel) {
     return (
       <Screen testID="screen-here-now">
-        <Title>{COPY.hereNow.roomTitle}</Title>
-        <Notice message={`${COPY.roomReason.NO_ACTIVE_HOTEL} ${COPY.trust.oneHotel}`} />
+          <Notice message={`${COPY.roomReason.NO_ACTIVE_HOTEL} ${COPY.trust.oneHotel}`} />
       </Screen>
     );
   }
@@ -67,8 +66,7 @@ export function HereNowScreen({
   if (state.profile && !state.profile.isPremium) {
     return (
       <Screen testID="screen-here-now">
-        <Title>{COPY.hereNow.roomTitle}</Title>
-        <Body>{COPY.hereNow.explainer}</Body>
+          <Body>{COPY.hereNow.explainer}</Body>
         <Gap size="sm" />
         <Notice message={COPY.hereNow.premiumOnly} testID="here-now-premium-only" />
         <Caption>{COPY.trust.noExactLocation}</Caption>
@@ -155,7 +153,6 @@ export function HereNowScreen({
 
   return (
     <Screen testID="screen-here-now">
-      <Title>{COPY.hereNow.roomTitle}</Title>
       <Body>{COPY.hereNow.explainer}</Body>
       <Gap size="sm" />
       <Card>
