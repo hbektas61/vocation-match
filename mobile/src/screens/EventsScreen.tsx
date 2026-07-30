@@ -23,7 +23,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Button, Caption, EmptyState, Field, Notice, Screen, ScreenHeader } from '../components/ui';
-import { COPY, upperCase } from '../copy';
+import { COPY, COPY_FOR, upperCase } from '../copy';
 import {
   deviceLocation,
   getApi,
@@ -51,6 +51,21 @@ const CHIPS: { key: EventCategory; label: () => string }[] = [
   { key: 'arts', label: () => COPY.events.chipArts },
 ];
 
+/**
+ * A word, a glyph and then a colour — in that order, so the state survives
+ * being seen by somebody the red does not register for (`E-18`).
+ */
+function StatusBadge({ label, bad }: { label: string; bad: boolean }) {
+  return (
+    <View style={[styles.badge, bad && styles.badgeBad]}>
+      <Text style={[styles.badgeGlyph, bad && styles.badgeTextBad]}>{bad ? '!' : '\u25CB'}</Text>
+      <Text style={[styles.badgeText, bad && styles.badgeTextBad]} numberOfLines={1}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 /** "12 Ağu · 21:00" in the reader's own language, from the provider's local time. */
 function whenLabel(event: EventCard): string {
   if (event.dateTbd || !event.localDate) return COPY.events.dateTbd;
@@ -74,8 +89,12 @@ export function EventsScreen({
   const [today, setToday] = useState<EventSearchResult | null>(null);
   const [upcoming, setUpcoming] = useState<EventSearchResult | null>(null);
   const [mine, setMine] = useState<MyEvent[]>([]);
+  /** eventId → the provider's leased name, for the memberships list. */
+  const [mineNames, setMineNames] = useState<Record<string, string | null>>({});
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** Provider image URLs that failed to load — a lease can lapse mid-list. */
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 
   // Only the switch and the account's own events are read on focus. Neither
   // touches Ticketmaster.
@@ -88,17 +107,39 @@ export function EventsScreen({
       if (cancelled) return;
       setEnabled(flags.EVENTS_FEATURE_ENABLED === true);
       const events = await getApi().getMyEvents().catch(() => []);
-      if (!cancelled) setMine(events);
+      if (cancelled) return;
+      setMine(events);
+      // E-11: the list names the events. The name lives in the lease, so it is
+      // read from there rather than kept — and when the lease has lapsed the
+      // row falls back to the app's own "Geçmiş etkinlik" instead of printing
+      // a provider id at somebody.
+      if (events.length > 0) {
+        const leases = await getApi()
+          .getEventContent(events.map((e) => e.eventId))
+          .catch(() => []);
+        if (!cancelled) {
+          setMineNames(
+            Object.fromEntries(leases.map((lease) => [lease.eventId, lease.name])),
+          );
+        }
+      }
     })();
     return () => {
       cancelled = true;
     };
   }, []));
 
-  const look = useCallback(async (next: EventArea, chip: EventCategory) => {
+  const look = useCallback(async (next: EventArea, chip: EventCategory, keep = false) => {
     setBusy(true);
-    setToday(null);
-    setUpcoming(null);
+    // D-057 (E-06): a refresh does not erase what is already on screen. The
+    // header shows it is busy and the previous list stays readable until the
+    // new one arrives — a spinner where results used to be reads as "gone".
+    // A *new area* is the one case that must clear: İstanbul's concerts under
+    // a heading that says Paris would be a lie rather than a stale view.
+    if (!keep) {
+      setToday(null);
+      setUpcoming(null);
+    }
     try {
       const api = getApi();
       // Two buckets, two requests — and each is cached server-side on an area
@@ -147,7 +188,8 @@ export function EventsScreen({
 
   const chooseChip = async (chip: EventCategory) => {
     setCategory(chip);
-    if (area) await look(area, chip);
+    // Same area, different filter: keep the list up while the next one loads.
+    if (area) await look(area, chip, true);
   };
 
   const openEvent = async (card: EventCard) => {
@@ -178,46 +220,93 @@ export function EventsScreen({
     );
   }
 
-  const section = (heading: string, result: EventSearchResult | null, testID: string) => {
+  /**
+   * One card. Three of the design's states live here rather than in three
+   * components, because they differ only in what the provider gave us:
+   *
+   * - **no image** (`E-20`) is a first-class layout, not a hole. The provider
+   *   image is a lease that expires, so the card has to look deliberate
+   *   without one — and a URL that has lapsed since it was handed to us falls
+   *   back to the same layout rather than a grey rectangle.
+   * - **no venue name** (`E-19`) gets the app's own sentence. We do not invent
+   *   one and we do not leave the line blank.
+   * - **cancelled / postponed / date unconfirmed** (`E-18`) are said in words
+   *   with a glyph, and the card is dimmed — never colour alone, and never
+   *   hidden from the list, which would just send somebody there anyway.
+   */
+  const card = (event: EventCard, bucket: 'today' | 'upcoming', testID: string) => {
+    const status = event.status.toLowerCase();
+    const cancelled = status === 'cancelled';
+    const postponed = status === 'postponed';
+    const bad = cancelled || postponed;
+    const badge = cancelled
+      ? COPY.events.cancelled
+      : postponed
+        ? COPY.events.postponed
+        : event.dateTbd
+          ? COPY.events.dateTbd
+          : bucket === 'today'
+            ? COPY.events.badgeToday
+            : COPY.events.badgeUpcoming;
+    const place = [event.venueName ?? COPY.venue.nameUnavailable, event.city]
+      .filter(Boolean)
+      .join(' · ');
+    const showImage = event.imageUrl !== null && !failedImages.has(event.imageUrl);
+    return (
+      <Pressable
+        key={event.selectionToken}
+        accessibilityRole="button"
+        accessibilityLabel={[event.name, badge, whenLabel(event), place].filter(Boolean).join('. ')}
+        disabled={busy}
+        onPress={() => openEvent(event)}
+        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+        testID={testID}
+      >
+        {showImage ? (
+          <View>
+            <Image
+              source={{ uri: event.imageUrl as string }}
+              style={[styles.cardImage, bad && styles.dimmed]}
+              resizeMode="cover"
+              accessibilityIgnoresInvertColors
+              onError={() =>
+                setFailedImages((current) => new Set(current).add(event.imageUrl as string))
+              }
+            />
+            <View style={styles.badgeOnImage}>
+              <StatusBadge label={badge} bad={bad} />
+            </View>
+          </View>
+        ) : null}
+        <View style={styles.cardBody}>
+          {showImage ? null : <StatusBadge label={badge} bad={bad} />}
+          <Text style={styles.cardName} numberOfLines={2}>
+            {event.name}
+          </Text>
+          <Text style={styles.cardMeta} numberOfLines={2}>
+            {`${place} · ${whenLabel(event)}`}
+          </Text>
+          <Text style={styles.cardAttribution}>{COPY.events.attribution}</Text>
+        </View>
+      </Pressable>
+    );
+  };
+
+  const section = (
+    heading: string,
+    result: EventSearchResult | null,
+    bucket: 'today' | 'upcoming',
+    testID: string,
+  ) => {
     if (result === null) return null;
     if (result.kind === 'ok') {
       return (
-        <View testID={testID}>
-          <Text style={styles.heading}>{upperCase(heading)}</Text>
-          {result.events.map((event, index) => (
-            <Pressable
-              key={event.selectionToken}
-              accessibilityRole="button"
-              accessibilityLabel={event.name ?? heading}
-              disabled={busy}
-              onPress={() => openEvent(event)}
-              style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-              testID={`${testID}-option-${index}`}
-            >
-              {event.imageUrl ? (
-                <Image
-                  source={{ uri: event.imageUrl }}
-                  style={styles.cardImage}
-                  resizeMode="cover"
-                  accessibilityIgnoresInvertColors
-                />
-              ) : null}
-              <View style={styles.cardBody}>
-                <Text style={styles.cardName}>{event.name}</Text>
-                <Text style={styles.cardMeta}>{whenLabel(event)}</Text>
-                <Text style={styles.cardMeta}>
-                  {[event.venueName, event.city, event.country].filter(Boolean).join(' · ')}
-                </Text>
-                {/* §3.1: a status the provider flags is worth saying outright. */}
-                {event.status.toLowerCase() === 'cancelled' ? (
-                  <Text style={styles.cardWarning}>{COPY.events.cancelled}</Text>
-                ) : null}
-                {event.status.toLowerCase() === 'postponed' ? (
-                  <Text style={styles.cardWarning}>{COPY.events.postponed}</Text>
-                ) : null}
-              </View>
-            </Pressable>
-          ))}
+        <View testID={testID} style={styles.section}>
+          <View style={styles.sectionHead}>
+            <Text style={styles.heading}>{upperCase(heading)}</Text>
+            <Text style={styles.sectionCount}>{COPY_FOR.eventCount(result.events.length)}</Text>
+          </View>
+          {result.events.map((event, index) => card(event, bucket, `${testID}-option-${index}`))}
         </View>
       );
     }
@@ -230,10 +319,13 @@ export function EventsScreen({
           : result.kind === 'offline'
             ? COPY.events.offline
             : COPY.events.providerUnavailable;
+    // Six different "no"s, and the tone separates the two that are ours (a
+    // ceiling, a switch) from the ones that are the provider's or the world's.
+    const tone = result.kind === 'empty' ? 'info' : 'error';
     return (
-      <View testID={testID}>
+      <View testID={testID} style={styles.section}>
         <Text style={styles.heading}>{upperCase(heading)}</Text>
-        <EmptyState message={message} testID={`${testID}-empty`} />
+        <Notice message={message} tone={tone} testID={`${testID}-empty`} />
       </View>
     );
   };
@@ -272,12 +364,22 @@ export function EventsScreen({
           ) : null}
         </View>
       ) : (
+        /* E-05: the chosen area is a standing header, not a line that
+           scrolls away — it is the one piece of context every result below
+           depends on, and changing it is one press from anywhere in the list. */
         <View style={styles.areaRow}>
           <PinIcon />
-          <Text style={styles.areaLabel} testID="events-area-label">{area.label}</Text>
+          <View style={styles.areaWords}>
+            <Text style={styles.areaKicker}>{upperCase(COPY.events.areaLabel)}</Text>
+            <Text style={styles.areaLabel} numberOfLines={1} testID="events-area-label">
+              {area.label}
+            </Text>
+          </View>
           <Pressable
             accessibilityRole="button"
+            accessibilityLabel={COPY.events.changeArea}
             onPress={() => setChoosingArea(true)}
+            hitSlop={8}
             testID="events-change-area"
           >
             <Text style={styles.changeArea}>{COPY.events.changeArea}</Text>
@@ -305,10 +407,21 @@ export function EventsScreen({
         </View>
       ) : null}
 
-      {busy ? <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="events-loading" /> : null}
+      {/* E-06: while results are already up, busy is a quiet line rather than
+          a spinner standing where the list was. */}
+      {busy ? (
+        today || upcoming ? (
+          <View style={styles.busyLine} testID="events-loading">
+            <ActivityIndicator accessibilityLabel={COPY.events.refreshing} />
+            <Text style={styles.busyText}>{COPY.events.refreshing}</Text>
+          </View>
+        ) : (
+          <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="events-loading" />
+        )
+      ) : null}
 
-      {section(COPY.events.todayHeading, today, 'events-today')}
-      {section(COPY.events.upcomingHeading, upcoming, 'events-upcoming')}
+      {section(COPY.events.todayHeading, today, 'today', 'events-today')}
+      {section(COPY.events.upcomingHeading, upcoming, 'upcoming', 'events-upcoming')}
 
       {today || upcoming ? (
         <>
@@ -325,6 +438,7 @@ export function EventsScreen({
             <Pressable
               key={event.eventId}
               accessibilityRole="button"
+              accessibilityLabel={mineNames[event.eventId] ?? COPY.events.pastEvent}
               // Opening one of your own events means looking at its deck: the
               // focus moves, and nothing else does.
               onPress={async () => {
@@ -340,7 +454,13 @@ export function EventsScreen({
               testID={`events-mine-${event.eventId}`}
             >
               <View style={styles.cardBody}>
-                <Text style={styles.cardName}>{event.providerEventId}</Text>
+                <StatusBadge
+                  label={event.hereNowOpen ? COPY.events.liveRoomCta : COPY.events.joinedRoomCta}
+                  bad={false}
+                />
+                <Text style={styles.cardName} numberOfLines={2}>
+                  {mineNames[event.eventId] ?? COPY.events.pastEvent}
+                </Text>
                 <Text style={styles.cardMeta}>
                   {event.hereNowOpen ? COPY.events.hereNowOpen : COPY.events.joined}
                 </Text>
@@ -379,23 +499,76 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     marginBottom: spacing.xs,
   },
+  /** E-05: the standing area header — a glass box, not a bare row. */
   areaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: glass.edge,
+    backgroundColor: glass.strong,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
     marginBottom: spacing.sm,
+  },
+  areaWords: { flex: 1, gap: 1 },
+  areaKicker: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 9,
+    letterSpacing: 0.6,
+    color: color.inkMuted,
   },
   areaLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 16,
+    fontSize: 15,
     color: color.ink,
-    flex: 1,
   },
   changeArea: {
-    fontFamily: fontFamily.body,
-    fontSize: 13,
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 12,
     color: color.accentDeep,
   },
+  /** E-06: busy, without taking the results away. */
+  busyLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: spacing.sm,
+    borderRadius: radius.pill,
+    backgroundColor: glass.strong,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+  },
+  busyText: { fontFamily: fontFamily.bodySemi, fontSize: 11, color: color.ink },
+  section: { gap: spacing.xs },
+  sectionHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.md,
+  },
+  sectionCount: { fontFamily: fontFamily.body, fontSize: 11, color: color.inkMuted },
+  /** E-18: the state as a word and a glyph first. */
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 5,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: 'rgba(26, 26, 46, 0.72)',
+    paddingVertical: 4,
+    paddingHorizontal: 9,
+  },
+  badgeBad: { borderColor: color.danger, backgroundColor: color.dangerSoft },
+  badgeGlyph: { fontFamily: fontFamily.bodySemi, fontSize: 9, color: color.inkMuted },
+  badgeText: { fontFamily: fontFamily.bodySemi, fontSize: 10, color: color.ink },
+  badgeTextBad: { color: color.danger },
+  badgeOnImage: { position: 'absolute', left: 11, bottom: 9 },
+  /** A cancelled or postponed event is dimmed as well as labelled. */
+  dimmed: { opacity: 0.45 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
   chip: {
     paddingVertical: spacing.xs,
@@ -409,7 +582,7 @@ const styles = StyleSheet.create({
   chipText: { fontFamily: fontFamily.body, fontSize: 13, color: color.inkMuted },
   chipTextOn: { color: color.ink },
   card: {
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: glass.edge,
     backgroundColor: glass.fill,
@@ -418,8 +591,9 @@ const styles = StyleSheet.create({
   },
   cardPressed: { opacity: 0.7 },
   cardImage: { width: '100%', height: 120, backgroundColor: color.veil },
-  cardBody: { padding: spacing.md, gap: 2 },
+  cardBody: { paddingVertical: 11, paddingHorizontal: 14, gap: 4 },
   cardName: { fontFamily: fontFamily.bodySemi, fontSize: 16, color: color.ink },
-  cardMeta: { fontFamily: fontFamily.body, fontSize: 13, color: color.inkMuted },
-  cardWarning: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.danger },
+  cardMeta: { fontFamily: fontFamily.body, fontSize: 12, color: color.inkMuted },
+  /** Required wherever the provider's answer is on screen. */
+  cardAttribution: { fontFamily: fontFamily.bodyMedium, fontSize: 10, color: color.inkMuted },
 });

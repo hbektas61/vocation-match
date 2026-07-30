@@ -7,7 +7,7 @@
  * still *named* with its reason rather than hidden, and that switching the
  * deck's context is a viewing choice which withdraws nothing.
  */
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 
 import { COPY, matchSource, roomPlate } from '../copy';
 import { FakeApi, getApi, setApi, type RoomKey } from '../data';
@@ -192,5 +192,86 @@ describe('D-057 match, inbox and chat source attribution', () => {
     // The room this match came from — HERE_NOW here, but the row says it
     // whatever the room was, which is the point of one shared inbox.
     expect(source).toHaveTextContent(roomPlate(summary.room));
+  });
+});
+
+describe('D-057 Etkinlikler (§9)', () => {
+  /** Onboards, opens Etkinlikler and looks at İstanbul. */
+  async function lookAtIstanbul() {
+    await onboardWithHotel('Deniz');
+    await fireEvent.press(await screen.findByTestId('tab-Events'));
+    await fireEvent.changeText(await screen.findByTestId('events-area-input'), 'İstanbul');
+    await fireEvent.press(await screen.findByTestId('events-area-confirm'));
+    await screen.findByTestId('events-upcoming');
+  }
+
+  it('draws a card with no provider image as a whole card, not a hole (E-20)', async () => {
+    await lookAtIstanbul();
+
+    // The fixtures carry both kinds; the imageless ones must still show their
+    // name, their place and their date.
+    const card = await screen.findByTestId('events-upcoming-option-0');
+    expect(card.props.accessibilityLabel).toBeTruthy();
+    expect(card.props.accessibilityLabel.split('. ').length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('keeps results on screen while a filter reloads (E-06)', async () => {
+    await lookAtIstanbul();
+    const before = screen.getByTestId('events-upcoming');
+    expect(before).toBeTruthy();
+
+    // Hold the next search open, so the instant "busy" is true is observable.
+    // A synchronous act() flushes the state the handler sets before its first
+    // await — which is exactly the moment the old behaviour blanked the list.
+    let release: (() => void) | undefined;
+    jest.spyOn(getApi(), 'searchEvents').mockImplementation(
+      () => new Promise((resolve) => {
+        release = () => resolve({ kind: 'empty' });
+      }),
+    );
+
+    act(() => {
+      fireEvent.press(screen.getByTestId('events-chip-music'));
+    });
+
+    // The previous list is still readable, and busy is a line beside it
+    // rather than a spinner standing where the results were.
+    expect(screen.getByTestId('events-upcoming')).toBeTruthy();
+    expect(screen.getByTestId('events-loading')).toBeTruthy();
+    await act(async () => {
+      release?.();
+    });
+  });
+
+  it('clears results when the area changes, because they were about elsewhere', async () => {
+    await lookAtIstanbul();
+    expect(screen.getByTestId('events-upcoming')).toBeTruthy();
+
+    let release: (() => void) | undefined;
+    jest.spyOn(getApi(), 'searchEvents').mockImplementation(
+      () => new Promise((resolve) => {
+        release = () => resolve({ kind: 'empty' });
+      }),
+    );
+
+    await fireEvent.press(screen.getByTestId('events-change-area'));
+    await fireEvent.changeText(screen.getByTestId('events-area-input'), 'Paris');
+    act(() => {
+      fireEvent.press(screen.getByTestId('events-area-confirm'));
+    });
+
+    // İstanbul's concerts under a heading that says Paris would be a lie.
+    expect(screen.queryByTestId('events-upcoming')).toBeNull();
+    await act(async () => {
+      release?.();
+    });
+  });
+
+  it('says the list is not the whole world, next to the provider credit', async () => {
+    await lookAtIstanbul();
+    expect(await screen.findByTestId('events-coverage-note')).toHaveTextContent(
+      COPY.events.notEverything,
+    );
+    expect(screen.getByTestId('events-attribution')).toHaveTextContent(COPY.events.attribution);
   });
 });

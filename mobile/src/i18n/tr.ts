@@ -287,6 +287,11 @@ export const tr: Copy = {
     useMyLocation: 'Mevcut konumumu kullan',
     chooseArea: 'Nereye bakalım?',
     areaPlaceholder: 'İstanbul, Londra, Las Vegas…',
+    /** D-057: kart üstündeki kısa rozetler; başlıklar uzun kalır. */
+    badgeToday: 'Bugün',
+    badgeUpcoming: 'Yaklaşan',
+    /** Ekranda zaten sonuç varken spinner yerine bu çıkar (E-06). */
+    refreshing: 'Yenileniyor…',
     chipAll: 'Tümü',
     chipMusic: 'Müzik & Festival',
     chipSports: 'Spor',
@@ -707,6 +712,8 @@ export const trFor: CopyFor = {
   discoveryTitle: (hotelName: string) => `${hotelName} keşfi`,
   switchPrompt: (hotelName: string) => `${hotelName} oteline geçilsin mi?`,
   daysAgo: (days: number) => `${days} gün`,
+  /** Bölüm başlığının yanında: sağlayıcı kaç tane döndürdü. */
+  eventCount: (count: number) => `${count} etkinlik`,
   timeLeft: (minutes: number) =>
     minutes >= 60 ? `${Math.floor(minutes / 60)} sa ${minutes % 60} dk kaldı` : `${minutes} dk kaldı`,
   untilTime: (time: string) => `${time}'e kadar`,

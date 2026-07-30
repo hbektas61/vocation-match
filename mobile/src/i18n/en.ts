@@ -296,6 +296,11 @@ export const en = {
     useMyLocation: 'Use my current location',
     chooseArea: 'Choose where to look',
     areaPlaceholder: 'İstanbul, London, Las Vegas…',
+    /** D-057: short badges for a card; the headings stay longer. */
+    badgeToday: 'Today',
+    badgeUpcoming: 'Upcoming',
+    /** Shown in place of a spinner when results are already on screen (E-06). */
+    refreshing: 'Refreshing…',
     chipAll: 'All',
     chipMusic: 'Music & festivals',
     chipSports: 'Sports',
@@ -778,6 +783,8 @@ export const enFor = {
   discoveryTitle: (hotelName: string) => `Discovery at ${hotelName}`,
   switchPrompt: (hotelName: string) => `Switch to ${hotelName}?`,
   daysAgo: (days: number) => `${days}d`,
+  /** Beside a section heading: how many the provider returned. */
+  eventCount: (count: number) => `${count} events`,
   /**
    * Shown only when the server sent a number, which it does only at five or
    * more people (D-032). There is no wording for "a few" on purpose: below
