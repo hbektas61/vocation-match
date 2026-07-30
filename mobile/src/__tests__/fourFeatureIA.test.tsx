@@ -326,3 +326,20 @@ describe('D-057 event detail (§9.3)', () => {
     expect(await getApi().getMyEvents()).toHaveLength(0);
   });
 });
+
+describe('D-057 Çevremde (§8)', () => {
+  it('reaches Settings from Çevremde, which had no route at all', async () => {
+    await onboardWithHotel('Deniz');
+    await fireEvent.press(await screen.findByTestId('tab-Nearby'));
+
+    // The corner used to hold a decorative pin on this screen.
+    await fireEvent.press(await screen.findByTestId('checkin-profile-ring'));
+    expect(await screen.findByTestId('sign-out')).toBeTruthy();
+  });
+
+  it('credits the open catalogue whose data the list is made of', () => {
+    // ODbL. Google's answers were credited and OpenStreetMap's were not,
+    // which is the wrong way round given whose data is shown by default.
+    expect(COPY.checkin.catalogAttribution).toMatch(/OpenStreetMap/i);
+  });
+});

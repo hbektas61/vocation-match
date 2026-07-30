@@ -656,6 +656,8 @@ export const tr: Copy = {
     googleNoResults: 'Google da buralarda bu adda bir mekân bilmiyor. Başka bir yazım deneyebilir ya da buradayım diyebilirsin.',
     /** Required whenever Google's answer is on screen. */
     googleAttribution: 'Google tarafından sağlanır',
+    /** ODbL: katalog listesi OpenStreetMap/Overture verisidir ve bunu söyler. */
+    catalogAttribution: 'Mekân verileri © OpenStreetMap katkıcıları',
     searchPlaceholder: 'Mekân veya mahalle ara',
     listSubtitle: 'Sana yakın mekânları keşfet, aynı yerde olan insanlarla tanış.',
     idleSubtitle: 'Yakınındaki tatilcilerle tanış, aynı mekânda anlık bağ kur.',

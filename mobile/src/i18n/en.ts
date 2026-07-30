@@ -726,6 +726,8 @@ export const en = {
     googleNoResults: 'Google knows no place by that name near here. Try another spelling, or say you are here.',
     /** Required whenever Google's answer is on screen. */
     googleAttribution: 'Powered by Google',
+    /** ODbL: the catalogue list is OpenStreetMap/Overture data, and says so. */
+    catalogAttribution: 'Place data © OpenStreetMap contributors',
     searchPlaceholder: 'Search a place or neighbourhood',
     listSubtitle: 'Discover the places near you and meet the people who are there.',
     idleSubtitle: 'Meet the holidaymakers near you — an instant bond at the same place.',

@@ -790,16 +790,22 @@ export function CheckinScreen({
           <Text accessibilityRole="header" style={styles.titleSm}>{COPY.tabs.nearbyTab}</Text>
           {/* The sheet's corner ring (11:76), still doing the useful job:
               another location read, for the list under it. */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={COPY.checkin.findVenues}
-            onPress={() => lookAround(reader)}
-            disabled={busy}
-            style={({ pressed }) => [styles.profileRing, styles.ringCentered, pressed && styles.pressed]}
-            testID="checkin-look-again"
-          >
-            <LocateIcon />
-          </Pressable>
+          {/* Two things belong in this corner here: another reading for the
+              list under it, and the same route to Settings the other four
+              primary screens have. */}
+          <View style={styles.cornerPair}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={COPY.checkin.findVenues}
+              onPress={() => lookAround(reader)}
+              disabled={busy}
+              style={({ pressed }) => [styles.profileRing, styles.ringCentered, pressed && styles.pressed]}
+              testID="checkin-look-again"
+            >
+              <LocateIcon />
+            </Pressable>
+            <ProfileRing testID="checkin-list-profile-ring" />
+          </View>
         </View>
         <Text style={styles.subtitleSm}>
           {COPY.checkin.listSubtitle} <Text style={styles.subtitleHeart}>♥</Text>
@@ -922,6 +928,10 @@ export function CheckinScreen({
           />
         ) : null}
         <Caption>{COPY.trust.noExactLocation}</Caption>
+        {/* ODbL. The catalogue under this list is OpenStreetMap/Overture data
+            and had no credit on screen at all — only Google's answers did,
+            which is the wrong way round given whose data is shown by default. */}
+        <Caption testID="checkin-catalog-attribution">{COPY.checkin.catalogAttribution}</Caption>
       </Screen>
     );
   }
@@ -931,13 +941,9 @@ export function CheckinScreen({
     <Screen safeTop testID="screen-checkin">
       <View style={styles.headRow}>
         <Text accessibilityRole="header" style={styles.title}>{COPY.tabs.nearbyTab}</Text>
-        <View
-          style={styles.cornerBadge}
-          accessible={false}
-          importantForAccessibility="no-hide-descendants"
-        >
-          <PinIcon tone={VIVID} size={26} />
-        </View>
+        {/* D-057: this corner held a decorative pin, so Çevremde was the one
+            primary screen with no way to Settings at all. */}
+        <ProfileRing testID="checkin-profile-ring" />
       </View>
       <Text style={styles.subtitle}>{COPY.checkin.idleSubtitle}</Text>
 
@@ -1089,6 +1095,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(244, 114, 182, 0.5)',
   },
   ringCentered: { alignItems: 'center', justifyContent: 'center' },
+  cornerPair: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   /** The Figma line under the head (1:6): 15, muted. */
   subtitle: {
     fontFamily: fontFamily.body,
@@ -1105,16 +1112,6 @@ const styles = StyleSheet.create({
   },
   subtitleHeart: { color: VIVID },
   /** The corner badge (1:5): the panel disc with the half-pink 1.5 edge. */
-  cornerBadge: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: color.surface,
-    borderWidth: 1.5,
-    borderColor: 'rgba(236, 72, 153, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   pressed: { opacity: 0.8 },
 
   /* list — the sheet's search pill (11:78) and venue rows (11:80). */
