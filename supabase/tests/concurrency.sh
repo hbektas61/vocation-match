@@ -91,7 +91,7 @@ for member in "$MATCH_A" "$MATCH_B"; do
         select tests.authenticate_as('${member}');
         select public.set_active_hotel('${MATCH_HOTEL}');
         select public.declare_upcoming_stay(current_date + 1, current_date + 4);
-        select public.record_presence_check(41.0369, 28.9850);
+        select public.record_presence_check(41.0369, 28.9850, 10);
         commit;" >/dev/null
 done
 

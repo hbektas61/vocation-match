@@ -3407,3 +3407,76 @@ replay, storage drain, typecheck, zero-warning lint, **539 mobile tests** across
 Ceilings are untouched, per the ruling: 9,000 Autocomplete and 4,500 Place
 Details a month. The first week of `venue_operations_view()` against real
 traffic is what a cost decision should be built from — not before.
+
+## 2026-07-30 — D-055a: the two corrections before events
+
+The owner accepted D-055 and sent back two security findings. Both were mine.
+
+**A 900 m fix was passing a 500 m check.** V-010 used accuracy only to decide
+whether a reading could *teach* a venue its coarse cell; the check itself still
+accepted anything, so a reading whose own error was nearly twice the radius
+could open Here Now. `app.reading_problem(lat, lng, accuracy)` is now the one
+validator — missing accuracy is a refusal, worse than 100 m is a refusal — and
+both `record_presence_check` and `record_presence_verified` call it. The event
+room will call the same function rather than a copy of the same idea, which is
+the whole reason it is a function.
+
+A refusal is its own outcome. `LOCATION_INACCURATE` writes nothing at all and
+leaves the previous answer standing, because "we could not tell" is not "you
+are not here" and a room that conflates them is lying about one of them. Copy
+in both languages; 99 / 101 / 900 / silent-device all asserted.
+
+One ordering correction to that correction, in its own migration
+(`20260730001700`): the first cut required the venue coordinate before it
+looked at the reading, which forced a paid Place Details call to learn a fix
+was too vague to use — and pushed the edge function into making the accuracy
+call itself, ahead of the entitlement gate. A free member with a bad fix was
+told about their GPS instead of about Premium. The coordinate is now needed
+only when a measurement will actually happen. `20260730001600` was left in the
+shape it was applied in; the fix is a separate migration, because an applied
+migration that changes underneath a deployed database is how staging and the
+history stop agreeing.
+
+**A contribution was a location record.** `venue_region_votes` held
+`(venue_id, user_id, cell_key)` — one row saying where one named person had
+been, to within 1.5 km — for a purpose that only ever needed "has this person
+already contributed here". Replaced by:
+
+    app.venue_region_contributors (venue_id, contributor_key)
+    app.venue_region_tally        (venue_id, cell_key, contributions)
+
+`contributor_key` is `hmac(venue || ':' || user, <instance secret>, sha256)`:
+irreversible, and salted per venue so one key cannot follow somebody between
+venues. No cell on it, and deliberately no timestamp — a lone contribution plus
+a clock is a correlation. Existing rows were converted inside the migration and
+the old table dropped in the same statement batch; the counts were real, only
+the linkage was wrong.
+
+**Live on staging, with the real key.**
+
+    900 m at the tower      → LOCATION_INACCURATE, HERE_NOW NO_RECENT_CHECK
+    12 m at the tower       → IN_RANGE,            HERE_NOW ELIGIBLE
+    12 m five km north      → TOO_FAR,             HERE_NOW TOO_FAR
+    authenticated SELECT coarse_region_cell   → 42501
+    authenticated SELECT coarse_region_point  → 42501
+    anon, both                                → 42501
+    venue_region_contributors / _tally / instance_secret → not exposed at all
+    region pool through the backend → Deniz still on Han's deck, as a Place ID
+
+The contributor rows on staging read as `9908b514…` — a hash, with no `user_id`
+column on the table to pair it with, and `venue_region_votes` gone.
+
+The reset script learned the new shape: contributions are no longer deletable
+"for these users", because that link is exactly what was removed, so they are
+cleared per *venue* for the venues the cast is sitting at — which is the right
+scope anyway. Run three times; the last two changed nothing and left 0
+contributors, 0 tally rows and 0 cells.
+
+Gates: `scripts/check.sh` all green — **557 SQL assertions** across 24 pgTAP
+files plus concurrency and performance, contract, replay, storage drain,
+typecheck, zero-warning lint, **544 mobile tests** across 46 suites, web bundle.
+Migrations `…001600` and `…001700` applied to staging, function redeployed,
+staging reset afterwards and Deniz's temporary Premium removed.
+
+Ceilings untouched. Ready for the events milestone, which inherits
+`app.reading_problem` rather than writing its own.

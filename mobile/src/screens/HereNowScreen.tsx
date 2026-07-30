@@ -18,6 +18,8 @@ type CheckOutcome =
   | { kind: 'in-range' }
   | { kind: 'too-far' }
   | { kind: 'unavailable' }
+  /** D-055a: the device answered, but not precisely enough to be an answer. */
+  | { kind: 'inaccurate' }
   | { kind: 'error'; message: string };
 
 /**
@@ -119,8 +121,19 @@ export function HereNowScreen({
             reading.longitude,
             reading.accuracyMeters,
           )
-        : await api.recordPresenceCheck(reading.latitude, reading.longitude);
-      setOutcome({ kind: answer.withinRange ? 'in-range' : 'too-far' });
+        : await api.recordPresenceCheck(
+            reading.latitude,
+            reading.longitude,
+            reading.accuracyMeters,
+          );
+      // Three answers, not two. "We could not tell" is not "you are not here",
+      // and the server writes nothing for it — so nothing on this screen may
+      // imply the check happened and failed.
+      setOutcome({
+        kind: answer.outcome === 'LOCATION_INACCURATE'
+          ? 'inaccurate'
+          : answer.withinRange ? 'in-range' : 'too-far',
+      });
     } catch (err) {
       setOutcome({
         kind: 'error',
@@ -187,6 +200,9 @@ export function HereNowScreen({
       ) : null}
       {outcome?.kind === 'unavailable' ? (
         <Notice message={COPY.hereNow.unavailable} tone="error" testID="here-now-unavailable" />
+      ) : null}
+      {outcome?.kind === 'inaccurate' ? (
+        <Notice message={COPY.hereNow.inaccurate} tone="error" testID="here-now-inaccurate" />
       ) : null}
       {outcome?.kind === 'too-far' ? <Notice message={COPY.hereNow.tooFar} tone="error" /> : null}
       {outcome?.kind === 'in-range' ? (

@@ -12,7 +12,7 @@ import { ApiError, FAKE_PHONE_OTP, FakeApi } from '..';
 const ADULT_BIRTHDATE = '1994-03-01';
 const LARA = 'hotel-lara-shore';
 /** Lara Shore Resort's fixture coordinates — an in-range reading. */
-const AT_LARA = [36.8531, 30.7995] as const;
+const AT_LARA = [36.8531, 30.7995, 10] as const;
 
 const iso = (date: Date) => date.toISOString().slice(0, 10);
 

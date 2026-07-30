@@ -754,8 +754,10 @@ export class SupabaseApi implements VocationApi {
       throw new ApiError('UNKNOWN', 'Could not check where you are.');
     }
     return {
+      outcome: (data.outcome ?? (data.withinRange ? 'IN_RANGE' : 'TOO_FAR')) as
+        PresenceAnswer['outcome'],
       withinRange: data.withinRange as boolean,
-      expiresAt: typeof data.expiresAt === 'string' ? Date.parse(data.expiresAt) : 0,
+      expiresAt: typeof data.expiresAt === 'string' ? Date.parse(data.expiresAt) : null,
     };
   }
 
@@ -807,15 +809,28 @@ export class SupabaseApi implements VocationApi {
     }
   }
 
-  async recordPresenceCheck(latitude: number, longitude: number): Promise<PresenceAnswer> {
+  async recordPresenceCheck(
+    latitude: number,
+    longitude: number,
+    accuracyMeters?: number | null,
+  ): Promise<PresenceAnswer> {
     // The reading leaves the device once, as an argument. The server answers
-    // with a boolean and an expiry — never a distance (D-005).
+    // with an outcome and an expiry — never a distance (D-005).
     const row = await this.rpcSingle<PresenceRow>(
       'record_presence_check',
-      { p_latitude: latitude, p_longitude: longitude },
+      {
+        p_latitude: latitude,
+        p_longitude: longitude,
+        p_accuracy_meters: accuracyMeters ?? null,
+      },
       'Could not check where you are.',
     );
-    return { withinRange: row.within_range, expiresAt: Date.parse(row.expires_at) };
+    return {
+      outcome: (row.outcome ?? (row.within_range ? 'IN_RANGE' : 'TOO_FAR')) as
+        PresenceAnswer['outcome'],
+      withinRange: row.within_range,
+      expiresAt: row.expires_at ? Date.parse(row.expires_at) : null,
+    };
   }
 
   async clearPresenceCheck(): Promise<void> {
@@ -1240,8 +1255,9 @@ interface UpcomingRow {
 }
 
 interface PresenceRow {
+  outcome?: string;
   within_range: boolean;
-  expires_at: string;
+  expires_at: string | null;
 }
 
 interface RoomRow {

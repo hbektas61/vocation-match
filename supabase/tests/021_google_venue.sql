@@ -182,7 +182,7 @@ select is(
 -- The catalogue path refuses a venue whose coordinate is not ours, rather than
 -- measuring against a null and storing the answer as "not here".
 select throws_ok(
-  $$select * from public.record_presence_check(38.2661, 26.3799)$$,
+  $$select * from public.record_presence_check(38.2661, 26.3799, 10)$$,
   'P0004',
   'That place needs the verified check.',
   'the catalogue check declines a Google venue instead of guessing'
@@ -195,13 +195,13 @@ select tests.authenticate_as_service();
 -- eligibility assertion below.
 select results_eq(
   $$select within_range from public.record_presence_verified(
-      '00000000-0000-0000-0000-0000000009a1', 38.3161, 26.3799, 38.2661, 26.3799)$$,
+      '00000000-0000-0000-0000-0000000009a1', 38.3161, 26.3799, 38.2661, 26.3799, 10)$$,
   $$values (false)$$,
   'a reading five kilometres away is outside the radius'
 );
 select results_eq(
   $$select within_range from public.record_presence_verified(
-      '00000000-0000-0000-0000-0000000009a1', 38.2661, 26.3799, 38.2661, 26.3799)$$,
+      '00000000-0000-0000-0000-0000000009a1', 38.2661, 26.3799, 38.2661, 26.3799, 10)$$,
   $$values (true)$$,
   'and one at the venue is inside it'
 );
@@ -223,7 +223,7 @@ select public.activate_google_venue(
 select tests.authenticate_as_service();
 select throws_ok(
   $$select * from public.record_presence_verified(
-      '00000000-0000-0000-0000-0000000009a3', 38.2661, 26.3799, 38.2661, 26.3799)$$,
+      '00000000-0000-0000-0000-0000000009a3', 38.2661, 26.3799, 38.2661, 26.3799, 10)$$,
   'PP001',
   'Here Now is for Premium members.',
   'a free member''s location is not taken for a room they cannot enter'

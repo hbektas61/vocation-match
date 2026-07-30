@@ -363,6 +363,12 @@ export const en = {
     simulateDeny: 'Simulate: deny location permission',
     tooFar: 'That check could not find you near the hotel. Try again when you are there.',
     unavailable: 'We could not read your location. Check your device settings and try again.',
+    /**
+     * D-055a: a fix too vague to settle the question is neither "you are here"
+     * nor "you are not". Saying so is the difference between a room that
+     * refuses honestly and one that quietly opens on a kilometre of error.
+     */
+    inaccurate: 'Your location is not precise enough. Step outside and try again.',
     permissionDenied:
       'Location permission was declined. At the Hotel needs a one-time foreground check; nothing runs in the background. You can still use Before the Trip.',
     expired: 'Your presence check expired. Run a new check to re-enter At the Hotel.',

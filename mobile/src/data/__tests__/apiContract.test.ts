@@ -129,8 +129,10 @@ describe('VocationApi contract (in-memory implementation)', () => {
     const LARA = 'hotel-lara-shore';
     const BOSPHORUS = 'hotel-bosphorus-garden';
     // Lara Shore sits at 36.8531 / 30.7995. 0.002 degrees is roughly 220 m.
-    const NEAR: [number, number] = [36.8549, 30.7995];
-    const FAR: [number, number] = [36.8631, 30.7995];
+    // D-055a: the third number is the fix's accuracy. A reading that will not
+    // say how good it is no longer passes a 500 m check.
+    const NEAR: [number, number, number] = [36.8549, 30.7995, 10];
+    const FAR: [number, number, number] = [36.8631, 30.7995, 10];
 
     beforeEach(async () => {
       await register();
@@ -214,12 +216,13 @@ describe('VocationApi contract (in-memory implementation)', () => {
     it('never returns a distance with the presence answer', async () => {
       await api.setActiveHotel(LARA);
       const answer = await api.recordPresenceCheck(...NEAR);
-      expect(Object.keys(answer).sort()).toEqual(['expiresAt', 'withinRange']);
+      // D-055a adds `outcome`, which is a decision word — never a distance.
+      expect(Object.keys(answer).sort()).toEqual(['expiresAt', 'outcome', 'withinRange']);
     });
 
     it('rejects an impossible reading instead of treating it as far away', async () => {
       await api.setActiveHotel(LARA);
-      await expect(api.recordPresenceCheck(91, 30)).rejects.toMatchObject({
+      await expect(api.recordPresenceCheck(91, 30, 10)).rejects.toMatchObject({
         code: 'INVALID_INPUT',
       });
     });
@@ -301,7 +304,9 @@ describe('VocationApi contract (in-memory implementation)', () => {
 
   describe('matching, chat, and safety', () => {
     const LARA = 'hotel-lara-shore';
-    const NEAR: [number, number] = [36.8549, 30.7995];
+    // D-055a: the third number is the fix's accuracy. A reading that will not
+    // say how good it is no longer passes a 500 m check.
+    const NEAR: [number, number, number] = [36.8549, 30.7995, 10];
     // Derya has already liked the current user in the fixtures; Mert has not.
     const RECIPROCATES = 'cand-derya';
     const DOES_NOT = 'cand-mert';
@@ -477,7 +482,9 @@ describe('VocationApi contract (in-memory implementation)', () => {
  */
 describe('a decision already made', () => {
   const LARA = 'hotel-lara-shore';
-  const NEAR: [number, number] = [36.8549, 30.7995];
+  // D-055a: the third number is the fix's accuracy. A reading that will not
+    // say how good it is no longer passes a 500 m check.
+    const NEAR: [number, number, number] = [36.8549, 30.7995, 10];
   const RECIPROCATES = 'cand-derya';
   const PASSES = 'cand-mert';
 

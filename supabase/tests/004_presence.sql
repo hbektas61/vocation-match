@@ -15,7 +15,7 @@ grant select on h to anon, authenticated;
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
 
 select throws_ok(
-  $$select public.record_presence_check(41.0370, 28.9851)$$,
+  $$select public.record_presence_check(41.0370, 28.9851, 10)$$,
   'P0002',
   'Choose a hotel first.',
   'a presence check without an active hotel is refused'
@@ -25,7 +25,7 @@ select public.set_active_hotel((select one from h));
 
 -- ------------------------------------------------------------- inside 500 m
 select ok(
-  (select within_range from public.record_presence_check(41.0389, 28.9850)),
+  (select within_range from public.record_presence_check(41.0389, 28.9850, 10)),
   'a reading about 220 m from the hotel is inside the radius'
 );
 
@@ -44,7 +44,7 @@ select ok(
 
 -- ------------------------------------------------------------ outside 500 m
 select ok(
-  not (select within_range from public.record_presence_check(41.0469, 28.9850)),
+  not (select within_range from public.record_presence_check(41.0469, 28.9850, 10)),
   'a reading about 1.1 km away is outside the radius'
 );
 
@@ -57,7 +57,7 @@ select is(
 
 -- ---------------------------------------------------------- unusable input
 select throws_ok(
-  $$select public.record_presence_check(91.0, 28.9)$$,
+  $$select public.record_presence_check(91.0, 28.9, 10)$$,
   '23514',
   'That location reading is not usable.',
   'an impossible latitude is rejected'
@@ -110,7 +110,7 @@ select lives_ok(
 );
 
 -- ----------------------------------------------------------------- privacy
-select public.record_presence_check(41.0370, 28.9851);
+select public.record_presence_check(41.0370, 28.9851, 10);
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
 
 select is(
@@ -127,7 +127,7 @@ update public.presence_checks
 
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
 select public.set_active_hotel((select one from h));
-select public.record_presence_check(41.0389, 28.9850);
+select public.record_presence_check(41.0389, 28.9850, 10);
 
 -- Checked without RLS in the way, so this counts rows rather than visibility.
 select tests.clear_auth();

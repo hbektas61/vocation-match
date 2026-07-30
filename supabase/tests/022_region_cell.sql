@@ -93,18 +93,20 @@ select tests.authenticate_as_service();
 
 -- --------------------------------------------- a vague reading teaches nothing
 select results_eq(
-  $$select within_range from public.record_presence_verified(
+  $$select outcome from public.record_presence_verified(
       '00000000-0000-0000-0000-0000000009b1',
       (select near_lat from pt), (select near_lng from pt),
       (select venue_lat from pt), (select venue_lng from pt),
       900)$$,
-  $$values (true)$$,
-  'a check succeeds on a vague fix, because the 500 m rule is about the venue'
+  $$values ('LOCATION_INACCURATE'::text)$$,
+  -- D-055a: this used to succeed. A reading whose error is nearly twice the
+  -- radius cannot show anybody is inside it, so it is now its own refusal.
+  'a fix vaguer than 100 m is refused rather than answered'
 );
 select is(
   (select coarse_region_cell from public.hotels where id = (select id from v)),
   null,
-  'but a fix vaguer than the cell teaches the venue nothing'
+  'and teaches the venue nothing'
 );
 
 -- ------------------------------------------ an out-of-range check teaches nothing
@@ -170,11 +172,12 @@ select is(
 -- asserted further down.
 select tests.clear_auth();
 select is(
-  (select count(*)::int from app.venue_region_votes
+  (select count(*)::int from app.venue_region_contributors
     where venue_id = (select id from v)
-      and user_id = '00000000-0000-0000-0000-0000000009b1'),
+      and contributor_key = app.contributor_key(
+            (select id from v), '00000000-0000-0000-0000-0000000009b1')),
   1,
-  'because the vote is insert-only'
+  'because the contribution is insert-only'
 );
 select tests.authenticate_as_service();
 
@@ -252,7 +255,7 @@ select throws_ok(
   'a signed-in member cannot read a venue''s cell'
 );
 select throws_ok(
-  $$select 1 from app.venue_region_votes limit 1$$,
+  $$select 1 from app.venue_region_contributors limit 1$$,
   '42501',
   null,
   'nor the votes behind it'
@@ -309,6 +312,42 @@ select is(
     where metric like '%cost%' or metric like '%estimate%' or metric like '%usd%'),
   0,
   'and nothing in the view is a cost forecast'
+);
+
+-- ----------------------------------------------- the boundary, all three sides
+select results_eq(
+  $$select outcome from public.record_presence_verified(
+      '00000000-0000-0000-0000-0000000009b4',
+      (select near_lat from pt), (select near_lng from pt),
+      (select venue_lat from pt), (select venue_lng from pt),
+      99)$$,
+  $$values ('IN_RANGE'::text)$$,
+  '99 m is accurate enough'
+);
+select results_eq(
+  $$select outcome from public.record_presence_verified(
+      '00000000-0000-0000-0000-0000000009b4',
+      (select near_lat from pt), (select near_lng from pt),
+      (select venue_lat from pt), (select venue_lng from pt),
+      101)$$,
+  $$values ('LOCATION_INACCURATE'::text)$$,
+  '101 m is not'
+);
+select results_eq(
+  $$select outcome from public.record_presence_verified(
+      '00000000-0000-0000-0000-0000000009b4',
+      (select near_lat from pt), (select near_lng from pt),
+      (select venue_lat from pt), (select venue_lng from pt),
+      null)$$,
+  $$values ('LOCATION_INACCURATE'::text)$$,
+  'and a device that will not say is not a device that said yes'
+);
+-- The refusal wrote nothing: the 99 m answer above is still the stored one.
+select results_eq(
+  $$select within_range from public.presence_checks
+     where user_id = '00000000-0000-0000-0000-0000000009b4'$$,
+  $$values (true)$$,
+  'a refusal leaves the previous answer exactly as it was'
 );
 
 select * from finish(true);

@@ -72,11 +72,26 @@ begin
      set deactivated_at = coalesce(deactivated_at, now())
    where user_id = any (v_ids) and deactivated_at is null;
 
-  delete from public.user_active_hotel where user_id = any (v_ids);
+  -- V-010/D-055a: the contributions those verifications made, and the cells
+  -- derived from them. A demo should start from "we do not know where this is".
+  --
+  -- A contribution is deliberately not linked to a person any more, so it
+  -- cannot be deleted "for these users". It is deleted per *venue* instead,
+  -- for the Google venues the test cast is sitting at — which is the right
+  -- scope anyway: those are the venues a run taught, and a venue somebody
+  -- outside the cast taught is none of this script's business.
+  delete from app.venue_region_contributors c
+   where c.venue_id in (
+     select uah.hotel_id from public.user_active_hotel uah
+      where uah.user_id = any (v_ids)
+   );
+  delete from app.venue_region_tally t
+   where t.venue_id in (
+     select uah.hotel_id from public.user_active_hotel uah
+      where uah.user_id = any (v_ids)
+   );
 
-  -- V-010: the contributions those verifications made, and the cells derived
-  -- from them. A demo should start from "we do not know where this is".
-  delete from app.venue_region_votes   where user_id = any (v_ids);
+  delete from public.user_active_hotel where user_id = any (v_ids);
 
   -- Sessions and unspent selections are short-lived anyway; clearing them
   -- makes a re-run deterministic rather than dependent on the clock.
@@ -91,15 +106,14 @@ begin
    where h.provider = 'google';
 
   if v_venues is not null then
-    -- Recompute every cell from the votes that are left, so a venue keeps a
+    -- Recompute every cell from the tally that is left, so a venue keeps a
     -- cell only if somebody outside the test cast taught it one.
     update public.hotels h
        set coarse_region_cell = (
-             select v.cell_key
-               from app.venue_region_votes v
-              where v.venue_id = h.id
-              group by v.cell_key
-              order by count(*) desc, v.cell_key
+             select t.cell_key
+               from app.venue_region_tally t
+              where t.venue_id = h.id
+              order by t.contributions desc, t.cell_key
               limit 1)
      where h.id = any (v_venues);
 

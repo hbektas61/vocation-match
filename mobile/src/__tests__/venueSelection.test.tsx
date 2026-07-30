@@ -346,35 +346,64 @@ describe('the location check for a venue we hold no coordinate for', () => {
   it('succeeds inside the radius', async () => {
     // §8.20. The coordinate comes from the provider, at check time.
     await premiumAtBiblos('+905551118040');
-    const answer = await fake.verifyPresenceAtVenue(38.2712, 26.3688);
+    const answer = await fake.verifyPresenceAtVenue(38.2712, 26.3688, 10);
     expect(answer.withinRange).toBe(true);
   });
 
   it('fails outside it', async () => {
     // §8.21 — roughly 5.5 km north.
     await premiumAtBiblos('+905551118041');
-    const answer = await fake.verifyPresenceAtVenue(38.3212, 26.3688);
+    const answer = await fake.verifyPresenceAtVenue(38.3212, 26.3688, 10);
     expect(answer.withinRange).toBe(false);
   });
 
   it('answers with a decision, never a coordinate or a distance', async () => {
     // §8.22
     await premiumAtBiblos('+905551118042');
-    const answer = await fake.verifyPresenceAtVenue(38.2712, 26.3688);
-    expect(Object.keys(answer).sort()).toEqual(['expiresAt', 'withinRange']);
+    const answer = await fake.verifyPresenceAtVenue(38.2712, 26.3688, 10);
+    expect(Object.keys(answer).sort()).toEqual(['expiresAt', 'outcome', 'withinRange']);
   });
 
   it('does not consume a good check, or the venue, when the provider fails', async () => {
     // §8.23. The room, the membership and the stay are exactly as they were.
     await premiumAtBiblos('+905551118043');
-    await fake.verifyPresenceAtVenue(38.2712, 26.3688);
+    await fake.verifyPresenceAtVenue(38.2712, 26.3688, 10);
     const before = (await fake.getActiveVenue())!;
     const roomsBefore = await fake.getRooms();
 
     fake.breakGoogleResolution(true);
-    await expect(fake.verifyPresenceAtVenue(38.2712, 26.3688)).rejects.toThrow();
+    await expect(fake.verifyPresenceAtVenue(38.2712, 26.3688, 10)).rejects.toThrow();
 
     expect(await fake.getActiveVenue()).toEqual(before);
+    expect(await fake.getRooms()).toEqual(roomsBefore);
+  });
+
+  it.each([
+    ['99 m is precise enough', 99, 'IN_RANGE'],
+    ['101 m is not', 101, 'LOCATION_INACCURATE'],
+    ['and 900 m is nowhere near', 900, 'LOCATION_INACCURATE'],
+    ['nor is a device that will not say', null, 'LOCATION_INACCURATE'],
+  ])('%s (D-055a)', async (_label, accuracy, expected) => {
+    // A 500 m radius cannot be settled by a reading whose own error is larger.
+    await premiumAtBiblos(`+90555111${8045 + Number(accuracy ?? 0) % 1000}`.slice(0, 13));
+    const answer = await fake.verifyPresenceAtVenue(38.2712, 26.3688, accuracy as number | null);
+    expect(answer.outcome).toBe(expected);
+    if (expected !== 'IN_RANGE') {
+      expect(answer.withinRange).toBe(false);
+      expect(answer.expiresAt).toBeNull();
+    }
+  });
+
+  it('writes nothing at all when the fix is too vague', async () => {
+    await premiumAtBiblos('+905551118049');
+    await fake.verifyPresenceAtVenue(38.2712, 26.3688, 10);
+    const roomsBefore = await fake.getRooms();
+
+    const refused = await fake.verifyPresenceAtVenue(38.3212, 26.3688, 900);
+
+    expect(refused.outcome).toBe('LOCATION_INACCURATE');
+    // The good answer from a moment ago is untouched: a refusal is not a
+    // failed check, so it must not overwrite one that succeeded.
     expect(await fake.getRooms()).toEqual(roomsBefore);
   });
 
@@ -383,7 +412,7 @@ describe('the location check for a venue we hold no coordinate for', () => {
     await premiumAtBiblos('+905551118044');
     expect(await fake.getUpcomingStay()).toBeNull();
 
-    const answer = await fake.verifyPresenceAtVenue(38.2712, 26.3688);
+    const answer = await fake.verifyPresenceAtVenue(38.2712, 26.3688, 10);
 
     expect(answer.withinRange).toBe(true);
     expect(

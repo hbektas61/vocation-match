@@ -179,6 +179,97 @@ select is(
   'and nothing is even shaped like a place to put Google''s content'
 );
 
+-- ------------------------- 4. nothing location-derived is exposed to a client
+-- D-055a. The cell is not a coordinate, which is exactly why it needs its own
+-- assertion: a column called `geohash` or `h3_index` would sail past the
+-- coordinate check above while being the same disclosure. The rule is by
+-- *shape of name*, so a future one is caught before it is granted.
+select is(
+  (select coalesce(string_agg(
+            g.table_name || '.' || g.column_name || ' → ' || g.grantee, ', '), '')
+     from information_schema.column_privileges g
+     join information_schema.columns c
+       on c.table_schema = g.table_schema
+      and c.table_name = g.table_name
+      and c.column_name = g.column_name
+    where g.table_schema in ('public', 'app')
+      and g.grantee in ('anon', 'authenticated')
+      and (
+        g.column_name ~* '(cell|geohash|^h3|_h3|s2_|region_point|region_cell|viewport|bbox|bounding)'
+        or c.udt_name in ('geography', 'geometry')
+      )),
+  '',
+  'no location-derived column is granted to any client'
+);
+
+select is(
+  (select coalesce(string_agg(t.table_name || ' → ' || t.grantee, ', '), '')
+     from information_schema.table_privileges t
+    where t.table_schema = 'app'
+      and t.table_name in ('venue_region_contributors', 'venue_region_tally',
+                           'instance_secret', 'search_sessions', 'provider_events')
+      and t.grantee in ('anon', 'authenticated')),
+  '',
+  'and the tables behind it are closed to clients outright'
+);
+
+-- No API function hands one back either, whatever it is called.
+select is(
+  (select coalesce(string_agg(p.proname, ', '), '')
+     from pg_proc p
+     join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.prokind = 'f'
+      and pg_get_function_result(p.oid) ~* '(cell|geohash|h3|region_point|viewport|bbox)'
+      and exists (
+        select 1 from aclexplode(p.proacl) a
+         where a.privilege_type = 'EXECUTE'
+           and (a.grantee = 0 or pg_get_userbyid(a.grantee) in ('authenticated', 'anon'))
+      )),
+  '',
+  'and no client-callable function returns one'
+);
+
+-- ---------------------------------- 5. a contribution is not a location record
+select bag_eq(
+  $$select column_name::text from information_schema.columns
+     where table_schema = 'app' and table_name = 'venue_region_contributors'$$,
+  $$values ('venue_id'::text),('contributor_key')$$,
+  'a contribution holds a venue and an irreversible key — no user id, no cell, no clock'
+);
+select bag_eq(
+  $$select column_name::text from information_schema.columns
+     where table_schema = 'app' and table_name = 'venue_region_tally'$$,
+  $$values ('venue_id'::text),('cell_key'),('contributions')$$,
+  'and the cell counts are aggregated at venue level, with nobody named'
+);
+-- The one pairing that survives, and why.
+--
+-- `search_sessions` holds the viewport of the town somebody is *searching in*,
+-- beside their user id. That is a place they typed and are looking at on
+-- screen — a stated intention, not an observation of where they were — and it
+-- is deleted within a day. Every other pairing is forbidden, which is what
+-- makes this one an exemption rather than a precedent: it is named here, and
+-- anything else appearing fails.
+select is(
+  (select coalesce(string_agg(distinct a.table_schema || '.' || a.table_name, ', '), '')
+     from information_schema.columns a
+     join information_schema.columns b
+       on a.table_schema = b.table_schema and a.table_name = b.table_name
+    where a.table_schema in ('public', 'app')
+      and a.column_name = 'user_id'
+      and b.column_name ~* '(cell|geohash|h3|latitude|longitude|region_point)'
+      and a.table_name <> 'search_sessions'),
+  '',
+  'no table pairs a user id with an observed location, and the one intent-shaped exception is named'
+);
+select is(
+  (select count(*)::int from information_schema.tables
+    where table_schema = 'app' and table_name = 'venue_region_votes'),
+  0,
+  'the old shape, which did pair them, is gone'
+);
+
 -- --------------------------------------------- what the metrics may remember
 select is(
   (select coalesce(string_agg(column_name, ', ' order by column_name), '')

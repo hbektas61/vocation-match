@@ -225,9 +225,17 @@ export interface UpcomingStay {
  * no distance, so this can never become a distance oracle (D-005).
  */
 export interface PresenceAnswer {
+  /**
+   * D-055a. `TOO_FAR` and `LOCATION_INACCURATE` are different facts and the
+   * room must not conflate them: one says the person is not here, the other
+   * says the device could not tell. A refusal writes nothing at all — no
+   * presence answer, no entitlement, no region contribution — so the previous
+   * answer, whatever it was, still stands.
+   */
+  outcome: 'IN_RANGE' | 'TOO_FAR' | 'LOCATION_INACCURATE';
   withinRange: boolean;
-  /** Epoch milliseconds — when this answer stops counting. */
-  expiresAt: number;
+  /** Epoch milliseconds — when this answer stops counting. Null on a refusal. */
+  expiresAt: number | null;
 }
 
 /**
@@ -558,7 +566,17 @@ export interface VocationApi {
    * Sends one foreground reading for a server-side distance check. The reading
    * is an argument only: the server stores the boolean answer, never the point.
    */
-  recordPresenceCheck(latitude: number, longitude: number): Promise<PresenceAnswer>;
+  recordPresenceCheck(
+    latitude: number,
+    longitude: number,
+    /**
+     * The radius the device believes the fix is good to. Required in practice
+     * (D-055a): a reading that will not say how good it is cannot show
+     * somebody is inside 500 m, and the server refuses it. The client check is
+     * only ever for the wording.
+     */
+    accuracyMeters?: number | null,
+  ): Promise<PresenceAnswer>;
   /**
    * Drops the stored presence answer. This is what "stop sharing" means, and
    * what has to happen when someone denies or revokes location permission —

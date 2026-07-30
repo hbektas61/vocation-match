@@ -42,12 +42,12 @@ select throws_ok(
 -- enough that binary-searching the hotel position by repeated calls stops
 -- being free.
 select lives_ok(
-  $$select public.record_presence_check(41.0389, 28.9850) from generate_series(1, 30)$$,
+  $$select public.record_presence_check(41.0389, 28.9850, 10) from generate_series(1, 30)$$,
   'thirty presence checks in an hour are fine'
 );
 
 select throws_ok(
-  $$select public.record_presence_check(41.0389, 28.9850)$$,
+  $$select public.record_presence_check(41.0389, 28.9850, 10)$$,
   '54000',
   'You are doing that too often. Try again later.',
   'the thirty-first is refused, with a code that means slow down rather than something broke'
@@ -56,7 +56,7 @@ select throws_ok(
 -- The refusal is per user, not global.
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
 select lives_ok(
-  $$select public.record_presence_check(41.0389, 28.9850)$$,
+  $$select public.record_presence_check(41.0389, 28.9850, 10)$$,
   'another user is unaffected by the first one hitting a limit'
 );
 
@@ -105,7 +105,7 @@ update public.rate_limits
 
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
 select lives_ok(
-  $$select public.record_presence_check(41.0389, 28.9850)$$,
+  $$select public.record_presence_check(41.0389, 28.9850, 10)$$,
   'once the window rolls over the allowance comes back'
 );
 

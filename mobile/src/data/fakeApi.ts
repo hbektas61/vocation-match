@@ -18,6 +18,7 @@ import {
   HERE_NOW_FRESHNESS_MS,
   HERE_NOW_RADIUS_METERS,
   isHereNowEligible,
+  readingProblem,
 } from '../domain/hereNow';
 import { distanceBucket, haversineMeters } from '../domain/location';
 import { isUpcomingEligible, validateStayDates } from '../domain/upcoming';
@@ -796,7 +797,11 @@ export class FakeApi implements VocationApi {
     this.deckLabelReports.push({ uniquePlaceIds, resolved, generic });
   }
 
-  async verifyPresenceAtVenue(latitude: number, longitude: number): Promise<PresenceAnswer> {
+  async verifyPresenceAtVenue(
+    latitude: number,
+    longitude: number,
+    accuracyMeters?: number | null,
+  ): Promise<PresenceAnswer> {
     const userId = await this.requireUserId();
     const hotelId = await this.requireActiveHotelId(userId);
     const placeId = this.googleVenues.get(hotelId);
@@ -813,6 +818,14 @@ export class FakeApi implements VocationApi {
     // location is never taken for a room they cannot enter.
     if (!this.isPremiumNow(userId)) {
       throw new ApiError('PREMIUM_REQUIRED', 'Here Now is for Premium members.');
+    }
+    // Refused after the entitlement gate and before the provider is asked
+    // (D-055a): a reading this vague could not settle the question whatever
+    // the venue's coordinate turned out to be, so buying it would be buying a
+    // refusal — but a free member is still told about Premium first, because
+    // that is the refusal that is actually about them.
+    if (readingProblem(accuracyMeters) !== null) {
+      return { outcome: 'LOCATION_INACCURATE', withinRange: false, expiresAt: null };
     }
     const place = GOOGLE_VENUES.find((candidate) => candidate.placeId === placeId);
     if (!place || this.googleResolutionBroken || !this.spendGoogleCall()) {
@@ -834,7 +847,11 @@ export class FakeApi implements VocationApi {
       bucket: distanceBucket(meters, HERE_NOW_RADIUS_METERS),
     };
     this.presence.set(userId, check);
-    return { withinRange: check.withinRange, expiresAt: check.checkedAt + HERE_NOW_FRESHNESS_MS };
+    return {
+      outcome: check.withinRange ? 'IN_RANGE' : 'TOO_FAR',
+      withinRange: check.withinRange,
+      expiresAt: check.checkedAt + HERE_NOW_FRESHNESS_MS,
+    };
   }
 
   /* ------------------------------------------------------------------ rooms */
@@ -878,7 +895,11 @@ export class FakeApi implements VocationApi {
     this.stays.delete(stayKey(userId, hotelId));
   }
 
-  async recordPresenceCheck(latitude: number, longitude: number): Promise<PresenceAnswer> {
+  async recordPresenceCheck(
+    latitude: number,
+    longitude: number,
+    accuracyMeters?: number | null,
+  ): Promise<PresenceAnswer> {
     const userId = await this.requireUserId();
     const hotelId = await this.requireActiveHotelId(userId);
     if (this.googleVenues.has(hotelId)) {
@@ -901,6 +922,12 @@ export class FakeApi implements VocationApi {
     if (!this.isPremiumNow(userId)) {
       throw new ApiError('PREMIUM_REQUIRED', 'Here Now is for Premium members.');
     }
+    // D-055a: the same rule the server holds. A reading that will not say how
+    // good it is, or that is vaguer than the ceiling, cannot show anybody is
+    // inside 500 m — and nothing at all is written for one.
+    if (readingProblem(accuracyMeters) !== null) {
+      return { outcome: 'LOCATION_INACCURATE', withinRange: false, expiresAt: null };
+    }
     // The reading is consumed here and discarded; only the answer is kept.
     const check = evaluateForegroundCheck(hotel, {
       latitude,
@@ -908,7 +935,11 @@ export class FakeApi implements VocationApi {
       timestamp: this.now(),
     });
     this.presence.set(userId, check);
-    return { withinRange: check.withinRange, expiresAt: check.checkedAt + HERE_NOW_FRESHNESS_MS };
+    return {
+      outcome: check.withinRange ? 'IN_RANGE' : 'TOO_FAR',
+      withinRange: check.withinRange,
+      expiresAt: check.checkedAt + HERE_NOW_FRESHNESS_MS,
+    };
   }
 
   async clearPresenceCheck(): Promise<void> {

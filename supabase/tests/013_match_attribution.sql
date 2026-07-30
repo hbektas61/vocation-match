@@ -24,7 +24,7 @@ begin
   perform tests.authenticate_as(p_user);
   perform public.set_active_hotel(tests.hotel_id('Bosphorus Grand'));
   perform public.declare_upcoming_stay(current_date + 1, current_date + 4);
-  perform public.record_presence_check(41.0369, 28.9850);
+  perform public.record_presence_check(41.0369, 28.9850, 10);
 end;
 $$;
 grant execute on function tests.join_both_rooms(uuid) to anon, authenticated;

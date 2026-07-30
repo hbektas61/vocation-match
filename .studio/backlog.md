@@ -371,6 +371,16 @@ client work; the server already allowed every one of them.
 - [x] V-014 `023_nothing_persisted.sql` — the schema itself cannot hold a raw
       location, a Google coordinate or a Google name.
 
+## Done — D-055a security corrections (2026-07-30)
+
+- [x] S-010 One shared reading validator for every presence path, reused by the
+      coming event room rather than copied into it.
+- [x] S-011 `LOCATION_INACCURATE` as its own outcome, writing nothing.
+- [x] S-012 Contributions unlinked from users: HMAC contributor keys and a
+      venue-level tally, with the old shape dropped in the same migration.
+- [x] S-013 Explicit schema assertions that no location-derived column or table
+      is reachable by a client.
+
 ## Superseded — the wording these replaced
 
 - [x] V-010 A Google venue cannot join the D-038 region pool, because it has no

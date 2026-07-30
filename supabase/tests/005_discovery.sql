@@ -26,7 +26,7 @@ select public.declare_upcoming_stay(current_date + 3, current_date + 6);
 -- Cam is standing next to hotel one but has declared nothing.
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000c1');
 select public.set_active_hotel((select one from h));
-select public.record_presence_check(41.0389, 28.9850);
+select public.record_presence_check(41.0389, 28.9850, 10);
 
 -- Dev declares a stay at a different hotel.
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000d1');
@@ -146,7 +146,7 @@ select bag_eq(
 
 -- ---------------------------------------------------------------- here now
 select ok(
-  (select within_range from public.record_presence_check(41.0389, 28.9850)),
+  (select within_range from public.record_presence_check(41.0389, 28.9850, 10)),
   'ada checks in near the hotel'
 );
 
@@ -177,7 +177,7 @@ select is(
 
 -- --------------------------------------------------------- far away reading
 select ok(
-  not (select within_range from public.record_presence_check(41.0469, 28.9850)),
+  not (select within_range from public.record_presence_check(41.0469, 28.9850, 10)),
   'a distant reading answers no'
 );
 

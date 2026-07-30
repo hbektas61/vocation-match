@@ -340,7 +340,7 @@ select throws_ok(
 );
 
 select throws_ok(
-  $$select public.record_presence_check(41.0369, 28.9850)$$,
+  $$select public.record_presence_check(41.0369, 28.9850, 10)$$,
   '42501',
   'Your account is suspended.',
   'and cannot run a presence check'

@@ -89,7 +89,7 @@ select is(
 );
 
 -- --------------------------------------------------------------------- switch
-select public.record_presence_check(41.0370, 28.9851);
+select public.record_presence_check(41.0370, 28.9851, 10);
 select ok(
   (select eligible from public.my_rooms() where room = 'HERE_NOW'),
   'Here Now opens after a nearby check at the active hotel'

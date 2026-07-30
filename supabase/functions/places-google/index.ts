@@ -142,6 +142,14 @@ const KIND_OF_MODE: Record<string, string | null> = {
 const DERIVED_HALF_SPAN = 0.05;
 
 /**
+ * D-055a: the worst horizontal accuracy a presence check will accept, mirrored
+ * from `app.location_accuracy_ceiling()`. The database is the authority; this
+ * copy exists only so a reading that is going to be refused does not first buy
+ * a Place Details call.
+ */
+const ACCURACY_CEILING_METERS = 100;
+
+/**
  * How far past the destination's own outline a venue may still be its venue.
  *
  * Google's viewport for a *sublocality* is the built-up outline of the town,
@@ -856,43 +864,58 @@ Deno.serve(async (req) => {
       return Response.json({ error: "use_catalogue_check" }, { status: 409 });
     }
 
-    const allowance = await claim("google_place_details", DETAILS_ALLOWANCE);
-    if (!allowance.allowed) {
-      await measure("google_place_details", "refused_ceiling");
-      return Response.json({ error: "allowance_spent" }, { status: 429 });
-    }
+    // D-055a: a reading vaguer than the ceiling cannot show somebody is inside
+    // 500 m, so resolving the venue to measure against it would be buying an
+    // answer we already know. The database still decides — it refuses on the
+    // same rule, and in the same order as everything else, so a free member
+    // with a bad fix is told about Premium rather than about their GPS. All
+    // this skips is the *paid call*.
+    const usable = Number.isFinite(accuracy) && accuracy > 0 &&
+      accuracy <= ACCURACY_CEILING_METERS;
 
-    let details: Response;
-    try {
-      details = await fetch(
-        `${PLACES_DETAILS}/${encodeURIComponent(venue.google_place_id ?? "")}`,
-        {
-          headers: {
-            "X-Goog-Api-Key": key,
-            // The one field the measurement needs.
-            "X-Goog-FieldMask": "id,location",
+    let venueLat: number | null = null;
+    let venueLng: number | null = null;
+
+    if (usable) {
+      const allowance = await claim("google_place_details", DETAILS_ALLOWANCE);
+      if (!allowance.allowed) {
+        await measure("google_place_details", "refused_ceiling");
+        return Response.json({ error: "allowance_spent" }, { status: 429 });
+      }
+
+      let details: Response;
+      try {
+        details = await fetch(
+          `${PLACES_DETAILS}/${encodeURIComponent(venue.google_place_id ?? "")}`,
+          {
+            headers: {
+              "X-Goog-Api-Key": key,
+              // The one field the measurement needs.
+              "X-Goog-FieldMask": "id,location",
+            },
+            signal: AbortSignal.timeout(8_000),
           },
-          signal: AbortSignal.timeout(8_000),
-        },
-      );
-    } catch {
-      await measure("google_place_details", "error");
-      return Response.json({ error: "venue_unreachable" }, { status: 503 });
+        );
+      } catch {
+        await measure("google_place_details", "error");
+        return Response.json({ error: "venue_unreachable" }, { status: 503 });
+      }
+      if (!details.ok) {
+        await measure("google_place_details", "error");
+        return Response.json({ error: "venue_unreachable" }, { status: 503 });
+      }
+      const place = (await details.json()) as {
+        location?: { latitude?: number; longitude?: number };
+      };
+      if (typeof place.location?.latitude !== "number" ||
+          typeof place.location?.longitude !== "number") {
+        await measure("google_place_details", "empty");
+        return Response.json({ error: "venue_unreachable" }, { status: 503 });
+      }
+      venueLat = place.location.latitude;
+      venueLng = place.location.longitude;
+      await measure("google_place_details", "ok");
     }
-    if (!details.ok) {
-      await measure("google_place_details", "error");
-      return Response.json({ error: "venue_unreachable" }, { status: 503 });
-    }
-    const place = (await details.json()) as {
-      location?: { latitude?: number; longitude?: number };
-    };
-    const venueLat = place.location?.latitude;
-    const venueLng = place.location?.longitude;
-    if (typeof venueLat !== "number" || typeof venueLng !== "number") {
-      await measure("google_place_details", "empty");
-      return Response.json({ error: "venue_unreachable" }, { status: 503 });
-    }
-    await measure("google_place_details", "ok");
 
     const { data: checkRows, error: checkError } = await admin.rpc("record_presence_verified", {
       p_user: userId,
@@ -911,15 +934,16 @@ Deno.serve(async (req) => {
       );
     }
     const row = (checkRows ?? [])[0] as
-      | { within_range?: boolean; expires_at?: string }
+      | { outcome?: string; within_range?: boolean; expires_at?: string }
       | undefined;
     if (!row) {
       return Response.json({ error: "check_failed" }, { status: 503 });
     }
 
-    // A boolean and an expiry. No coordinate, no distance — not even to the
-    // person who was just measured (D-005).
+    // An outcome, a boolean and an expiry. No coordinate, no distance — not
+    // even to the person who was just measured (D-005).
     return Response.json({
+      outcome: row.outcome ?? "TOO_FAR",
       withinRange: row.within_range === true,
       expiresAt: row.expires_at ?? null,
     });

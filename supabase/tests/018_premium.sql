@@ -45,7 +45,7 @@ select results_eq(
 );
 
 select throws_ok(
-  $$select * from public.record_presence_check(41.0369, 28.9850)$$,
+  $$select * from public.record_presence_check(41.0369, 28.9850, 10)$$,
   'PP001',
   'Here Now is for Premium members.',
   'a free member''s location is never even taken for Here Now'
@@ -136,7 +136,7 @@ select is(
 );
 
 select lives_ok(
-  $$select * from public.record_presence_check(41.0369, 28.9850)$$,
+  $$select * from public.record_presence_check(41.0369, 28.9850, 10)$$,
   'a premium member can take the proximity check'
 );
 select results_eq(
@@ -160,7 +160,7 @@ select results_eq(
 select tests.create_member('vera@example.test', '00000000-0000-0000-0000-000000000303', 'Vera');
 select tests.authenticate_as('00000000-0000-0000-0000-000000000303');
 select public.set_active_hotel((select one from h));
-select * from public.record_presence_check(41.0369, 28.9850);
+select * from public.record_presence_check(41.0369, 28.9850, 10);
 
 select is(
   (select count(*)::int from public.discovery_feed('HERE_NOW')

@@ -24,7 +24,7 @@ language plpgsql as $$
 begin
   perform tests.authenticate_as(p_user);
   perform public.set_active_hotel(tests.hotel_id('Bosphorus Grand'));
-  perform public.record_presence_check(41.0369, 28.9850);
+  perform public.record_presence_check(41.0369, 28.9850, 10);
 end;
 $$;
 grant execute on function tests.join_here_now(uuid) to anon, authenticated;

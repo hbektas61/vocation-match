@@ -93,13 +93,13 @@ select ok(
 );
 
 select ok(
-  (select within_range from public.record_presence_check(36.8549, 30.7995)),
+  (select within_range from public.record_presence_check(36.8549, 30.7995, 10)),
   'step 3: and a foreground check 220 m away answers yes'
 );
 
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000e2');
 select public.declare_upcoming_stay(current_date + 2, current_date + 6);
-select public.record_presence_check(36.8545, 30.7999);
+select public.record_presence_check(36.8545, 30.7999, 10);
 
 -- Step 4 — they find each other in both rooms.
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000e1');

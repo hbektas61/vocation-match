@@ -128,10 +128,10 @@ select is(
 select tests.create_member('atB3@example.test', '00000000-0000-0000-0000-000000000614', 'NearBeach');
 select tests.authenticate_as('00000000-0000-0000-0000-000000000614');
 select public.set_active_hotel((select b from h));
-select * from public.record_presence_check(41.0256, 28.9744);
+select * from public.record_presence_check(41.0256, 28.9744, 10);
 
 select tests.authenticate_as('00000000-0000-0000-0000-000000000501');
-select * from public.record_presence_check(41.0369, 28.9850);
+select * from public.record_presence_check(41.0369, 28.9850, 10);
 
 select results_eq(
   $$select display_name, venue_name from public.discovery_feed('HERE_NOW')$$,

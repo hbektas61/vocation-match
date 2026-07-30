@@ -352,6 +352,7 @@ export const tr: Copy = {
     simulateDeny: 'Simüle et: konum iznini reddet',
     tooFar: 'Bu kontrol seni otelin yakınında bulamadı. Oteldeyken tekrar dene.',
     unavailable: 'Konumun okunamadı. Cihaz ayarlarını kontrol edip tekrar dene.',
+    inaccurate: 'Konum yeterince hassas değil. Açık alanda tekrar dene.',
     permissionDenied:
       'Konum izni reddedildi. Oteldeyim tek seferlik, ön planda bir kontrol ister; arka planda hiçbir şey çalışmaz. Tatilden Önce odasını yine kullanabilirsin.',
     expired: 'Yakınlık kontrolünün süresi doldu. Oteldeyim\'e yeniden girmek için yeni bir kontrol yap.',

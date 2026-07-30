@@ -80,10 +80,10 @@ begin
   for i in 1..4 loop
     perform tests.authenticate_as(
       format('00000000-0000-0000-0000-0000000002%s', lpad(i::text, 2, '0'))::uuid);
-    perform public.record_presence_check(41.0369, 28.9850);
+    perform public.record_presence_check(41.0369, 28.9850, 10);
   end loop;
   perform tests.authenticate_as('00000000-0000-0000-0000-000000000205');
-  perform public.record_presence_check(41.0369, 28.9850);
+  perform public.record_presence_check(41.0369, 28.9850, 10);
 end $$;
 
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
