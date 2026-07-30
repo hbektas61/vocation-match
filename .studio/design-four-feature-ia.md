@@ -396,3 +396,38 @@ review, not proposed UI.
 - **E-016b** pilot-market decision. `E-13` shows the honest thin-market state; no
   second provider is implied anywhere.
 - Premium purchase remains unavailable in-app (`T-15`, `T-17` say so plainly).
+
+---
+
+## 13. Implementation status (Phase 2)
+
+Owner approved D-057 on 2026-07-30 and directed implementation. Recorded as
+**D-057** in `.studio/decisions.md`. Three verified increments are on
+`origin/main`; each passed `scripts/check.sh --mobile` (typecheck, lint at zero
+warnings, the full jest suite, and the Expo web bundle). No SQL, migration,
+function or provider behaviour changed in any of them, so the database half of
+the gate was not run — there was nothing in it to exercise.
+
+### Done
+
+| Increment | Commit | What landed |
+| --- | --- | --- |
+| Navigation + context selector | `9d0f580` | Five-item bar; `Settings` moved from `TabParamList` to `RootStackParamList`; `ProfileRing` and `ScreenHeader` extracted; rings added to Etkinlikler and Keşfet, which had none; `ContextSelector` + sheet replacing the inferred room and the conditional pill row; the deck's fallback order now includes both event rooms. 12 new tests. |
+| Source attribution | `945d204` | `matchSource(room)` — five distinct match sentences; the bond pill no longer disappears without a hotel; the chat header stops appending the active hotel's name to event and check-in matches; every inbox row carries its room. 5 new tests. |
+| Venue vocabulary | `3273c8b` | "hotel" → "vacation place" across the empty state, switch warning, proximity button, one-at-a-time promise; `notEverything` softened to match what E-016 measured. Both languages. |
+
+Test count went 595 → 612.
+
+### Not yet done
+
+- **§9 Etkinlikler restyle.** The screen is functionally complete from D-056 and
+  now carries the profile ring, but it has not been moved onto the glass/sunset
+  surfaces frame-for-frame, and the non-destructive refresh (`E-06`) and the
+  first-class no-image card (`E-20`) are designed but not implemented.
+- **§7 Tatilim frames.** The destination-first flow itself shipped with D-054;
+  what remains is the frame-for-frame styling pass against `T-01`…`T-22`.
+- **§14 device verification.** 320 px, large-text and safe-area behaviour are
+  specified on `R-01`…`R-06` and honoured in the components, but have not been
+  checked on a real device or against the Figma renders side by side.
+
+Nothing above changes the approved design; it is remaining execution.
