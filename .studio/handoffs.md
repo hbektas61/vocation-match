@@ -3090,6 +3090,8 @@ normalized-input deduplication inside a session, the one-active-session rule
 Google content (§6), and the Overture `source_release`/`last_seen_at`/run-record
 metadata from §8 — the deactivation half of §8 is built and tested.
 
+> **All seven of these are now done — see the next entry (D-053b), same day.**
+
 Preserved as instructed: the entitlement, the unlabelled `Buradayım`, the
 Overture sync and its retire-not-delete rule.
 
@@ -3104,3 +3106,93 @@ Still the owner's, and only now safe to do:
     supabase secrets set GOOGLE_DETAILS_MONTHLY_ALLOWANCE=4500
 with the key restricted to this backend and Cloud quotas kept below the
 financial ceiling as the second line of defence.
+
+
+---
+
+## 2026-07-30 — D-053's production-safety half, in the owner's priority order
+
+The owner's list, seven items, with one governing instruction: *"Maliyet tahmini
+üretme. Önce ölçüm altyapısını tamamla ve test et."* No forecast is produced
+here. What is produced is the instrumentation that would let one be measured.
+
+**1. Real request metrics.** `app.provider_events`, written by
+`record_provider_event`, one row per attempt or refusal: operation, outcome,
+user, session. `provider_event_counts` reads them back. What is deliberately
+*not* in that table is the query text, the coordinate and the display name —
+metrics are the wrong place to acquire a retention problem. The edge function's
+`measure()` never blocks a response and swallows its own failure, because a
+broken counter must not become a broken feature.
+
+**2. Deduplication.** `app.query_fingerprint` lowercases, trims and collapses
+whitespace; `search_sessions.asked_hashes` keeps the last 24 of a session. A
+repeat is answered `duplicate` *before* the per-session request cap is charged
+and without touching Google — the screen keeps the list it is already showing.
+That ordering is the point: charging the cap for a request we did not make would
+shorten a legitimate session for free.
+
+**3. One active session per user.** `open_search_session` closes any other open
+session of that user as `abandoned`. Without this, a client holding two session
+ids ran two meters.
+
+**4. Session outcomes.** `open | abandoned | empty | failed | converted`, and
+`checkin_here` sets `converted` in the same transaction as the check-in. So
+"how many searches became a check-in" is a count, not a guess — which is exactly
+the number a later cost estimate needs and did not have.
+
+**5. Ceiling exhaustion, tested.** `googleCeilingFallback.test.tsx`, 16 tests.
+Behaviour: with the month spent, the here-anchor still opens a room, the written
+search over our own catalogue still answers and still checks in, and the screen
+says *"bu seçenek şu an kullanılamıyor"* rather than drawing an empty street.
+Economics: **a search we could not make spends none of the user's finds** — the
+entitlement stays at 3 across three refused searches. Structure, read from the
+source because no key exists to run it against: the refusal returns before
+`fetch(PLACES_AUTOCOMPLETE)`, both operations refuse (not just the cheap one), an
+unreachable counter is itself a refusal, and the SQL counts inside the statement
+that decides (`and m.used < m.allowance`) so the ceiling cannot be raced.
+
+Both new behavioural guards were mutation-checked rather than assumed: with the
+null-answer notice removed the screen test fails, and with the entitlement guard
+removed the D-053 refusal test fails.
+
+**6. The disclosure (§6).** Its own card in Settings, `settings-providers`, in
+both languages: the open datasets and their licence, that Google is called only
+on a press, that we keep a Place ID and never Google's name, that we never ask
+for or store Google's coordinate, and that a check-in lapses in three hours. Six
+tests hold it there and hold it to those claims in *both* languages — a promise
+that holds in English and breaks in Turkish is broken.
+
+**7. Sync metadata (§8).** `hotels.source_release`, `last_seen_at`,
+`deactivated_at`; `app.sync_runs` with a lifecycle; `begin_sync_run` /
+`mark_place_seen` / `finish_sync_run`. The important change is the signature:
+retirement takes a **run**, not a bounding box, so the provider and the coverage
+are the ones the run declared rather than whatever a caller passes. Four guards
+verified live against staging: retiring from a running run refused, from a failed
+run refused, provider `cell` refused, an empty release refused.
+`scripts/overture-ingest.py` marks its run failed — retiring nothing — if any
+write failed.
+
+Preserved as instructed: the entitlement, the unlabelled `Buradayım`, every
+fallback path, and the D-053 selection-token behaviour.
+
+Gates: `scripts/check.sh --mobile` all green — auth configuration and its
+negative controls, dependency health, typecheck, zero-warning lint, **481/481**
+mobile tests, and the Expo web bundle. Both migrations applied to staging and the
+function deployed.
+
+One measurement note worth keeping: a full-suite run showed 5 failures that a
+clean rerun did not, and the named test (`R-003`, a timer-driven room expiry)
+passes 4/4 in isolation. Recorded as parallel-load flake, not a regression — but
+recorded, because "it passed the second time" is how a real intermittent failure
+gets dismissed.
+
+Still the owner's, and only now safe to do:
+
+    supabase secrets set GOOGLE_PLACES_KEY=…
+    supabase secrets set GOOGLE_AUTOCOMPLETE_MONTHLY_ALLOWANCE=9000
+    supabase secrets set GOOGLE_DETAILS_MONTHLY_ALLOWANCE=4500
+
+with the key restricted to this backend and the Cloud daily quota (~150) kept
+below the financial ceiling as the second line of defence. The first week of
+`provider_event_counts` and `search_session_counts` after that is what a cost
+estimate should be built from.

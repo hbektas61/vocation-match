@@ -490,8 +490,14 @@ export function CheckinScreen({
         reading.longitude,
         googleSession ?? undefined,
       );
-      setGooglePlaces(answer?.places ?? null);
-      if (answer) setGoogleSession(answer.sessionId);
+      if (answer?.duplicate) {
+        // The same words in the same session: nothing was asked upstream, so
+        // the list already on screen is the answer (D-053 §3).
+        setGoogleSession(answer.sessionId);
+      } else {
+        setGooglePlaces(answer?.places ?? null);
+        if (answer) setGoogleSession(answer.sessionId);
+      }
       if (answer === null) {
         // Honest about which "no" this is: the option is unavailable, the
         // street is not empty.

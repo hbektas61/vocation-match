@@ -203,6 +203,17 @@ export function SettingsScreen() {
         <Body>{COPY.trust.noExactLocation}</Body>
         <Body>{COPY.trust.oneHotel}</Body>
       </Card>
+      {/* D-053 §6: the provider disclosure sits beside the location note,
+          where somebody looking for it would look, and says what is actually
+          stored rather than gesturing at a policy page we do not have yet. */}
+      <Card testID="settings-providers">
+        <SectionLabel>{COPY.settings.providersTitle}</SectionLabel>
+        <Body>{COPY.settings.providersOpen}</Body>
+        <Body>{COPY.settings.providersGoogle}</Body>
+        <Body>{COPY.settings.providersGoogleStorage}</Body>
+        <Body>{COPY.settings.providersRetention}</Body>
+        <Body>{COPY.settings.providersTerms}</Body>
+      </Card>
       <Card testID="settings-blocked">
         <SectionLabel>{COPY.settings.blockedTitle}</SectionLabel>
         {blockedError ? <Notice message={blockedError} tone="error" testID="blocked-error" /> : null}

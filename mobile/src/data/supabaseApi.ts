@@ -37,7 +37,7 @@ import {
   type SwipeResult,
   type UpcomingStay,
   type VocationApi,
-  type GooglePlaceHit,
+  type GooglePlaceAnswer,
 } from './contracts';
 import type { BackendConfig } from './config';
 import { isE164Phone, normalizePhone } from './phone';
@@ -795,7 +795,7 @@ export class SupabaseApi implements VocationApi {
     latitude: number,
     longitude: number,
     sessionId?: string,
-  ): Promise<{ places: GooglePlaceHit[]; sessionId: string } | null> {
+  ): Promise<GooglePlaceAnswer | null> {
     const { data, error } = await this.client.functions.invoke('places-google', {
       body: { op: 'search', query, latitude, longitude, sessionId },
     });
@@ -806,6 +806,7 @@ export class SupabaseApi implements VocationApi {
     }
     return {
       sessionId: data.sessionId as string,
+      duplicate: data.duplicate === true,
       places: (data.places as { selectionToken: string; name: string; detail: string | null }[])
         .map((place) => ({
           selectionToken: place.selectionToken,

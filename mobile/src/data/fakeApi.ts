@@ -54,7 +54,7 @@ import {
   ROOM_COUNT_THRESHOLD,
   type ProfilePhoto,
   type ShowMe,
-  type GooglePlaceHit,
+  type GooglePlaceAnswer,
 } from './contracts';
 
 import { buildPhotoPath, isProfilePhotoPath, photoExtensionFor } from './photos';
@@ -740,7 +740,7 @@ export class FakeApi implements VocationApi {
     _latitude: number,
     _longitude: number,
     _sessionId?: string,
-  ): Promise<{ places: GooglePlaceHit[]; sessionId: string } | null> {
+  ): Promise<GooglePlaceAnswer | null> {
     await this.requireUserId();
     return null;
   }

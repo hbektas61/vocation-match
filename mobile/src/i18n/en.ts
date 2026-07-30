@@ -471,6 +471,18 @@ export const en = {
     signOutButton: 'Sign out',
     blockedTitle: 'Blocked people',
     blockedEmpty: 'You have not blocked anyone.',
+    /** D-053 §6: what Google's part actually is, in plain words. */
+    providersTitle: 'Data providers',
+    providersOpen:
+      'Venue lists come from open datasets: OpenStreetMap (ODbL) and Overture Maps. We keep and show those records in our own catalogue.',
+    providersGoogle:
+      'When a place is missing from the open catalogue you can use “Search more places with Google”. Only then, and only the text you typed plus your current location, goes to Google Places — nothing is ever called in the background.',
+    providersGoogleStorage:
+      'We do not store the name Google returns. We keep only Google’s place identifier (Place ID); the name is resolved at the moment it must be shown and stays in that session’s memory alone. We never ask for and never store Google’s coordinates — proximity is worked out from our own data.',
+    providersRetention:
+      'Your check-in lapses by itself after 3 hours. Your location reading is kept rounded to a coarse area; the raw reading is never written down and never shown to anyone.',
+    providersTerms:
+      'Using the advanced search also brings Google Maps/Google Places terms and Google’s privacy policy into play.',
     blockedLoadError: 'Could not load your blocked list. Try again.',
     unblockButton: 'Unblock',
   },

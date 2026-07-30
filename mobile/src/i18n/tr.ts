@@ -458,6 +458,18 @@ export const tr: Copy = {
     signOutButton: 'Çıkış yap',
     blockedTitle: 'Engellenenler',
     blockedEmpty: 'Kimseyi engellemedin.',
+    /** D-053 §6: what Google's part actually is, in plain words. */
+    providersTitle: 'Veri sağlayıcıları',
+    providersOpen:
+      'Mekân listeleri açık veri setlerinden gelir: OpenStreetMap (ODbL) ve Overture Maps. Bu kayıtları kendi kataloğumuzda tutar ve gösteririz.',
+    providersGoogle:
+      'Bir mekânı açık katalogda bulamadığında “Google ile gelişmiş ara” seçeneğini kullanabilirsin. Yalnız o an, yalnız yazdığın metin ve o anki konumun Google Places servisine gider — arka planda hiçbir çağrı yapılmaz.',
+    providersGoogleStorage:
+      'Google’dan gelen mekân adını saklamayız. Yalnız Google’ın mekân kimliğini (Place ID) tutarız; ad, gösterilmesi gerektiği anda çözülür ve yalnız o oturumun belleğinde kalır. Google’ın koordinatını hiç istemez ve hiç saklamayız — yakınlık hesabı kendi verimizle yapılır.',
+    providersRetention:
+      'Check-in kaydın 3 saat sonra kendiliğinden düşer. Konum okuman kaba bir alana yuvarlanarak tutulur; ham konumun hiçbir zaman yazılmaz ve kimseye gösterilmez.',
+    providersTerms:
+      'Gelişmiş aramayı kullandığında Google Maps/Google Places şartları ve Google gizlilik politikası da geçerli olur.',
     blockedLoadError: 'Engellenenler listesi yüklenemedi. Tekrar dene.',
     unblockButton: 'Engeli kaldır',
   },

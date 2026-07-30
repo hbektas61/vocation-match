@@ -291,6 +291,42 @@ client work; the server already allowed every one of them.
       decides whose cards you see, and no way back would leave somebody with an
       empty deck and no explanation.
 
+## Google advanced place search (D-053 / D-053a / D-053b, 2026-07-30)
+
+- [x] G-001 Autocomplete (New) only, with a per-session token and a 1,500 m
+      `locationRestriction`. Text Search and Nearby are barred by a static
+      contract test that reads the function's code with its prose stripped, so
+      neither a call nor a comment can hide one.
+- [x] G-002 A label must be earned: the backend records what Autocomplete
+      returned, bound to the searching user, single-use and short-lived, and
+      `checkin_here` accepts only that token. All four refusals — unknown,
+      another user's, expired, replayed — settle in one UPDATE.
+- [x] G-003 Two separate monthly ceilings (Autocomplete 9,000, Details 4,500),
+      claimed before the paid call, refusing inside the deciding statement.
+- [x] G-004 Metrics: `app.provider_events` and session outcomes
+      (`open|abandoned|empty|failed|converted`), with no query text, coordinate
+      or display name recorded.
+- [x] G-005 Same-query deduplication inside a session, answered before the
+      request cap and without an upstream call.
+- [x] G-006 One live search session per user; opening one closes the rest.
+- [x] G-007 Ceiling-exhaustion tests: the Google door closes and the catalogue,
+      the written search and "Buradayım" keep working — and a refused search
+      spends none of the user's entitlement.
+- [x] G-008 Provider disclosure in Settings, in both languages.
+- [x] G-009 Overture sync metadata and gated retirement: `source_release`,
+      `last_seen_at`, `deactivated_at`, `app.sync_runs`, and a retirement that
+      refuses any run that is not `complete`.
+- [ ] G-010 **Owner action** — set `GOOGLE_PLACES_KEY` (plus the two allowance
+      secrets), restrict the key to this backend, and keep the Cloud daily quota
+      near 150. Nothing above requires it; nothing above can be measured against
+      real traffic without it.
+- [ ] G-011 Build the cost estimate *from* `provider_event_counts` and
+      `search_session_counts` after a week of real use. Deliberately not
+      forecast in advance (D-053a withdrew the earlier figure).
+- [ ] G-012 A self-hosted or commercial Overpass endpoint. The public one failed
+      five or more times in one working session, and the venue sweep is the one
+      path that has no fallback of its own.
+
 ## Later — monetization
 
 - [ ] L-001 Define premium value and price.

@@ -244,6 +244,20 @@ export interface GooglePlaceHit {
   detail: string | null;
 }
 
+/**
+ * What the advanced find answered (D-053).
+ *
+ * `duplicate` means the same normalized query was already asked in this
+ * session, so nothing was requested upstream and nothing metered — the caller
+ * keeps the predictions it already holds. That is why no prediction text is
+ * ever stored: the previous answer is still on screen.
+ */
+export interface GooglePlaceAnswer {
+  places: GooglePlaceHit[];
+  sessionId: string;
+  duplicate: boolean;
+}
+
 export interface ActiveCheckin {
   venueId: string;
   /**
@@ -468,7 +482,7 @@ export interface VocationApi {
     longitude: number,
     /** Continues an open session so Google bills one, not one per keystroke. */
     sessionId?: string,
-  ): Promise<{ places: GooglePlaceHit[]; sessionId: string } | null>;
+  ): Promise<GooglePlaceAnswer | null>;
   /** How many advanced finds are left this month (3 free, 10 premium). */
   googleFindsRemaining(): Promise<number>;
   /** A Place ID back into a name, for drawing it. Null when unavailable. */

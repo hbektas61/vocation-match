@@ -167,7 +167,7 @@ def fetch(con, bbox: tuple[float, float, float, float], limit: int) -> list[dict
     return [dict(zip(columns, row)) for row in rows]
 
 
-def upsert(place: dict, kind: str, url: str, key: str) -> None:
+def upsert(place: dict, kind: str, url: str, key: str, run: str | None = None) -> str | None:
     payload = json.dumps({
         "p_provider": "overture",
         "p_provider_hotel_id": place["id"],
@@ -192,22 +192,24 @@ def upsert(place: dict, kind: str, url: str, key: str) -> None:
         method="POST",
     )
     with urllib.request.urlopen(request, timeout=30) as response:
-        response.read()
+        raw = response.read()
+    place_id = json.loads(raw) if raw else None
+    # Marks the row as seen in *this* release, so "absent from the new release"
+    # becomes a fact rather than a guess. It also reactivates a place that has
+    # come back, which the run counts.
+    if run and place_id:
+        try:
+            rpc("mark_place_seen", {"p_run": run, "p_place": place_id}, url, key, timeout=30)
+        except (urllib.error.HTTPError, urllib.error.URLError):
+            pass
+    return place_id
 
 
-def retire_missing(present_ids: list[str], bbox: str, url: str, key: str) -> int:
-    west, south, east, north = (float(part) for part in bbox.split(","))
-    payload = json.dumps({
-        "p_provider": "overture",
-        "p_present_ids": present_ids,
-        "p_west": west,
-        "p_south": south,
-        "p_east": east,
-        "p_north": north,
-    }).encode()
+def rpc(name: str, payload: dict, url: str, key: str, timeout: int = 120):
+    """One RPC, as service_role. The key comes from the environment only."""
     request = urllib.request.Request(
-        f"{url}/rest/v1/rpc/deactivate_missing_places",
-        data=payload,
+        f"{url}/rest/v1/rpc/{name}",
+        data=json.dumps(payload).encode(),
         headers={
             "apikey": key,
             "Authorization": f"Bearer {key}",
@@ -215,8 +217,27 @@ def retire_missing(present_ids: list[str], bbox: str, url: str, key: str) -> int
         },
         method="POST",
     )
-    with urllib.request.urlopen(request, timeout=120) as response:
-        return int(json.loads(response.read() or b"0") or 0)
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        raw = response.read()
+    return json.loads(raw) if raw else None
+
+
+def begin_run(bbox: str, url: str, key: str) -> str:
+    """
+    Opens an auditable run (D-053 §8).
+
+    Retirement later refuses unless this run is marked complete, which is what
+    stops a half-finished download from emptying a region.
+    """
+    west, south, east, north = (float(part) for part in bbox.split(","))
+    return str(rpc("begin_sync_run", {
+        "p_provider": "overture",
+        "p_release": RELEASE,
+        "p_west": west,
+        "p_south": south,
+        "p_east": east,
+        "p_north": north,
+    }, url, key))
 
 
 def main() -> None:
@@ -331,10 +352,14 @@ def finish(places: list[dict], args) -> None:
     # One RPC per place, eight at a time: the write boundary is a function
     # call, not a bulk endpoint, and a region's worth of places sequentially
     # would take longer than the person running it will wait.
+    run = begin_run(args.bbox, url, key) if args.sync else None
+    if run:
+        print(f"sync run: {run}")
+
     written = 0
     failed = 0
     with ThreadPoolExecutor(max_workers=8) as pool:
-        futures = {pool.submit(upsert, place, kind, url, key): place for place, kind in kept}
+        futures = {pool.submit(upsert, place, kind, url, key, run): place for place, kind in kept}
         for future in as_completed(futures):
             place = futures[future]
             try:
@@ -346,12 +371,28 @@ def finish(places: list[dict], args) -> None:
                     print(f"  ! {place['name'][:40]}: {error}", file=sys.stderr)
     print(f"written: {written}/{len(kept)}" + (f", failed: {failed}" if failed else ""))
 
-    if args.sync:
-        # Only the ids this run actually saw, inside only the box it read, so a
-        # partial or failed download can never retire a city it never opened.
-        present = [place["id"] for place in places]
-        retired = retire_missing(present, args.bbox, url, key)
-        print(f"retired (is_active=false): {retired}")
+    if run:
+        # A run only earns the right to retire anything if it finished. A write
+        # that failed midway marks the run failed instead, and the retirement
+        # call then refuses — which is the behaviour §8 spends most of its
+        # words on.
+        if failed:
+            rpc("finish_sync_run", {
+                "p_run": run,
+                "p_status": "failed",
+                "p_inserted": written,
+                "p_note": f"{failed} writes failed; not retiring",
+            }, url, key)
+            print(f"sync run marked failed ({failed} write failures) — nothing retired")
+        else:
+            rpc("finish_sync_run", {
+                "p_run": run,
+                "p_status": "complete",
+                "p_inserted": written,
+                "p_unchanged": len(places) - len(kept),
+            }, url, key)
+            retired = int(rpc("deactivate_unseen_places", {"p_run": run}, url, key) or 0)
+            print(f"retired (is_active=false): {retired}")
 
 
 if __name__ == "__main__":

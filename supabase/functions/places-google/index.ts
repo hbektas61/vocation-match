@@ -122,6 +122,34 @@ Deno.serve(async (req) => {
     return { allowed: row?.allowed === true, remaining: row?.remaining ?? 0 };
   };
 
+  /**
+   * D-053 §9: one row per attempt or refusal. No query text, no coordinate, no
+   * display name — an operation, an outcome, and who it was for. Never awaited
+   * for correctness: a failed measurement must not fail a request.
+   */
+  const measure = (
+    op: string,
+    outcome: string,
+    sessionId?: string | null,
+  ): Promise<unknown> =>
+    admin
+      .rpc("record_provider_event", {
+        p_operation: op,
+        p_outcome: outcome,
+        p_user: userId,
+        p_session: sessionId ?? null,
+      })
+      .then(() => undefined, () => undefined);
+
+  const closeSession = (sessionId: string, outcome: string): Promise<unknown> =>
+    admin
+      .rpc("close_search_session", {
+        p_user: userId,
+        p_session: sessionId,
+        p_outcome: outcome,
+      })
+      .then(() => undefined, () => undefined);
+
   if (operation === "search") {
     const query = String(body.query ?? "").trim();
     const latitude = Number(body.latitude);
@@ -146,19 +174,41 @@ Deno.serve(async (req) => {
     const { data: sessionRows, error: sessionError } = await admin.rpc("open_search_session", {
       p_user: userId,
       p_session: sessionIn,
+      p_query: query,
     });
     if (sessionError) {
       return Response.json({ error: "Could not start a search." }, { status: 503 });
     }
     const session = (sessionRows ?? [])[0] as
-      | { allowed?: boolean; session_id?: string; google_token?: string; reason?: string }
+      | {
+        allowed?: boolean;
+        session_id?: string;
+        google_token?: string;
+        duplicate?: boolean;
+        reason?: string;
+      }
       | undefined;
     if (!session?.allowed || !session.session_id || !session.google_token) {
+      await measure("google_autocomplete", "refused_session", session?.session_id);
       return Response.json({ error: session?.reason ?? "search_unavailable" }, { status: 429 });
+    }
+
+    // D-053 §3: the same normalized input in the same session. Nothing is
+    // asked upstream and nothing is metered — the caller keeps the predictions
+    // it already has, which is why none of them had to be stored.
+    if (session.duplicate) {
+      await measure("google_autocomplete", "deduplicated", session.session_id);
+      return Response.json({
+        duplicate: true,
+        places: [],
+        sessionId: session.session_id,
+        attribution: "Powered by Google",
+      });
     }
 
     const allowance = await claim("google_autocomplete", AUTOCOMPLETE_ALLOWANCE);
     if (!allowance.allowed) {
+      await measure("google_autocomplete", "refused_ceiling", session.session_id);
       return Response.json({ error: "allowance_spent", remaining: 0 }, { status: 429 });
     }
 
@@ -190,6 +240,8 @@ Deno.serve(async (req) => {
       signal: AbortSignal.timeout(8_000),
     });
     if (!response.ok) {
+      await measure("google_autocomplete", "error", session.session_id);
+      await closeSession(session.session_id, "failed");
       return Response.json({ error: "Could not search just now." }, { status: 503 });
     }
 
@@ -214,6 +266,7 @@ Deno.serve(async (req) => {
       },
     );
     if (selectionError) {
+      await measure("google_autocomplete", "error", session.session_id);
       return Response.json({ error: "Could not hold that search." }, { status: 503 });
     }
     const tokenByPlace = new Map<string, string>();
@@ -229,8 +282,18 @@ Deno.serve(async (req) => {
       }))
       .filter((place) => place.selectionToken !== null);
 
+    // An empty answer is its own measurement, and closes the session: there is
+    // nothing here to select, so leaving it open would only inflate "abandoned".
+    if (places.length === 0) {
+      await measure("google_autocomplete", "empty", session.session_id);
+      await closeSession(session.session_id, "empty");
+    } else {
+      await measure("google_autocomplete", "ok", session.session_id);
+    }
+
     return Response.json({
       places,
+      duplicate: false,
       sessionId: session.session_id,
       remaining: allowance.remaining,
       attribution: "Powered by Google",
@@ -245,6 +308,7 @@ Deno.serve(async (req) => {
 
     const allowance = await claim("google_place_details", DETAILS_ALLOWANCE);
     if (!allowance.allowed) {
+      await measure("google_place_details", "refused_ceiling");
       return Response.json({ error: "allowance_spent" }, { status: 429 });
     }
 
@@ -257,8 +321,10 @@ Deno.serve(async (req) => {
       signal: AbortSignal.timeout(8_000),
     });
     if (!response.ok) {
+      await measure("google_place_details", "error");
       return Response.json({ error: "Could not read that place." }, { status: 503 });
     }
+    await measure("google_place_details", "ok");
     const place = (await response.json()) as { displayName?: { text?: string } };
     return Response.json({
       placeId,
