@@ -19,6 +19,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { COPY, upperCase } from '../copy';
+import { ProfileRing } from './ProfileRing';
 
 import {
   ACTION_TOUCH,
@@ -115,6 +116,36 @@ export function Display({
     <Text accessibilityRole="header" style={[styles.display, tone === 'onPhoto' && styles.displayOnPhoto]}>
       {children}
     </Text>
+  );
+}
+
+/**
+ * A primary screen's head: the title, and the ring to yourself on the right.
+ *
+ * D-057 made this a shape worth naming. Before it, three screens each drew the
+ * pair by hand and two more drew only the title — which is how Etkinlikler and
+ * Keşfet ended up with no route to Settings at all once the tab was removed.
+ */
+export function ScreenHeader({
+  title,
+  /** The right slot, for a screen whose corner does a more useful job. */
+  right,
+  /** Names this screen's ring, so a test can press the one it is looking at. */
+  ringTestID,
+  testID,
+}: {
+  title: string;
+  right?: React.ReactNode;
+  ringTestID?: string;
+  testID?: string;
+}) {
+  return (
+    <View style={styles.screenHeader} testID={testID}>
+      <Text accessibilityRole="header" style={styles.screenHeaderTitle} numberOfLines={1}>
+        {title}
+      </Text>
+      {right ?? <ProfileRing testID={ringTestID} />}
+    </View>
   );
 }
 
@@ -721,6 +752,21 @@ const styles = StyleSheet.create({
   /** The Figma screen shell (10:71/10:111): 20 aside, 24 above, 16 below, 14 between. */
   screenContent: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: spacing.md, gap: 14 },
   screenBleed: { paddingBottom: spacing.xl, gap: 14 },
+
+  /** The Figma head (10:74/12:167): title left, 46 ring right, centred on it. */
+  screenHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  screenHeaderTitle: {
+    flexShrink: 1,
+    fontFamily: fontFamily.display,
+    fontSize: 34,
+    lineHeight: 34 * 1.15,
+    color: color.ink,
+  },
 
   display: {
     fontFamily: fontFamily.display,

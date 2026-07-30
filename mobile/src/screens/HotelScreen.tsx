@@ -24,6 +24,7 @@ import {
 } from '../data';
 import { VenuePicker } from '../components/VenuePicker';
 import { VacationFeatureCard } from '../components/VacationFeatureCard';
+import { ProfileRing } from '../components/ProfileRing';
 import { useAppStore } from '../state/AppStore';
 import { color, fontFamily, glass, radius, spacing } from '../theme';
 
@@ -324,15 +325,9 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           {onActivated ? COPY.hotel.title : COPY.tabs.vacation}
         </Text>
         {onActivated ? null : (
-          // The Figma header's ring (10:74): the way to your own profile,
-          // drawn as the empty frame a photo would fill.
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={COPY.tabs.settings}
-            onPress={() => tabNavigation.navigate('Settings')}
-            style={({ pressed }) => [styles.profileRing, pressed && styles.resultPressed]}
-            testID="hotel-profile-ring"
-          />
+          // The Figma header's ring (10:74), now the only way to Settings
+          // (D-057) as well as to your own profile.
+          <ProfileRing testID="hotel-profile-ring" />
         )}
       </View>
       {!onActivated && !activeId && !picking ? (

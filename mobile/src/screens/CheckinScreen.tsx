@@ -23,6 +23,7 @@ import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View 
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { Caption, Notice, Screen } from '../components/ui';
+import { ProfileRing } from '../components/ProfileRing';
 import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
 import {
   ApiError,
@@ -666,13 +667,7 @@ export function CheckinScreen({
       <Screen safeTop testID="screen-checkin">
         <View style={styles.headRow}>
           <Text accessibilityRole="header" style={styles.titleSm}>{COPY.tabs.nearbyTab}</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={COPY.tabs.settings}
-            onPress={() => tabNavigation.navigate('Settings')}
-            style={({ pressed }) => [styles.profileRing, pressed && styles.pressed]}
-            testID="checkin-profile-ring"
-          />
+          <ProfileRing testID="checkin-profile-ring" />
         </View>
         <Text style={styles.subtitleSm}>{COPY.checkin.activeSubtitle}</Text>
 

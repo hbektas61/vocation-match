@@ -79,8 +79,11 @@ function MainTabs() {
       {/* D-056: the fourth primary feature, beside the other three. */}
       <Tabs.Screen name="Events" component={EventsScreen} options={{ title: COPY.events.tab }} />
       <Tabs.Screen name="Discovery" component={DiscoveryScreen} options={{ title: COPY.tabs.discovery }} />
-      <Tabs.Screen name="Inbox" component={InboxScreen} options={{ title: COPY.tabs.inbox }} />
-      <Tabs.Screen name="Settings" component={SettingsScreen} options={{ title: COPY.tabs.settings }} />
+      {/* D-057: the label is "Messages" while the screen's own heading stays
+          "Inbox" — five labels have to fit at 320 px, and shortening one label
+          is cheaper than shrinking all five below legibility. Settings is no
+          longer here: it lives behind the profile ring, one tap from all five. */}
+      <Tabs.Screen name="Inbox" component={InboxScreen} options={{ title: COPY.tabs.messages }} />
     </Tabs.Navigator>
   );
 }
@@ -133,6 +136,14 @@ export function RootNavigator() {
   return (
     <Stack.Navigator screenOptions={stackHeader}>
       <Stack.Screen name="Tabs" component={MainTabs} options={{ headerShown: false }} />
+      {/* D-057: reached from the profile ring on every primary screen. A
+          pushed screen rather than a tab, so the tab you came from is still
+          where you left it when you come back. */}
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ title: COPY.settings.title }}
+      />
       <Stack.Screen
         name="Upcoming"
         component={UpcomingScreen}

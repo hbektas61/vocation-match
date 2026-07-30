@@ -22,7 +22,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { Button, Caption, EmptyState, Field, Notice, Screen } from '../components/ui';
+import { Button, Caption, EmptyState, Field, Notice, Screen, ScreenHeader } from '../components/ui';
 import { COPY, upperCase } from '../copy';
 import {
   deviceLocation,
@@ -172,7 +172,7 @@ export function EventsScreen({
   if (enabled === false) {
     return (
       <Screen safeTop testID="screen-events">
-        <Text accessibilityRole="header" style={styles.title}>{COPY.events.title}</Text>
+        <ScreenHeader title={COPY.events.title} ringTestID="events-profile-ring" />
         <Notice message={COPY.events.disabled} testID="events-disabled" />
       </Screen>
     );
@@ -240,7 +240,7 @@ export function EventsScreen({
 
   return (
     <Screen safeTop testID="screen-events">
-      <Text accessibilityRole="header" style={styles.title}>{COPY.events.title}</Text>
+      <ScreenHeader title={COPY.events.title} ringTestID="events-profile-ring" />
       <Text style={styles.subtitle}>{COPY.events.subtitle}</Text>
 
       {choosingArea || !area ? (

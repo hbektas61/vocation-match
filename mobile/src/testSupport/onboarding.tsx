@@ -89,12 +89,15 @@ export async function onboard(
   return view;
 }
 
-/** Onboards, then opens the Settings tab. */
+/**
+ * Onboards, then opens Settings — which after D-057 means pressing the profile
+ * ring on the trip tab rather than a bottom tab that no longer exists.
+ */
 export async function onboardToSettings(name = 'Deniz'): Promise<void> {
   await onboardWithHotel(name);
-  const settings = await screen.findByText('Settings');
+  const ring = await screen.findByTestId('hotel-profile-ring');
   await act(async () => {
-    fireEvent.press(settings);
+    fireEvent.press(ring);
   });
 }
 
@@ -118,7 +121,7 @@ export async function activateHotel(hotelId = PILOT_HOTEL): Promise<void> {
   });
   // Away and back, so the trip tab's focus effect re-reads the account. The
   // screen learns its venue from the server on focus, not from whoever set it.
-  await press('tab-Settings');
+  await press('tab-Inbox');
   await press('tab-Vacation');
 }
 

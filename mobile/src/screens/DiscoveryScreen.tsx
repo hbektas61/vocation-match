@@ -6,12 +6,13 @@ import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'rea
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import { Body, Button, Notice, Screen, Title } from '../components/ui';
+import { Body, Button, Notice, Screen, ScreenHeader } from '../components/ui';
 import { BigActionButton } from '../components/BigActionButton';
 import { RadarEmpty } from '../components/RadarEmpty';
+import { ContextSelector, CONTEXT_ORDER, type ContextRow } from '../components/ContextSelector';
 import { nowMs } from '../clock';
-import { apiErrorMessage, COPY, COPY_FOR, upperCase, roomPlate } from '../copy';
-import { ApiError, getApi, type CandidateCard, type RoomKey, type RoomStatus } from '../data';
+import { apiErrorMessage, COPY, COPY_FOR, upperCase, roomPlate, roomStatusExplanation } from '../copy';
+import { ApiError, getApi, type CandidateCard, type MyEvent, type RoomKey, type RoomStatus } from '../data';
 import { resolveDeckLabels } from '../data/venueLabels';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { color, font, fontFamily, palette, radius, spacing, gradient } from '../theme';
@@ -74,30 +75,29 @@ function contextLine(
   stayRange: string | null,
   validUntil: number | null | undefined,
   checkinName: string | null,
+  /** The focused event's leased name, or null once the lease has expired. */
+  eventName: string | null = null,
 ): string {
   const minutesLeft =
     validUntil != null ? Math.max(1, Math.round((validUntil - nowMs()) / 60000)) : null;
+  const left = minutesLeft != null ? COPY_FOR.timeLeft(minutesLeft) : null;
   if (room === 'UPCOMING') {
     return [hotelName, stayRange].filter(Boolean).join(' · ');
   }
   if (room === 'HERE_NOW') {
-    return [hotelName, minutesLeft != null ? COPY_FOR.timeLeft(minutesLeft) : null]
-      .filter(Boolean)
-      .join(' · ');
+    return [hotelName, left].filter(Boolean).join(' · ');
   }
-  return [checkinName, minutesLeft != null ? COPY_FOR.timeLeft(minutesLeft) : null]
-    .filter(Boolean)
-    .join(' · ');
+  // D-057: the two event rooms name the event, not the check-in venue. When
+  // the provider's lease has lapsed the name is gone and the app's own label
+  // stands in — never a stale copy we kept.
+  if (room === 'EVENT_UPCOMING') {
+    return eventName ?? COPY.events.pastEvent;
+  }
+  if (room === 'EVENT_HERE_NOW') {
+    return [eventName ?? COPY.events.pastEvent, left].filter(Boolean).join(' · ');
+  }
+  return [checkinName, left].filter(Boolean).join(' · ');
 }
-
-const ROOM_LABEL: Record<RoomKey, string> = {
-  UPCOMING: COPY.upcoming.roomTitle,
-  HERE_NOW: COPY.hereNow.roomTitle,
-  NEARBY: COPY.checkin.roomTitle,
-  // D-056: the same deck, two more rooms.
-  EVENT_UPCOMING: COPY.events.joinUpcoming,
-  EVENT_HERE_NOW: COPY.events.joinHereNow,
-};
 
 export function DiscoveryScreen() {
   const { state, dispatch } = useAppStore();
@@ -110,6 +110,8 @@ export function DiscoveryScreen() {
   /** Context for the header line and the bond chip (D-040). */
   const [checkinName, setCheckinName] = useState<string | null>(null);
   const [stayRange, setStayRange] = useState<string | null>(null);
+  /** The focused event's leased name. Null once the lease has lapsed. */
+  const [eventName, setEventName] = useState<string | null>(null);
   const [deck, setDeck] = useState<CandidateCard[] | null>(null);
   const [deckError, setDeckError] = useState<string | null>(null);
   /** Bumped by "scan again" on the empty room; the deck effect re-runs. */
@@ -161,12 +163,26 @@ export function DiscoveryScreen() {
           setCheckinName(checkin?.venueName ?? null);
           setStayRange(stay ? formatStayRange(stay.startDate, stay.endDate) : null);
           const eligible = withNearby.filter((r) => r.eligible).map((r) => r.room);
-          // D-040: keep what the person was looking at; otherwise the most
-          // present-tense source first — the street, the hotel door, the plan.
-          const fallback = (['NEARBY', 'HERE_NOW', 'UPCOMING'] as RoomKey[]).find((key) =>
-            eligible.includes(key),
-          );
+          // D-040/D-057: keep what the person was looking at; otherwise the
+          // most present-tense source first — the live event, the street, the
+          // hotel door, then the two declared plans.
+          const fallback = (
+            ['EVENT_HERE_NOW', 'NEARBY', 'HERE_NOW', 'EVENT_UPCOMING', 'UPCOMING'] as RoomKey[]
+          ).find((key) => eligible.includes(key));
           setRoom((current) => (current && eligible.includes(current) ? current : fallback ?? null));
+          // D-057: the selector names the event, so the focused event's leased
+          // name is fetched once per load — and only when an event room is
+          // actually on the list. An expired lease simply leaves it null.
+          if (withNearby.some((r) => r.room === 'EVENT_UPCOMING' || r.room === 'EVENT_HERE_NOW')) {
+            const mine: MyEvent[] = await getApi().getMyEvents().catch(() => []);
+            const focused = mine.find((e) => e.focused) ?? mine[0] ?? null;
+            if (!cancelled && focused) {
+              const [lease] = await getApi().getEventContent([focused.eventId]).catch(() => []);
+              if (!cancelled) setEventName(lease?.name ?? null);
+            }
+          } else if (!cancelled) {
+            setEventName(null);
+          }
           const soonest = earliestRoomExpiry(withNearby, nowMs());
           if (soonest !== null) {
             timer = setTimeout(load, soonest - nowMs());
@@ -266,7 +282,27 @@ export function DiscoveryScreen() {
     () => (deck ?? []).filter((c) => !blockedIds.has(c.userId)),
     [deck, blockedIds],
   );
-  const eligibleRooms = rooms?.filter((r) => r.eligible).map((r) => r.room) ?? [];
+  /**
+   * D-057: every room the account has, in one order, with the shut ones still
+   * on the list and carrying their reason. The selector renders exactly this —
+   * it fetches nothing of its own, which is what keeps switching free.
+   */
+  const contextRows: ContextRow[] = useMemo(() => {
+    const statuses = rooms ?? [];
+    return CONTEXT_ORDER.flatMap((key) => {
+      const status = statuses.find((r) => r.room === key);
+      if (!status) return [];
+      return [
+        {
+          room: key,
+          meta: contextLine(key, hotelName, stayRange, status.validUntil, checkinName, eventName),
+          eligible: status.eligible,
+          validUntil: status.validUntil ?? null,
+          reason: status.eligible ? null : roomStatusExplanation(key, status),
+        },
+      ];
+    });
+  }, [rooms, hotelName, stayRange, checkinName, eventName]);
   const candidate = visibleDeck[0] ?? null;
   // Only the card on top: signing a URL for a deck of twenty would hand out
   // nineteen readable links for people the user may never actually see.
@@ -293,7 +329,7 @@ export function DiscoveryScreen() {
   if (rooms === null || (!hasHotel && state.accountLoadStatus === 'loading')) {
     return (
       <Screen safeTop testID="screen-discovery">
-        <Title>{COPY.tabs.discovery}</Title>
+        <ScreenHeader title={COPY.tabs.discovery} ringTestID="discovery-profile-ring" />
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="discovery-loading" />
       </Screen>
     );
@@ -304,7 +340,7 @@ export function DiscoveryScreen() {
   if (!hasHotel && !nearbyOpen) {
     return (
       <Screen safeTop testID="screen-discovery">
-        <Title>{COPY.tabs.discovery}</Title>
+        <ScreenHeader title={COPY.tabs.discovery} ringTestID="discovery-profile-ring" />
         <Body>{`${COPY.roomReason.NO_ACTIVE_HOTEL} ${COPY.trust.oneHotel}`}</Body>
         {/* The designer's night empty state (D-044): the neon hotel and pin
             cropped from the mock, the claim, the one-hotel pill, and both
@@ -350,7 +386,17 @@ export function DiscoveryScreen() {
        rooms, or a proximity check straight from here. */
     return (
       <Screen safeTop testID="screen-discovery">
-        <Title>{COPY.tabs.discovery}</Title>
+        <ScreenHeader title={COPY.tabs.discovery} ringTestID="discovery-profile-ring" />
+        {/* D-057 (NAV-05): the selector is present but disabled here, so the
+            control that answers "which room am I in" does not vanish at the
+            one moment somebody is asking it. It opens nothing. */}
+        <ContextSelector
+          rows={contextRows}
+          current={room}
+          onChange={setRoom}
+          now={nowMs()}
+          testID="discovery-context"
+        />
         <View style={styles.noRoom} testID="discovery-no-room">
           <Image
             source={DOOR_HERO}
@@ -423,34 +469,19 @@ export function DiscoveryScreen() {
 
   return (
     <Screen safeTop testID="screen-discovery" bleed scroll={false}>
-      {/* The room switch stays above the card: which door you are browsing is
-          a real choice, and the reference has no equivalent for it. */}
-      {room ? (
-        <Text style={styles.contextLine} testID="discovery-context">
-          {contextLine(
-            room,
-            hotelName,
-            stayRange,
-            rooms.find((r) => r.room === room)?.validUntil ?? null,
-            checkinName,
-          )}
-        </Text>
-      ) : null}
-      {eligibleRooms.length > 1 ? (
-        <View style={styles.roomSwitch}>
-          {eligibleRooms.map((r) => (
-            <View key={r} style={styles.roomSwitchItem}>
-              <Button
-                label={ROOM_LABEL[r]}
-                variant={r === room ? 'primary' : 'secondary'}
-                compact
-                onPress={() => setRoom(r)}
-                testID={`room-${r}`}
-              />
-            </View>
-          ))}
-        </View>
-      ) : null}
+      {/* D-057: the head and the context selector sit above the card. Which
+          room you are browsing is a real choice, and it is now stated rather
+          than inferred — including when the answer is "none of them yet". */}
+      <View style={styles.deckHead}>
+        <ScreenHeader title={COPY.tabs.discovery} ringTestID="discovery-profile-ring" />
+        <ContextSelector
+          rows={contextRows}
+          current={room}
+          onChange={setRoom}
+          now={nowMs()}
+          testID="discovery-context"
+        />
+      </View>
 
       {deckError ? <Notice message={deckError} tone="error" testID="discovery-error" /> : null}
       {actionError ? (
@@ -723,19 +754,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
   },
-  contextLine: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: font.caption,
-    color: color.inkMuted,
-    textAlign: 'center',
-  },
-  roomSwitch: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
+  /**
+   * D-057: the deck is `bleed`, so its head supplies the side margin the
+   * screen shell would otherwise have given it — the card below is meant to
+   * run to the edges and the head is not.
+   */
+  deckHead: {
+    paddingHorizontal: 20,
+    paddingTop: 4,
     paddingBottom: spacing.sm,
+    gap: spacing.sm + 2,
   },
-  roomSwitchItem: { flex: 1 },
   /** The card is the screen: everything else stands on the photograph. */
   card: {
     flex: 1,

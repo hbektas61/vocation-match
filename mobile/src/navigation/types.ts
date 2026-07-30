@@ -6,6 +6,11 @@ export type RootStackParamList = {
   EditProfile: undefined;
   ChooseHotel: undefined;
   Tabs: undefined;
+  /**
+   * D-057: Settings left the bottom bar for the profile ring. It is a pushed
+   * screen now, so every primary tab keeps its own state while you are in it.
+   */
+  Settings: undefined;
   Upcoming: undefined;
   HereNow: undefined;
   HotelDetails: { hotelId: string };
@@ -33,5 +38,4 @@ export type TabParamList = {
     source?: 'UPCOMING' | 'HERE_NOW' | 'NEARBY' | 'EVENT_UPCOMING' | 'EVENT_HERE_NOW';
   } | undefined;
   Inbox: undefined;
-  Settings: undefined;
 };

@@ -15,6 +15,12 @@ export const en = {
     nearbyTab: 'Nearby',
     discovery: 'Discovery',
     inbox: 'Inbox',
+    /**
+     * D-057: the bottom bar's fifth label. Shorter than the screen's own title
+     * ("Inbox" stays the heading) because five labels have to fit at 320 px
+     * without any of them being shrunk.
+     */
+    messages: 'Messages',
     settings: 'Settings',
   },
 
@@ -471,6 +477,14 @@ export const en = {
     howItWorks: 'How does it work?',
     howItWorksBody:
       'There are two rooms. Before the Trip opens when you declare your stay dates; At the Hotel opens with a one-time location check made at the hotel. The people in a room appear here, in Discovery.',
+    /** D-057: the shared context selector over the one deck. */
+    contextTitle: 'Which room are you exploring?',
+    contextHint: 'Opens the list of your open rooms',
+    /** On the control itself — short, and not the screen's own heading. */
+    contextNoneOpen: 'No open room',
+    contextKeepsMembership: 'Switching rooms does not end your membership.',
+    contextOneLive: 'Only one live event check is active at a time. Your vacation venue stays open.',
+    contextNeedsCheck: 'A proximity check is needed.',
     noRoomTitle: "You haven't entered a room yet",
     noRoomBody:
       'Join a room or run a proximity check before you start discovering. The rooms open to you will show up here.',
@@ -559,6 +573,12 @@ export const en = {
 
   settings: {
     title: 'Settings',
+    /**
+     * D-057: the accessible name of the corner ring. It opens the profile as
+     * well as Settings, and after the tab was removed this is the only route
+     * to either — so it must not announce itself as just one of them.
+     */
+    ringLabel: 'Your profile and settings',
     youLabel: 'You',
     locationTitle: 'Location and privacy',
     locationNote:

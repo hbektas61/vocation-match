@@ -52,7 +52,7 @@ describe('critical flow', () => {
     await checkInAtHotel();
 
     // Discovery: Derya already likes the tester (fixture), so a like matches.
-    await fireEvent.press(await screen.findByText('Discovery'));
+    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
     expect(await screen.findByTestId('candidate-cand-derya')).toBeTruthy();
     await fireEvent.press(screen.getByTestId('swipe-like'));
     expect(await screen.findByText("It's a match!")).toBeTruthy();
@@ -78,14 +78,14 @@ describe('critical flow', () => {
     await onboardAndActivateHotel();
     await checkInAtHotel();
 
-    await fireEvent.press(await screen.findByText('Discovery'));
+    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
     expect(await screen.findByTestId('candidate-cand-derya')).toBeTruthy();
     await fireEvent.press(screen.getByTestId('discovery-report-block'));
     await fireEvent.press(await screen.findByTestId('block-start'));
     await fireEvent.press(await screen.findByTestId('block-confirm'));
 
     // Back on the deck: the blocked person is gone, the next candidate shows.
-    await fireEvent.press(await screen.findByText('Discovery'));
+    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
     expect(await screen.findByTestId('candidate-cand-mert')).toBeTruthy();
     expect(screen.queryByTestId('candidate-cand-derya')).toBeNull();
   });
@@ -93,7 +93,7 @@ describe('critical flow', () => {
   it('keeps discovery closed until a room is opened, and offers both ways in', async () => {
     await onboardAndActivateHotel();
 
-    await fireEvent.press(screen.getByText('Discovery'));
+    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
     // The pre-room orbit screen (owner's designer, 2026-07-27): no deck, a
     // named reason, and the two doors out of the state — rooms, or a
     // proximity check right here.
@@ -166,7 +166,7 @@ describe('rooms and hotel switching', () => {
 
     // Force a fresh focus-triggered fetch so the mocked sequence is consumed:
     // hop to another tab and back.
-    await fireEvent.press(screen.getByTestId('tab-Settings'));
+    await fireEvent.press(await screen.findByTestId('tab-Inbox'));
     await fireEvent.press(screen.getByTestId('tab-Vacation'));
     expect(
       await screen.findByText('Open — a recent check found you at the hotel.'),
@@ -183,13 +183,13 @@ describe('settings and blocking', () => {
     await onboardAndActivateHotel();
     await checkInAtHotel();
 
-    await fireEvent.press(await screen.findByText('Discovery'));
+    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
     expect(await screen.findByTestId('candidate-cand-derya')).toBeTruthy();
     await fireEvent.press(screen.getByTestId('discovery-report-block'));
     await fireEvent.press(await screen.findByTestId('block-start'));
     await fireEvent.press(await screen.findByTestId('block-confirm'));
 
-    await fireEvent.press(await screen.findByText('Settings'));
+    await fireEvent.press(await screen.findByTestId('discovery-profile-ring'));
     expect(await screen.findByText(/^Deniz, \d+$/)).toBeTruthy();
     await fireEvent.press(await screen.findByTestId('unblock-cand-derya'));
 
@@ -208,11 +208,11 @@ describe('the inbox for someone who cannot see it', () => {
   it('names the person, the preview, and what the row does', async () => {
     await onboardAndActivateHotel();
     await checkInAtHotel();
-    await fireEvent.press(await screen.findByText('Discovery'));
+    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
     await fireEvent.press(await screen.findByTestId('swipe-like'));
     await fireEvent.press(await screen.findByTestId('match-keep-browsing'));
 
-    await fireEvent.press(await screen.findByText('Inbox'));
+    await fireEvent.press(await screen.findByTestId('tab-Inbox'));
     const [summary] = await getApi().getMatches();
 
     // A match with no conversation yet lives in the new-matches strip: a face,
@@ -226,8 +226,8 @@ describe('the inbox for someone who cannot see it', () => {
     // to carry the preview a sighted person sees. The message goes through the
     // API so the tab bar stays reachable; a focus round-trip refreshes the list.
     await getApi().sendMessage(summary.matchId, 'Hi!');
-    await fireEvent.press(screen.getByText('Discovery'));
-    await fireEvent.press(await screen.findByText('Inbox'));
+    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
+    await fireEvent.press(await screen.findByTestId('tab-Inbox'));
 
     // Wait for the refreshed list — the strip item and the row share the
     // match's testID, and querying mid-refresh can hand back the node that is
@@ -300,7 +300,7 @@ describe('authentication and profile', () => {
   it('keeps a returning session when active-hotel hydration fails, then retries it', async () => {
     const phone = '+905551110025';
     await onboardWithHotel('Already', phone);
-    await fireEvent.press(await screen.findByText('Settings'));
+    await fireEvent.press(await screen.findByTestId('hotel-profile-ring'));
     await fireEvent.press(await screen.findByTestId('sign-out'));
 
     const api = getApi();
@@ -363,7 +363,7 @@ describe('authentication and profile', () => {
   it('signs out from settings and returns to onboarding', async () => {
     await onboardAndActivateHotel();
 
-    await fireEvent.press(screen.getByText('Settings'));
+    await fireEvent.press(screen.getByTestId('hotel-profile-ring'));
     await fireEvent.press(await screen.findByTestId('sign-out'));
 
     expect(await screen.findByTestId('screen-welcome')).toBeTruthy();
@@ -464,7 +464,7 @@ describe('waiting for an SMS code', () => {
   it('opens an existing account after the same phone completes OTP again', async () => {
     const phone = '+905551110019';
     await onboardWithHotel('Already', phone);
-    await fireEvent.press(await screen.findByText('Settings'));
+    await fireEvent.press(await screen.findByTestId('hotel-profile-ring'));
     await fireEvent.press(await screen.findByTestId('sign-out'));
 
     await requestPhoneCode(phone);

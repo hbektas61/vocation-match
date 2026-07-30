@@ -325,7 +325,7 @@ describe('what is written down', () => {
     );
 
     fake.breakGoogleResolution(true);
-    await fireEvent.press(screen.getByTestId('tab-Settings'));
+    await fireEvent.press(screen.getByTestId('tab-Inbox'));
     await fireEvent.press(screen.getByTestId('tab-Vacation'));
     await settle();
 

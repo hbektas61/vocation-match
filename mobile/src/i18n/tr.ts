@@ -17,6 +17,8 @@ export const tr: Copy = {
     nearbyTab: 'Çevremde',
     discovery: 'Keşfet',
     inbox: 'Gelen kutusu',
+    /** D-057: alt barın beşinci etiketi. Ekranın başlığı "Gelen kutusu" kalır. */
+    messages: 'Mesajlar',
     settings: 'Ayarlar',
   },
 
@@ -436,6 +438,14 @@ export const tr: Copy = {
     howItWorks: 'Nasıl çalışır?',
     howItWorksBody:
       'İki oda var. Tatilden Önce, konaklama tarihlerini beyan ettiğinde açılır; Oteldeyim ise oteldeyken yapılan tek seferlik bir konum kontrolüyle. Odadaki kişiler burada, Keşfet\'te görünür.',
+    /** D-057: tek destenin üstündeki paylaşılan bağlam seçici. */
+    contextTitle: 'Hangi odayı keşfediyorsun?',
+    contextHint: 'Açık odalarının listesini açar',
+    /** Kontrolün kendi satırı — ekranın başlığını tekrar etmez. */
+    contextNoneOpen: 'Açık odan yok',
+    contextKeepsMembership: 'Odalar arasında geçmek üyeliğini bitirmez.',
+    contextOneLive: 'Aynı anda tek canlı etkinlik doğrulaması olur. Tatil mekânın açık kalır.',
+    contextNeedsCheck: 'Yakınlık kontrolü gerekli.',
     noRoomTitle: 'Henüz bir odaya girmedin',
     noRoomBody:
       'Keşfetmeye başlamadan önce bir odaya katıl ya da yakınlık kontrolü yap. Sana uygun odaları burada göreceksin.',
@@ -519,6 +529,8 @@ export const tr: Copy = {
 
   settings: {
     title: 'Ayarlar',
+    /** D-057: köşedeki halkanın erişilebilir adı. Profili de ayarları da açar. */
+    ringLabel: 'Profilin ve ayarlar',
     youLabel: 'Sen',
     locationTitle: 'Konum ve gizlilik',
     locationNote:

@@ -4,6 +4,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar, Button, Notice, Screen } from '../components/ui';
+import { ProfileRing } from '../components/ProfileRing';
 import { LinearGradient } from 'expo-linear-gradient';
 import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
 import { ApiError, getApi, type MatchSummary } from '../data';
@@ -69,13 +70,7 @@ export function InboxScreen() {
       {/* The sheet's head (12:167): the tab's name and the ring to yourself. */}
       <View style={styles.headRow}>
         <Text accessibilityRole="header" style={styles.headTitle}>{COPY.inbox.title}</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={COPY.tabs.settings}
-          onPress={() => tabNavigation.navigate('Settings')}
-          style={({ pressed }) => [styles.profileRing, pressed && styles.pressedDim]}
-          testID="inbox-profile-ring"
-        />
+        <ProfileRing testID="inbox-profile-ring" />
       </View>
       {error ? (
         <Notice message={error} tone="error" testID="inbox-error" />
