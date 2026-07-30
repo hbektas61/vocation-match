@@ -37,19 +37,36 @@ import {
   getApi,
   setApi,
   type ForegroundLocationReader,
+  type RoomKey,
 } from '../data';
+import { ChatScreen } from '../screens/ChatScreen';
 import { DiscoveryScreen } from '../screens/DiscoveryScreen';
 import { HereNowScreen } from '../screens/HereNowScreen';
 import { InboxScreen } from '../screens/InboxScreen';
-import type { RootScreenProps } from '../navigation/types';
-import { AppStoreProvider } from '../state/AppStore';
+import { MatchScreen } from '../screens/MatchScreen';
+import { AppStoreProvider, useAppStore } from '../state/AppStore';
 import { color, fontFamily } from '../theme';
+
+/**
+ * One shape for every scene: whatever react-navigation hands a screen in a
+ * one-entry stack. A scene that needs particular route params supplies them
+ * itself rather than the harness pretending to type five different screens.
+ */
+type HarnessProps = {
+  navigation: never;
+  route: { key: string; name: string; params?: Record<string, unknown> };
+};
 
 /** Grepped for by the build check. Must appear nowhere in a production bundle. */
 export const VISUAL_HARNESS_MARKER = 'VOCATION_VISUAL_HARNESS_ONLY';
 
-/** The clock every scene runs on, so a screenshot is the same tomorrow. */
-const FIXED_NOW = Date.parse('2026-08-12T18:30:00Z');
+/**
+ * The backend runs on the same clock the screens read. A fixed one looked
+ * tempting for determinism and was wrong: the fake expired a presence answer
+ * relative to 2026-08-12 while `nowMs()` returned today, and the live room
+ * offered "308 sa 32 dk kaldı". Layout is what these captures are for, and
+ * layout does not depend on the date.
+ */
 const PILOT_HOTEL = 'hotel-lara-shore';
 
 /** A reading inside the radius, and one far outside it. */
@@ -65,7 +82,7 @@ type Scene = {
   /** Puts the backend into the state the frame describes. */
   seed?: () => Promise<void>;
   /** Rendered inside a one-screen stack, so `useNavigation` works as usual. */
-  render: (props: RootScreenProps<'HereNow'>) => React.ReactElement;
+  render: (props: HarnessProps) => React.ReactElement;
 };
 
 /** Signs in a fixed account and gives it the pilot hotel. */
@@ -90,24 +107,56 @@ async function verifiedAtVenue(): Promise<void> {
   }
 }
 
+/** The account with declared dates, so the Tatilden Önce deck is open. */
+async function declaredStay(): Promise<void> {
+  await baseAccount();
+  await getApi().declareUpcomingStay('2026-08-10', '2026-08-18');
+}
+
+/**
+ * A real mutual match, earned the way the app earns one: an open room, the
+ * deck, and a like on the first candidate. The fake's seeded people like back,
+ * which is what makes a match reachable without a second signed-in session.
+ */
+async function matched(room: RoomKey = 'HERE_NOW'): Promise<string | null> {
+  if (room === 'HERE_NOW') await verifiedAtVenue();
+  else await declaredStay();
+  const api = getApi();
+  const deck = await api.getDiscoveryFeed(room);
+  for (const candidate of deck) {
+    const result = await api.swipe(candidate.userId, room, 'LIKE');
+    if (result.matchId) return result.matchId;
+  }
+  return null;
+}
+
+/** A match with a first message, so the inbox shows a row rather than a face. */
+async function talking(): Promise<void> {
+  const matchId = await matched();
+  if (matchId) await getApi().sendMessage(matchId, 'Bugün görüşür müyüz?');
+}
+
+/** Remembered between the seed and the render, for the scenes that need an id. */
+let seededMatchId: string | null = null;
+
 const SCENES: Record<string, Scene> = {
   'T-19': {
     frame: '36:171',
     label: 'Oteldeyim — konum hassas değil',
     seed: baseAccount,
-    render: (p) => <HereNowScreen {...p} reader={COARSE} />,
+    render: (p) => <HereNowScreen navigation={p.navigation} route={p.route as never} reader={COARSE} />,
   },
   'T-20': {
     frame: '36:192',
     label: 'Oteldeyim — çok uzakta',
     seed: baseAccount,
-    render: (p) => <HereNowScreen {...p} reader={FAR_AWAY} />,
+    render: (p) => <HereNowScreen navigation={p.navigation} route={p.route as never} reader={FAR_AWAY} />,
   },
   'T-21': {
     frame: '36:213',
     label: 'Oteldeyim — açık',
     seed: baseAccount,
-    render: (p) => <HereNowScreen {...p} reader={AT_VENUE} />,
+    render: (p) => <HereNowScreen navigation={p.navigation} route={p.route as never} reader={AT_VENUE} />,
   },
   'D-02': {
     frame: '45:793',
@@ -115,11 +164,44 @@ const SCENES: Record<string, Scene> = {
     seed: verifiedAtVenue,
     render: () => <DiscoveryScreen />,
   },
+  'D-01': {
+    frame: '45:743',
+    label: 'Keşfet — Tatilden Önce bağlamı',
+    seed: declaredStay,
+    render: () => <DiscoveryScreen />,
+  },
   'I-02': {
     frame: '46:985',
     label: 'Gelen kutusu — boş',
     seed: baseAccount,
     render: () => <InboxScreen />,
+  },
+  'I-01': {
+    frame: '46:901',
+    label: 'Gelen kutusu — dolu',
+    seed: talking,
+    render: () => <InboxScreen />,
+  },
+  'M-03': {
+    frame: '46:869',
+    label: 'Eşleşme — Tatilden Önce',
+    seed: async () => {
+      seededMatchId = await matched('UPCOMING');
+    },
+    render: (p) => (
+      <MatchScreen navigation={p.navigation} route={{ ...p.route, params: { matchId: seededMatchId ?? '' } } as never} />
+    ),
+  },
+  'C-01': {
+    frame: '46:1025',
+    label: 'Sohbet — tatil mekânı',
+    seed: async () => {
+      seededMatchId = await matched('UPCOMING');
+      if (seededMatchId) await getApi().sendMessage(seededMatchId, 'Tatilde görüşürüz');
+    },
+    render: (p) => (
+      <ChatScreen navigation={p.navigation} route={{ ...p.route, params: { matchId: seededMatchId ?? '' } } as never} />
+    ),
   },
 };
 
@@ -134,12 +216,35 @@ function requestedScene(): string | null {
 
 const Stack = createNativeStackNavigator();
 
+/** Puts the seeded matches in the store, the way a visit to the inbox does. */
+function Hydrate({ children }: { children: React.ReactNode }) {
+  const { dispatch } = useAppStore();
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    getApi()
+      .getMatches()
+      .then((matches) => {
+        if (!cancelled) {
+          dispatch({ type: 'MATCHES_LOADED', matches });
+          setReady(true);
+        }
+      })
+      .catch(() => setReady(true));
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch]);
+  if (!ready) return <View style={styles.blank} />;
+  return <>{children}</>;
+}
+
 function Stage({ scene }: { scene: Scene }) {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Scene">
-          {(props) => scene.render(props as unknown as RootScreenProps<'HereNow'>)}
+          {(props) => scene.render(props as unknown as HarnessProps)}
         </Stack.Screen>
       </Stack.Navigator>
     </NavigationContainer>
@@ -158,7 +263,7 @@ export function VisualHarness() {
     let cancelled = false;
     setSeeded(false);
     setLocale('tr');
-    setApi(new FakeApi({ now: () => FIXED_NOW }));
+    setApi(new FakeApi());
     (async () => {
       await SCENES[id].seed?.();
       if (!cancelled) setSeeded(true);
@@ -189,7 +294,9 @@ export function VisualHarness() {
   return (
     <SafeAreaProvider>
       <AppStoreProvider>
-        <Stage scene={SCENES[id]} />
+        <Hydrate>
+          <Stage scene={SCENES[id]} />
+        </Hydrate>
       </AppStoreProvider>
     </SafeAreaProvider>
   );

@@ -14,7 +14,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import { color, fontFamily, radius, spacing, warmEnd } from '../theme';
+import { color, fontFamily, MIN_TOUCH, radius, spacing, warmEnd } from '../theme';
 
 function iconFor(routeName: string, active: boolean) {
   const stroke = active ? color.accentDeep : color.inkMuted;
@@ -147,9 +147,17 @@ const styles = StyleSheet.create({
     elevation: 8,
     marginBottom: Platform.OS === 'web' ? spacing.sm : 2,
   },
+  /**
+   * D-057 / R-06: 44 is the floor, and measuring found 40 — the icon seat plus
+   * the label came to it and nothing enforced the rest. The bar's own vertical
+   * padding sits *outside* the pressable, so it never counted toward the
+   * target somebody actually has to hit.
+   */
   item: {
     flex: 1,
+    minHeight: MIN_TOUCH,
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 4,
   },
   /** The 38×24 seat (10:97); only the active one shows its fill. */

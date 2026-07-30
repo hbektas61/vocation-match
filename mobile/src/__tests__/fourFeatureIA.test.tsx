@@ -395,3 +395,19 @@ describe('D-057 closed decisions — N-07 and E-21', () => {
     expect(await getApi().getMyEvents()).toHaveLength(0);
   });
 });
+
+describe('D-057 touch targets', () => {
+  it('gives every bottom-bar item at least the 44 px minimum', async () => {
+    await onboardWithHotel('Deniz');
+    // Measured at 40 in the browser: the icon seat plus the label came to it,
+    // and the bar's own padding sits outside the pressable, so it never
+    // counted toward the target somebody has to hit.
+    for (const route of ['Vacation', 'Nearby', 'Events', 'Discovery', 'Inbox']) {
+      const tab = await screen.findByTestId(`tab-${route}`);
+      const style = Array.isArray(tab.props.style)
+        ? Object.assign({}, ...tab.props.style.filter(Boolean))
+        : tab.props.style;
+      expect(style.minHeight).toBeGreaterThanOrEqual(44);
+    }
+  });
+});

@@ -463,50 +463,92 @@ the menu goes in.
 So **106 of 108** frames have their behaviour in the app. The two that do not are
 `NAV-08` and `N-07`, both above, both owner decisions rather than oversights.
 
-### The visual pass — method and coverage
+### The visual pass — method, coverage and evidence
 
-Expo web with `EXPO_PUBLIC_USE_FAKE_API=1` at a 390×844 viewport, a fresh
-in-memory account driven from the welcome screen by
-`.playwright-mcp/onboard.js`, screenshotted and put beside the exported frame.
-Captures are in `.playwright-mcp/app-*.png` and `figma-T-01.png`.
+Two harnesses, because the app cannot be walked into every state.
 
-**Compared in the running app (14 frames):** `T-01`, `T-02`, `T-03`, `T-05`,
-`T-07`, `T-10`, `T-12`/`T-13`, `T-16`, `N-01`, `N-03`, `E-01`, `E-09`, `E-21`,
-`S-02`.
+**1. Driving the real app.** Expo web with `EXPO_PUBLIC_USE_FAKE_API=1` at
+390×844 and 320×844, a fresh in-memory account driven from the welcome screen
+by `.playwright-mcp/onboard.js`.
 
-**Not yet compared (94 frames):** the rest. Their behaviour exists and is
-covered by tests; their layout has not been looked at beside its frame.
+**2. `src/devtools/VisualHarness.tsx`** for the states driving cannot reach —
+the Here Now outcomes (the simulate controls only exist for a venue the
+*fixture* catalogue knows, and a Google venue is not one) and anything needing
+a mutual match. It seeds an in-memory backend and renders the real screen,
+chosen by `?scene=`. It adds no route and is gated on
+`EXPO_PUBLIC_VISUAL_HARNESS`, which Expo inlines at build time.
 
-What the 14 found — none of it visible from the code or the tests:
+That last claim is checked rather than asserted:
+`scripts/verify-harness-absent.js` greps the exported bundle for the harness's
+marker and — because a check that cannot fail proves nothing — first plants the
+marker in a temp directory and fails if the scan misses it. It runs in
+`scripts/check.sh`.
 
-| Defect | Frame |
+| Frame | Node | Runtime capture |
+| --- | --- | --- |
+| T-01 | `33:71` | `app-T-01.png`, `app-T-01-after.png` |
+| T-02 | `33:127` | `app-T-02.png`, `app-T-02-after.png` |
+| T-03 | `33:146` | `app-T-03.png` |
+| T-05 | `33:200` | `app-T-05.png`, `app-T-05-after.png` |
+| T-07 | `33:242` | `app-T-07.png` |
+| T-10 | `35:113` | `app-T-09.png`, `app-T-10-after.png` |
+| T-12/13 | `35:178` / `35:198` | `app-T-12.png` |
+| T-16 | `36:113` | `app-T-16.png` |
+| T-19 | `36:171` | `app-T-19.png` |
+| T-20 | `36:192` | `app-T-20.png` |
+| T-21 | `36:213` | `app-T-21.png` |
+| N-01 | `37:113` | `app-N-01.png`, `app-N-01-after.png` |
+| N-03 | `37:175` | `app-N-03.png` |
+| E-01 | `39:239` | `app-E-01.png` |
+| E-09 | `40:365` | `app-E-09.png` |
+| E-21 | `41:749` | `app-E-21.png`, `app-E-21-fixed.png` |
+| D-01 | `45:743` | `app-D-01.png` |
+| D-02 | `45:793` | `app-D-02.png`, `app-D-02-320.png` |
+| M-03 | `46:869` | `app-M-03.png` |
+| I-01 | `46:901` | `app-I-01.png`, `app-I-01-320.png` |
+| I-02 | `46:985` | `app-I-02.png` |
+| C-01 | `46:1025` | `app-C-01.png` |
+| S-02 | `47:938` | seen during the T-01 pass |
+| bottom bar | `27:190` | `app-bar-390.png`, `app-bar-320.png` |
+
+**24 frames compared against a running render. 84 remain.**
+
+What the pass found — none of it visible from the code or the tests:
+
+| Defect | Where |
 | --- | --- |
 | "Ayarlar" printed twice; `safeTop` taking the inset under a header that had it | `S-02` |
 | "Oteldeyim" printed twice, same cause | `T-16` |
-| "Powered by Google" rendered as the venue's address, behind a location pin — and gone entirely once dates existed | `T-10` |
-| Nine `otel` strings left in sentences only the screen shows | `T-01`, `T-16` |
-| The same hint printed above and below the destination field, while "at least three characters" was said nowhere | `T-02` |
+| "Powered by Google" rendered as the venue's address behind a location pin — and gone once dates existed | `T-10` |
+| **Thirteen** `otel` strings in sentences only a screen shows, including both proximity verdicts | throughout |
+| The same hint above and below the destination field, while "at least three characters" was said nowhere | `T-02` |
 | The venue placeholder cut mid-word at 390 px | `T-05` |
 | Çevremde's corner held a decorative pin, so the tab had no route to Settings at all | `N-01` |
 | No OpenStreetMap/Overture credit anywhere, while Google's was on two surfaces (ODbL) | `N-03` |
 | The event detail screen carried a name and no date or venue | `E-21` |
 | The profile ring was an empty circle | all five |
+| **Bottom-bar items measured 40 px tall against a 44 px floor** — the bar's padding sits outside the pressable and never counted | `27:190` |
 
-Three things the comparison found where **the frame was wrong, not the app**,
-and were deliberately not "fixed": the bottom-bar icons (my frames used emoji
-as placeholders; the app's drawn SVGs are correct), the Çevremde intro
-(the app has D-041's licensed photograph and how-it-works rows, which the frame
-abstracted away), and the declare screen's date hint appearing twice on web
-only — iOS and Android use the native picker and show no hint at all.
+Three where **the frame was wrong, not the app**, and were deliberately not
+"fixed": the bottom-bar icons (my frames used emoji placeholders; the app's
+drawn SVGs are correct), the Çevremde intro (the app has D-041's licensed
+photograph and how-it-works rows, which the frame abstracted away), and the
+declare screen's date hint appearing twice on web only — iOS and Android use
+the native picker and show no hint at all.
+
+Measured rather than eyeballed:
+
+- **320 px**: all five labels render in full — 57×44 an item, no truncation, no
+  overflow anywhere on the deck or the inbox.
+- **390 px**: 71×44 an item.
+- The simulate card is gated on the *fixture* catalogue, so it cannot appear
+  against a real backend — absent for the Google venue, present for the pilot
+  hotel, which is the intended split.
 
 ### Still not done
 
-- **The remaining 94 frames' layout.** Same method, screen by screen.
-- **`T-17`–`T-22`.** The simulate controls are absent in the web build, so the
-  Here Now outcomes could not be reached in a browser. Covered by tests, not by
-  eye.
-- **`D-01`–`D-06`, `M-01`–`M-04`, `I-01`, `I-02`, `C-01`–`C-03`.** Not reached:
-  react-navigation's web header back button is not clickable through the
-  harness, so a pushed screen is a dead end there. Needs a run that goes to the
-  tabs directly.
-- **§14 device verification.** 320 px, large text, safe areas — on hardware.
+- **84 frames** not yet compared against a render.
+- **Large text, keyboard-open search, iOS/Android safe areas, reduced motion,
+  and real-device scroll and tab reachability.** The web harness cannot speak
+  to OS text scaling or safe-area insets; these need a device.
+- **`N-08`, `E-22`, `E-24`** and the rest of the Etkinlikler states.
