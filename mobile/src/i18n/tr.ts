@@ -247,14 +247,15 @@ export const tr: Copy = {
     title: 'Otelin',
     activeLabel: 'Aktif otel.',
     activePlate: 'Aktif otel',
-    emptyTitle: 'Henüz bir otel seçmedin',
-    emptyBody: 'Bulunduğun ya da gideceğin oteli arayarak seç. Odalar seçtiğin otele göre açılır.',
+    emptyTitle: 'Henüz bir tatil mekânı seçmedin',
+    emptyBody:
+      'Önce nereye gideceğini, sonra oradaki mekânı seç. Odalar seçtiğin mekâna göre açılır.',
     emptyBadge: 'Otel seçimi gerekli',
     quickOptions: 'Hızlı seçenekler',
     lastSearch: 'Son arama',
     popularTitle: 'Popüler destinasyonlar',
     activateCta: (name: string) => `${name} otelini etkinleştir`,
-    switchButton: 'Oteli değiştir',
+    switchButton: 'Tatil mekânını değiştir',
     noActiveHotel: 'Henüz aktif otel yok.',
     searchLabel: 'Otel ara',
     searchHint: 'Farklı bir otel seçmek için arama yapabilirsin.',
@@ -292,7 +293,7 @@ export const tr: Copy = {
     chipArts: 'Sahne & Komedi',
     attribution: 'Powered by Ticketmaster',
     noResults: 'Bu bölgede ve bu tarihlerde etkinlik bulunamadı.',
-    notEverything: 'Her etkinlik burada listelenmez.',
+    notEverything: 'Her etkinlik burada listelenmeyebilir.',
     providerUnavailable: 'Etkinlik araması şu anda kullanılamıyor. Sonra tekrar dene.',
     ceilingReached: 'Etkinlik araması bugünkü sınıra ulaştı. Yarın tekrar dene.',
     offline: 'Bağlantı yok. Tekrar dene.',
@@ -389,7 +390,7 @@ export const tr: Copy = {
     statusBadge: 'Şu an otele yakın',
     explainer:
       'Oteldeyim, uygulama açıkken yapılan tek seferlik bir konum kontrolüyle açılır. Yalnız otelde olduğunu doğrular — tam konumun asla gösterilmez ve saklanmaz.',
-    checkButton: 'Otel yakınlığını kontrol et',
+    checkButton: 'Mekân yakınlığını kontrol et',
     realCheckIntro: 'Mevcut konumun tek seferlik, ön planda bir kontrol için kullanılır. Arka planda hiçbir şey çalışmaz.',
     realCheckButton: 'Mevcut konumumu kullan',
     inRange: 'İçerdesin. Oteldeyim bu otel için açık.',
@@ -411,9 +412,9 @@ export const tr: Copy = {
   },
 
   trust: {
-    oneHotel: 'Aynı anda tek otelde aktif olabilirsin.',
+    oneHotel: 'Aynı anda tek tatil mekânında aktif olabilirsin.',
     switchWarning:
-      'Otel değiştirmek, önceki oteldeki keşif erişimini hemen kapatır. Mevcut eşleşmelerin ve sohbetlerin durur.',
+      'Tatil mekânını değiştirmek, önceki mekândaki keşif erişimini hemen kapatır. Mevcut eşleşmelerin ve sohbetlerin durur.',
     noExactLocation: 'Tam konumlar ve anlık mesafeler kimseye gösterilmez.',
   },
 
@@ -614,7 +615,7 @@ export const tr: Copy = {
     premiumTag: 'Premium',
     freeTag: 'Ücretsiz',
     discoverCta: 'Kişileri keşfet',
-    changeHotel: 'Oteli değiştir',
+    changeHotel: 'Tatil mekânını değiştir',
   },
 
   checkin: {

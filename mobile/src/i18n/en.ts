@@ -247,14 +247,15 @@ export const en = {
     title: 'Your hotel',
     activeLabel: 'Active hotel.',
     activePlate: 'Active hotel',
-    emptyTitle: "You haven't chosen a hotel yet",
-    emptyBody: 'Search for the hotel you are at or going to. The rooms open by the hotel you choose.',
+    emptyTitle: "You haven't chosen a vacation place yet",
+    emptyBody:
+      'Choose where you are going first, then the place inside it. The rooms open by the place you choose.',
     emptyBadge: 'Hotel selection required',
     quickOptions: 'Quick options',
     lastSearch: 'Last search',
     popularTitle: 'Popular destinations',
     activateCta: (name: string) => `Activate ${name}`,
-    switchButton: 'Switch hotel',
+    switchButton: 'Change vacation place',
     noActiveHotel: 'No active hotel yet.',
     searchLabel: 'Search hotels',
     searchHint: 'You can search to choose a different hotel.',
@@ -306,7 +307,7 @@ export const en = {
      * is a screen that looks broken in eight.
      */
     noResults: 'No events found here for these dates.',
-    notEverything: 'Not every event is listed here.',
+    notEverything: 'Not every event may be listed here.',
     providerUnavailable: 'Event search is unavailable right now. Try again later.',
     ceilingReached: 'Event search has reached today’s limit. Try again tomorrow.',
     offline: 'No connection. Try again.',
@@ -414,7 +415,7 @@ export const en = {
     statusBadge: 'Near the hotel now',
     explainer:
       'At the Hotel opens after a one-time location check while the app is open. It only confirms you are at the hotel — your exact location is never shown or stored.',
-    checkButton: 'Check hotel proximity',
+    checkButton: 'Check place proximity',
     realCheckIntro: 'Use your current location for a one-time foreground check. Nothing runs in the background.',
     realCheckButton: 'Use my current location',
     inRange: 'You are in. At the Hotel is open for this hotel.',
@@ -441,9 +442,9 @@ export const en = {
   },
 
   trust: {
-    oneHotel: 'You can be active in one hotel at a time.',
+    oneHotel: 'You can be active in one vacation place at a time.',
     switchWarning:
-      'Switching hotels closes your discovery access in the previous hotel immediately. Existing matches and chats are kept.',
+      'Changing your vacation place closes discovery at the previous one immediately. Existing matches and chats are kept.',
     noExactLocation: 'Exact locations and live distances are never shown to anyone.',
   },
 
@@ -684,7 +685,7 @@ export const en = {
     premiumTag: 'Premium',
     freeTag: 'Free',
     discoverCta: 'Discover people',
-    changeHotel: 'Change hotel',
+    changeHotel: 'Change vacation place',
   },
 
   checkin: {
