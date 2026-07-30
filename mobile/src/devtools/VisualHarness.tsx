@@ -31,6 +31,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { COPY, setLocale } from '../copy';
+import { FAKE_EVENTS_NOW } from '../fixtures/events';
 import {
   FakeApi,
   deniedLocation,
@@ -43,6 +44,7 @@ import {
 import { ChatScreen } from '../screens/ChatScreen';
 import { CheckinScreen } from '../screens/CheckinScreen';
 import { DiscoveryScreen } from '../screens/DiscoveryScreen';
+import { EventDetailScreen } from '../screens/EventDetailScreen';
 import { EventsScreen } from '../screens/EventsScreen';
 import { HereNowScreen } from '../screens/HereNowScreen';
 import { InboxScreen } from '../screens/InboxScreen';
@@ -87,6 +89,14 @@ type Scene = {
   /** The Figma frame this render is to be compared against. */
   frame: string;
   label: string;
+  /**
+   * The instant the backend should believe it is. The event fixtures are
+   * anchored on `FAKE_EVENTS_NOW`, so an event scene has to stand there or
+   * nothing is ever inside its live window. `nowMs()` is production code and
+   * stays on the real clock — which is why an *outcome* is trustworthy in
+   * these scenes and a countdown is not.
+   */
+  clock?: number;
   /** Puts the backend into the state the frame describes. */
   seed?: () => Promise<void>;
   /** Rendered inside a one-screen stack, so `useNavigation` works as usual. */
@@ -180,6 +190,33 @@ async function everyRoomOpen(): Promise<void> {
   }
 }
 
+
+/** The selection the detail scenes render. */
+let seededSelection: { token: string; name: string } | null = null;
+
+/**
+ * Opens a fixture event by name, without joining it. The fixtures carry the
+ * awkward cases on purpose — a cancelled show, a date-only one, one whose
+ * venue the provider never published — so a scene names the case it wants.
+ */
+async function selectEvent(name: string): Promise<void> {
+  await baseAccount();
+  const api = getApi();
+  seededSelection = null;
+  for (const bucket of ['today', 'upcoming'] as const) {
+    const result = await api.searchEvents(
+      { kind: 'city', city: 'İstanbul', label: 'İstanbul' }, bucket, 'all');
+    if (result.kind !== 'ok') continue;
+    const card = result.events.find((event) => event.name === name);
+    if (!card) continue;
+    const opened = await api.openEvent(card.selectionToken).catch(() => null);
+    if (opened) {
+      seededSelection = { token: opened.selectionToken, name: opened.event.name ?? name };
+      return;
+    }
+  }
+}
+
 /** Remembered between the seed and the render, for the scenes that need an id. */
 let seededMatchId: string | null = null;
 
@@ -244,6 +281,71 @@ const SCENES: Record<string, Scene> = {
       fake().setFeatureFlag('EVENTS_FEATURE_ENABLED', false);
     },
     render: () => <EventsScreen reader={AT_VENUE} />,
+  },
+  'E-31': {
+    frame: '42:738',
+    label: 'EVENT_CANCELLED — canlı oda açılmaz',
+    clock: FAKE_EVENTS_NOW,
+    seed: () => selectEvent('Cancelled Open Air'),
+    render: (p) => (
+      <EventDetailScreen
+        navigation={p.navigation}
+        route={{ ...p.route, params: { selectionToken: seededSelection?.token ?? '', name: seededSelection?.name ?? '' } } as never}
+        reader={AT_VENUE}
+      />
+    ),
+  },
+  'E-32': {
+    frame: '42:758',
+    label: 'EVENT_TIME_UNCONFIRMED — saat kesinleşmedi',
+    clock: FAKE_EVENTS_NOW,
+    seed: () => selectEvent('Announcement Pending Show'),
+    render: (p) => (
+      <EventDetailScreen
+        navigation={p.navigation}
+        route={{ ...p.route, params: { selectionToken: seededSelection?.token ?? '', name: seededSelection?.name ?? '' } } as never}
+        reader={AT_VENUE}
+      />
+    ),
+  },
+  'E-33': {
+    frame: '43:617',
+    label: 'EVENT_LOCATION_UNAVAILABLE — konum yayınlanmamış',
+    clock: FAKE_EVENTS_NOW,
+    seed: () => selectEvent('Venue To Be Announced'),
+    render: (p) => (
+      <EventDetailScreen
+        navigation={p.navigation}
+        route={{ ...p.route, params: { selectionToken: seededSelection?.token ?? '', name: seededSelection?.name ?? '' } } as never}
+        reader={AT_VENUE}
+      />
+    ),
+  },
+  'E-27': {
+    frame: '42:654',
+    label: 'LOCATION_INACCURATE — 900 m okuma',
+    clock: FAKE_EVENTS_NOW,
+    seed: () => selectEvent('Bosphorus Sunset Festival'),
+    render: (p) => (
+      <EventDetailScreen
+        navigation={p.navigation}
+        route={{ ...p.route, params: { selectionToken: seededSelection?.token ?? '', name: seededSelection?.name ?? '' } } as never}
+        reader={COARSE}
+      />
+    ),
+  },
+  'E-28': {
+    frame: '42:676',
+    label: 'TOO_FAR — geçerli okuma, yarıçap dışı',
+    clock: FAKE_EVENTS_NOW,
+    seed: () => selectEvent('Bosphorus Sunset Festival'),
+    render: (p) => (
+      <EventDetailScreen
+        navigation={p.navigation}
+        route={{ ...p.route, params: { selectionToken: seededSelection?.token ?? '', name: seededSelection?.name ?? '' } } as never}
+        reader={FAR_AWAY}
+      />
+    ),
   },
   // ------------------------------------------------------------- 3: Çevremde
   'N-08': {
@@ -460,7 +562,9 @@ export function VisualHarness() {
     clockOffsetMs = 0;
     setApi(new FakeApi({ now: () => Date.now() + clockOffsetMs }));
     (async () => {
-      await SCENES[id].seed?.();
+      const scene = SCENES[id];
+      if (scene.clock !== undefined) clockOffsetMs = scene.clock - Date.now();
+      await scene.seed?.();
       if (!cancelled) setSeeded(true);
     })();
     return () => {

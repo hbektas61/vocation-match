@@ -592,6 +592,32 @@ Yarın tekrar dene"** and **"bulunamadı"** are three different sentences with
 three different remedies. Reading the code would not have shown that each was
 being said twice.
 
+### Group 4 — the live-room refusals, and E-21 proved by looking
+
+Each reached through the **independent** "Şu An Etkinlikteyim" CTA, from an
+account that had declared nothing.
+
+| Frame | Node | Capture | Comparison | Difference found | Fix | Re-verified |
+| --- | --- | --- | --- | --- | --- | --- |
+| E-27 LOCATION_INACCURATE | `42:654` | `app-E-27.png` | matches | none | — | "Konum yeterince hassas değil. Açık alanda tekrar dene." · no membership |
+| E-28 TOO_FAR | `42:676` | `app-E-28.png` | matches | none | — | "Bu kontrol seni etkinlikte bulamadı. Oradayken tekrar dene." · no membership |
+| E-31 EVENT_CANCELLED | `42:738` | `app-E-31.png` | matches | none | — | "Bu etkinlik iptal edildi." · no membership |
+| E-32 EVENT_TIME_UNCONFIRMED | `42:758` | `app-E-32.png` | matches | none | — | "Canlı oda, etkinlik saati kesinleşince açılır." · no membership |
+| E-33 EVENT_LOCATION_UNAVAILABLE | `43:617` | `app-E-33.png` | matches | none | — | "Bu etkinliğin konumu yayınlanmamış…" · no membership |
+
+**E-21's guarantee, seen rather than asserted:** all five screens offered both
+CTAs from the first render, the live one was pressed without any declaration,
+and `event-withdraw` — which only exists for a membership — was absent in every
+one of the five.
+
+A harness constraint worth recording: the event fixtures are anchored on
+`FAKE_EVENTS_NOW` (2026-08-12), so an event scene has to stand the *backend* at
+that instant or nothing is ever inside its live window. `nowMs()` is production
+code and was deliberately left on the real clock rather than given a seam for
+screenshots. The consequence is exact: in an event scene an **outcome** is
+trustworthy and a **countdown** is not — which is why `E-34`'s remaining-time
+line is not claimed here.
+
 ### Still not done
 
 - **84 frames** not yet compared against a render.
