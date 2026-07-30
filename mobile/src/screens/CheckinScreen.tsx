@@ -789,7 +789,11 @@ export function CheckinScreen({
               </Pressable>
             ))}
           </View>
-        ) : googleTried ? null : (
+        ) : googleTried || query.trim().length < 2 || shown.length > 0 ? null : (
+          /* D-053's order, exactly: this appears only once a name has been
+             typed *and* our own catalogue came up empty — "kullanıcı
+             bulamazsa". A button that cannot do anything yet is a button that
+             lies. */
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={COPY.checkin.googleMore}
