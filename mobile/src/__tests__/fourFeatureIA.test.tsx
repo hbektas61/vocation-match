@@ -288,3 +288,41 @@ describe('D-057 Tatilim (§7)', () => {
     expect(await screen.findByTestId('room-here-now-locked')).toBeTruthy();
   });
 });
+
+describe('D-057 event detail (§9.3)', () => {
+  /** Opens İstanbul, then the first upcoming event's detail screen. */
+  async function openFirstEvent() {
+    await onboardWithHotel('Deniz');
+    await fireEvent.press(await screen.findByTestId('tab-Events'));
+    await fireEvent.changeText(await screen.findByTestId('events-area-input'), 'İstanbul');
+    await fireEvent.press(await screen.findByTestId('events-area-confirm'));
+    await fireEvent.press(await screen.findByTestId('events-upcoming-option-0'));
+    await screen.findByTestId('screen-event-detail');
+  }
+
+  it('says going is a declaration before it is declared (E-22)', async () => {
+    await openFirstEvent();
+    // The product risk of this whole feature is somebody reading "going" as
+    // a ticket, so the sentence is on screen beside the button, not after it.
+    expect(await screen.findByText(COPY.events.joinExplainer)).toBeTruthy();
+  });
+
+  it('asks before withdrawing, and keeps the membership until confirmed (E-24)', async () => {
+    await openFirstEvent();
+    await fireEvent.press(await screen.findByTestId('event-join-upcoming'));
+    expect(await screen.findByTestId('event-withdraw')).toBeTruthy();
+
+    // First press opens the question rather than doing the thing.
+    await fireEvent.press(screen.getByTestId('event-withdraw'));
+    expect(await screen.findByText(COPY.events.withdrawConfirm)).toBeTruthy();
+    expect(await getApi().getMyEvents()).toHaveLength(1);
+
+    // Backing out leaves the membership exactly where it was.
+    await fireEvent.press(screen.getByTestId('event-withdraw-cancel'));
+    expect(await getApi().getMyEvents()).toHaveLength(1);
+
+    await fireEvent.press(await screen.findByTestId('event-withdraw'));
+    await fireEvent.press(await screen.findByTestId('event-withdraw-confirm'));
+    expect(await getApi().getMyEvents()).toHaveLength(0);
+  });
+});

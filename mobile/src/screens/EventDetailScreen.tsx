@@ -53,6 +53,8 @@ export function EventDetailScreen({
 }: RootScreenProps<'EventDetail'> & { reader?: ForegroundLocationReader }) {
   const [joined, setJoined] = useState<MyEvent | null>(null);
   const [busy, setBusy] = useState(false);
+  /** E-24: the withdraw confirmation is open. */
+  const [withdrawing, setWithdrawing] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<EventPresenceAnswer['outcome'] | null>(null);
 
@@ -114,22 +116,50 @@ export function EventDetailScreen({
             onPress={() => navigation.navigate('Tabs')}
             testID="event-open-upcoming-deck"
           />
-          <Button
-            label={COPY.events.withdraw}
-            variant="secondary"
-            disabled={busy}
-            onPress={async () => {
-              // Withdrawing closes the room and deletes nothing else: the
-              // matches and the conversations are as much theirs as anybody's.
-              await getApi().withdrawFromEvent(joined.eventId);
-              setJoined(null);
-            }}
-            testID="event-withdraw"
-          />
+          {/* E-24: withdrawing shuts a room you are in. Switching a vacation
+              place asks first; this fired on the first press. It deletes
+              nothing either way — the matches and the conversations are as
+              much theirs as anybody's — but leaving a room is still a thing
+              to mean rather than a thing to graze. */}
+          {withdrawing ? (
+            <>
+              <Text style={styles.question}>{COPY.events.withdrawConfirm}</Text>
+              <Body>{COPY.events.withdrawBody}</Body>
+              <Button
+                label={COPY.events.withdrawYes}
+                variant="danger"
+                disabled={busy}
+                onPress={async () => {
+                  await getApi().withdrawFromEvent(joined.eventId);
+                  setWithdrawing(false);
+                  setJoined(null);
+                }}
+                testID="event-withdraw-confirm"
+              />
+              <Button
+                label={COPY.common.cancel}
+                variant="secondary"
+                onPress={() => setWithdrawing(false)}
+                testID="event-withdraw-cancel"
+              />
+            </>
+          ) : (
+            <Button
+              label={COPY.events.withdraw}
+              variant="secondary"
+              disabled={busy}
+              onPress={() => setWithdrawing(true)}
+              testID="event-withdraw"
+            />
+          )}
         </Card>
       ) : (
         <Card>
           <Text style={styles.question}>{COPY.events.roomChoiceTitle}</Text>
+          {/* E-22: what "going" means, before it is declared rather than after
+              — the whole product risk of this feature is somebody reading it
+              as a ticket. */}
+          <Body>{COPY.events.joinExplainer}</Body>
           <Button
             label={COPY.events.joinUpcoming}
             onPress={join}

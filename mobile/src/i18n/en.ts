@@ -325,6 +325,14 @@ export const en = {
     joinedRoomCta: 'See who is going',
     liveRoomCta: 'See who is here now',
     withdraw: 'I am not going any more',
+    /** E-24: withdrawing closes a room, so it asks first — as switching places does. */
+    withdrawConfirm: 'Not going any more?',
+    withdrawBody:
+      'You leave this event\u2019s room and stop appearing in its deck. Existing matches and chats are kept, and you can join again whenever you like.',
+    withdrawYes: 'Yes, withdraw',
+    /** E-22: what going actually means, said before it is declared. */
+    joinExplainer:
+      'This is a declaration, not proof of a ticket \u2014 and no ticket is asked of anyone.',
     cancelled: 'This event has been cancelled.',
     postponed: 'This event has been postponed.',
     dateTbd: 'The date is not confirmed yet.',

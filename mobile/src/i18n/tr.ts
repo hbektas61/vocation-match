@@ -311,6 +311,14 @@ export const tr: Copy = {
     joinedRoomCta: 'Gidenleri gör',
     liveRoomCta: 'Şu an burada olanları gör',
     withdraw: 'Artık gitmiyorum',
+    /** E-24: geri çekmek bir odayı kapatır, o yüzden önce sorar. */
+    withdrawConfirm: 'Artık gitmiyor musun?',
+    withdrawBody:
+      'Bu etkinliğin odasından çıkarsın ve destesinde görünmezsin. Mevcut eşleşmelerin ve sohbetlerin durur; istediğin zaman yeniden katılabilirsin.',
+    withdrawYes: 'Evet, katılımı geri çek',
+    /** E-22: gitmenin ne demek olduğu, beyan edilmeden önce. */
+    joinExplainer:
+      'Bu bir beyandır, bilet kanıtı değildir \u2014 ve kimseden bilet istenmez.',
     cancelled: 'Bu etkinlik iptal edildi.',
     postponed: 'Bu etkinlik ertelendi.',
     dateTbd: 'Tarih henüz kesinleşmedi.',
