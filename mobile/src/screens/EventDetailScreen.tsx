@@ -71,6 +71,36 @@ export function EventDetailScreen({
     }
   };
 
+  /**
+   * E-21: the live check straight from the selection, with no declaration
+   * first and none created. The membership path below still exists for
+   * somebody who *has* joined — it needs no token and re-uses their event.
+   */
+  const verifyFromSelection = async () => {
+    setBusy(true);
+    setProblem(null);
+    setOutcome(null);
+    try {
+      const reading = await reader.read();
+      if (reading.status !== 'granted') {
+        setProblem(COPY.events.permissionDenied);
+        return;
+      }
+      const answer = await getApi().verifyEventPresenceFromSelection(
+        route.params.selectionToken,
+        reading.latitude,
+        reading.longitude,
+        reading.accuracyMeters,
+      );
+      setOutcome(answer.outcome);
+      // Nothing is joined by this: only a live answer, and only when it worked.
+    } catch (error) {
+      setProblem(error instanceof ApiError ? apiErrorMessage(error.code) : COPY.errors.unknown);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const verify = async () => {
     if (!joined) return;
     setBusy(true);
@@ -165,11 +195,22 @@ export function EventDetailScreen({
               — the whole product risk of this feature is somebody reading it
               as a ticket. */}
           <Body>{COPY.events.joinExplainer}</Body>
+          {/* E-21: two independent ways in. Pressing either must not quietly
+              create the other — being at an event and planning to go are
+              separate claims, and the hotel room has been protected from that
+              same inversion since D-002. */}
           <Button
             label={COPY.events.joinUpcoming}
             onPress={join}
             disabled={busy}
             testID="event-join-upcoming"
+          />
+          <Button
+            label={COPY.events.joinHereNow}
+            variant="secondary"
+            onPress={verifyFromSelection}
+            disabled={busy}
+            testID="event-verify-from-selection"
           />
         </Card>
       )}

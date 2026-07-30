@@ -352,3 +352,46 @@ describe('D-057 Çevremde (§8)', () => {
     expect(COPY.checkin.catalogAttribution).toMatch(/OpenStreetMap/i);
   });
 });
+
+describe('D-057 closed decisions — N-07 and E-21', () => {
+  it('reports the check-in allowance from the server, never derived here', async () => {
+    await onboardWithHotel('Deniz');
+    const summary = await getApi().googleCheckinEntitlement();
+
+    // Five fields, one source. A client that computes what it is entitled to
+    // is a client that can disagree with the server about somebody's rights.
+    expect(summary.limit).toBeGreaterThan(0);
+    expect(summary.used).toBe(0);
+    expect(summary.remaining).toBe(summary.limit);
+    expect(summary.resetsAt).toBeGreaterThan(Date.now());
+    expect(typeof summary.isPremium).toBe('boolean');
+  });
+
+  it('spends the allowance on a completed check-in and on nothing else', async () => {
+    await onboardWithHotel('Deniz');
+    const before = await getApi().googleCheckinEntitlement();
+
+    // A search that found nothing must cost nothing.
+    await getApi().googlePlaceSearch('zzzzzz', 36.85, 30.78).catch(() => null);
+    const after = await getApi().googleCheckinEntitlement();
+    expect(after.used).toBe(before.used);
+    expect(after.remaining).toBe(before.remaining);
+  });
+
+  it('offers both event rooms independently, and neither creates the other (E-21)', async () => {
+    await onboardWithHotel('Deniz');
+    await fireEvent.press(await screen.findByTestId('tab-Events'));
+    await fireEvent.changeText(await screen.findByTestId('events-area-input'), 'İstanbul');
+    await fireEvent.press(await screen.findByTestId('events-area-confirm'));
+    await fireEvent.press(await screen.findByTestId('events-upcoming-option-0'));
+    await screen.findByTestId('screen-event-detail');
+
+    // Both ways in are on screen before anything has been declared.
+    expect(await screen.findByTestId('event-join-upcoming')).toBeTruthy();
+    expect(await screen.findByTestId('event-verify-from-selection')).toBeTruthy();
+
+    // Taking the live one creates no membership.
+    await fireEvent.press(screen.getByTestId('event-verify-from-selection'));
+    expect(await getApi().getMyEvents()).toHaveLength(0);
+  });
+});

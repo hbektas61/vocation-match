@@ -593,5 +593,82 @@ Deno.serve(async (req) => {
     });
   }
 
+  /**
+   * E-21 — the live check from a selection alone.
+   *
+   * Same freshness rules as `verify`; the difference is where the event comes
+   * from and what is *not* created. There is no membership lookup because
+   * there is no membership requirement, and none is made: being somewhere and
+   * having said you would go are two separate claims.
+   */
+  if (operation === "verify_selection") {
+    const selectionToken = String(body.selectionToken ?? "").trim();
+    const latitude = Number(body.latitude);
+    const longitude = Number(body.longitude);
+    const accuracy = Number(body.accuracyMeters);
+    if (selectionToken.length === 0) {
+      return Response.json({ error: "selection_required" }, { status: 400 });
+    }
+    if (
+      !Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+      Math.abs(latitude) > 90 || Math.abs(longitude) > 180
+    ) {
+      return Response.json({ error: "That location reading is not usable." }, { status: 400 });
+    }
+
+    // The token names the provider event; the database is what decides whether
+    // this caller may use it, and it re-checks ownership and expiry itself.
+    const { data: peek } = await admin
+      .from("event_selections")
+      .select("provider_event_id")
+      .eq("token", selectionToken)
+      .maybeSingle();
+    const providerEventId = (peek as { provider_event_id?: string } | null)?.provider_event_id;
+    if (!providerEventId) {
+      return Response.json({ error: "selection_required" }, { status: 404 });
+    }
+
+    let status: string | null = null;
+    let venueLat: number | null = null;
+    let venueLng: number | null = null;
+    const detail = await refresh(providerEventId);
+    if (detail.ok) {
+      status = String(detail.event.status ?? "");
+      venueLat = detail.event.latitude as number | null;
+      venueLng = detail.event.longitude as number | null;
+    } else {
+      // No lease to fall back on: this event may never have been opened before.
+      return Response.json({ error: "provider_unavailable" }, { status: 503 });
+    }
+
+    const { data: rows, error } = await admin.rpc("record_event_presence_from_selection", {
+      p_user: userId,
+      p_token: selectionToken,
+      p_latitude: latitude,
+      p_longitude: longitude,
+      p_venue_latitude: venueLat,
+      p_venue_longitude: venueLng,
+      p_accuracy_meters: Number.isFinite(accuracy) && accuracy > 0 ? accuracy : null,
+    });
+    if (error) {
+      return Response.json(
+        { error: (error as { code?: string }).code ?? "check_failed" },
+        { status: 400 },
+      );
+    }
+    const answer = (rows ?? [])[0] as
+      | { outcome?: string; within_range?: boolean; expires_at?: string; event_id?: string }
+      | undefined;
+    if (!answer) {
+      return Response.json({ error: "check_failed" }, { status: 503 });
+    }
+    return Response.json({
+      outcome: answer.outcome ?? "TOO_FAR",
+      withinRange: answer.within_range === true,
+      expiresAt: answer.expires_at ?? null,
+      eventId: answer.event_id ?? null,
+    });
+  }
+
   return Response.json({ error: "Unknown operation." }, { status: 400 });
 });

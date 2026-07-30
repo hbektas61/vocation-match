@@ -651,6 +651,10 @@ export const tr: Copy = {
     hereCta: 'Buradayım — çevremi gör',
     /** D-052: the picker's third step, opened by hand and never on arrival. */
     googleMore: 'Google ile daha fazla mekân ara',
+    /** N-07: hak, arama değil tamamlanmış check-in için harcanır. */
+    entitlementLeft: (left: number, limit: number) =>
+      `Bu ay ${limit} Google destekli check-in hakkının ${left} tanesi kaldı`,
+    entitlementNone: 'Bu ayki Google destekli check-in hakkın doldu. Liste ve \u201Cburadayım\u201D çalışmaya devam ediyor.',
     googleUnavailable: 'Şu an ek arama yapılamıyor. Listeden seçebilir ya da buradayım diyebilirsin.',
     /** Google answered, and knows no such place — not the same as unavailable. */
     googleNoResults: 'Google da buralarda bu adda bir mekân bilmiyor. Başka bir yazım deneyebilir ya da buradayım diyebilirsin.',

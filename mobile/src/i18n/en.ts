@@ -721,6 +721,14 @@ export const en = {
     hereCta: "I'm here — see who is around",
     /** D-052: the picker's third step, opened by hand and never on arrival. */
     googleMore: 'Search more places with Google',
+    /**
+     * N-07. Deliberately about the *check-in*, not about searching: the right
+     * is spent only when a Google-labelled check-in completes. Searching,
+     * finding nothing, cancelling or a provider failure all cost nothing.
+     */
+    entitlementLeft: (left: number, limit: number) =>
+      `${left} of ${limit} Google-backed check-ins left this month`,
+    entitlementNone: 'You have used this month\u2019s Google-backed check-ins. The list and \u201CI am here\u201D still work.',
     googleUnavailable: "The extra search is unavailable right now. Pick from the list, or say you are here.",
     /** Google answered, and knows no such place — not the same as unavailable. */
     googleNoResults: 'Google knows no place by that name near here. Try another spelling, or say you are here.',

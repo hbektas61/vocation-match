@@ -50,6 +50,7 @@ import {
   type EventPresenceAnswer,
   type EventSearchResult,
   type MyEvent,
+  type CheckinEntitlement,
 } from './contracts';
 import type { BackendConfig } from './config';
 import { isE164Phone, normalizePhone } from './phone';
@@ -997,6 +998,24 @@ export class SupabaseApi implements VocationApi {
     return data;
   }
 
+  async googleCheckinEntitlement(): Promise<CheckinEntitlement> {
+    const { data, error } = await this.client.rpc('google_checkin_entitlement');
+    const row = Array.isArray(data) ? data[0] : data;
+    if (error || !row) {
+      // Fail closed on the number, open on the feature: the catalogue and the
+      // here-anchor never depended on this, and a wrong number is worse than
+      // none.
+      return { limit: 0, used: 0, remaining: 0, resetsAt: 0, isPremium: false };
+    }
+    return {
+      limit: Number(row.limit ?? 0),
+      used: Number(row.used ?? 0),
+      remaining: Number(row.remaining ?? 0),
+      resetsAt: row.resets_at ? Date.parse(row.resets_at) : 0,
+      isPremium: row.is_premium === true,
+    };
+  }
+
   async resolveGooglePlace(placeId: string): Promise<string | null> {
     const { data, error } = await this.client.functions.invoke('places-google', {
       body: { op: 'resolve', placeId },
@@ -1196,6 +1215,34 @@ export class SupabaseApi implements VocationApi {
         imageUrl: (payload.imageUrl as string) ?? null,
       };
     });
+  }
+
+  async verifyEventPresenceFromSelection(
+    selectionToken: string,
+    latitude: number,
+    longitude: number,
+    accuracyMeters?: number | null,
+  ): Promise<EventPresenceAnswer & { eventId: string | null }> {
+    const { data, error } = await this.client.functions.invoke('events-ticketmaster', {
+      body: { op: 'verify_selection', selectionToken, latitude, longitude, accuracyMeters },
+    });
+    if (error) {
+      const response = (error as { context?: Response }).context;
+      const detail = response && typeof response.json === 'function'
+        ? await response.json().catch(() => null)
+        : null;
+      const code = typeof detail?.error === 'string' ? detail.error : '';
+      if (code === 'PP001') {
+        throw new ApiError('PREMIUM_REQUIRED', 'That is not available on your account.');
+      }
+      throw new ApiError('UNKNOWN', 'Could not check where you are.');
+    }
+    return {
+      outcome: (data?.outcome ?? 'TOO_FAR') as EventPresenceAnswer['outcome'],
+      withinRange: data?.withinRange === true,
+      expiresAt: typeof data?.expiresAt === 'string' ? Date.parse(data.expiresAt) : null,
+      eventId: typeof data?.eventId === 'string' ? data.eventId : null,
+    };
   }
 
   async verifyEventPresence(

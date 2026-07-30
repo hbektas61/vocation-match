@@ -37,6 +37,7 @@ import {
   type ForegroundLocationReader,
   type GooglePlaceHit,
   type HotelCard,
+  type CheckinEntitlement,
 } from '../data';
 import { MIN_QUERY_WEIGHT, normalizeQuery, queryWeight } from '../domain/searchQuery';
 import { getHotelById } from '../fixtures/hotels';
@@ -275,6 +276,12 @@ export function CheckinScreen({
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<HotelCard[]>([]);
   const [busy, setBusy] = useState(false);
+  /**
+   * N-07: the allowance, as the server reports it. Never derived here — a
+   * screen that computes what it is entitled to is a screen that can disagree
+   * with the server about somebody's rights.
+   */
+  const [entitlement, setEntitlement] = useState<CheckinEntitlement | null>(null);
   const [notice, setNotice] = useState<{ message: string; tone: 'error' | 'info' } | null>(null);
   const searchSeq = useRef(0);
   /**
@@ -516,6 +523,22 @@ export function CheckinScreen({
    * for the ten nearest places, shown in their own list with the attribution
    * their terms require, and nothing about the answer is stored.
    */
+  // N-07: read once the Google step is on the table, and again after a
+  // completed labelled check-in — those are the only two moments the number
+  // can have changed.
+  useEffect(() => {
+    let cancelled = false;
+    getApi()
+      .googleCheckinEntitlement()
+      .then((summary) => {
+        if (!cancelled) setEntitlement(summary);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [checkin]);
+
   const askGoogle = async () => {
     // D-053: a *typed* name, so there is nothing to ask until one exists.
     // D-053 §3: three non-whitespace characters, enforced again on the server.
@@ -890,6 +913,16 @@ export function CheckinScreen({
             <Text style={styles.bigOutlineLabel}>{COPY.checkin.googleMore}</Text>
           </Pressable>
         )}
+
+        {/* N-07: what pressing that button costs, before it is pressed. The
+            server counts; this only reads. */}
+        {entitlement ? (
+          <Caption testID="checkin-entitlement">
+            {entitlement.remaining > 0
+              ? COPY.checkin.entitlementLeft(entitlement.remaining, entitlement.limit)
+              : COPY.checkin.entitlementNone}
+          </Caption>
+        ) : null}
 
         {/* Always here, never only under an emptiness: the map missing the
             place you are standing in is the ordinary case (D-048). */}

@@ -86,6 +86,7 @@ import {
   type EventPresenceAnswer,
   type EventSearchResult,
   type MyEvent,
+  type CheckinEntitlement,
 } from './contracts';
 
 import { buildPhotoPath, isProfilePhotoPath, photoExtensionFor } from './photos';
@@ -1089,6 +1090,22 @@ export class FakeApi implements VocationApi {
     return Math.max(allowance - (this.googleFinds.get(userId) ?? 0), 0);
   }
 
+  /** N-07: the same five numbers the SQL reports, from the same rule. */
+  async googleCheckinEntitlement(): Promise<CheckinEntitlement> {
+    const userId = await this.requireUserId();
+    const limit = this.isPremiumNow(userId) ? 10 : 3;
+    const used = this.googleFinds.get(userId) ?? 0;
+    const now = new Date(this.now());
+    const resets = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1);
+    return {
+      limit,
+      used,
+      remaining: Math.max(limit - used, 0),
+      resetsAt: resets,
+      isPremium: this.isPremiumNow(userId),
+    };
+  }
+
   /**
    * A Place ID back into a name, for a screen about to draw it.
    *
@@ -1506,6 +1523,32 @@ export class FakeApi implements VocationApi {
       }));
   }
 
+  /**
+   * E-21: the same decision, reached from a token instead of a membership.
+   * Mirrors `record_event_presence_from_selection`: no membership is created,
+   * a refusal writes nothing, and replaying one token is idempotent.
+   */
+  async verifyEventPresenceFromSelection(
+    selectionToken: string,
+    latitude: number,
+    longitude: number,
+    accuracyMeters?: number | null,
+  ): Promise<EventPresenceAnswer & { eventId: string | null }> {
+    const userId = await this.requireUserId();
+    if (this.capabilities.get('can_join_event_here_now') !== true) {
+      throw new ApiError('PREMIUM_REQUIRED', 'That is not available on your account.');
+    }
+    const selection = this.eventSelections.get(selectionToken);
+    if (!selection || selection.userId !== userId) {
+      // Ownership only: the fake's selections carry no expiry, and inventing
+      // one here would test the fake rather than the rule.
+      throw new ApiError('NOT_FOUND', 'That event selection is no longer valid.');
+    }
+    const eventId = `event-${selection.providerEventId}`;
+    const answer = this.eventPresenceDecision(userId, eventId, latitude, longitude, accuracyMeters);
+    return { ...answer, eventId: answer.withinRange ? eventId : null };
+  }
+
   async verifyEventPresence(
     eventId: string,
     latitude: number,
@@ -1519,6 +1562,21 @@ export class FakeApi implements VocationApi {
     if (this.eventMemberships.get(userId)?.get(eventId) !== null) {
       throw new ApiError('NOT_FOUND', 'Join this event first.');
     }
+    return this.eventPresenceDecision(userId, eventId, latitude, longitude, accuracyMeters);
+  }
+
+  /**
+   * Everything the live check decides once the caller's right to ask is
+   * settled — the mirror of `app.event_presence_core`, so the two entry points
+   * cannot drift apart here either.
+   */
+  private eventPresenceDecision(
+    userId: string,
+    eventId: string,
+    latitude: number,
+    longitude: number,
+    accuracyMeters?: number | null,
+  ): EventPresenceAnswer {
     const event = eventById(eventId.replace(/^event-/, ''));
     if (!event) throw new ApiError('NOT_FOUND', 'Unknown event.');
 

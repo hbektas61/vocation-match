@@ -213,6 +213,25 @@ export interface ActivationResult {
   presenceCleared: boolean;
 }
 
+/**
+ * N-07: this account's Google-backed check-in allowance.
+ *
+ * Deliberately not called an "advanced search" allowance: the right is spent
+ * only on a check-in that completed with a Google label. A search, an empty
+ * result, a cancellation, a provider failure and a failed check-in all cost
+ * nothing.
+ */
+export interface CheckinEntitlement {
+  /** The ceiling for this account's plan — 3 free, 10 premium (D-053). */
+  limit: number;
+  /** Completed Google-backed check-ins this UTC month. */
+  used: number;
+  remaining: number;
+  /** Epoch ms of the next UTC month boundary, when the allowance returns. */
+  resetsAt: number;
+  isPremium: boolean;
+}
+
 /** Self-declared stay. There is no proof field, by design (D-001). */
 export interface UpcomingStay {
   hotelId: string;
@@ -746,6 +765,14 @@ export interface VocationApi {
   ): Promise<GooglePlaceAnswer | null>;
   /** How many advanced finds are left this month (3 free, 10 premium). */
   googleFindsRemaining(): Promise<number>;
+  /**
+   * N-07: the whole allowance, from the server that enforces it.
+   *
+   * The screen shows a ceiling, a spend and a reset instant, and none of the
+   * three may be derived on the client — a client that computes the number it
+   * is entitled to is a client that can disagree with the server about it.
+   */
+  googleCheckinEntitlement(): Promise<CheckinEntitlement>;
   /** A Place ID back into a name, for drawing it. Null when unavailable. */
   resolveGooglePlace(placeId: string): Promise<string | null>;
   clearCheckin(): Promise<void>;
@@ -776,6 +803,21 @@ export interface VocationApi {
   getMyEvents(): Promise<MyEvent[]>;
   /** The provider's lease for these events, or fewer rows than asked for. */
   getEventContent(eventIds: string[]): Promise<EventContent[]>;
+  /**
+   * E-21: "Şu An Etkinlikteyim" from a selection alone.
+   *
+   * Being at an event and having said you would go are two separate claims, so
+   * neither is a precondition for the other and this creates no membership.
+   * Everything is decided by the server: token ownership and expiry, the
+   * provider's current status, the live window, the venue coordinate, the
+   * D-055a reading rule, the 100 m ceiling and the 500 m radius.
+   */
+  verifyEventPresenceFromSelection(
+    selectionToken: string,
+    latitude: number,
+    longitude: number,
+    accuracyMeters?: number | null,
+  ): Promise<EventPresenceAnswer & { eventId: string | null }>;
   /** "Şu An Etkinlikteyim" — decided by the server on every axis. */
   verifyEventPresence(
     eventId: string,

@@ -16,6 +16,10 @@ select tests.create_member('ina@example.test', '00000000-0000-0000-0000-00000000
 -- Joins nothing, ever: the "no deck without an event" case needs somebody who
 -- has not been given a focus by joining.
 select tests.create_member('ali@example.test', '00000000-0000-0000-0000-00000000e004', 'Ali');
+-- E-21: two who never declare anything — one who turns up at the event, and
+-- one whose reading is too coarse to be believed.
+select tests.create_member('efe@example.test', '00000000-0000-0000-0000-00000000e005', 'Efe');
+select tests.create_member('mine@example.test', '00000000-0000-0000-0000-00000000e006', 'Mine');
 
 -- A hotel guest, to prove they never leak into a concert.
 create temp table h as select tests.create_hotel('Lara Shore', 36.8549, 30.7995) as id;
@@ -559,6 +563,156 @@ select throws_ok(
   $$select 1 from app.cron_runs limit 1$$,
   '42501', null,
   'the ledger is not a client''s to read'
+);
+
+
+-- ============================================================== E-21 (D-057)
+-- Being at an event must not require having said you were going to it. The
+-- hotel room has been protected from that inversion since D-002; the event
+-- room was not.
+select tests.authenticate_as_service();
+select tests.lease_event('tm-solo', now() - interval '30 minutes', now() + interval '2 hours');
+
+-- e005 has joined nothing at all.
+select is(
+  (select count(*)::int from public.event_memberships m
+    where m.user_id = '00000000-0000-0000-0000-00000000e005'),
+  0,
+  'E-21: the account under test has declared for no event'
+);
+
+-- One token, kept, so the replay below is genuinely the *same* token rather
+-- than a second one minted to look like it.
+create temporary table e21 as
+  select tests.event_token('00000000-0000-0000-0000-00000000e005', 'tm-solo', 'onsale') as token;
+
+select results_eq(
+  $$select outcome from public.record_event_presence_from_selection(
+      '00000000-0000-0000-0000-00000000e005', (select token from e21),
+      41.0435, 28.9976, 41.0435, 28.9976, 10)$$,
+  $$values ('IN_RANGE'::text)$$,
+  'E-21: a live check succeeds from a selection token with no membership'
+);
+
+select is(
+  (select count(*)::int from public.event_memberships m
+    where m.user_id = '00000000-0000-0000-0000-00000000e005'),
+  0,
+  'E-21: and it created no membership behind their back'
+);
+
+select is(
+  (select count(*)::int from public.event_presence_checks pc
+    where pc.user_id = '00000000-0000-0000-0000-00000000e005' and pc.within_range),
+  1,
+  'E-21: exactly one live answer was written'
+);
+
+select is(
+  (select room from public.user_event_focus f
+    where f.user_id = '00000000-0000-0000-0000-00000000e005'),
+  'EVENT_HERE_NOW',
+  'E-21: and the focus is the live room, not the declared one'
+);
+
+-- Replay: the same token again is safe, idempotent, and adds nothing.
+select results_eq(
+  $$select outcome from public.record_event_presence_from_selection(
+      '00000000-0000-0000-0000-00000000e005', (select token from e21),
+      41.0435, 28.9976, 41.0435, 28.9976, 10)$$,
+  $$values ('IN_RANGE'::text)$$,
+  'E-21: replaying the same token gives the same answer rather than an error'
+);
+
+select is(
+  (select count(*)::int from public.event_presence_checks pc
+    where pc.user_id = '00000000-0000-0000-0000-00000000e005'),
+  1,
+  'E-21: and still exactly one presence row after the replay'
+);
+
+select is(
+  (select count(*)::int from public.events e where e.provider_event_id = 'tm-solo'),
+  1,
+  'E-21: one canonical subject, however many times the token is used'
+);
+
+-- A refusal must leave nothing behind. 900 m of accuracy is D-055a's example.
+select results_eq(
+  $$select outcome from public.record_event_presence_from_selection(
+      '00000000-0000-0000-0000-00000000e006',
+      tests.event_token('00000000-0000-0000-0000-00000000e006', 'tm-solo', 'onsale'),
+      41.0435, 28.9976, 41.0435, 28.9976, 900)$$,
+  $$values ('LOCATION_INACCURATE'::text)$$,
+  'E-21: a 900 m fix is refused here exactly as it is on the membership path'
+);
+
+select is(
+  (select count(*)::int from public.event_presence_checks pc
+    where pc.user_id = '00000000-0000-0000-0000-00000000e006'),
+  0,
+  'E-21: a refused check writes no presence row'
+);
+
+select is(
+  (select count(*)::int from public.event_memberships m
+    where m.user_id = '00000000-0000-0000-0000-00000000e006'),
+  0,
+  'E-21: and no membership'
+);
+
+-- Somebody else's token is not a key.
+select throws_ok(
+  $$select 1 from public.record_event_presence_from_selection(
+      '00000000-0000-0000-0000-00000000e004',
+      tests.event_token('00000000-0000-0000-0000-00000000e005', 'tm-solo', 'onsale'),
+      41.0435, 28.9976, 41.0435, 28.9976, 10)$$,
+  'P0002', null,
+  'E-21: a token belonging to somebody else is refused'
+);
+
+select tests.authenticate_as('00000000-0000-0000-0000-00000000e001');
+select throws_ok(
+  $$select 1 from public.record_event_presence_from_selection(
+      '00000000-0000-0000-0000-00000000e001', gen_random_uuid(),
+      41.0435, 28.9976, 41.0435, 28.9976, 10)$$,
+  '42501', null,
+  'E-21: and a client cannot call it directly at all'
+);
+
+-- ============================================================== N-07 (D-057)
+select tests.authenticate_as('00000000-0000-0000-0000-00000000e001');
+-- This suite's members are premium, so the premium ceiling is what it reports.
+select results_eq(
+  $$select "limit", used, remaining, is_premium from public.google_checkin_entitlement()$$,
+  $$values (10, 0, 10, true)$$,
+  'N-07: an account is told its ceiling, its spend and what is left'
+);
+
+select tests.authenticate_as_service();
+select is(
+  (select app.google_find_allowance('00000000-0000-0000-0000-00000000e001')),
+  10,
+  'N-07: and the ceiling it reports is the one the charge itself uses, not a copy'
+);
+select tests.authenticate_as('00000000-0000-0000-0000-00000000e001');
+
+select ok(
+  (select resets_at from public.google_checkin_entitlement()) > now(),
+  'N-07: and when the allowance comes back, as an instant rather than a duration'
+);
+
+select ok(
+  (select resets_at from public.google_checkin_entitlement())
+    = date_trunc('month', now()) + interval '1 month',
+  'N-07: which is the UTC month boundary the charge itself is keyed on'
+);
+
+select tests.authenticate_as_anon();
+select throws_ok(
+  $$select 1 from public.google_checkin_entitlement()$$,
+  '42501', null,
+  'N-07: anonymous callers read nobody''s entitlement'
 );
 
 select * from finish(true);
