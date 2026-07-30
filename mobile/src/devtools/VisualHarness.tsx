@@ -429,6 +429,86 @@ const SCENES: Record<string, Scene> = {
     },
     render: () => <DiscoveryScreen />,
   },
+  // ------------------------------------------------- 5: shared discovery
+  'D-03': {
+    frame: '45:843',
+    label: 'Keşfet — Çevremde, adlı mekân',
+    seed: checkedInNearby,
+    render: () => <DiscoveryScreen />,
+  },
+  'D-04': {
+    frame: '45:893',
+    label: 'Keşfet — Çevremde, adı olmayan çevre',
+    seed: async () => {
+      await baseAccount();
+      const reading = await AT_VENUE.read();
+      if (reading.status === 'granted') {
+        await getApi().checkinHere(reading.latitude, reading.longitude);
+      }
+    },
+    render: () => <DiscoveryScreen />,
+  },
+  'D-05': {
+    frame: '45:943',
+    label: 'Keşfet — Etkinliğe Gidecekler',
+    clock: FAKE_EVENTS_NOW,
+    seed: async () => {
+      await selectEvent('Volkswagen Arena Live');
+      if (seededSelection) {
+        const mine = await getApi().joinEventUpcoming(seededSelection.token);
+        await getApi().setEventFocus(mine.eventId, 'EVENT_UPCOMING');
+      }
+    },
+    render: () => <DiscoveryScreen />,
+  },
+  'D-06': {
+    frame: '45:993',
+    label: 'Keşfet — Şu An Etkinlikte',
+    clock: FAKE_EVENTS_NOW,
+    seed: async () => {
+      await selectEvent('Bosphorus Sunset Festival');
+      if (seededSelection) {
+        const reading = await AT_VENUE.read();
+        if (reading.status === 'granted') {
+          // The independent live path (E-21): no declaration, no membership.
+          await getApi().verifyEventPresenceFromSelection(
+            seededSelection.token, 41.0405, 28.9861, reading.accuracyMeters);
+        }
+      }
+    },
+    render: () => <DiscoveryScreen />,
+  },
+  'M-04': {
+    frame: '46:885',
+    label: 'Eşleşme — Çevremde',
+    seed: async () => {
+      await checkedInNearby();
+      const api = getApi();
+      const deck = await api.getDiscoveryFeed('NEARBY').catch(() => []);
+      for (const card of deck) {
+        const result = await api.swipe(card.userId, 'NEARBY', 'LIKE');
+        if (result.matchId) { seededMatchId = result.matchId; break; }
+      }
+    },
+    render: (p) => (
+      <MatchScreen navigation={p.navigation} route={{ ...p.route, params: { matchId: seededMatchId ?? '' } } as never} />
+    ),
+  },
+  'C-03': {
+    frame: '46:1069',
+    label: 'Sohbet — oda kapandı',
+    seed: async () => {
+      seededMatchId = await matched('UPCOMING');
+      if (seededMatchId) {
+        await getApi().sendMessage(seededMatchId, 'Tatilde görüşürüz');
+        // Ending the match closes the room; the conversation stays readable.
+        await getApi().unmatch(seededMatchId).catch(() => undefined);
+      }
+    },
+    render: (p) => (
+      <ChatScreen navigation={p.navigation} route={{ ...p.route, params: { matchId: seededMatchId ?? '' } } as never} />
+    ),
+  },
   // ---------------------------------------------------- 1: global navigation
   'NAV-02': {
     frame: '44:674',

@@ -637,6 +637,41 @@ which is a name, not an absence. The `nameUnavailable` fallback is therefore
 only exercisable against a real provider, and is covered by a unit test rather
 than by eye.
 
+### Group 5 — shared discovery
+
+| Frame | Node | Capture | Comparison | Difference found | Fix | Re-verified |
+| --- | --- | --- | --- | --- | --- | --- |
+| D-03 Çevremde, named venue | `45:843` | `app-D-03.png` | matches | none | — | context "Çevremde · Lara Shore Resort · 3 sa 0 dk kaldı" |
+| D-04 Çevremde, no name | `45:893` | `app-D-04.png` | matches | none | — | the control names no venue, and the card reads "Lara Shore Resort · **çevrede**" — the honest regional treatment |
+| D-05 Etkinliğe Gidecekler | `45:943` | `app-D-05.png` | **failed, then fixed** | the selector said "Açık odan yok" for an account with an event membership | the two event rooms are synthesised on the screen, as Çevremde always was | "ETKİNLİĞE GİDECEĞİM · Volkswagen Arena Live" |
+| D-06 Şu An Etkinlikte | `45:993` | `app-D-06.png` | **not reachable** | see below | — | outstanding |
+| M-04 match from Çevremde | `46:885` | `app-M-04.png` | matches | none | — | "Aynı mekândasınız" + "Tam konumlar ve anlık mesafeler kimseye gösterilmez." + the Çevremde ribbon |
+| C-03 chat, room closed | `46:1069` | `app-C-03.png` | matches | none | — | "Bu konuşma kapandı. Geçmişi yine okuyabilirsin." with the history still readable |
+
+**The D-05 failure was real and mine.** `getRooms()` answers for the vacation
+venue only. Çevremde has been synthesised on this screen from the check-in
+since D-039 — and when D-057 added the two event rooms to the ordering and to
+`CONTEXT_ORDER`, nothing ever put them into the list. So the selector that
+promises five contexts could offer at most three, and somebody with an event
+membership was told "açık odan yok" about a room they were in. No test caught
+it because no test asserted an event context in the selector; one does now.
+
+### Open for the owner — a consequence of E-21, found by looking
+
+`D-06` cannot be reached, and the reason is structural rather than cosmetic.
+E-21 made the live event room independent of the declaration, which is right.
+But `my_events()` selects `from public.event_memberships` — so a person who is
+live at an event **without having declared** has no row there, and the client
+has no way to learn, after a restart, which event they are live at. The deck
+therefore cannot open on `EVENT_HERE_NOW` for exactly the people E-21 was
+written for.
+
+In-session the app does know: `record_event_presence_from_selection` returns
+the `event_id`. Across a cold start it does not. Closing this needs either
+`my_events()` to include a live presence that has no membership, or a small
+"what am I live at" read — **a backend contract change, which this pass is not
+allowed to make.** Recorded rather than worked around.
+
 ### Still not done
 
 - **84 frames** not yet compared against a render.

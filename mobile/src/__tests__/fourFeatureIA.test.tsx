@@ -438,3 +438,28 @@ describe('D-057 Etkinlikler refusals (§9.2)', () => {
     expect(notices).toHaveLength(1);
   });
 });
+
+describe('D-057 the deck offers the event rooms it promises', () => {
+  it('lists an event membership as a context, not only the venue rooms', async () => {
+    await onboardWithHotel('Deniz');
+    const api = getApi();
+
+    // Declare for an event, the ordinary way.
+    const found = await api.searchEvents(
+      { kind: 'city', city: 'İstanbul', label: 'İstanbul' }, 'upcoming', 'all');
+    expect(found.kind).toBe('ok');
+    if (found.kind !== 'ok') return;
+    const opened = await api.openEvent(found.events[0].selectionToken);
+    expect(opened).not.toBeNull();
+    await api.joinEventUpcoming(opened!.selectionToken);
+
+    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
+
+    // `getRooms()` answers for the vacation venue only; Çevremde has always
+    // been synthesised on this screen and the event rooms were not, so the
+    // selector that promises five contexts could offer at most three.
+    const selector = await screen.findByTestId('discovery-context');
+    expect(selector.props.accessibilityState.disabled).toBeFalsy();
+    expect(selector.props.accessibilityLabel).toContain(COPY.events.joinUpcoming);
+  });
+});

@@ -112,6 +112,12 @@ export function DiscoveryScreen() {
   const [stayRange, setStayRange] = useState<string | null>(null);
   /** The focused event's leased name. Null once the lease has lapsed. */
   const [eventName, setEventName] = useState<string | null>(null);
+  /** Which event backs each event room, so switching can move the focus. */
+  const [eventRooms, setEventRooms] = useState<{
+    upcoming: MyEvent | null;
+    live: MyEvent | null;
+    focused: MyEvent | null;
+  }>({ upcoming: null, live: null, focused: null });
   const [deck, setDeck] = useState<CandidateCard[] | null>(null);
   const [deckError, setDeckError] = useState<string | null>(null);
   /** Bumped by "scan again" on the empty room; the deck effect re-runs. */
@@ -147,10 +153,11 @@ export function DiscoveryScreen() {
           // Çevremde (D-039) joins the room list as a synthetic entry when a
           // fresh check-in exists: same segments, same deck machinery, same
           // expiry-driven refresh — its validUntil is the check-in clock.
-          const [fetched, checkin, stay] = await Promise.all([
+          const [fetched, checkin, stay, mine] = await Promise.all([
             getApi().getRooms(),
             getApi().getCheckin().catch(() => null),
             getApi().getUpcomingStay().catch(() => null),
+            getApi().getMyEvents().catch(() => [] as MyEvent[]),
           ]);
           if (cancelled) return;
           const withNearby: RoomStatus[] = checkin
@@ -159,10 +166,34 @@ export function DiscoveryScreen() {
                 { room: 'NEARBY', eligible: true, reason: 'ELIGIBLE', validUntil: checkin.expiresAt },
               ]
             : fetched;
-          setRooms(withNearby);
+          /**
+           * D-057: `getRooms()` answers for the vacation venue only, and
+           * Çevremde has always been synthesised here from the check-in. The
+           * two event rooms were not — so the selector that promises five
+           * contexts could offer at most three, and somebody with a live event
+           * room was told "açık odan yok" while standing in it. They are built
+           * the same way, from the memberships the account already has.
+           */
+          const focusedEvent = mine.find((e) => e.focused) ?? mine[0] ?? null;
+          const upcomingEvent = mine.find((e) => e.upcomingOpen) ?? null;
+          const liveEvent = mine.find((e) => e.hereNowOpen) ?? null;
+          const withEvents: RoomStatus[] = [...withNearby];
+          if (upcomingEvent) {
+            withEvents.push({
+              room: 'EVENT_UPCOMING', eligible: true, reason: 'ELIGIBLE', validUntil: null,
+            });
+          }
+          if (liveEvent) {
+            withEvents.push({
+              room: 'EVENT_HERE_NOW', eligible: true, reason: 'ELIGIBLE',
+              validUntil: liveEvent.hereNowUntil,
+            });
+          }
+          setEventRooms({ upcoming: upcomingEvent, live: liveEvent, focused: focusedEvent });
+          setRooms(withEvents);
           setCheckinName(checkin?.venueName ?? null);
           setStayRange(stay ? formatStayRange(stay.startDate, stay.endDate) : null);
-          const eligible = withNearby.filter((r) => r.eligible).map((r) => r.room);
+          const eligible = withEvents.filter((r) => r.eligible).map((r) => r.room);
           // D-040/D-057: keep what the person was looking at; otherwise the
           // most present-tense source first — the live event, the street, the
           // hotel door, then the two declared plans.
@@ -173,9 +204,8 @@ export function DiscoveryScreen() {
           // D-057: the selector names the event, so the focused event's leased
           // name is fetched once per load — and only when an event room is
           // actually on the list. An expired lease simply leaves it null.
-          if (withNearby.some((r) => r.room === 'EVENT_UPCOMING' || r.room === 'EVENT_HERE_NOW')) {
-            const mine: MyEvent[] = await getApi().getMyEvents().catch(() => []);
-            const focused = mine.find((e) => e.focused) ?? mine[0] ?? null;
+          if (withEvents.some((r) => r.room === 'EVENT_UPCOMING' || r.room === 'EVENT_HERE_NOW')) {
+            const focused = focusedEvent;
             if (!cancelled && focused) {
               const [lease] = await getApi().getEventContent([focused.eventId]).catch(() => []);
               if (!cancelled) setEventName(lease?.name ?? null);
@@ -183,7 +213,7 @@ export function DiscoveryScreen() {
           } else if (!cancelled) {
             setEventName(null);
           }
-          const soonest = earliestRoomExpiry(withNearby, nowMs());
+          const soonest = earliestRoomExpiry(withEvents, nowMs());
           if (soonest !== null) {
             timer = setTimeout(load, soonest - nowMs());
           }
@@ -303,6 +333,22 @@ export function DiscoveryScreen() {
       ];
     });
   }, [rooms, hotelName, stayRange, checkinName, eventName]);
+  /**
+   * Switching context is a viewing choice, and for the two event rooms the
+   * server has to be told which event is being viewed — `discovery_feed`
+   * refuses an event deck with no focus. It moves the focus and nothing else:
+   * no membership is created, none is withdrawn.
+   */
+  const chooseRoom = useCallback((next: RoomKey) => {
+    const event = next === 'EVENT_HERE_NOW' ? eventRooms.live
+      : next === 'EVENT_UPCOMING' ? eventRooms.upcoming
+      : null;
+    if (event) {
+      getApi().setEventFocus(event.eventId, next).catch(() => undefined);
+    }
+    setRoom(next);
+  }, [eventRooms]);
+
   const candidate = visibleDeck[0] ?? null;
   // Only the card on top: signing a URL for a deck of twenty would hand out
   // nineteen readable links for people the user may never actually see.
@@ -393,7 +439,7 @@ export function DiscoveryScreen() {
         <ContextSelector
           rows={contextRows}
           current={room}
-          onChange={setRoom}
+          onChange={chooseRoom}
           now={nowMs()}
           testID="discovery-context"
         />
@@ -477,7 +523,7 @@ export function DiscoveryScreen() {
         <ContextSelector
           rows={contextRows}
           current={room}
-          onChange={setRoom}
+          onChange={chooseRoom}
           now={nowMs()}
           testID="discovery-context"
         />
