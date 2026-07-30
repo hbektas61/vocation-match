@@ -182,6 +182,27 @@ async function everyRoomOpen(): Promise<void> {
 let seededMatchId: string | null = null;
 
 const SCENES: Record<string, Scene> = {
+  // -------------------------------------------------------------- 2: Tatilim
+  'T-17': {
+    frame: '36:135',
+    label: 'Oteldeyim — Premium gerekli',
+    seed: async () => {
+      await baseAccount();
+      // The entitlement gate runs before the reading, so a free member is told
+      // about Premium rather than about their GPS (D-055a).
+      await fake().setPremium(false);
+    },
+    render: (p) => <HereNowScreen navigation={p.navigation} route={p.route as never} reader={AT_VENUE} />,
+  },
+  'T-22': {
+    frame: '36:235',
+    label: 'Oteldeyim — yakınlık kontrolü süresi doldu',
+    seed: async () => {
+      await verifiedAtVenue();
+      clockOffsetMs = 45 * 60 * 1000;
+    },
+    render: (p) => <HereNowScreen navigation={p.navigation} route={p.route as never} reader={AT_VENUE} />,
+  },
   // ------------------------------------------------------------- 3: Çevremde
   'N-08': {
     frame: '38:155',

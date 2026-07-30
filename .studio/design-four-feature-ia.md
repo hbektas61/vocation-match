@@ -566,6 +566,16 @@ populated room away never emptied it — the fake's feed does not exclude passed
 candidates, so the empty room is now reached honestly through D-048's anchor,
 where the fixture has nobody else.
 
+### Group 2–3 — states reached this pass
+
+| Frame | Node | Capture | Comparison | Difference found | Fix | Re-verified |
+| --- | --- | --- | --- | --- | --- | --- |
+| T-17 Oteldeyim premium | `36:135` | `app-T-17.png` | matches | none | — | the entitlement gate answers before the reading, so a free member is told about Premium rather than about their GPS |
+| T-22 proximity lapsed | `36:235` | `app-T-22.png` | partial | the screen offers a fresh check rather than drawing a distinct "expired" panel | none — a lapsed answer *is* the absence of one | 45 minutes on, no answer stands and the check is offered again |
+| N-11 named check-in active | `38:207` | `app-N-11.png` | matches | none | — | "Lara Shore Resort · Check-in aktif · 05:22'e kadar" |
+| N-12 generic check-in active | `38:254` | `app-N-12.png` | matches | none | — | "Bulunduğun yer · Check-in aktif" — D-048's anchor, with no venue name claimed |
+| N-08 allowance exhausted | `38:155` | `app-N-08.png` | **not reached** | the harness lands on the intro; the exhausted state lives several steps into the Google flow | scene needs to drive to the advanced search first | outstanding |
+
 ### Still not done
 
 - **84 frames** not yet compared against a render.
