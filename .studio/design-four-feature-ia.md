@@ -618,6 +618,25 @@ screenshots. The consequence is exact: in an event scene an **outcome** is
 trustworthy and a **countdown** is not — which is why `E-34`'s remaining-time
 line is not claimed here.
 
+### Group 4 — the Etkinlikler list
+
+| Frame | Node | Capture | Comparison | Difference found | Fix | Re-verified |
+| --- | --- | --- | --- | --- | --- | --- |
+| E-02 area chooser | `39:282` | `app-E-02.png` | matches | none | — | "Nereye bakalım?" with the typed path and the location path both offered |
+| E-05 area header | `39:375` | `app-E-09.png` | matches | none | — | standing glass header, "ETKİNLİK BÖLGESİ / İstanbul / Konumu değiştir" |
+| E-09 both sections | `40:365` | `app-E-09.png` | matches | none | — | "BUGÜN · 5 etkinlik" and "YAKLAŞAN ETKİNLİKLER · 9 etkinlik", cards carrying badge, place, date and the provider credit |
+| E-10 category chip | `40:435` | `app-E-10.png` | matches | none | — | the chip narrows without clearing |
+| E-11 several memberships | `40:502` | `app-E-11.png` | matches | none | — | three declarations standing at once, each named from its lease, each with "Gidenleri gör" |
+| E-13 thin market | `40:631` | `app-E-13.png` | matches | none | — | "Her etkinlik burada listelenmeyebilir." present *beside* results, not only when empty |
+| E-20 no provider image | `41:695` | `app-E-09.png` | matches | none | — | the fixtures' image host does not resolve, so every card fell back to the imageless layout under a **real** failure rather than a simulated one |
+
+One frame is **not reachable against the fake and is recorded as such**:
+`E-19` (missing venue name) needs `venueName: null`, and the fake's event type
+declares it non-null — the nearest fixture supplies the literal string "TBA",
+which is a name, not an absence. The `nameUnavailable` fallback is therefore
+only exercisable against a real provider, and is covered by a unit test rather
+than by eye.
+
 ### Still not done
 
 - **84 frames** not yet compared against a render.

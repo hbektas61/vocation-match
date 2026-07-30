@@ -243,6 +243,33 @@ const SCENES: Record<string, Scene> = {
     render: (p) => <HereNowScreen navigation={p.navigation} route={p.route as never} reader={AT_VENUE} />,
   },
   // ---------------------------------------------------------- 4: Etkinlikler
+  'E-05': {
+    frame: '39:375',
+    label: 'Etkinlikler — bölge seçili, liste (E-05…E-20 bu sahneden gezilir)',
+    clock: FAKE_EVENTS_NOW,
+    seed: baseAccount,
+    render: () => <EventsScreen reader={AT_VENUE} />,
+  },
+  'E-11': {
+    frame: '40:502',
+    label: 'Etkinliklerin — çoklu üyelik',
+    clock: FAKE_EVENTS_NOW,
+    seed: async () => {
+      await baseAccount();
+      const api = getApi();
+      // Three separate declarations: several future events may stand at once.
+      for (const name of ['Bosphorus Sunset Festival', 'Küçükçiftlik Jazz Night', 'Volkswagen Arena Live']) {
+        const result = await api.searchEvents(
+          { kind: 'city', city: 'İstanbul', label: 'İstanbul' }, 'upcoming', 'all');
+        if (result.kind !== 'ok') continue;
+        const card = result.events.find((e) => e.name === name);
+        if (!card) continue;
+        const opened = await api.openEvent(card.selectionToken).catch(() => null);
+        if (opened) await api.joinEventUpcoming(opened.selectionToken).catch(() => undefined);
+      }
+    },
+    render: () => <EventsScreen reader={AT_VENUE} />,
+  },
   'E-04': {
     frame: '39:334',
     label: 'Etkinlikler — konum izni reddedildi',
