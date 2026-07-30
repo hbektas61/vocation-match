@@ -21,7 +21,13 @@ import { join } from 'node:path';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 
 import { COPY } from '../copy';
-import { FakeApi, setApi, type GooglePlaceAnswer, type HotelCard } from '../data';
+import {
+  FakeApi,
+  setApi,
+  type GooglePlaceAnswer,
+  type GooglePlaceHit,
+  type HotelCard,
+} from '../data';
 import { en } from '../i18n/en';
 import { tr } from '../i18n/tr';
 import { onboard, onboardToSettings } from '../testSupport/onboarding';
@@ -241,5 +247,242 @@ describe('the provider disclosure', () => {
     ['Turkish', tr.settings],
   ])('names the retention window in %s, rather than gesturing at one', (_language, settings) => {
     expect(settings.providersRetention).toMatch(/3 (hours|saat)/);
+  });
+});
+
+/**
+ * D-053 §3 — a second name deserves a second try.
+ *
+ * The bug these pin: "already tried Google" was one boolean for the whole
+ * visit, set on the request and cleared only by a *successful* labelled
+ * check-in. So the first empty or failed answer retired the option — a person
+ * who typed "eslab" instead of "esslab", or who searched while the provider was
+ * briefly down, had no way back, and the screen drew neither a list, a button
+ * nor a reason.
+ *
+ * The rule now: the option is spent per *name*, using the same normalisation
+ * the backend fingerprints with. A new name is a fresh chance; the same name is
+ * not, which is what stops a spent ceiling from being hammered by a button.
+ */
+
+/** Google, scripted per query, counting every question actually asked. */
+class ScriptedGoogleApi extends FakeApi {
+  readonly asked: string[] = [];
+
+  constructor(
+    private readonly script: Map<string, GooglePlaceAnswer | null>,
+    options?: { now?: () => number },
+  ) {
+    super(options);
+  }
+
+  override async googlePlaceSearch(
+    query: string,
+    _latitude: number,
+    _longitude: number,
+    sessionId?: string,
+  ): Promise<GooglePlaceAnswer | null> {
+    this.asked.push(`${query}${sessionId ? `@${sessionId}` : ''}`);
+    return this.script.get(query.trim().toLowerCase()) ?? null;
+  }
+
+  /** Nothing mapped here, so the picker reaches its third step at all. */
+  override async nearbyVenues(_latitude: number, _longitude: number): Promise<HotelCard[]> {
+    return [];
+  }
+}
+
+function hit(name: string, token: string): GooglePlaceHit {
+  return { selectionToken: token, name, detail: 'Budapest' };
+}
+
+/** Gets the screen to the state where the advanced find is legitimately offered. */
+async function atTheThirdStep(phone: string): Promise<void> {
+  await onboard('Deniz', phone);
+  await act(async () => {
+    fireEvent.press(await screen.findByTestId('tab-Nearby'));
+  });
+  await act(async () => {
+    fireEvent.press(await screen.findByTestId('checkin-simulate-shore'));
+  });
+}
+
+async function typeName(name: string): Promise<void> {
+  await act(async () => {
+    fireEvent.changeText(screen.getByTestId('checkin-search'), name);
+  });
+  // Past the catalogue search's debounce, so `shown` has settled.
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  });
+}
+
+describe('asking Google a second time', () => {
+  beforeEach(() => {
+    process.env.EXPO_PUBLIC_USE_FAKE_API = 'true';
+  });
+  afterEach(() => {
+    delete process.env.EXPO_PUBLIC_USE_FAKE_API;
+  });
+
+  it('offers the option again when the name changes after an empty answer', async () => {
+    const api = new ScriptedGoogleApi(
+      new Map<string, GooglePlaceAnswer | null>([
+        ['eslab', { places: [], duplicate: false, sessionId: 'sess-1' }],
+        ['esslab', {
+          places: [hit('Espressolab Hajógyári', 'tok-esslab')],
+          duplicate: false,
+          sessionId: 'sess-1',
+        }],
+      ]),
+      { now: () => FIXED },
+    );
+    setApi(api);
+    await atTheThirdStep('+905551119040');
+
+    // The mistyped name. Google answers, and knows nothing by it.
+    await typeName('eslab');
+    await act(async () => {
+      fireEvent.press(await screen.findByTestId('checkin-google-more'));
+    });
+    expect(await screen.findByText(COPY.checkin.googleNoResults)).toBeTruthy();
+    // Spent for *this* spelling: pressing again would ask the same question.
+    expect(screen.queryByTestId('checkin-google-more')).toBeNull();
+
+    // The corrected name — and the option is back, which is the whole fix.
+    await typeName('esslab');
+    const again = await screen.findByTestId('checkin-google-more');
+    await act(async () => {
+      fireEvent.press(again);
+    });
+
+    expect(await screen.findByText('Espressolab Hajógyári')).toBeTruthy();
+    // Two questions, both real, and the second inside the session the first
+    // opened — a retry is not a reason to start billing a new one.
+    expect(api.asked).toEqual(['eslab', 'esslab@sess-1']);
+  });
+
+  it('offers the option again after a failure, and lets the retry succeed', async () => {
+    const api = new ScriptedGoogleApi(
+      new Map<string, GooglePlaceAnswer | null>([
+        // Not in the script: the provider could not answer at all.
+        ['kral', null],
+        ['kral espresso', {
+          places: [hit('Kral Espresso', 'tok-kral')],
+          duplicate: false,
+          sessionId: 'sess-2',
+        }],
+      ]),
+      { now: () => FIXED },
+    );
+    setApi(api);
+    await atTheThirdStep('+905551119041');
+
+    await typeName('kral');
+    await act(async () => {
+      fireEvent.press(await screen.findByTestId('checkin-google-more'));
+    });
+    // The honest "no": unavailable, not empty — a different sentence.
+    expect(await screen.findByText(COPY.checkin.googleUnavailable)).toBeTruthy();
+    expect(screen.queryByTestId('checkin-google-more')).toBeNull();
+
+    await typeName('kral espresso');
+    await act(async () => {
+      fireEvent.press(await screen.findByTestId('checkin-google-more'));
+    });
+
+    // And the retry can be checked into, so the recovery is complete rather
+    // than merely visible.
+    await act(async () => {
+      fireEvent.press(await screen.findByTestId('checkin-google-tok-kral'));
+    });
+    expect(await screen.findByText('Kral Espresso')).toBeTruthy();
+  });
+
+  it('does not ask twice for the same name, however it is typed', async () => {
+    const api = new ScriptedGoogleApi(
+      new Map<string, GooglePlaceAnswer | null>([
+        ['esslab', { places: [], duplicate: false, sessionId: 'sess-3' }],
+      ]),
+      { now: () => FIXED },
+    );
+    setApi(api);
+    await atTheThirdStep('+905551119042');
+
+    await typeName('esslab');
+    await act(async () => {
+      fireEvent.press(await screen.findByTestId('checkin-google-more'));
+    });
+    expect(api.asked).toHaveLength(1);
+
+    // Case and spacing are what the backend's fingerprint ignores, so the
+    // screen ignores them too: this is the same question, and the backend's
+    // deduplication is not something to lean on for a request we can simply
+    // not make.
+    await typeName('  ESSLAB  ');
+    expect(screen.queryByTestId('checkin-google-more')).toBeNull();
+    expect(api.asked).toHaveLength(1);
+  });
+
+  it('keeps one session across names, rather than opening one per press', async () => {
+    const api = new ScriptedGoogleApi(
+      new Map<string, GooglePlaceAnswer | null>([
+        ['esslab', { places: [], duplicate: false, sessionId: 'sess-4' }],
+        ['kral', {
+          places: [hit('Kral Espresso', 'tok-kral-2')],
+          duplicate: false,
+          sessionId: 'sess-4',
+        }],
+      ]),
+      { now: () => FIXED },
+    );
+    setApi(api);
+    await atTheThirdStep('+905551119043');
+
+    await typeName('esslab');
+    await act(async () => {
+      fireEvent.press(await screen.findByTestId('checkin-google-more'));
+    });
+    await typeName('kral');
+    await act(async () => {
+      fireEvent.press(await screen.findByTestId('checkin-google-more'));
+    });
+
+    // The first ask carries no session — there is none yet — and every ask
+    // after it carries the one the server issued. Google bills a session.
+    expect(api.asked[0]).toBe('esslab');
+    expect(api.asked[1]).toBe('kral@sess-4');
+  });
+
+  it('puts a previous name’s list away instead of leaving it selectable', async () => {
+    const api = new ScriptedGoogleApi(
+      new Map<string, GooglePlaceAnswer | null>([
+        ['esslab', {
+          places: [hit('Espressolab Hajógyári', 'tok-stale')],
+          duplicate: false,
+          sessionId: 'sess-5',
+        }],
+      ]),
+      { now: () => FIXED },
+    );
+    setApi(api);
+    await atTheThirdStep('+905551119044');
+
+    await typeName('esslab');
+    await act(async () => {
+      fireEvent.press(await screen.findByTestId('checkin-google-more'));
+    });
+    expect(await screen.findByTestId('checkin-google-tok-stale')).toBeTruthy();
+
+    // A different name is a different question; the old answer must not still
+    // be sitting there waiting to be tapped.
+    await typeName('kral');
+    expect(screen.queryByTestId('checkin-google-tok-stale')).toBeNull();
+
+    // And typing it back restores the list from session memory, without asking
+    // Google again — the client's half of D-053 §3.
+    await typeName('esslab');
+    expect(await screen.findByTestId('checkin-google-tok-stale')).toBeTruthy();
+    expect(api.asked).toHaveLength(1);
   });
 });

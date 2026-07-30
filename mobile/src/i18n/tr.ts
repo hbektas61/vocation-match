@@ -544,6 +544,8 @@ export const tr: Copy = {
     /** D-052: the picker's third step, opened by hand and never on arrival. */
     googleMore: 'Google ile daha fazla mekân ara',
     googleUnavailable: 'Şu an ek arama yapılamıyor. Listeden seçebilir ya da buradayım diyebilirsin.',
+    /** Google answered, and knows no such place — not the same as unavailable. */
+    googleNoResults: 'Google da buralarda bu adda bir mekân bilmiyor. Başka bir yazım deneyebilir ya da buradayım diyebilirsin.',
     /** Required whenever Google's answer is on screen. */
     googleAttribution: 'Google tarafından sağlanır',
     searchPlaceholder: 'Mekân veya mahalle ara',

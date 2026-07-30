@@ -37,6 +37,7 @@ import {
   type GooglePlaceHit,
   type HotelCard,
 } from '../data';
+import { MIN_QUERY_WEIGHT, normalizeQuery, queryWeight } from '../domain/searchQuery';
 import { getHotelById } from '../fixtures/hotels';
 import type { TabParamList } from '../navigation/types';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -276,13 +277,23 @@ export function CheckinScreen({
   const [notice, setNotice] = useState<{ message: string; tone: 'error' | 'info' } | null>(null);
   const searchSeq = useRef(0);
   /**
-   * D-052: Google's list, opened by hand and never on arrival. `null` means
-   * the option is not on offer — no key configured, or the month's allowance
-   * spent — which is a different fact from an empty street. The catalogue
-   * answers the second one.
+   * D-052/D-053: what Google has been asked, keyed by the same normalized query
+   * the backend fingerprints. Three states per key, and the distinctions matter:
+   *
+   *   absent      — never asked for this name, so the option is on offer.
+   *   an array    — what came back, an empty one included: Google answered and
+   *                 knows no such place near here.
+   *   `null`      — asked, and it could not be answered: no key, a spent
+   *                 ceiling, a rate limit, an unwell provider. Not the same
+   *                 fact as an empty street, and said differently.
+   *
+   * Keyed by query rather than a single "already tried" flag, because that flag
+   * was the bug: one empty or failed answer retired the option for the rest of
+   * the visit, so a person who mistyped a name had no second try.
    */
-  const [googlePlaces, setGooglePlaces] = useState<GooglePlaceHit[] | null>(null);
-  const [googleTried, setGoogleTried] = useState(false);
+  const [googleAsked, setGoogleAsked] = useState<Map<string, GooglePlaceHit[] | null>>(
+    () => new Map(),
+  );
   /**
    * The open advanced-search session (D-053). Carried back so Google bills one
    * session rather than a request per keystroke; the server owns its limits.
@@ -296,6 +307,30 @@ export function CheckinScreen({
    */
   const resolvedNames = useRef<Map<string, string>>(new Map());
   const [activeLabel, setActiveLabel] = useState<string | null>(null);
+
+  /** The name in the box, as the backend would group it (D-053 §3). */
+  const fingerprint = normalizeQuery(query);
+  /** Google's answer for *that* name — never a previous name's list. */
+  const googlePlaces = googleAsked.get(fingerprint) ?? null;
+
+  /**
+   * Records an answer against the query that produced it. A new Map rather than
+   * a mutation, so the render that draws the list is the render that knows.
+   */
+  const rememberGoogle = (asked: string, places: GooglePlaceHit[] | null) => {
+    setGoogleAsked((current) => new Map(current).set(asked, places));
+  };
+
+  /**
+   * Forgets everything Google, and why that is not merely tidiness: the
+   * selection tokens in those lists are single-use and short-lived, and the
+   * predictions were restricted to a circle around the reading we no longer
+   * hold. Offering either again would be offering something that cannot work.
+   */
+  const forgetGoogle = () => {
+    setGoogleAsked(new Map());
+    setGoogleSession(null);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -389,6 +424,9 @@ export function CheckinScreen({
     // here-anchor reachable.
     setReading({ latitude: read.latitude, longitude: read.longitude });
     setNearby([]);
+    // A new reading is a new place: the old predictions were restricted to a
+    // circle around a point we no longer stand on.
+    forgetGoogle();
     try {
       const found = await getApi().nearbyVenues(read.latitude, read.longitude);
       setNearby(found);
@@ -480,9 +518,13 @@ export function CheckinScreen({
   const askGoogle = async () => {
     // D-053: a *typed* name, so there is nothing to ask until one exists.
     // D-053 §3: three non-whitespace characters, enforced again on the server.
-    if (!reading || busy || query.trim().replace(/\s+/g, '').length < 3) return;
+    if (!reading || busy || queryWeight(query) < MIN_QUERY_WEIGHT) return;
+    // This exact name has had its turn. The backend would answer `duplicate`
+    // and charge its session cap for a request it did not make, so the client
+    // does not ask — the same saving, one round trip earlier.
+    if (googleAsked.has(fingerprint)) return;
     setBusy(true);
-    setGoogleTried(true);
+    setNotice(null);
     try {
       const answer = await getApi().googlePlaceSearch(
         query.trim(),
@@ -490,18 +532,28 @@ export function CheckinScreen({
         reading.longitude,
         googleSession ?? undefined,
       );
-      if (answer?.duplicate) {
-        // The same words in the same session: nothing was asked upstream, so
-        // the list already on screen is the answer (D-053 §3).
-        setGoogleSession(answer.sessionId);
-      } else {
-        setGooglePlaces(answer?.places ?? null);
-        if (answer) setGoogleSession(answer.sessionId);
-      }
-      if (answer === null) {
+      if (!answer) {
         // Honest about which "no" this is: the option is unavailable, the
-        // street is not empty.
+        // street is not empty. Recorded against this name only, so a different
+        // name is a fresh attempt rather than a dead screen.
+        rememberGoogle(fingerprint, null);
         setNotice({ message: COPY.checkin.googleUnavailable, tone: 'info' });
+        return;
+      }
+      // The server owns the session; take a new id, never re-set the same one.
+      setGoogleSession((current) => (current === answer.sessionId ? current : answer.sessionId));
+      // `duplicate` means nothing was asked upstream, so whatever we already
+      // hold for this name is the answer — and if we hold nothing, it is an
+      // empty one. Reachable only if our memory was cleared while the server's
+      // session survived, which the clearing below makes unlikely rather than
+      // impossible.
+      const places = answer.duplicate ? (googleAsked.get(fingerprint) ?? []) : answer.places;
+      rememberGoogle(fingerprint, places);
+      if (places.length === 0) {
+        // Google answered, and knows no such place near here. A different
+        // sentence from "the option is unavailable", because it is a different
+        // fact — and without it an empty answer drew nothing at all.
+        setNotice({ message: COPY.checkin.googleNoResults, tone: 'info' });
       }
     } finally {
       setBusy(false);
@@ -531,9 +583,7 @@ export function CheckinScreen({
         setReading(null);
         setQuery('');
         setResults([]);
-        setGooglePlaces(null);
-        setGoogleTried(false);
-        setGoogleSession(null);
+        forgetGoogle();
       }
     } catch (err) {
       setNotice({
@@ -814,11 +864,18 @@ export function CheckinScreen({
               </Pressable>
             ))}
           </View>
-        ) : googleTried || query.trim().replace(/\s+/g, '').length < 3 || shown.length > 0 ? null : (
+        ) : googleAsked.has(fingerprint) ||
+          queryWeight(query) < MIN_QUERY_WEIGHT ||
+          shown.length > 0 ? null : (
           /* D-053's order, exactly: this appears only once a name has been
              typed *and* our own catalogue came up empty — "kullanıcı
              bulamazsa". A button that cannot do anything yet is a button that
-             lies. */
+             lies.
+
+             The first test is per *name*, not per visit: an empty or failed
+             answer retires the option for that spelling only, so the next name
+             typed gets its own turn. Retyping the same one does not, which is
+             what keeps a spent ceiling from being hammered. */
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={COPY.checkin.googleMore}

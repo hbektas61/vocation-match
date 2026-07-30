@@ -3196,3 +3196,59 @@ with the key restricted to this backend and the Cloud daily quota (~150) kept
 below the financial ceiling as the second line of defence. The first week of
 `provider_event_counts` and `search_session_counts` after that is what a cost
 estimate should be built from.
+
+
+---
+
+## 2026-07-30 — the advanced find could only be used once, and now it is per name
+
+Reported precisely: `googleTried` went true on the request and false only after a
+*successful* Google check-in, so the first empty, null or failed answer retired
+the option for the rest of the visit. Worse than a missing button — with an empty
+answer the screen drew no list, no button and no reason, which reads as the app
+having nothing to say.
+
+The flag is gone. What replaced it is a map keyed by the same normalized query
+the backend fingerprints, with three states that were previously collapsed into
+one: **absent** (never asked, so the option is on offer), **an array** (Google
+answered — an empty array included, which now has its own sentence), and
+**`null`** (asked and could not be answered: no key, a spent ceiling, a rate
+limit, a sick provider). `src/domain/searchQuery.ts` holds the normalisation next
+to `cell.ts`, for the same reason `cell.ts` exists — a rule the client and the
+server both apply should be written once, and a test reads the SQL to check the
+two still describe the same transform.
+
+What follows from keying it by query:
+
+- A new name is a fresh chance. The same name is not, which is deliberate: it is
+  what keeps a spent ceiling from being hammered by a button, and it is also the
+  client's half of §3 — the request the backend would answer `duplicate` is
+  simply not made, one round trip earlier. The `duplicate` branch stays, because
+  the server's memory can outlive ours.
+- A previous name's list is put away rather than left selectable, and typing that
+  name again restores it from session memory without asking Google anything. The
+  old code left a stale list on screen under a new query.
+- `googleSession` is only re-set when the id actually changes, and a retry stays
+  inside the session the first ask opened — Google bills a session.
+- A fresh reading forgets all of it. Those predictions were restricted to a
+  circle around a point the person no longer stands on, and their selection
+  tokens are single-use and short-lived; offering either again would be offering
+  something that cannot work.
+
+One copy addition, `checkin.googleNoResults` in both languages: "Google da
+buralarda bu adda bir mekân bilmiyor." An empty answer previously showed nothing
+at all, and it is a different fact from "the option is unavailable".
+
+Untouched, as instructed: the entitlement, the two monthly ceilings, the
+selection-token guard, the rate limits, and every fallback path.
+
+Tests: five screen tests for the retry behaviour — empty→retry-succeeds,
+failure→controlled-retry-and-check-in, the same name asked once however it is
+typed, one session across names, and the stale list put away and restored — plus
+nine for the normaliser. Both halves of the fix were mutation-checked: restoring
+the old visit-wide flag fails three of them, and leaving a stale list visible
+fails the fourth.
+
+Gate: `scripts/check.sh --mobile` all green — **495/495** mobile tests,
+typecheck, zero-warning lint, web bundle. No migration and no function change:
+this was entirely a client-state bug.

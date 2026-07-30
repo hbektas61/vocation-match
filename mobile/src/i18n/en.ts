@@ -574,6 +574,8 @@ export const en = {
     /** D-052: the picker's third step, opened by hand and never on arrival. */
     googleMore: 'Search more places with Google',
     googleUnavailable: "The extra search is unavailable right now. Pick from the list, or say you are here.",
+    /** Google answered, and knows no such place — not the same as unavailable. */
+    googleNoResults: 'Google knows no place by that name near here. Try another spelling, or say you are here.',
     /** Required whenever Google's answer is on screen. */
     googleAttribution: 'Powered by Google',
     searchPlaceholder: 'Search a place or neighbourhood',
