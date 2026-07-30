@@ -33,6 +33,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { COPY, setLocale } from '../copy';
 import {
   FakeApi,
+  deniedLocation,
   fixedLocation,
   getApi,
   setApi,
@@ -42,6 +43,7 @@ import {
 import { ChatScreen } from '../screens/ChatScreen';
 import { CheckinScreen } from '../screens/CheckinScreen';
 import { DiscoveryScreen } from '../screens/DiscoveryScreen';
+import { EventsScreen } from '../screens/EventsScreen';
 import { HereNowScreen } from '../screens/HereNowScreen';
 import { InboxScreen } from '../screens/InboxScreen';
 import { MatchScreen } from '../screens/MatchScreen';
@@ -202,6 +204,46 @@ const SCENES: Record<string, Scene> = {
       clockOffsetMs = 45 * 60 * 1000;
     },
     render: (p) => <HereNowScreen navigation={p.navigation} route={p.route as never} reader={AT_VENUE} />,
+  },
+  // ---------------------------------------------------------- 4: Etkinlikler
+  'E-04': {
+    frame: '39:334',
+    label: 'Etkinlikler — konum izni reddedildi',
+    seed: baseAccount,
+    render: () => <EventsScreen reader={deniedLocation()} />,
+  },
+  'E-12': {
+    frame: '40:572',
+    label: 'Etkinlikler — bu bölgede etkinlik yok',
+    seed: baseAccount,
+    render: () => <EventsScreen reader={AT_VENUE} />,
+  },
+  'E-15': {
+    frame: '40:750',
+    label: 'Etkinlikler — sağlayıcı kullanılamıyor',
+    seed: async () => {
+      await baseAccount();
+      fake().setFeatureFlag('TICKETMASTER_PROVIDER_ENABLED', false);
+    },
+    render: () => <EventsScreen reader={AT_VENUE} />,
+  },
+  'E-16': {
+    frame: '40:800',
+    label: 'Etkinlikler — günlük sınır doldu',
+    seed: async () => {
+      await baseAccount();
+      fake().setProviderCeiling(0);
+    },
+    render: () => <EventsScreen reader={AT_VENUE} />,
+  },
+  'E-17': {
+    frame: '41:533',
+    label: 'Etkinlikler kapalı',
+    seed: async () => {
+      await baseAccount();
+      fake().setFeatureFlag('EVENTS_FEATURE_ENABLED', false);
+    },
+    render: () => <EventsScreen reader={AT_VENUE} />,
   },
   // ------------------------------------------------------------- 3: Çevremde
   'N-08': {

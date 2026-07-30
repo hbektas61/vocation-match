@@ -301,6 +301,8 @@ export function EventsScreen({
     result: EventSearchResult | null,
     bucket: 'today' | 'upcoming',
     testID: string,
+    /** Both buckets failed the same way: one notice, and no heading over it. */
+    sharedRefusal = false,
   ) => {
     if (result === null) return null;
     if (result.kind === 'ok') {
@@ -328,7 +330,7 @@ export function EventsScreen({
     const tone = result.kind === 'empty' ? 'info' : 'error';
     return (
       <View testID={testID} style={styles.section}>
-        <Text style={styles.heading}>{upperCase(heading)}</Text>
+        {sharedRefusal ? null : <Text style={styles.heading}>{upperCase(heading)}</Text>}
         <Notice message={message} tone={tone} testID={`${testID}-empty`} />
       </View>
     );
@@ -424,8 +426,17 @@ export function EventsScreen({
         )
       ) : null}
 
-      {section(COPY.events.todayHeading, today, 'today', 'events-today')}
-      {section(COPY.events.upcomingHeading, upcoming, 'upcoming', 'events-upcoming')}
+      {/* Both buckets fail for the same reason far more often than not — the
+          provider is down for both, the ceiling is spent for both. Saying it
+          twice, once under each heading, reads as two problems. */}
+      {today && upcoming && today.kind !== 'ok' && today.kind === upcoming.kind
+        ? section(COPY.events.todayHeading, today, 'today', 'events-today', true)
+        : (
+          <>
+            {section(COPY.events.todayHeading, today, 'today', 'events-today')}
+            {section(COPY.events.upcomingHeading, upcoming, 'upcoming', 'events-upcoming')}
+          </>
+        )}
 
       {today || upcoming ? (
         <>

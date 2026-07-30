@@ -411,3 +411,30 @@ describe('D-057 touch targets', () => {
     }
   });
 });
+
+describe('D-057 Etkinlikler refusals (§9.2)', () => {
+  async function lookAt(city: string) {
+    await onboardWithHotel('Deniz');
+    await fireEvent.press(await screen.findByTestId('tab-Events'));
+    await fireEvent.changeText(await screen.findByTestId('events-area-input'), city);
+    await fireEvent.press(await screen.findByTestId('events-area-confirm'));
+  }
+
+  it('says which of the refusals happened, in its own words', async () => {
+    // §3.4: a spinner that means all of them makes the screen look broken in
+    // most of them. Each has to be distinguishable from the others.
+    await lookAt('Mykonos');
+    expect(await screen.findByText(COPY.events.noResults)).toBeTruthy();
+  });
+
+  it('states a shared refusal once, not once per bucket', async () => {
+    const api = getApi() as FakeApi;
+    api.setProviderCeiling(0);
+    await lookAt('İstanbul');
+
+    // Both buckets fail for the same reason far more often than not; saying it
+    // twice, once under each heading, reads as two separate problems.
+    const notices = await screen.findAllByText(COPY.events.ceilingReached);
+    expect(notices).toHaveLength(1);
+  });
+});

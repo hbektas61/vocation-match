@@ -576,6 +576,22 @@ where the fixture has nobody else.
 | N-12 generic check-in active | `38:254` | `app-N-12.png` | matches | none | — | "Bulunduğun yer · Check-in aktif" — D-048's anchor, with no venue name claimed |
 | N-08 allowance exhausted | `38:155` | `app-N-08.png` | **not reached** | the harness lands on the intro; the exhausted state lives several steps into the Google flow | scene needs to drive to the advanced search first | outstanding |
 
+### Group 4 — Etkinlikler, the provider and refusal states
+
+| Frame | Node | Capture | Comparison | Difference found | Fix | Re-verified |
+| --- | --- | --- | --- | --- | --- | --- |
+| E-04 permission denied | `39:334` | `app-E-04.png` | matches | none | — | "Çevrende aramak için konum izni gerekli." with the manual city path still offered |
+| E-12 nothing found | `40:572` | `app-E-12.png` | matches | the notice was printed twice, once per bucket | one shared refusal, no heading over it | 1 notice: "Bu bölgede ve bu tarihlerde etkinlik bulunamadı." |
+| E-15 provider unavailable | `40:750` | `app-E-15.png` | matches | same duplication | same fix | 1 notice: "…şu anda kullanılamıyor. Sonra tekrar dene." |
+| E-16 daily ceiling | `40:800` | `app-E-16.png` | matches | same duplication | same fix | 1 notice: "…bugünkü sınıra ulaştı. Yarın tekrar dene." |
+| E-17 feature disabled | `41:533` | `app-E-17.png` | matches | none | — | "Etkinlikler henüz açık değil." and no provider call |
+
+The three refusals were checked against each other, which is the point of
+§3.4: **"kullanılamıyor / Sonra tekrar dene"**, **"bugünkü sınıra ulaştı /
+Yarın tekrar dene"** and **"bulunamadı"** are three different sentences with
+three different remedies. Reading the code would not have shown that each was
+being said twice.
+
 ### Still not done
 
 - **84 frames** not yet compared against a render.
