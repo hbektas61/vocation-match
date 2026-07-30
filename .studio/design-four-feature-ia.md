@@ -47,6 +47,7 @@ is the third signal, never the only one. Item height 44 px.
 Entry is the **profile ring**: 46×46 (≥44), accessible label "Profilin ve ayarlar",
 same position on Tatilim, Çevremde, Etkinlikler, Keşfet and Mesajlar (`S-01`, `47:911`).
 Tapping opens the profile menu (`NAV-08`, `44:949`) → Ayarlar (`S-02`, `47:938`).
+*As built, the ring opens `S-02` directly and `NAV-08` is not drawn — see §13.*
 
 Nothing safety-related is buried: **Engellenenler**, **Bildir veya engelle** and
 **Hesabını sil** are all first-level rows on `S-02`. Settings is *not* duplicated as
