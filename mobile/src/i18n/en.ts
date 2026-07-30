@@ -499,7 +499,22 @@ export const en = {
     sayHelloCta: (name: string) => `Say hello to ${name}`,
     selfFallback: 'You',
     title: "It's a match!",
-    body: 'Say hello while you are both connected to this hotel.',
+    /**
+     * D-057: the match moment names the room it came from. One screen, five
+     * sources — an event match that said "connected to this hotel" was simply
+     * describing the wrong thing.
+     */
+    sourceUpcoming: 'Your dates overlap',
+    sourceHereNow: 'You are both here right now',
+    sourceNearby: 'You are at the same place',
+    sourceNearbyRegion: 'You are in the same area',
+    sourceEventUpcoming: 'You are going to the same event',
+    sourceEventHereNow: 'You are at the same event right now',
+    bodyUpcoming: 'No reservation was asked of either of you.',
+    bodyHereNow: 'Neither of you can see where the other is.',
+    bodyNearby: 'Exact locations and live distances are never shown.',
+    bodyEventUpcoming: 'No ticket was asked of either of you.',
+    bodyEventHereNow: 'A location check is not a ticket check.',
     notAvailable: 'This match is no longer available.',
     keepBrowsing: 'Keep browsing',
   },

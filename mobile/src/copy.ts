@@ -133,6 +133,34 @@ export function roomPlate(room: RoomKey): string {
   return COPY.rooms.nearbyPlate;
 }
 
+/**
+ * The match moment, in the words of the room it came from (D-057).
+ *
+ * `region` is the honest case: a D-038 regional-pool candidate is *near*, not
+ * at the same venue, and the moment must not claim otherwise — it is the same
+ * "çevrede" rule the deck card follows.
+ */
+export function matchSource(
+  room: RoomKey,
+  { region = false }: { region?: boolean } = {},
+): { title: string; body: string } {
+  switch (room) {
+    case 'UPCOMING':
+      return { title: COPY.match.sourceUpcoming, body: COPY.match.bodyUpcoming };
+    case 'HERE_NOW':
+      return { title: COPY.match.sourceHereNow, body: COPY.match.bodyHereNow };
+    case 'EVENT_UPCOMING':
+      return { title: COPY.match.sourceEventUpcoming, body: COPY.match.bodyEventUpcoming };
+    case 'EVENT_HERE_NOW':
+      return { title: COPY.match.sourceEventHereNow, body: COPY.match.bodyEventHereNow };
+    default:
+      return {
+        title: region ? COPY.match.sourceNearbyRegion : COPY.match.sourceNearby,
+        body: COPY.match.bodyNearby,
+      };
+  }
+}
+
 /** Fixed, reviewed labels for the report-reason picker. */
 export function reportReasonLabel(reason: ReportReason): string {
   return COPY.safety.reasons[reason];

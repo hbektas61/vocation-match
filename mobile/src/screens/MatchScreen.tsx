@@ -4,7 +4,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Button, Notice, Screen } from '../components/ui';
-import { COPY, upperCase, roomPlate } from '../copy';
+import { COPY, upperCase, roomPlate, matchSource } from '../copy';
 import type { RootScreenProps } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
@@ -115,6 +115,11 @@ export function MatchScreen({ navigation, route }: RootScreenProps<'Match'>) {
     state.profile?.photoPath,
   ]);
   const photoUrls = usePhotoUrls(photoPaths);
+  // The room decides the words; the venue is only ever an extra detail, and
+  // the two event rooms have none of their own to show here.
+  const isHotelRoom = match?.room === 'UPCOMING' || match?.room === 'HERE_NOW';
+  const source = matchSource(match?.room ?? 'UPCOMING');
+  const venueLine = isHotelRoom && hotel ? `${hotel.name}, ${hotel.city}` : null;
 
   if (!match) {
     return (
@@ -155,22 +160,31 @@ export function MatchScreen({ navigation, route }: RootScreenProps<'Match'>) {
         <Text accessibilityRole="header" style={styles.title}>
           {COPY.match.title}
         </Text>
+        {/* D-057: one screen, five sources. The middle line is the room's own
+            sentence — an event match saying "connected to this hotel" was
+            describing something that had not happened. */}
+        <Text style={styles.source} testID="match-source">
+          {source.title}
+        </Text>
         <Text style={styles.body}>
-          {`${COPY.match.likedEachOther(match.displayName)}\n${COPY.match.body}`}
+          {`${COPY.match.likedEachOther(match.displayName)}\n${source.body}`}
         </Text>
 
-        {hotel ? (
-          <View style={styles.bondPill}>
-            <PinIcon />
-            <Text style={styles.bondHotel} numberOfLines={1}>
-              {`${hotel.name}, ${hotel.city}`}
-            </Text>
-            <View style={styles.bondDivider} />
-            <Text style={styles.bondRoom}>
-              {roomPlate(match.room)}
-            </Text>
-          </View>
-        ) : null}
+        {/* The bond pill names the room whether or not a venue is known: an
+            event match has no hotel, and the pill vanishing took the one fact
+            the moment is about with it. */}
+        <View style={styles.bondPill} testID="match-bond">
+          <PinIcon />
+          {venueLine ? (
+            <>
+              <Text style={styles.bondHotel} numberOfLines={1}>
+                {venueLine}
+              </Text>
+              <View style={styles.bondDivider} />
+            </>
+          ) : null}
+          <Text style={styles.bondRoom}>{roomPlate(match.room)}</Text>
+        </View>
       </View>
 
       <View style={styles.actions}>
@@ -278,6 +292,14 @@ const styles = StyleSheet.create({
     fontSize: font.caption,
     color: color.accentDeep,
     flexShrink: 0,
+  },
+  /** The room's own sentence, between the word and the explanation. */
+  source: {
+    fontFamily: fontFamily.displaySemi,
+    fontSize: 17,
+    lineHeight: 17 * 1.3,
+    color: color.accent,
+    textAlign: 'center',
   },
   body: {
     fontFamily: fontFamily.body,

@@ -9,8 +9,8 @@
  */
 import { fireEvent, screen } from '@testing-library/react-native';
 
-import { COPY } from '../copy';
-import { FakeApi, getApi, setApi } from '../data';
+import { COPY, matchSource, roomPlate } from '../copy';
+import { FakeApi, getApi, setApi, type RoomKey } from '../data';
 import { onboardWithHotel } from '../testSupport/onboarding';
 
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
@@ -138,5 +138,59 @@ describe('D-057 context selector', () => {
     // Pressing a disabled control must not put a sheet over the screen.
     await fireEvent.press(selector);
     expect(screen.queryByTestId('discovery-context-sheet')).toBeNull();
+  });
+});
+
+describe('D-057 match, inbox and chat source attribution', () => {
+  const ROOMS: RoomKey[] = [
+    'UPCOMING',
+    'HERE_NOW',
+    'NEARBY',
+    'EVENT_UPCOMING',
+    'EVENT_HERE_NOW',
+  ];
+
+  it('gives every room its own match sentence, and no two are the same', () => {
+    const titles = ROOMS.map((room) => matchSource(room).title);
+    expect(new Set(titles).size).toBe(ROOMS.length);
+    expect(titles.every((t) => t.length > 0)).toBe(true);
+  });
+
+  it('never claims a hotel connection for an event or a check-in match', () => {
+    for (const room of ['NEARBY', 'EVENT_UPCOMING', 'EVENT_HERE_NOW'] as RoomKey[]) {
+      const { title, body } = matchSource(room);
+      expect(`${title} ${body}`).not.toMatch(/hotel|otel/i);
+    }
+  });
+
+  it('never claims a ticket, and says so where a ticket would be assumed', () => {
+    expect(matchSource('EVENT_UPCOMING').body).toMatch(/no ticket/i);
+    expect(matchSource('EVENT_HERE_NOW').body).toMatch(/not a ticket check/i);
+  });
+
+  it('keeps the regional pool honest — near is not the same place', () => {
+    expect(matchSource('NEARBY', { region: true }).title).not.toEqual(
+      matchSource('NEARBY').title,
+    );
+    expect(matchSource('NEARBY', { region: true }).title).toMatch(/area/i);
+  });
+
+  it('names the source on every inbox row', async () => {
+    await onboardWithHotel('Deniz');
+    await verifyAtHotel();
+
+    // Earn a real conversation: the deck, a mutual like, then a first message
+    // so the match moves out of the new-matches strip and into a row.
+    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
+    await fireEvent.press(await screen.findByTestId('swipe-like'));
+    await fireEvent.press(await screen.findByTestId('match-keep-browsing'));
+    const [summary] = await getApi().getMatches();
+    await getApi().sendMessage(summary.matchId, 'Hi!');
+
+    await fireEvent.press(await screen.findByTestId('tab-Inbox'));
+    const source = await screen.findByTestId(`inbox-source-${summary.matchId}`);
+    // The room this match came from — HERE_NOW here, but the row says it
+    // whatever the room was, which is the point of one shared inbox.
+    expect(source).toHaveTextContent(roomPlate(summary.room));
   });
 });

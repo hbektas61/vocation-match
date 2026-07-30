@@ -6,7 +6,7 @@ import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View
 import { Avatar, Button, Notice, Screen } from '../components/ui';
 import { ProfileRing } from '../components/ProfileRing';
 import { LinearGradient } from 'expo-linear-gradient';
-import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
+import { apiErrorMessage, COPY, COPY_FOR, roomPlate } from '../copy';
 import { ApiError, getApi, type MatchSummary } from '../data';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
@@ -23,6 +23,10 @@ function inboxRowLabel(match: MatchSummary): string {
     parts.push(COPY.inbox.closedLabel);
   }
   parts.push(match.lastMessageBody ?? COPY.inbox.sayHelloPreview);
+  // D-057: one inbox holds all four sources, so each row says which one it
+  // came from — the row is otherwise identical whether you met at a hotel,
+  // a café or a concert.
+  parts.push(roomPlate(match.room));
   parts.push(COPY.inbox.openChatHint);
   return parts.join('. ');
 }
@@ -168,6 +172,15 @@ export function InboxScreen() {
                   ) : null}
                   <Text style={styles.rowPreview} numberOfLines={1}>
                     {match.lastMessageBody ?? COPY.inbox.sayHelloPreview}
+                  </Text>
+                  {/* Where the two of you met. Never a venue you were not at,
+                      never a distance, never a ticket claim. */}
+                  <Text
+                    style={styles.rowSource}
+                    numberOfLines={1}
+                    testID={`inbox-source-${match.matchId}`}
+                  >
+                    {roomPlate(match.room)}
                   </Text>
                 </View>
                 {match.lastMessageAt !== null ? (
@@ -319,6 +332,13 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bodySemi,
     fontSize: 14,
     color: color.ink,
+  },
+  /** D-057: where the two of you met, under the preview. */
+  rowSource: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: 10,
+    letterSpacing: 0.3,
+    color: color.inkMuted,
   },
   rowPreview: {
     fontFamily: fontFamily.body,

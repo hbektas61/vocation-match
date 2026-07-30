@@ -61,6 +61,10 @@ const MAY_DENY = new Set([
   // The welcome trust card (2026-07-27): names the reservation only to
   // deny ever asking for one.
   'onboarding.welcome.trustBody',
+  // D-057: the match moment's line for the Upcoming room. It names the
+  // reservation for the same reason the others do — to say neither person
+  // was asked for one.
+  'match.bodyUpcoming',
 ]);
 const DENIAL = /\b(nobody|no one|never|not|without|no)\b/i;
 
@@ -155,6 +159,8 @@ const TR_MAY_DENY = new Set([
   // The delete-account promise names the report record it keeps; the sentence
   // exists to deny that deleting erases it.
   'deleteAccount.whatStays',
+  // D-057: "Kimseden rezervasyon istenmedi." — a denial, in the match moment.
+  'match.bodyUpcoming',
 ]);
 const TR_DENIAL = /\b(kimse|asla|hiç|yok|istenmez|istemez|değil)/i;
 
