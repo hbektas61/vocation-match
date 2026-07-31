@@ -10,7 +10,8 @@ server entitlement, production hazırlığı ve store paketi.
 | | |
 |---|---|
 | Branch | `main`, `origin/main` ile eşit |
-| Baseline commit | `f94d673` — Day 1'in son yürüyüş kaydı |
+| Baseline commit | `3995aac` — R-009/R-011/R-016/R-017 düzeltmeleri ve act temizliği |
+| Önceki | `f94d673` — Day 1'in son yürüyüş kaydı |
 | Full gate | `scripts/check.sh` (veritabanı dahil) **12/12 PASS** |
 | Jest | 54 suite · **663 test** yeşil |
 | React `act` uyarısı | Kendi kodumuzdan **0** (aşağıda Q-003) |
