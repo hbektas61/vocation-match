@@ -309,6 +309,8 @@ export const tr: Copy = {
     joining: 'Kaydediliyor…',
     checkingLive: 'Kontrol ediliyor…',
     roomChoiceTitle: 'Bu etkinlikte nasıl katılmak istiyorsun?',
+    hereNowExplainer:
+      'Canlı oda, uygulama açıkken yapılan tek seferlik bir konum kontrolüyle açılır. Yalnız etkinlikte olduğunu doğrular — bilet değildir ve tam konumun gösterilmez.',
     joined: 'Gidiyorsun. Oda açıldı.',
     joinedRoomCta: 'Gidenleri gör',
     liveRoomCta: 'Şu an burada olanları gör',

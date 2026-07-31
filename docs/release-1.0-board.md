@@ -64,6 +64,8 @@ kanıt · severity · fix commit · gerçek yeniden test.
 | R-007 | Sohbette aynı karede dört dokunuş **üç kopya mesaj** gönderiyordu (`sending` React state olduğu için aynı tick'te false) | P2 | Senkron `sendingRef` koruması; `sending` hâlâ ekranı sürüyor | Aynı burst → **1 mesaj**; insan çift dokunuşu (180ms) zaten 1'di |
 | R-008 | Çevremde mekân listesi, uygulamada başlığının üstünde wordmark basan tek ekrandı | P2 | Owner kararı: kaldırıldı (`brandRow`/`brandText` ve artık kullanılmayan `HeartGlyph` ile birlikte) | Çalışan uygulamada başlık artık yalnız "Nearby" + profil halkası |
 | R-006 | Gelen kutusu boş durumundaki gece teması hero'su | P1 | Kaldırıldı (R-002 ile); lavanta render geri getirilmedi — owner kararı | `rt-12-inbox-no-hero.png`; ekran krem zeminde kendi kartıyla duruyor |
+| R-013 | **Etkinlik canlı oda kartı, başlığında düğmenin cümlesini tekrar ediyordu** — "I am at the event now" alt alta iki kez; kart neye yaradığını söylemiyordu | P2 | Karta kendi açıklaması verildi (`events.hereNowExplainer`, TR+EN); düğme etiketi aynı kaldı | Çalışan uygulamada etiket **1 kez**; `rt-18-event-live-fixed.png` |
+| R-012 | Etkinlikler listesinde "Konumu değiştir" **95×15** (hitSlop ile 31) | P2 | 44pt satır; hitSlop korundu | Listede 44 altı hedef **0** |
 | R-010 | VenuePicker'da "Change destination" **350×16** — seçilen destinasyonu atan gerçek bir kontrol, 44'ün çok altında | P2 | `minHeight: MIN_TOUCH` | Çalışan uygulamada ölçüldü |
 
 ## Day 1 — runtime ekran envanteri
@@ -108,6 +110,17 @@ Durum kodları: `⬜ denenmedi` · `🟦 yürütüldü` · `✅ yürütüldü + 
 | 32 | Oteldeyim — "Kontrol ediliyor…" (yükleme) | ✅ |
 | 33 | Oteldeyim — çok uzakta (TOO_FAR) | ✅ `rt-14-too-far.png` · **R-011** |
 | 34 | Oteldeyim — konum hassas değil | ✅ harness, temiz |
+| 35 | Etkinlikler — bölge seçici | ✅ |
+| 36 | Etkinlikler — liste (bugün + yaklaşan, çipler, bölge şeridi) | ✅ **R-012** · `rt-15-events-list.png` |
+| 37 | Etkinlikler — görselsiz kart (sağlayıcı görseli düşünce) | ✅ düzgün bozuluyor |
+| 38 | Etkinlik detayı — katılmadın (iki oda) | ✅ `rt-16-event-detail.png` |
+| 39 | Etkinlik detayı — gidiyorsun, oda açık | ✅ **R-013** · `rt-17-event-going.png` |
+| — | Canlı oda sonuçları (E-27…E-34) | 🟦 tarayıcıda konum yanıtlanmıyor; harness'ta T-19/T-20 doğrulandı, kalanı cihazda |
+
+**Harness notu.** `E-05` sahnesi "E-05…E-20 bu sahneden gezilir" diyor ama
+`EventDetail` rotasını mount etmiyor; sahneden detaya gidilmek istendiğinde
+navigator hata veriyor. Ürün hatası değil (gerçek uygulamada rota var ve
+çalışıyor), geliştirme aracının eksiği — Day 3'te harness'a bakılırken düzeltilebilir.
 | 26 | Profilini düzenle | ✅ |
 | 27 | Ayarlar → fotoğraf ızgarası | ✅ |
 | — | Paywall placeholder | ⬜ Phase 4, O-05/O-09 bekliyor |

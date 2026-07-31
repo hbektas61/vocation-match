@@ -227,7 +227,9 @@ export function EventDetailScreen({
 
       {joined ? (
         <Card>
-          <Body>{COPY.events.joinHereNow}</Body>
+          {/* Not the button's own label again: the card says what the live
+              room is, the button says what pressing it does. */}
+          <Body>{COPY.events.hereNowExplainer}</Body>
           <Button
             label={pending === 'verify' ? COPY.events.checkingLive : COPY.events.joinHereNow}
             busy={pending === 'verify'}

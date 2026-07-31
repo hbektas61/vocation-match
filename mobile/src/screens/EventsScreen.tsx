@@ -44,7 +44,7 @@ import {
   type MyEvent,
 } from '../data';
 import type { RootStackParamList } from '../navigation/types';
-import { color, elevation, fontFamily, overlay, radius, spacing, tokens } from '../theme';
+import { color, elevation, fontFamily, overlay, radius, spacing, tokens, MIN_TOUCH } from '../theme';
 
 const CHIPS: { key: EventCategory; label: () => string }[] = [
   { key: 'all', label: () => COPY.events.chipAll },
@@ -387,6 +387,10 @@ export function EventsScreen({
               accessibilityRole="button"
               accessibilityLabel={COPY.events.changeArea}
               onPress={() => setChoosingArea(true)}
+              // It was 95×15 with an 8pt hitSlop — 31 effective, still short of
+              // the 44 everything else operable in this product meets. The slop
+              // stays; the row now carries the height itself.
+              style={styles.changeAreaRow}
               hitSlop={8}
               testID="events-change-area"
             >
@@ -523,6 +527,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     color: color.inkMuted,
   },
+  changeAreaRow: { minHeight: MIN_TOUCH, justifyContent: 'center' },
   changeArea: {
     fontFamily: fontFamily.bodySemi,
     fontSize: 12,

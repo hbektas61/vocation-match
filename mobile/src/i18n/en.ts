@@ -323,6 +323,13 @@ export const en = {
     joining: 'Saving…',
     checkingLive: 'Checking…',
     roomChoiceTitle: 'How do you want to join this event?',
+    /**
+     * The live room's own card had the button's words as its heading — "I am
+     * at the event now" printed twice, one above the other. This says what the
+     * card is for instead, and keeps the promise the room rests on.
+     */
+    hereNowExplainer:
+      'The live room opens with a one-time location check while the app is open. It only confirms you are at the event — never a ticket, and never your exact location.',
     joined: 'You are going. The room is open.',
     joinedRoomCta: 'See who is going',
     liveRoomCta: 'See who is here now',
