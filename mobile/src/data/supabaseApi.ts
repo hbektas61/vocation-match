@@ -100,6 +100,12 @@ export function toApiError(error: PostgresLikeError | null | undefined, fallback
   if (code === 'P0002' || code === 'PGRST116' || code === '23503') {
     return new ApiError('NOT_FOUND', message);
   }
+  // PC001 is the content gate (Apple 1.2). The server sends a category and
+  // deliberately never the submitted text, so there is nothing here to echo
+  // back — the client says its own sentence.
+  if (code === 'PC001') {
+    return new ApiError('CONTENT_REFUSED', message);
+  }
   // PP001 is this project's own SQLSTATE for "that is part of Premium"
   // (D-036): the free allowance in Upcoming, or the Here Now door.
   if (code === 'PP001') {
@@ -1362,18 +1368,49 @@ export class SupabaseApi implements VocationApi {
     return (data ?? []).map((row) => toChatMessage(row as MessageRow));
   }
 
-  async sendMessage(matchId: string, body: string): Promise<ChatMessage> {
+  async sendMessage(matchId: string, body: string, clientToken?: string): Promise<ChatMessage> {
     const session = await this.currentSession();
     if (!session) {
       throw new ApiError('UNAUTHENTICATED', 'Sign in to continue.');
     }
-    const { data, error } = await this.client
-      .from('messages')
-      .insert({ match_id: matchId, sender_id: session.userId, body: body.trim() })
+    const row = {
+      match_id: matchId,
+      sender_id: session.userId,
+      body: body.trim(),
+      ...(clientToken ? { client_token: clientToken } : {}),
+    };
+    // With a token this is an upsert that ignores the duplicate, so a retry
+    // after a lost response is the same row rather than a second message. The
+    // send path is the one place where "did that work?" is genuinely
+    // unanswerable from the client, so the server has to be the one that
+    // decides — and it decides by the token, not by the text, because two
+    // identical messages sent on purpose are a real thing.
+    const query = clientToken
+      ? this.client.from('messages').upsert(row, {
+          onConflict: 'match_id,sender_id,client_token',
+          ignoreDuplicates: true,
+        })
+      : this.client.from('messages').insert(row);
+    const { data, error } = await query
       .select('id, match_id, sender_id, body, created_at, seq')
-      .single();
-    if (error || !data) {
+      .maybeSingle();
+    if (error) {
       throw toApiError(error, 'Could not send that message.');
+    }
+    if (!data) {
+      // The upsert matched an existing row and returned nothing, which means
+      // the first attempt did land. Read it back rather than inventing it.
+      const existing = await this.client
+        .from('messages')
+        .select('id, match_id, sender_id, body, created_at, seq')
+        .eq('match_id', matchId)
+        .eq('sender_id', session.userId)
+        .eq('client_token', clientToken ?? '')
+        .maybeSingle();
+      if (existing.error || !existing.data) {
+        throw toApiError(existing.error, 'Could not send that message.');
+      }
+      return toChatMessage(existing.data as MessageRow);
     }
     return toChatMessage(data as MessageRow);
   }

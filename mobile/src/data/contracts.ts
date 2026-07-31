@@ -18,6 +18,8 @@ export type ApiErrorCode =
   | 'SUSPENDED'
   | 'UNDER_AGE'
   | 'INVALID_INPUT'
+  /** The server refused the text itself (Apple 1.2). Never says which word. */
+  | 'CONTENT_REFUSED'
   | 'NOT_FOUND'
   | 'CONFLICT'
   | 'RATE_LIMITED'
@@ -836,7 +838,12 @@ export interface VocationApi {
 
   /* chat */
   getMessages(matchId: string, limit?: number): Promise<ChatMessage[]>;
-  sendMessage(matchId: string, body: string): Promise<ChatMessage>;
+  /**
+   * `clientToken` names one composed message. Passing the same token again is
+   * how a retry after an uncertain send stays one message: the server keys on
+   * it, so the second attempt is either the same row or nothing at all.
+   */
+  sendMessage(matchId: string, body: string, clientToken?: string): Promise<ChatMessage>;
   /** Live updates for one conversation. Returns an unsubscribe function. */
   subscribeToMessages(matchId: string, onMessage: (message: ChatMessage) => void): () => void;
 
@@ -869,6 +876,8 @@ export interface MatchSummary {
 }
 
 export interface ChatMessage {
+  /** Present when the sender named the attempt, so a retry can be recognised. */
+  clientToken?: string;
   id: string;
   matchId: string;
   senderId: string;

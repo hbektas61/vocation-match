@@ -116,14 +116,14 @@ Figma'da görülmüş olması sayılmaz.
 |---|---|---|
 | ~~K-01~~ | ~~Bildir / engelle~~ | ✅ **kapandı** — altı sebep, sebep seçilmeden gönderilemiyor, engelleme kendi onayını istiyor, raporun aynı zamanda engellediği yazılı. `rt-19-report-block.png` |
 | ~~K-02~~ | ~~Sohbet — unmatch onayı, kapanmış oda~~ | ✅ **kapandı** — **R-014** burada bulundu; kapalı oda harness C-03'te temiz. Mesaj gönderilemedi/yeniden dene hâlâ açık (K-11) |
-| K-03 | **Gelen kutusu — dolu** (yeni eşleşmeler + sohbet listesi, okunmamış) | İkinci hesap gerekiyor (Day 2) |
+| ~~K-03~~ | ~~Gelen kutusu — dolu~~ | ✅ **kapandı, gerçek staging** — iki hesapla eşleşme kuruldu, konuşma B'nin gelen kutusunda son mesajıyla göründü, cevap sıraya doğru yerleşti. **Okunmadı durumu doğrulanmadı: üründe yok** — şemada okundu bilgisi hiç yok ve istemci bunu kendi yorumunda yazıyor ("no unread dot on the inbox tab (no read-state exists)"). Owner sorusu olarak açıldı, çalışıyor diye işaretlenmedi |
 | K-04 | **Ayarlar alt sayfaları** — Dil, Veri sağlayıcıları, Hesabı sil | Stack ekranı; tarayıcıda geri dönülemiyor |
 | ~~K-05~~ | ~~Çevremde gelişmiş arama reddi~~ | ✅ **kapandı** — N-08 ve N-09 sahnelerinde gelişmiş arama gerçekten çalıştırıldı; ikisi de *"Şu an ek arama yapılamıyor. Listeden seçebilir ya da buradayım diyebilirsin."* veriyor. İki alternatif adıyla, ton **bilgi** (hata değil). Ürün hak-bitti ile sağlayıcı-kapalıyı kullanıcıya **bilerek** ayırmıyor — koddaki gerekçe: "hangi 'hayır' olduğu konusunda dürüst: seçenek yok, sokak boş değil" |
 | ~~K-06~~ | ~~Etkinlikler durumları~~ | ✅ **kapandı** — E-12 (sonuç yok), E-15 (sağlayıcı kullanılamıyor), E-16 (günlük sınır), E-17 (özellik kapalı) yürütüldü, dördü de temiz |
 | K-07 | **Canlı oda sonuçları** (E-27…E-34: başlamadı, bitti, iptal, saat belirsiz, konum yok, IN_RANGE, süre doldu) | Tarayıcı konum istemini yanıtlamıyor → **gerçek cihaz** (O-07) |
 | ~~K-08~~ | ~~Keşfet bağlamları~~ | ✅ **kapandı** — D-01 (Tatilden Önce), D-02 (Oteldeyim), D-05 (Etkinliğe Gideceğim), D-06 (açık oda yok), NAV-02, NAV-05, NAV-07 yürütüldü, hepsi temiz |
 | ~~K-09~~ | ~~Otel detayı~~ | ✅ **kapandı** — buradan **R-016** çıktı ve kapatıldı: durum kartı + iki adlandırılmış eylem, gerçek Google mekânıyla yürütüldü |
-| K-11 | Sohbet — mesaj gönderilemedi / yeniden dene | Fake API bellek içi; kesilecek bir ağ yok. Jest üç gönderim-hatası yolunu kapsıyor; runtime doğrulaması **staging + iki hesap** ister → Day 2 |
+| ~~K-11~~ | ~~Sohbet — mesaj gönderilemedi / yeniden dene~~ | ✅ **kapandı, gerçek staging** — sunucunun reddettiği bir gönderim (42501) ve ardından üç ardışık yeniden deneme **tek satır** yazdı. Buradan iki gerçek hata çıktı: **S-001** (idempotence yoktu) ve **S-003** (kısmi indeks yüzünden düzeltmenin kendisi sessizce hiçbir şey yazmıyordu) |
 | K-10 | **Paywall placeholder** | Phase 4 — O-05 + O-09 bekliyor |
 
 `ChooseHotel` ayrı bir ekran değil: `HotelScreen`'i yeniden kullanıyor ve o
@@ -159,6 +159,64 @@ Yürüyüş yöntemi: gerçek 390×844 viewport, çalışan uygulama, her ekrand
 DOM ölçümü — kesilen metin, 44 altı dokunma hedefi, yatay taşma, WCAG kontrastı
 (pasif kontroller hariç) ve kullanıcıya sızan enum kodu.
 
+
+## Day 2 — staging E2E, auth ve Apple 1.2
+
+`node scripts/staging-e2e.mjs` — iki gerçek hesap, gerçek staging backend,
+FakeApi yok, harness yok. **32/32.** Tekrar çalıştırılabilir: her koşu önce
+`supabase/scripts/e2e-reset.sql` ile çiftin arasındaki durumu temizler (swipe
+kalıcı bir karardır, temizlenmezse test yalnız bir kez geçebilir).
+
+Script hiçbir telefonu, ismi, fotoğrafı, mesaj metnini veya token'ı yazdırmaz;
+kullanıcı id'leri sekiz karaktere kısaltılır.
+
+### Staging'de bulunan gerçek hatalar
+
+| ID | Bulgu | Sev | Fix |
+|---|---|---|---|
+| S-001 | **Mesaj gönderiminde idempotence yoktu.** Aynı mesajın dört eşzamanlı gönderimi **dört satır** yazdı. İstemcinin `sendingRef` koruması yalnız aynı karedeki çift dokunuşu kapatıyor; kaybolan *yanıt* durumunu kapatamaz — ve istemci "başarısız oldu" ile "cevap gelmedi"yi ayırt edemez | **P1** | `messages.client_token` + benzersiz indeks; gönderen denemeyi adlandırıyor, yeniden deneme aynı adı taşıyor. Metin üzerinden değil: aynı şeyi bilerek iki kez söylemek gerçek bir şey |
+| S-002 | **Aynı raporu tekrar göndermek raporu çoğaltıyordu.** Kuyruğu uzatıyor ve tek bir şikâyeti örüntü gibi gösteriyordu | P2 | Açık rapor varken `report_user` kuyruktakini geri veriyor. İncelenmiş bir rapordan *sonra* yeni rapor yeni bilgidir ve kabul edilir |
+| S-003 | **S-001'in düzeltmesi sessizce hiçbir şey yazmıyordu.** İndeks *kısmi* oluşturulmuştu; Postgres kısmi indeksi `on conflict (kolonlar)` ile çıkaramaz, PostgREST de yüklemi göndermez → her upsert arbiter bulamadı ve **sıfır** satır yazdı. Dört yeniden deneme → 0 mesaj, üstelik sessizce | **P1** | Düz benzersiz indeks (null'lar zaten birbirinden farklı). Ayrıca E2E artık sessiz hatayı ayrı bir kontrolle yakalıyor |
+| S-004 | **`app.moderation_terms` service_role'a açık değildi.** Yanlış pozitifi emekliye ayırmanın tek yolu migration göndermek olurdu — tablonun varlık sebebinin tam tersi | P2 | `grant select, insert, update` + service_role policy'si |
+| S-005 | **Normalleştirme `!` ve `\|` karakterlerini `i` harfine çeviriyordu.** "WORLD!" → "worldi": sıradan noktalama harfe dönüşüyor, yanlış pozitif üretiyordu | P2 | İkisi de değiştirme kümesinden çıkarıldı; zayıf bir kaçış vektörü, her ünlem cümlesini bozmaya değmez |
+| S-006 | **`report_user`'ı yeniden yazarken rate limit ve `require_any_user` düştü.** `create or replace` daha sonraki bir revizyonu ezdi: saatlik 10 rapor sınırı kayboldu ve askıya alınmış hesap rapor edemez hâle geldi | **P1** | Güncel tanım üzerine kuruldu; mevcut pgTAP testleri bunu yakaladı |
+
+### Apple 1.2 — dört şart, ayrı kapılar
+
+Ayrıntı: `docs/apple-1.2-ugc-safety.md`.
+
+| Şart | Durum |
+|---|---|
+| 1. Sakıncalı içeriğin gönderilmesini filtrele | 🟡 **Metin evet, fotoğraf hayır.** Sunucu-yetkili tetikleyiciler mesaj, görünen ad, tanıtım ve rapor açıklamasında. Kaçış denemeleri test edildi: boşluk, noktalama, büyük/küçük, aksan, rakam-harf, sıfır-genişlik. Reddedilen metin **ne tabloya ne loga** yazılıyor. **"Tüm UGC filtreleniyor" denmiyor** |
+| 2. Sakıncalı içeriği raporla | ✅ Mevcuttu; staging'de doğrulandı. Artık idempotent |
+| 3. Kötüye kullananı engelle | ✅ Çift yönlü ve anında; staging'de iki hesapla kanıtlandı. Engellenen kişiye bilgi verilmiyor |
+| 4. Yayınlanmış iletişim bilgisi | 🔴 **O-04 — yok.** Uydurulmadı. Ayarlar'daki teknik yeri hazır, içi boş |
+| 5. Zamanında müdahale | 🟡 Mekanizma var (OPEN/REVIEWING/ACTIONED/DISMISSED + append-only iz + otomatik FLAGGED). Günlük checklist yazıldı; **kimsenin bakıyor olması bir taahhüt, özellik değil** |
+
+### SMS/OTP ve CAPTCHA — gerçek kanıt
+
+`node scripts/verify-hosted-auth.mjs` — **şu an KIRMIZI**, ve haklı olarak.
+Depo `config.toml`'un ne istediğini kanıtlayabiliyordu ama dashboard'un ne
+yaptığını kanıtlayamıyordu; `docs/hosted-setup.md` bunu kendi cümlesiyle kabul
+ediyordu. Bu script o cümleyi kapatıyor. Hiçbir secret istemiyor — okuduğu iki
+şey de tasarım gereği herkese açık, ki mesele tam olarak bu.
+
+| Kontrol | Sonuç |
+|---|---|
+| FakeApi production/staging akışında kapalı | ✅ `verify-harness-absent.js` + build bayrağı |
+| Telefon OTP backend üzerinden çalışıyor | ✅ İki hesap gerçek `signInWithOtp` + `verifyOtp` ile oturum aldı |
+| Geçerli OTP oturum açıyor | ✅ |
+| **CAPTCHA sunucu tarafında zorunlu** | 🔴 **HAYIR.** Token'sız OTP isteği **HTTP 200** aldı |
+| SMS sağlayıcısı durumu | 🔴 **Twilio açık** — CAPTCHA yokken herkese açık, kimlik doğrulamasız, **faturalı** uç nokta. `config.toml` tam bu yüzden sağlayıcı açmayı reddediyor |
+| E-posta girişi kapalı | 🔴 **HAYIR** — hosted projede açık. Uygulamada e-posta ekranı yok, ama telefon doğrulamadan oturum almanın yolu açık |
+| Yanlış/süresi dolmuş OTP reddi, resend geri sayımı, arka plan dönüşü, deep-link | ⬜ **Doğrulanmadı sayılıyor.** Gerçek SMS ve cihaz etkileşimi ister → Day 3 |
+
+**Kimlik garantisi veritabanında zorlanmıyor.** `profiles_insert_own` yalnız
+`id = current_user_id()` istiyor; telefon kimliği şartı yok. Staging'de zaten
+**9 profil telefonsuz hesaba ait**. Apple 1.2 savunmasının çekirdeği "kalıcı,
+telefon doğrulamalı, yaptırım uygulanabilir kimlik" — bu şu an istemcide
+e-posta ekranı olmamasına dayanıyor. O-12 açık.
+
 ## Owner işlemleri (Hami) — engineering bunları yapamaz
 
 Bunların hiçbiri kodla kapanmaz; her biri açık bir kapıdır.
@@ -168,16 +226,20 @@ Bunların hiçbiri kodla kapanmaz; her biri açık bir kapıdır.
 | O-01 | Apple Developer Program üyeliği (bireysel mi şirket mi) | TestFlight, gerçek IAP, submission | ⬜ bilinmiyor |
 | O-02 | Paid Applications Agreement + banka + vergi | IAP ürünleri | ⬜ |
 | O-03 | Bundle ID kilidi — `com.vacationmatch.app` öneriliyor | Phase 2 release config | ⬜ **kapı** |
-| O-04 | Support e-postası + web alan adı | Support URL, legal sayfalar | ⬜ |
+| O-04 | **Support e-postası + HTTPS Support URL** | Apple 1.2 şartı 4 — **submission blocker**. Depoda doğrulanmış adres yok; uydurulmadı. Ayarlar'daki yeri hazır, içi boş | 🔴 **P0** |
 | O-05 | Aylık/yıllık Premium fiyatı (en geç Day 3) | Paywall, App Store Connect ürünleri | ⬜ |
 | O-06 | Ticketmaster ticari onayı (E-012) | Events'in production'da açık olması | ⬜ **kapı** |
 | O-07 | En az bir gerçek iPhone (development build + TestFlight) | Day 3 cihaz kapısı, A-001 | ⬜ |
 | O-08 | App Store Privacy cevapları + yasal metin onayı | Store paketi | ⬜ |
-| O-09 | **UI onayı** — Day 1 çıkış kapısı | Phase 2+ tamamı | ⬜ **aktif kapı** |
+| O-09 | **UI onayı** — Day 1 çıkış kapısı | Phase 2+ tamamı | ✅ **31 Tem, Hami onayladı** |
 | O-10 | Production deploy ve submission onayı | Day 6/7 | ⬜ |
 
-**O-09 aktif kapıdır.** Hami UI'yı onaylayana kadar RevenueCat, paywall,
-production database ve store metadata çalışması başlamaz.
+| O-11 | **Fotoğraf moderasyonu kararı** | Otomatik görsel sınıflandırma yeni bir ücretli üçüncü taraf ister — izinsiz eklenmedi. Ya (a) yalnız rapor üzerine inceleme, açıkça beyan edilerek, ya (b) sağlayıcı finanse edilir | 🔴 **P0 karar** |
+| O-12 | **Hosted auth sapması** | E-posta girişi kapatılmalı; CAPTCHA ya zorunlu kılınmalı ya da SMS sağlayıcısı kapatılmalı. Dashboard ayarı — hiçbir migration ulaşamaz | 🔴 **P0** |
+
+**O-09 kapandı (31 Temmuz).** Day 1 onaylandı; Day 2 açıldı. RevenueCat,
+paywall, production database, EAS ve store metadata **hâlâ başlatılmadı** —
+onlar Day 4+ ve ayrı onay ister.
 
 ## Engineering hattı — sırayla
 

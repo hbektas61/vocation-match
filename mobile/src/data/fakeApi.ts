@@ -1909,10 +1909,19 @@ export class FakeApi implements VocationApi {
     return this.messages.filter((message) => message.matchId === matchId).slice(-limit);
   }
 
-  async sendMessage(matchId: string, body: string): Promise<ChatMessage> {
+  async sendMessage(matchId: string, body: string, clientToken?: string): Promise<ChatMessage> {
     const userId = await this.requireUserId();
     const match = await this.requireMatch(userId, matchId);
     const text = body.trim();
+    // The same rule the server keeps: a retry that carries the token of a send
+    // that already landed is that send, not a second one. Modelled here too,
+    // or the fake would be a friendlier backend than the real one.
+    if (clientToken) {
+      const already = this.messages.find(
+        (m) => m.matchId === matchId && m.senderId === userId && m.clientToken === clientToken,
+      );
+      if (already) return already;
+    }
     if (text.length < 1 || text.length > 2000) {
       throw new ApiError('INVALID_INPUT', 'A message needs between 1 and 2000 characters.');
     }
@@ -1928,6 +1937,7 @@ export class FakeApi implements VocationApi {
       senderId: userId,
       body: text,
       createdAt: this.now(),
+      ...(clientToken ? { clientToken } : {}),
     };
     this.messages.push(message);
     this.messageListeners.get(matchId)?.forEach((listener) => listener(message));

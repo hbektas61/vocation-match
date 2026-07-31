@@ -826,6 +826,13 @@ export const en = {
     otpInvalid: 'That code is incorrect or expired. Request a new one and try again.',
     forbidden: "You don't have access to do that.",
     underAge: 'Vacation Match is 18+ only.',
+    /**
+     * Refused by the server's content filter. Deliberately not a telling-off
+     * and deliberately not specific: naming the word would hand somebody the
+     * means to work around the filter, and most people who see this made a
+     * mistake rather than an attempt.
+     */
+    contentRefused: 'That cannot be posted here. Try saying it another way.',
     invalidInput: 'Please check the details you entered.',
     notFound: 'We could not find that.',
     conflict: 'That account could not be opened.',

@@ -82,6 +82,8 @@ export function apiErrorMessage(code: ApiErrorCode): string {
       return COPY.errors.underAge;
     case 'INVALID_INPUT':
       return COPY.errors.invalidInput;
+    case 'CONTENT_REFUSED':
+      return COPY.errors.contentRefused;
     case 'NOT_FOUND':
       return COPY.errors.notFound;
     case 'CONFLICT':

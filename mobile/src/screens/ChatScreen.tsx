@@ -59,6 +59,15 @@ function dayLabel(at: number): string {
   return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
 }
 
+/**
+ * A name for one composed message. Not a crypto key — it only has to be
+ * unlikely to repeat within one conversation.
+ */
+function newToken(): string {
+  const rand = () => Math.floor(Math.random() * 0xffffffff).toString(16).padStart(8, '0');
+  return `${rand()}-${rand().slice(0, 4)}-4${rand().slice(0, 3)}-a${rand().slice(0, 3)}-${rand()}${rand().slice(0, 4)}`;
+}
+
 export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   const { state, dispatch } = useAppStore();
   const { matchId } = route.params;
@@ -68,6 +77,17 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   const [sending, setSending] = useState(false);
   /** The synchronous half of `sending`; see `send` below. */
   const sendingRef = useRef(false);
+  /**
+   * Names the message currently in the composer.
+   *
+   * `sendingRef` closes the double-tap window inside one frame, but it cannot
+   * help with the case that actually loses data: the send reached the server
+   * and the *response* did not. From here that is indistinguishable from a
+   * failure, so the retry has to be safe rather than merely discouraged — and
+   * it is safe because it carries this same token, which the server keys on.
+   * A new token is minted only once a send has genuinely landed.
+   */
+  const draftToken = useRef<string>(newToken());
   /** Unmatching asks first, the way blocking and leaving an event room do. */
   const [unmatching, setUnmatching] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -169,8 +189,10 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
     setSending(true);
     setSendError(null);
     try {
-      await getApi().sendMessage(matchId, text);
+      await getApi().sendMessage(matchId, text, draftToken.current);
       setDraft('');
+      // Landed: the next thing typed is a different message.
+      draftToken.current = newToken();
     } catch (err) {
       // A match can disappear underneath an open conversation — the other
       // person deleting their account takes it and its messages with them —

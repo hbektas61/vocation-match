@@ -727,6 +727,7 @@ export const tr: Copy = {
     otpInvalid: 'Bu kod hatalı ya da süresi dolmuş. Yeni kod isteyip tekrar dene.',
     forbidden: 'Bunu yapma iznin yok.',
     underAge: 'Vacation Match yalnız 18 yaş ve üzeri içindir.',
+    contentRefused: 'Bu burada paylaşılamaz. Başka türlü ifade etmeyi dene.',
     invalidInput: 'Girdiğin bilgileri kontrol et.',
     notFound: 'Bunu bulamadık.',
     conflict: 'Bu hesap açılamadı.',
