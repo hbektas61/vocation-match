@@ -104,15 +104,21 @@ Figma'da görülmüş olması sayılmaz.
 | K-11 | Sohbet — mesaj gönderilemedi / yeniden dene | Ağ hatası enjekte etmek gerekiyor; jest'te kapsanıyor, runtime'da değil |
 | K-03 | **Gelen kutusu — dolu** (yeni eşleşmeler + sohbet listesi, okunmamış) | İkinci hesap gerekiyor (Day 2) |
 | K-04 | **Ayarlar alt sayfaları** — Dil, Veri sağlayıcıları, Hesabı sil | Stack ekranı; tarayıcıda geri dönülemiyor |
-| K-05 | **Çevremde** — katalog araması, Google gelişmiş arama, aylık hak/hak bitti, sağlayıcı kapalı, "Buradayım" | N-12 (genel alanda aktif) ✅ yürütüldü ve **R-015** orada bulundu. N-08/N-09 sahneleri tanıtım ekranında açılıyor — durumları arama akışından geçmeyi gerektiriyor |
-| K-06 | **Etkinlikler** — sonuç yok, sağlayıcı kullanılamıyor, çevrimdışı, katılımı geri çek | E-16 (günlük sınır) ✅ ve E-17 (özellik kapalı) ✅ yürütüldü. E-12/E-15 sahneleri bölge seçicide açılıyor; durumları bölge seçtikten sonra geliyor |
+| K-05 | **Çevremde** — Google gelişmiş aramada aylık hak bitti / sağlayıcı kapalı | Katalog-boş + aylık hak satırı ✅ yürütüldü; N-12 ✅ (**R-015** oradan). Hak-bitti ve sağlayıcı-kapalı durumları sahne seed'iyle açılmıyor — gelişmiş aramayı gerçekten çalıştırmak gerekiyor |
+| ~~K-06~~ | ~~Etkinlikler durumları~~ | ✅ **kapandı** — E-12 (sonuç yok), E-15 (sağlayıcı kullanılamıyor), E-16 (günlük sınır), E-17 (özellik kapalı) yürütüldü, dördü de temiz |
 | K-07 | **Canlı oda sonuçları** (E-27…E-34: başlamadı, bitti, iptal, saat belirsiz, konum yok, IN_RANGE, süre doldu) | Tarayıcı konum istemini yanıtlamıyor → **gerçek cihaz** (O-07) |
-| K-08 | **Keşfet** — bağlam seçici sayfası, beş bağlamın her biri | NAV-05 (uygun oda yok) ✅ ve NAV-07 (boş oda / yeniden tara) ✅ yürütüldü. Seçici sayfası ve D-01…D-06 kaldı |
-| K-09 | **Otel detayı** (`HotelDetails`) | Rota var, giriş noktası yürünmedi |
+| ~~K-08~~ | ~~Keşfet bağlamları~~ | ✅ **kapandı** — D-01 (Tatilden Önce), D-02 (Oteldeyim), D-05 (Etkinliğe Gideceğim), D-06 (açık oda yok), NAV-02, NAV-05, NAV-07 yürütüldü, hepsi temiz |
+| K-09 | **Otel detayı** (`HotelDetails`) | Aktif *tatil mekânı* kartından açılıyor; Çevremde check-in'i tatil mekânı kurmuyor (doğru davranış), yani mekân seçici zincirinden geçmek gerekiyor |
 | K-10 | **Paywall placeholder** | Phase 4 — O-05 + O-09 bekliyor |
 
 `ChooseHotel` ayrı bir ekran değil: `HotelScreen`'i yeniden kullanıyor ve o
 yürütüldü.
+
+**Harness sahnelerini iframe içinde gezme.** Sahneler arasında sayfa yeniden
+yüklemeden geçmek için her sahne kendi `<iframe>`'inde açılıyor; tek çağrıda
+beş sahne yürünebiliyor. Bazı sahnelerin seed'i ekranın *giriş* hâlinde açıyor
+(N-08/N-09 tanıtımda, E-12/E-15 bölge seçicide) — o durumlarda sahnenin içinde
+akışı yürümek gerekiyor, ve yürünemeyenler yukarıda açık bırakıldı.
 
 **QA yöntemi sınırları — dürüstçe kaydedilmiştir.**
 
