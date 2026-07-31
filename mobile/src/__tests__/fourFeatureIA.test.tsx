@@ -12,6 +12,7 @@ import { act, fireEvent, screen } from '@testing-library/react-native';
 import { COPY, matchSource, roomPlate } from '../copy';
 import { FakeApi, getApi, setApi, type RoomKey } from '../data';
 import { onboard, onboardWithHotel } from '../testSupport/onboarding';
+import { press, typeText } from '../testSupport/interact';
 
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
 
@@ -21,10 +22,10 @@ beforeEach(() => {
 
 /** Opens Here Now and passes the simulated in-range check. */
 async function verifyAtHotel() {
-  await fireEvent.press(await screen.findByTestId('tab-Vacation'));
-  await fireEvent.press(await screen.findByTestId('open-here-now'));
-  await fireEvent.press(await screen.findByTestId('simulate-near'));
-  await fireEvent.press(await screen.findByTestId('here-now-done'));
+  await press(await screen.findByTestId('tab-Vacation'));
+  await press(await screen.findByTestId('open-here-now'));
+  await press(await screen.findByTestId('simulate-near'));
+  await press(await screen.findByTestId('here-now-done'));
 }
 
 describe('D-057 bottom navigation', () => {
@@ -44,7 +45,7 @@ describe('D-057 bottom navigation', () => {
     const tab = await screen.findByTestId('tab-Inbox');
     expect(tab).toHaveTextContent(COPY.tabs.messages);
 
-    await fireEvent.press(tab);
+    await press(tab);
     // The heading is the longer word; only the tab label was shortened.
     expect(await screen.findByText(COPY.inbox.title)).toBeTruthy();
   });
@@ -59,8 +60,8 @@ describe('D-057 Settings behind the profile ring', () => {
   ])('reaches Settings from the %s tab in one press', async (tab, ring) => {
     await onboardWithHotel('Deniz');
 
-    await fireEvent.press(await screen.findByTestId(`tab-${tab}`));
-    await fireEvent.press(await screen.findByTestId(ring));
+    await press(await screen.findByTestId(`tab-${tab}`));
+    await press(await screen.findByTestId(ring));
 
     expect(await screen.findByTestId('sign-out')).toBeTruthy();
   });
@@ -75,7 +76,7 @@ describe('D-057 Settings behind the profile ring', () => {
 
   it('keeps blocking, reporting and account deletion at the first level', async () => {
     await onboardWithHotel('Deniz');
-    await fireEvent.press(await screen.findByTestId('hotel-profile-ring'));
+    await press(await screen.findByTestId('hotel-profile-ring'));
 
     // Section labels are tracked uppercase, so the cards are found by id.
     expect(await screen.findByTestId('settings-blocked')).toBeTruthy();
@@ -87,7 +88,7 @@ describe('D-057 context selector', () => {
   it('names the room the deck is drawing and its time state', async () => {
     await onboardWithHotel('Deniz');
     await verifyAtHotel();
-    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
+    await press(await screen.findByTestId('tab-Discovery'));
 
     const selector = await screen.findByTestId('discovery-context');
     // The room, in words. Never a distance and never a coordinate.
@@ -97,8 +98,8 @@ describe('D-057 context selector', () => {
   it('lists a room that is shut, with the reason, instead of hiding it', async () => {
     await onboardWithHotel('Deniz');
     await verifyAtHotel();
-    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
-    await fireEvent.press(await screen.findByTestId('discovery-context'));
+    await press(await screen.findByTestId('tab-Discovery'));
+    await press(await screen.findByTestId('discovery-context'));
 
     // Upcoming is closed for an account that has declared no dates — and the
     // sheet says so rather than leaving the room off the list entirely.
@@ -113,11 +114,11 @@ describe('D-057 context selector', () => {
 
     // Declare a stay too, so two rooms are open at once and switching is real.
     await getApi().declareUpcomingStay('2026-07-24', '2026-07-28');
-    await fireEvent.press(await screen.findByTestId('tab-Inbox'));
-    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
+    await press(await screen.findByTestId('tab-Inbox'));
+    await press(await screen.findByTestId('tab-Discovery'));
 
-    await fireEvent.press(await screen.findByTestId('discovery-context'));
-    await fireEvent.press(await screen.findByTestId('context-row-UPCOMING'));
+    await press(await screen.findByTestId('discovery-context'));
+    await press(await screen.findByTestId('context-row-UPCOMING'));
 
     const selector = await screen.findByTestId('discovery-context');
     expect(selector.props.accessibilityLabel).toContain(COPY.upcoming.roomTitle);
@@ -131,12 +132,12 @@ describe('D-057 context selector', () => {
 
   it('opens nothing when no room is eligible, and says why on the control', async () => {
     await onboardWithHotel('Deniz');
-    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
+    await press(await screen.findByTestId('tab-Discovery'));
 
     const selector = await screen.findByTestId('discovery-context');
     expect(selector.props.accessibilityState.disabled).toBe(true);
     // Pressing a disabled control must not put a sheet over the screen.
-    await fireEvent.press(selector);
+    await press(selector);
     expect(screen.queryByTestId('discovery-context-sheet')).toBeNull();
   });
 });
@@ -181,13 +182,13 @@ describe('D-057 match, inbox and chat source attribution', () => {
 
     // Earn a real conversation: the deck, a mutual like, then a first message
     // so the match moves out of the new-matches strip and into a row.
-    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
-    await fireEvent.press(await screen.findByTestId('swipe-like'));
-    await fireEvent.press(await screen.findByTestId('match-keep-browsing'));
+    await press(await screen.findByTestId('tab-Discovery'));
+    await press(await screen.findByTestId('swipe-like'));
+    await press(await screen.findByTestId('match-keep-browsing'));
     const [summary] = await getApi().getMatches();
     await getApi().sendMessage(summary.matchId, 'Hi!');
 
-    await fireEvent.press(await screen.findByTestId('tab-Inbox'));
+    await press(await screen.findByTestId('tab-Inbox'));
     const source = await screen.findByTestId(`inbox-source-${summary.matchId}`);
     // The room this match came from — HERE_NOW here, but the row says it
     // whatever the room was, which is the point of one shared inbox.
@@ -199,9 +200,9 @@ describe('D-057 Etkinlikler (§9)', () => {
   /** Onboards, opens Etkinlikler and looks at İstanbul. */
   async function lookAtIstanbul() {
     await onboardWithHotel('Deniz');
-    await fireEvent.press(await screen.findByTestId('tab-Events'));
-    await fireEvent.changeText(await screen.findByTestId('events-area-input'), 'İstanbul');
-    await fireEvent.press(await screen.findByTestId('events-area-confirm'));
+    await press(await screen.findByTestId('tab-Events'));
+    await typeText(await screen.findByTestId('events-area-input'), 'İstanbul');
+    await press(await screen.findByTestId('events-area-confirm'));
     await screen.findByTestId('events-upcoming');
   }
 
@@ -254,8 +255,8 @@ describe('D-057 Etkinlikler (§9)', () => {
       }),
     );
 
-    await fireEvent.press(screen.getByTestId('events-change-area'));
-    await fireEvent.changeText(screen.getByTestId('events-area-input'), 'Paris');
+    await press(screen.getByTestId('events-change-area'));
+    await typeText(screen.getByTestId('events-area-input'), 'Paris');
     act(() => {
       fireEvent.press(screen.getByTestId('events-area-confirm'));
     });
@@ -293,10 +294,10 @@ describe('D-057 event detail (§9.3)', () => {
   /** Opens İstanbul, then the first upcoming event's detail screen. */
   async function openFirstEvent() {
     await onboardWithHotel('Deniz');
-    await fireEvent.press(await screen.findByTestId('tab-Events'));
-    await fireEvent.changeText(await screen.findByTestId('events-area-input'), 'İstanbul');
-    await fireEvent.press(await screen.findByTestId('events-area-confirm'));
-    await fireEvent.press(await screen.findByTestId('events-upcoming-option-0'));
+    await press(await screen.findByTestId('tab-Events'));
+    await typeText(await screen.findByTestId('events-area-input'), 'İstanbul');
+    await press(await screen.findByTestId('events-area-confirm'));
+    await press(await screen.findByTestId('events-upcoming-option-0'));
     await screen.findByTestId('screen-event-detail');
   }
 
@@ -318,20 +319,20 @@ describe('D-057 event detail (§9.3)', () => {
 
   it('asks before withdrawing, and keeps the membership until confirmed (E-24)', async () => {
     await openFirstEvent();
-    await fireEvent.press(await screen.findByTestId('event-join-upcoming'));
+    await press(await screen.findByTestId('event-join-upcoming'));
     expect(await screen.findByTestId('event-withdraw')).toBeTruthy();
 
     // First press opens the question rather than doing the thing.
-    await fireEvent.press(screen.getByTestId('event-withdraw'));
+    await press(screen.getByTestId('event-withdraw'));
     expect(await screen.findByText(COPY.events.withdrawConfirm)).toBeTruthy();
     expect(await getApi().getMyEvents()).toHaveLength(1);
 
     // Backing out leaves the membership exactly where it was.
-    await fireEvent.press(screen.getByTestId('event-withdraw-cancel'));
+    await press(screen.getByTestId('event-withdraw-cancel'));
     expect(await getApi().getMyEvents()).toHaveLength(1);
 
-    await fireEvent.press(await screen.findByTestId('event-withdraw'));
-    await fireEvent.press(await screen.findByTestId('event-withdraw-confirm'));
+    await press(await screen.findByTestId('event-withdraw'));
+    await press(await screen.findByTestId('event-withdraw-confirm'));
     expect(await getApi().getMyEvents()).toHaveLength(0);
   });
 });
@@ -339,10 +340,10 @@ describe('D-057 event detail (§9.3)', () => {
 describe('D-057 Çevremde (§8)', () => {
   it('reaches Settings from Çevremde, which had no route at all', async () => {
     await onboardWithHotel('Deniz');
-    await fireEvent.press(await screen.findByTestId('tab-Nearby'));
+    await press(await screen.findByTestId('tab-Nearby'));
 
     // The corner used to hold a decorative pin on this screen.
-    await fireEvent.press(await screen.findByTestId('checkin-profile-ring'));
+    await press(await screen.findByTestId('checkin-profile-ring'));
     expect(await screen.findByTestId('sign-out')).toBeTruthy();
   });
 
@@ -380,10 +381,10 @@ describe('D-057 closed decisions — N-07 and E-21', () => {
 
   it('offers both event rooms independently, and neither creates the other (E-21)', async () => {
     await onboardWithHotel('Deniz');
-    await fireEvent.press(await screen.findByTestId('tab-Events'));
-    await fireEvent.changeText(await screen.findByTestId('events-area-input'), 'İstanbul');
-    await fireEvent.press(await screen.findByTestId('events-area-confirm'));
-    await fireEvent.press(await screen.findByTestId('events-upcoming-option-0'));
+    await press(await screen.findByTestId('tab-Events'));
+    await typeText(await screen.findByTestId('events-area-input'), 'İstanbul');
+    await press(await screen.findByTestId('events-area-confirm'));
+    await press(await screen.findByTestId('events-upcoming-option-0'));
     await screen.findByTestId('screen-event-detail');
 
     // Both ways in are on screen before anything has been declared.
@@ -391,7 +392,7 @@ describe('D-057 closed decisions — N-07 and E-21', () => {
     expect(await screen.findByTestId('event-verify-from-selection')).toBeTruthy();
 
     // Taking the live one creates no membership.
-    await fireEvent.press(screen.getByTestId('event-verify-from-selection'));
+    await press(screen.getByTestId('event-verify-from-selection'));
     expect(await getApi().getMyEvents()).toHaveLength(0);
   });
 });
@@ -415,9 +416,9 @@ describe('D-057 touch targets', () => {
 describe('D-057 Etkinlikler refusals (§9.2)', () => {
   async function lookAt(city: string) {
     await onboardWithHotel('Deniz');
-    await fireEvent.press(await screen.findByTestId('tab-Events'));
-    await fireEvent.changeText(await screen.findByTestId('events-area-input'), city);
-    await fireEvent.press(await screen.findByTestId('events-area-confirm'));
+    await press(await screen.findByTestId('tab-Events'));
+    await typeText(await screen.findByTestId('events-area-input'), city);
+    await press(await screen.findByTestId('events-area-confirm'));
   }
 
   it('says which of the refusals happened, in its own words', async () => {
@@ -453,7 +454,7 @@ describe('D-057 the deck offers the event rooms it promises', () => {
     expect(opened).not.toBeNull();
     await api.joinEventUpcoming(opened!.selectionToken);
 
-    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
+    await press(await screen.findByTestId('tab-Discovery'));
 
     // `getRooms()` answers for the vacation venue only; Çevremde has always
     // been synthesised on this screen and the event rooms were not, so the
@@ -474,8 +475,8 @@ describe('the simulation controls are a preview-build affordance', () => {
    */
   it('is there in the preview build', async () => {
     await onboardWithHotel('Deniz');
-    await fireEvent.press(await screen.findByTestId('tab-Vacation'));
-    await fireEvent.press(await screen.findByTestId('open-here-now'));
+    await press(await screen.findByTestId('tab-Vacation'));
+    await press(await screen.findByTestId('open-here-now'));
 
     expect(await screen.findByTestId('simulate-near')).toBeTruthy();
   });
@@ -485,8 +486,8 @@ describe('the simulation controls are a preview-build affordance', () => {
     delete process.env.EXPO_PUBLIC_USE_FAKE_API;
     try {
       await onboardWithHotel('Deniz');
-      await fireEvent.press(await screen.findByTestId('tab-Vacation'));
-      await fireEvent.press(await screen.findByTestId('open-here-now'));
+      await press(await screen.findByTestId('tab-Vacation'));
+      await press(await screen.findByTestId('open-here-now'));
 
       expect(screen.queryByTestId('simulate-near')).toBeNull();
       expect(screen.queryByTestId('simulate-far')).toBeNull();
@@ -501,8 +502,8 @@ describe('the simulation controls are a preview-build affordance', () => {
 
   it('says a check is running rather than going quiet', async () => {
     await onboardWithHotel('Deniz');
-    await fireEvent.press(await screen.findByTestId('tab-Vacation'));
-    await fireEvent.press(await screen.findByTestId('open-here-now'));
+    await press(await screen.findByTestId('tab-Vacation'));
+    await press(await screen.findByTestId('open-here-now'));
 
     const button = await screen.findByTestId('check-presence');
     // A disabled control whose label never changes tells nobody their press

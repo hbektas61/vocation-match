@@ -11,11 +11,12 @@
  *
  * The grid's own behaviour is covered in `photoGridUi.test.tsx`.
  */
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { screen, waitFor } from '@testing-library/react-native';
 
 import { FakeApi, getApi, setApi } from '../data';
 import { pickProfilePhoto } from '../data/imagePicker';
 import { onboardToSettings } from '../testSupport/onboarding';
+import { press } from '../testSupport/interact';
 
 jest.mock('../data/imagePicker', () => ({
   pickProfilePhoto: jest.fn(),
@@ -59,7 +60,7 @@ describe('profile photos in Settings', () => {
     await onboardToSettings();
     picks();
 
-    await fireEvent.press(await screen.findByTestId('settings-photo-grid-add-1'));
+    await press(await screen.findByTestId('settings-photo-grid-add-1'));
 
     await waitFor(async () => {
       expect(await getApi().getOwnPhotos()).toHaveLength(1);
@@ -72,14 +73,14 @@ describe('profile photos in Settings', () => {
     await onboardToSettings();
     picks();
     for (const slot of [1, 2, 3]) {
-      await fireEvent.press(await screen.findByTestId(`settings-photo-grid-add-${slot}`));
+      await press(await screen.findByTestId(`settings-photo-grid-add-${slot}`));
       await waitFor(async () => {
         expect(await getApi().getOwnPhotos()).toHaveLength(slot);
       }, UPLOAD);
     }
     const before = (await getApi().getOwnPhotos()).map((photo) => photo.path);
 
-    await fireEvent.press(await screen.findByTestId('settings-photo-grid-add-4'));
+    await press(await screen.findByTestId('settings-photo-grid-add-4'));
 
     await waitFor(async () => {
       expect(await getApi().getOwnPhotos()).toHaveLength(4);
@@ -90,12 +91,12 @@ describe('profile photos in Settings', () => {
   it('removes one again, and the card follows the set', async () => {
     await onboardToSettings();
     picks();
-    await fireEvent.press(await screen.findByTestId('settings-photo-grid-add-1'));
+    await press(await screen.findByTestId('settings-photo-grid-add-1'));
     await waitFor(async () => {
       expect(await getApi().getOwnPhotos()).toHaveLength(1);
     }, UPLOAD);
 
-    await fireEvent.press(screen.getByTestId('settings-photo-grid-remove-1'));
+    await press(screen.getByTestId('settings-photo-grid-remove-1'));
 
     await waitFor(async () => {
       expect(await getApi().getOwnPhotos()).toEqual([]);
@@ -107,7 +108,7 @@ describe('profile photos in Settings', () => {
     await onboardToSettings();
     picker.mockResolvedValue({ status: 'cancelled' });
 
-    await fireEvent.press(await screen.findByTestId('settings-photo-grid-add-1'));
+    await press(await screen.findByTestId('settings-photo-grid-add-1'));
 
     await waitFor(async () => {
       expect(await getApi().getOwnPhotos()).toEqual([]);
@@ -119,7 +120,7 @@ describe('profile photos in Settings', () => {
     await onboardToSettings();
     picker.mockResolvedValue({ status: 'permission-denied' });
 
-    await fireEvent.press(await screen.findByTestId('settings-photo-grid-add-1'));
+    await press(await screen.findByTestId('settings-photo-grid-add-1'));
 
     expect(await screen.findByTestId('settings-photo-grid-error')).toBeTruthy();
   });

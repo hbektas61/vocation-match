@@ -56,6 +56,19 @@ export function Screen({
    */
   safeTop = false,
   /**
+   * Lets the content own the whole screen when it is shorter than one.
+   *
+   * A scroll view's content container is content-height by default, so a
+   * short screen stacks from the top and leaves whatever is left over as a
+   * void underneath. That is right for a list and wrong for an empty state,
+   * which is a composition and wants to sit in the middle of what it has.
+   *
+   * Opt-in rather than default: it only changes anything for a child that
+   * asks to grow, but every scrolling screen shares this container and a
+   * silent layout change is not worth the convenience.
+   */
+  fill = false,
+  /**
    * A screen that is a white sheet rather than the cream ground: the chat,
    * and anything presented modally over another screen.
    */
@@ -67,6 +80,7 @@ export function Screen({
   bleed?: boolean;
   resetScrollOnFocus?: boolean;
   safeTop?: boolean;
+  fill?: boolean;
   tone?: 'ground' | 'sheet';
   testID?: string;
 }) {
@@ -84,7 +98,10 @@ export function Screen({
   const content = scroll ? (
     <ScrollView
       ref={scrollRef}
-      contentContainerStyle={bleed ? styles.screenBleed : styles.screenContent}
+      contentContainerStyle={[
+        bleed ? styles.screenBleed : styles.screenContent,
+        fill && styles.screenFill,
+      ]}
       keyboardShouldPersistTaps="handled"
       automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
     >
@@ -808,19 +825,30 @@ export function EmptyState({
   message,
   /** The one thing worth doing from here, when there is one. */
   action,
+  /**
+   * Off when the screen already carries its own drawing.
+   *
+   * The generic disc is a stand-in for a picture, and a stand-in beside the
+   * real thing is just two marks stacked — which is exactly what the empty
+   * inbox looked like once R-009 put a drawing above this card.
+   */
+  mark = true,
   testID,
 }: {
   message: string;
   action?: React.ReactNode;
+  mark?: boolean;
   testID?: string;
 }) {
   return (
     <View style={styles.empty} accessibilityRole="text" testID={testID}>
-      <View style={styles.emptyMark}>
-        <Text style={styles.emptyGlyph} accessibilityElementsHidden importantForAccessibility="no">
-          ·
-        </Text>
-      </View>
+      {mark ? (
+        <View style={styles.emptyMark}>
+          <Text style={styles.emptyGlyph} accessibilityElementsHidden importantForAccessibility="no">
+            ·
+          </Text>
+        </View>
+      ) : null}
       <Text style={styles.emptyText}>{message}</Text>
       {action}
     </View>
@@ -932,6 +960,8 @@ const styles = StyleSheet.create({
   /** The screen shell: 20 aside, 24 above, 16 below, 14 between. */
   screenContent: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: spacing.md, gap: 14 },
   screenBleed: { paddingBottom: spacing.xl, gap: 14 },
+  /** `fill`: at least the height of the scroll view, never less than content. */
+  screenFill: { flexGrow: 1 },
 
   /** The head: title left, 46 ring right, centred on it. */
   screenHeader: {

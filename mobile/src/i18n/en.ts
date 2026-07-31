@@ -262,6 +262,7 @@ export const en = {
     selectedActive: 'Selected · Active',
     detailsCta: 'See hotel details',
     detailsTitle: 'Hotel details',
+    backToPlan: 'Back to your trip plan',
     addressLabel: 'Address',
     searchPlaceholder: 'Hotel name or city',
     chooseTitle: 'Choose your hotel',
@@ -462,6 +463,25 @@ export const en = {
      * refuses honestly and one that quietly opens on a kilometre of error.
      */
     inaccurate: 'Your location is not precise enough. Step outside and try again.',
+    /**
+     * R-011: the two location refusals are results, not banners, so each one
+     * gets a heading, an explanation and two named ways on.
+     *
+     * None of these sentences may contain a distance, a direction or a
+     * radius. The server answers with a boolean; the screen says exactly that
+     * and no more (D-005). "Not at the place" is the whole fact.
+     */
+    whatHappened: 'What happened?',
+    retry: 'Try again',
+    tooFarTitle: 'Not at the place yet',
+    tooFarWhat:
+      'The check runs once, while the app is open, and it only answers whether you are at your vacation place. This time the answer was no, so At the Hotel stays closed. Run it again once you have arrived — nothing about where you were is kept.',
+    inaccurateTitle: 'We could not tell',
+    inaccurateWhat:
+      'Your device answered, but not precisely enough to settle the question — indoors, in a basement or with a weak signal it often cannot. Nothing was recorded, and this is not a "no". Step outside, give it a moment, and check again.',
+    /** The room that is open to somebody who is not at the place yet. */
+    seeUpcoming: 'See who is going',
+    addDates: 'Add your stay dates',
     permissionDenied:
       'Location permission was declined. At the Hotel needs a one-time foreground check; nothing runs in the background. You can still use Before the Trip.',
     expired: 'Your presence check expired. Run a new check to re-enter At the Hotel.',

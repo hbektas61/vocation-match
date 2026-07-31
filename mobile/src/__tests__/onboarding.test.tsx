@@ -9,7 +9,6 @@
 import {
   act,
   cleanup,
-  fireEvent,
   renderAsync,
   screen,
 } from '@testing-library/react-native';
@@ -22,6 +21,7 @@ import { FakeApi, getApi, MAX_INTERESTS, setApi } from '../data';
 import { tr } from '../i18n/tr';
 import { INTEREST_CHOICES } from '../fixtures/interests';
 import { onboard, onboardWithHotel, authenticateWithPhone } from '../testSupport/onboarding';
+import { press, typeText } from '../testSupport/interact';
 
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
 
@@ -56,7 +56,7 @@ describe('the language', () => {
 
   it('switches the whole conversation from the first screen', async () => {
     await renderAsync(<App />);
-    await fireEvent.press(await screen.findByTestId('welcome-language-tr'));
+    await press(await screen.findByTestId('welcome-language-tr'));
 
     // The screen itself re-renders in Turkish… (the headline's full stop is
     // drawn as a heart, so the match is on the words, not the punctuation)
@@ -65,9 +65,9 @@ describe('the language', () => {
     ).toBeTruthy();
 
     // …and the choice travels with the flow rather than living on one screen.
-    await fireEvent.press(screen.getByTestId('welcome-phone'));
+    await press(screen.getByTestId('welcome-phone'));
     expect(await screen.findByText(tr.onboarding.promise.headline)).toBeTruthy();
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await press(screen.getByTestId('onboarding-continue'));
     expect(await screen.findByText(tr.onboarding.phone.headline)).toBeTruthy();
   });
 
@@ -83,14 +83,14 @@ describe('moving through the wizard', () => {
   it('keeps what was typed when you go back and come forward again', async () => {
     await authenticateWithPhone('+905551110011');
 
-    await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await typeText(await screen.findByTestId('profile-name'), 'Deniz');
+    await press(screen.getByTestId('onboarding-continue'));
 
     // Back to the name, which should still be there rather than blank.
-    await fireEvent.press(await screen.findByTestId('onboarding-back'));
+    await press(await screen.findByTestId('onboarding-back'));
     expect((await screen.findByTestId('profile-name')).props.value).toBe('Deniz');
 
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await press(screen.getByTestId('onboarding-continue'));
     expect(await screen.findByTestId('screen-onboarding-birthdate')).toBeTruthy();
   });
 
@@ -103,39 +103,39 @@ describe('moving through the wizard', () => {
     expect(action.props.accessibilityState.disabled).toBe(true);
     expect(screen.queryByTestId('onboarding-skip')).toBeNull();
 
-    await fireEvent.changeText(screen.getByTestId('profile-name'), 'Deniz');
+    await typeText(screen.getByTestId('profile-name'), 'Deniz');
     expect(screen.getByTestId('onboarding-continue').props.accessibilityState.disabled).toBe(false);
   });
 
   it('offers a skip only on the steps that are genuinely optional', async () => {
     await authenticateWithPhone('+905551110003');
 
-    await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
-    await fireEvent.changeText(await screen.findByTestId('profile-birthdate'), '01/03/1994');
+    await typeText(await screen.findByTestId('profile-name'), 'Deniz');
+    await press(screen.getByTestId('onboarding-continue'));
+    await typeText(await screen.findByTestId('profile-birthdate'), '01/03/1994');
     // The birthdate is not optional: it is what the 18+ rule is checked against.
     expect(screen.queryByTestId('onboarding-skip')).toBeNull();
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await press(screen.getByTestId('onboarding-continue'));
 
     // Gender is required — the server refuses to finish without it.
     expect(await screen.findByTestId('screen-onboarding-gender')).toBeTruthy();
     expect(screen.queryByTestId('onboarding-skip')).toBeNull();
-    await fireEvent.press(screen.getByTestId('gender-woman'));
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await press(screen.getByTestId('gender-woman'));
+    await press(screen.getByTestId('onboarding-continue'));
 
     // Orientation is not, and skipping it writes nothing.
     expect(await screen.findByTestId('onboarding-skip')).toBeTruthy();
-    await fireEvent.press(screen.getByTestId('onboarding-skip'));
+    await press(screen.getByTestId('onboarding-skip'));
 
     // Show me is required too: it decides what this person's own feed holds.
     expect(await screen.findByTestId('screen-onboarding-show-me')).toBeTruthy();
     expect(screen.queryByTestId('onboarding-skip')).toBeNull();
-    await fireEvent.press(screen.getByTestId('show-me-everyone'));
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await press(screen.getByTestId('show-me-everyone'));
+    await press(screen.getByTestId('onboarding-continue'));
 
     // Passions and the photo can both be left for later.
     expect(await screen.findByTestId('onboarding-skip')).toBeTruthy();
-    await fireEvent.press(screen.getByTestId('onboarding-skip'));
+    await press(screen.getByTestId('onboarding-skip'));
     expect(await screen.findByTestId('screen-onboarding-photo')).toBeTruthy();
   });
 });
@@ -187,8 +187,8 @@ describe('the Android back button', () => {
   it('goes back a step, and keeps the answer, instead of leaving the app', async () => {
     await authenticateWithPhone('+905551110014');
 
-    await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await typeText(await screen.findByTestId('profile-name'), 'Deniz');
+    await press(screen.getByTestId('onboarding-continue'));
     expect(await screen.findByTestId('screen-onboarding-birthdate')).toBeTruthy();
 
     // Claimed, so the app stays open — and lands on the previous question with
@@ -215,19 +215,19 @@ describe('the Android back button', () => {
 describe('the birthdate', () => {
   it('is typed and shown as DD/MM/YYYY, and stored as ISO', async () => {
     await authenticateWithPhone('+905551119901');
-    await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await typeText(await screen.findByTestId('profile-name'), 'Deniz');
+    await press(screen.getByTestId('onboarding-continue'));
 
     const field = await screen.findByTestId('profile-birthdate');
     // Typed without separators. The input holds bare digits — the separators
     // and the remaining template are drawn beside them, so the mask never
     // disappears under a half-typed date — and what is *shown* is asserted by
     // the visible mask text rather than the input's value.
-    await fireEvent.changeText(field, '01031994');
+    await typeText(field, '01031994');
     expect(screen.getByTestId('profile-birthdate').props.value).toBe('01031994');
     expect(screen.getByText('01/03/1994')).toBeTruthy();
 
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await press(screen.getByTestId('onboarding-continue'));
     await screen.findByTestId('screen-onboarding-gender');
 
     // The boundary: the day/month order is a display decision and the stored
@@ -237,10 +237,10 @@ describe('the birthdate', () => {
 
   it('will not continue on a date the calendar does not have', async () => {
     await authenticateWithPhone('+905551119902');
-    await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await typeText(await screen.findByTestId('profile-name'), 'Deniz');
+    await press(screen.getByTestId('onboarding-continue'));
 
-    await fireEvent.changeText(await screen.findByTestId('profile-birthdate'), '31/02/1994');
+    await typeText(await screen.findByTestId('profile-birthdate'), '31/02/1994');
 
     // Nothing to say yet beyond the format the field already shows, so the
     // action simply stays inactive rather than arguing.
@@ -251,24 +251,24 @@ describe('the birthdate', () => {
 describe('interests', () => {
   async function reachInterests() {
     await authenticateWithPhone('+905551110016');
-    await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
-    await fireEvent.changeText(await screen.findByTestId('profile-birthdate'), '01/03/1994');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
-    await fireEvent.press(await screen.findByTestId('gender-woman'));
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
-    await fireEvent.press(await screen.findByTestId('onboarding-skip')); // orientation
-    await fireEvent.press(await screen.findByTestId('show-me-everyone'));
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await typeText(await screen.findByTestId('profile-name'), 'Deniz');
+    await press(screen.getByTestId('onboarding-continue'));
+    await typeText(await screen.findByTestId('profile-birthdate'), '01/03/1994');
+    await press(screen.getByTestId('onboarding-continue'));
+    await press(await screen.findByTestId('gender-woman'));
+    await press(screen.getByTestId('onboarding-continue'));
+    await press(await screen.findByTestId('onboarding-skip')); // orientation
+    await press(await screen.findByTestId('show-me-everyone'));
+    await press(screen.getByTestId('onboarding-continue'));
     expect(await screen.findByTestId('interest-choices')).toBeTruthy();
   }
 
   it('saves what was chosen, so the step is not asking for nothing', async () => {
     await reachInterests();
 
-    await fireEvent.press(chipFor(INTEREST_CHOICES[0]));
-    await fireEvent.press(chipFor(INTEREST_CHOICES[3]));
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await press(chipFor(INTEREST_CHOICES[0]));
+    await press(chipFor(INTEREST_CHOICES[3]));
+    await press(screen.getByTestId('onboarding-continue'));
 
     await screen.findByTestId('screen-onboarding-photo');
     expect((await getApi().getOwnProfile())?.interests).toEqual([
@@ -281,13 +281,13 @@ describe('interests', () => {
     await reachInterests();
 
     for (const choice of INTEREST_CHOICES.slice(0, MAX_INTERESTS)) {
-      await fireEvent.press(chipFor(choice));
+      await press(chipFor(choice));
     }
     const overflow = chipFor(INTEREST_CHOICES[MAX_INTERESTS]);
     expect(overflow.props.accessibilityState.disabled).toBe(true);
 
-    await fireEvent.press(overflow);
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await press(overflow);
+    await press(screen.getByTestId('onboarding-continue'));
     await screen.findByTestId('screen-onboarding-photo');
     expect((await getApi().getOwnProfile())?.interests).toHaveLength(MAX_INTERESTS);
   });
@@ -316,18 +316,18 @@ describe('interests', () => {
 describe('gender, orientation and who you are shown', () => {
   async function reachGender(phone: string) {
     await authenticateWithPhone(phone);
-    await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
-    await fireEvent.changeText(await screen.findByTestId('profile-birthdate'), '01/03/1994');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await typeText(await screen.findByTestId('profile-name'), 'Deniz');
+    await press(screen.getByTestId('onboarding-continue'));
+    await typeText(await screen.findByTestId('profile-birthdate'), '01/03/1994');
+    await press(screen.getByTestId('onboarding-continue'));
     return screen.findByTestId('screen-onboarding-gender');
   }
 
   it('collects the answer but does not publish it unless asked', async () => {
     await reachGender('+905551119910');
 
-    await fireEvent.press(screen.getByTestId('gender-woman'));
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await press(screen.getByTestId('gender-woman'));
+    await press(screen.getByTestId('onboarding-continue'));
 
     const saved = await getApi().getOwnProfile();
     // Answering is required; broadcasting it is a separate decision, and its
@@ -339,9 +339,9 @@ describe('gender, orientation and who you are shown', () => {
   it('publishes it when the toggle is on', async () => {
     await reachGender('+905551119911');
 
-    await fireEvent.press(screen.getByTestId('gender-woman'));
-    await fireEvent.press(screen.getByTestId('show-gender'));
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await press(screen.getByTestId('gender-woman'));
+    await press(screen.getByTestId('show-gender'));
+    await press(screen.getByTestId('onboarding-continue'));
 
     expect((await getApi().getOwnProfile())?.showGender).toBe(true);
   });
@@ -353,18 +353,18 @@ describe('gender, orientation and who you are shown', () => {
     // asked for the whole list, and its implication — that the answers behind
     // it were a different kind of answer — was never a good one.
     expect(screen.queryByTestId('gender-more')).toBeNull();
-    await fireEvent.press(screen.getByTestId('gender-non-binary'));
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await press(screen.getByTestId('gender-non-binary'));
+    await press(screen.getByTestId('onboarding-continue'));
 
     expect((await getApi().getOwnProfile())?.gender).toBe('Non-binary');
   });
 
   it('writes nothing at all when orientation is skipped', async () => {
     await reachGender('+905551119913');
-    await fireEvent.press(screen.getByTestId('gender-woman'));
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await press(screen.getByTestId('gender-woman'));
+    await press(screen.getByTestId('onboarding-continue'));
 
-    await fireEvent.press(await screen.findByTestId('onboarding-skip'));
+    await press(await screen.findByTestId('onboarding-skip'));
 
     // Skipping is an answer of "none", not a default to be filled in later.
     const saved = await getApi().getOwnProfile();
@@ -374,27 +374,27 @@ describe('gender, orientation and who you are shown', () => {
 
   it('stops at three orientations rather than only saying so', async () => {
     await reachGender('+905551119914');
-    await fireEvent.press(screen.getByTestId('gender-woman'));
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await press(screen.getByTestId('gender-woman'));
+    await press(screen.getByTestId('onboarding-continue'));
     await screen.findByTestId('orientation-choices');
 
     for (const value of ['straight', 'gay', 'lesbian']) {
-      await fireEvent.press(screen.getByTestId(`orientation-${value}`));
+      await press(screen.getByTestId(`orientation-${value}`));
     }
     const overflow = screen.getByTestId('orientation-bisexual');
     expect(overflow.props.accessibilityState.disabled).toBe(true);
 
-    await fireEvent.press(overflow);
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await press(overflow);
+    await press(screen.getByTestId('onboarding-continue'));
 
     expect((await getApi().getOwnProfile())?.orientations).toHaveLength(3);
   });
 
   it('does not finish while a required answer is missing', async () => {
     await reachGender('+905551119915');
-    await fireEvent.press(screen.getByTestId('gender-woman'));
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
-    await fireEvent.press(await screen.findByTestId('onboarding-skip'));
+    await press(screen.getByTestId('gender-woman'));
+    await press(screen.getByTestId('onboarding-continue'));
+    await press(await screen.findByTestId('onboarding-skip'));
 
     // Show me is the second thing the server insists on, so the profile is
     // still a draft here however much else has been answered.

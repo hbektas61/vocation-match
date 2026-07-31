@@ -10,7 +10,7 @@ import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { Body, Caption, PhotoScrim, Screen, Title } from '../components/ui';
+import { Body, Button, Caption, Card, PhotoScrim, Screen, SuccessBadge, Title } from '../components/ui';
 import { HotelBuilding } from '../components/HotelIllustrations';
 import { COPY, upperCase } from '../copy';
 import { getApi, readBackendConfig } from '../data';
@@ -25,9 +25,16 @@ const PinIcon = () => (
   </Svg>
 );
 
-export function HotelDetailsScreen({ route }: RootScreenProps<'HotelDetails'>) {
+export function HotelDetailsScreen({ route, navigation }: RootScreenProps<'HotelDetails'>) {
   const { state } = useAppStore();
   const hotel = state.hotels.find((h) => h.id === route.params.hotelId) ?? null;
+  /**
+   * Today this screen is only ever opened from the active venue's own card,
+   * but the route takes an id and a route that takes an id can be pointed at
+   * anything. The status card and the two actions all speak about the *active*
+   * venue, so they appear only when this really is it.
+   */
+  const isActive = state.activeHotel?.hotelId === route.params.hotelId;
   const config = readBackendConfig();
   const isGoogle = hotel?.provider === 'google';
   /**
@@ -114,6 +121,45 @@ export function HotelDetailsScreen({ route }: RootScreenProps<'HotelDetails'>) {
         </View>
       ) : null}
       <Caption>{isGoogle ? COPY.venue.attribution : COPY.hotel.attribution}</Caption>
+
+      {/*
+        R-016. For a Google venue this screen is the name and the attribution
+        and nothing else — which is correct, because D-054 forbids storing any
+        of the rest — but correct is not the same as finished: it was a room
+        with a door in and no door out, and ~500pt of blank under it.
+
+        What it was missing is not more of Google's data. It is the one thing
+        the *account* knows and the screen never said: that this is the venue
+        the whole trip tab is currently built on. That fact, and the two
+        things anybody would want to do with it.
+      */}
+      {isActive ? (
+        <>
+          <Card testID="hotel-details-status">
+            <View style={styles.statusHead}>
+              <SuccessBadge label={COPY.hotel.activePlate} testID="hotel-details-active" />
+            </View>
+            <Body>{COPY.hotel.activatedNote}</Body>
+            <Caption>{COPY.trust.oneHotel}</Caption>
+          </Card>
+          <Button
+            label={COPY.hotel.backToPlan}
+            onPress={() => navigation.goBack()}
+            testID="hotel-details-back-to-plan"
+          />
+          {/*
+            `replace`, not `navigate`: choosing a new venue there hands you
+            back with `goBack`, and if this screen were still on the stack you
+            would land on the details of the venue you just left.
+          */}
+          <Button
+            label={COPY.hotel.switchButton}
+            variant="secondary"
+            onPress={() => navigation.replace('ChooseHotel')}
+            testID="hotel-details-change-venue"
+          />
+        </>
+      ) : null}
     </Screen>
   );
 }
@@ -144,6 +190,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   placeRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  /** The badge sits on its own row so it keeps its size beside nothing. */
+  statusHead: { flexDirection: 'row' },
   block: { gap: 4, marginTop: spacing.sm },
   blockLabel: {
     fontFamily: fontFamily.bodySemi,

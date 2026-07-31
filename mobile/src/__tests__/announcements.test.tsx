@@ -24,6 +24,7 @@ import {
   onboardToSettings,
   requestPhoneCode,
 } from '../testSupport/onboarding';
+import { press, typeText } from '../testSupport/interact';
 
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
 let announced: string[];
@@ -80,8 +81,8 @@ describe('what gets announced', () => {
     await screen.findByTestId('profile-name');
     announced = [];
 
-    await fireEvent.changeText(screen.getByTestId('profile-name'), 'Deniz');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await typeText(screen.getByTestId('profile-name'), 'Deniz');
+    await press(screen.getByTestId('onboarding-continue'));
 
     // Eleven steps swap in place inside one navigator screen, so nothing resets
     // the cursor between them. Without this a VoiceOver user taps "Continue"
@@ -96,7 +97,7 @@ describe('what gets announced', () => {
     await screen.findByTestId('settings-delete-account');
     announced = [];
 
-    await fireEvent.press(screen.getByTestId('delete-account'));
+    await press(screen.getByTestId('delete-account'));
 
     // Someone can reach the delete button without their cursor passing over the
     // paragraphs, so all three have to be spoken when the panel opens.

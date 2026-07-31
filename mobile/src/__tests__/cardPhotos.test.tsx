@@ -10,6 +10,7 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { FakeApi, getApi, setApi, type CandidateCard } from '../data';
 import { onboardWithHotel } from '../testSupport/onboarding';
+import { press } from '../testSupport/interact';
 
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
 const OWNER = '00000000-0000-4000-8000-00000000000f';
@@ -47,12 +48,12 @@ async function openDeckWithPhotos(): Promise<void> {
     .mockImplementation(async (paths) =>
       Object.fromEntries(paths.map((path) => [path, `file:///signed/${path}`])),
     );
-  await fireEvent.press(screen.getByTestId('tab-Vacation'));
-  await fireEvent.press(await screen.findByTestId('open-here-now'));
-  await fireEvent.press(await screen.findByTestId('simulate-near'));
+  await press(screen.getByTestId('tab-Vacation'));
+  await press(await screen.findByTestId('open-here-now'));
+  await press(await screen.findByTestId('simulate-near'));
   await screen.findByText(/You are in/);
-  await fireEvent.press(screen.getByTestId('here-now-done'));
-  await fireEvent.press(screen.getByRole('button', { name: 'Discovery' }));
+  await press(screen.getByTestId('here-now-done'));
+  await press(screen.getByRole('button', { name: 'Discovery' }));
   await screen.findByTestId(`candidate-${OWNER}`);
 }
 
@@ -73,17 +74,17 @@ describe('the card photo set', () => {
 
     // Back from the first photo goes nowhere rather than wrapping — wrapping
     // makes people lose their place.
-    await fireEvent.press(screen.getByTestId('card-photo-previous'));
+    await press(screen.getByTestId('card-photo-previous'));
     expect(shown()).toContain(PATHS[0]);
 
-    await fireEvent.press(screen.getByTestId('card-photo-next'));
+    await press(screen.getByTestId('card-photo-next'));
     expect(shown()).toContain(PATHS[1]);
-    await fireEvent.press(screen.getByTestId('card-photo-next'));
+    await press(screen.getByTestId('card-photo-next'));
     expect(shown()).toContain(PATHS[2]);
-    await fireEvent.press(screen.getByTestId('card-photo-next'));
+    await press(screen.getByTestId('card-photo-next'));
     expect(shown()).toContain(PATHS[2]);
 
-    await fireEvent.press(screen.getByTestId('card-photo-previous'));
+    await press(screen.getByTestId('card-photo-previous'));
     expect(shown()).toContain(PATHS[1]);
   });
 
@@ -98,12 +99,12 @@ describe('the card photo set', () => {
       .mockImplementation(async (paths) =>
         Object.fromEntries(paths.map((path) => [path, `file:///signed/${path}`])),
       );
-    await fireEvent.press(screen.getByTestId('tab-Vacation'));
-    await fireEvent.press(await screen.findByTestId('open-here-now'));
-    await fireEvent.press(await screen.findByTestId('simulate-near'));
+    await press(screen.getByTestId('tab-Vacation'));
+    await press(await screen.findByTestId('open-here-now'));
+    await press(await screen.findByTestId('simulate-near'));
     await screen.findByText(/You are in/);
-    await fireEvent.press(screen.getByTestId('here-now-done'));
-    await fireEvent.press(screen.getByRole('button', { name: 'Discovery' }));
+    await press(screen.getByTestId('here-now-done'));
+    await press(screen.getByRole('button', { name: 'Discovery' }));
     await screen.findByTestId(`candidate-${OWNER}`);
 
     expect(screen.queryByTestId('card-photo-segments')).toBeNull();
@@ -118,12 +119,12 @@ describe('the empty room (owner reference, 2026-07-26)', () => {
     // An empty room, straight from the server's mouth.
     const feedSpy = jest.spyOn(api, 'getDiscoveryFeed').mockResolvedValue([]);
 
-    await fireEvent.press(screen.getByTestId('tab-Vacation'));
-    await fireEvent.press(await screen.findByTestId('open-here-now'));
-    await fireEvent.press(await screen.findByTestId('simulate-near'));
+    await press(screen.getByTestId('tab-Vacation'));
+    await press(await screen.findByTestId('open-here-now'));
+    await press(await screen.findByTestId('simulate-near'));
     await screen.findByText(/You are in/);
-    await fireEvent.press(screen.getByTestId('here-now-done'));
-    await fireEvent.press(screen.getByRole('button', { name: 'Discovery' }));
+    await press(screen.getByTestId('here-now-done'));
+    await press(screen.getByRole('button', { name: 'Discovery' }));
 
     expect(await screen.findByTestId('discovery-empty')).toBeTruthy();
     expect(screen.getByText('No one here yet')).toBeTruthy();

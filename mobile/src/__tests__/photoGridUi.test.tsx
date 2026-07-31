@@ -6,11 +6,12 @@
  * accepts a photo, that reordering actually reorders, and that removing
  * promotes whatever was behind it.
  */
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, screen, waitFor } from '@testing-library/react-native';
 
 import { FakeApi, getApi, setApi } from '../data';
 import { pickProfilePhoto } from '../data/imagePicker';
 import { authenticateWithPhone } from '../testSupport/onboarding';
+import { press, typeText } from '../testSupport/interact';
 
 jest.mock('../data/imagePicker', () => ({
   pickProfilePhoto: jest.fn(),
@@ -33,21 +34,21 @@ const picks = () =>
 /** Walks to the photo step, which is where the grid lives. */
 async function reachPhotoStep(phone: string): Promise<void> {
   await authenticateWithPhone(phone);
-  await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Deniz');
-  await fireEvent.press(screen.getByTestId('onboarding-continue'));
-  await fireEvent.changeText(await screen.findByTestId('profile-birthdate'), '01/03/1994');
-  await fireEvent.press(screen.getByTestId('onboarding-continue'));
-  await fireEvent.press(await screen.findByTestId('gender-woman'));
-  await fireEvent.press(screen.getByTestId('onboarding-continue'));
-  await fireEvent.press(await screen.findByTestId('onboarding-skip'));
-  await fireEvent.press(await screen.findByTestId('show-me-everyone'));
-  await fireEvent.press(screen.getByTestId('onboarding-continue'));
-  await fireEvent.press(await screen.findByTestId('onboarding-skip'));
+  await typeText(await screen.findByTestId('profile-name'), 'Deniz');
+  await press(screen.getByTestId('onboarding-continue'));
+  await typeText(await screen.findByTestId('profile-birthdate'), '01/03/1994');
+  await press(screen.getByTestId('onboarding-continue'));
+  await press(await screen.findByTestId('gender-woman'));
+  await press(screen.getByTestId('onboarding-continue'));
+  await press(await screen.findByTestId('onboarding-skip'));
+  await press(await screen.findByTestId('show-me-everyone'));
+  await press(screen.getByTestId('onboarding-continue'));
+  await press(await screen.findByTestId('onboarding-skip'));
   await screen.findByTestId('photo-grid');
 }
 
 const addPhoto = async (slot: number) => {
-  await fireEvent.press(screen.getByTestId(`photo-grid-add-${slot}`));
+  await press(screen.getByTestId(`photo-grid-add-${slot}`));
   await waitFor(() => expect(screen.getByTestId(`photo-grid-slot-${slot}`)).toBeTruthy());
 };
 
@@ -123,7 +124,7 @@ describe('the grid', () => {
     await addPhoto(2);
     const second = (await getApi().getOwnPhotos())[1].path;
 
-    await fireEvent.press(screen.getByTestId('photo-grid-remove-1'));
+    await press(screen.getByTestId('photo-grid-remove-1'));
 
     await waitFor(async () => {
       expect(await getApi().getOwnPhotos()).toHaveLength(1);
@@ -135,7 +136,7 @@ describe('the grid', () => {
     await reachPhotoStep('+905551118006');
     picker.mockResolvedValue({ status: 'cancelled' });
 
-    await fireEvent.press(screen.getByTestId('photo-grid-add-1'));
+    await press(screen.getByTestId('photo-grid-add-1'));
 
     await waitFor(async () => {
       expect(await getApi().getOwnPhotos()).toEqual([]);
@@ -147,7 +148,7 @@ describe('the grid', () => {
     await reachPhotoStep('+905551118007');
     picker.mockResolvedValue({ status: 'permission-denied' });
 
-    await fireEvent.press(screen.getByTestId('photo-grid-add-1'));
+    await press(screen.getByTestId('photo-grid-add-1'));
 
     expect(await screen.findByTestId('photo-grid-error')).toBeTruthy();
     expect(screen.getByTestId('photo-grid-add-1')).toBeTruthy();
@@ -158,7 +159,7 @@ describe('the grid', () => {
 
     // A required photo is a barrier to exactly the people most careful about
     // being seen (D-024).
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await press(screen.getByTestId('onboarding-continue'));
 
     expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
   });

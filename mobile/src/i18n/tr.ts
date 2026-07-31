@@ -262,6 +262,7 @@ export const tr: Copy = {
     selectedActive: 'Seçildi · Aktif',
     detailsCta: 'Otel detaylarını gör',
     detailsTitle: 'Otel detayları',
+    backToPlan: 'Tatil planına dön',
     addressLabel: 'Adres',
     searchPlaceholder: 'Otel adı veya şehir',
     chooseTitle: 'Otelini seç',
@@ -422,6 +423,16 @@ export const tr: Copy = {
     tooFar: 'Bu kontrol seni mekânın yakınında bulamadı. Oradayken tekrar dene.',
     unavailable: 'Konumun okunamadı. Cihaz ayarlarını kontrol edip tekrar dene.',
     inaccurate: 'Konum yeterince hassas değil. Açık alanda tekrar dene.',
+    whatHappened: 'Ne oldu?',
+    retry: 'Tekrar dene',
+    tooFarTitle: 'Henüz mekânda değilsin',
+    tooFarWhat:
+      'Kontrol, uygulama açıkken bir kez çalışır ve yalnızca tatil mekânında olup olmadığını yanıtlar. Bu sefer yanıt hayır oldu, o yüzden Oteldeyim kapalı kaldı. Vardığında yeniden dene — nerede olduğuna dair hiçbir şey saklanmaz.',
+    inaccurateTitle: 'Konumunu belirleyemedik',
+    inaccurateWhat:
+      'Cihazın yanıt verdi ama soruyu çözecek kadar hassas değildi — kapalı alanda, bodrumda ya da sinyal zayıfken çoğu zaman çözemez. Hiçbir şey kaydedilmedi ve bu bir "hayır" değil. Açık alana çık, biraz bekle ve yeniden kontrol et.',
+    seeUpcoming: 'Gidenleri gör',
+    addDates: 'Tarihlerini yaz',
     permissionDenied:
       'Konum izni reddedildi. Oteldeyim tek seferlik, ön planda bir kontrol ister; arka planda hiçbir şey çalışmaz. Tatilden Önce odasını yine kullanabilirsin.',
     expired: 'Yakınlık kontrolünün süresi doldu. Oteldeyim\'e yeniden girmek için yeni bir kontrol yap.',

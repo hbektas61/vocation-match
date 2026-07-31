@@ -10,6 +10,7 @@ import {
   onboardWithHotel,
   requestPhoneCode,
 } from '../testSupport/onboarding';
+import { press, typeText } from '../testSupport/interact';
 
 // A fixed clock keeps session lifetimes and age math deterministic across runs.
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
@@ -34,11 +35,11 @@ async function onboardAndActivateHotel() {
 
 /** From the Rooms tab, opens Here Now and simulates an in-range check. */
 async function checkInAtHotel() {
-  await fireEvent.press(screen.getByTestId('tab-Vacation'));
-  await fireEvent.press(await screen.findByTestId('open-here-now'));
-  await fireEvent.press(await screen.findByTestId('simulate-near'));
+  await press(screen.getByTestId('tab-Vacation'));
+  await press(await screen.findByTestId('open-here-now'));
+  await press(await screen.findByTestId('simulate-near'));
   expect(await screen.findByText(/You are in/)).toBeTruthy();
-  await fireEvent.press(screen.getByTestId('here-now-done'));
+  await press(screen.getByTestId('here-now-done'));
 }
 
 /**
@@ -52,16 +53,16 @@ describe('critical flow', () => {
     await checkInAtHotel();
 
     // Discovery: Derya already likes the tester (fixture), so a like matches.
-    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
+    await press(await screen.findByTestId('tab-Discovery'));
     expect(await screen.findByTestId('candidate-cand-derya')).toBeTruthy();
-    await fireEvent.press(screen.getByTestId('swipe-like'));
+    await press(screen.getByTestId('swipe-like'));
     expect(await screen.findByText("It's a match!")).toBeTruthy();
 
     // Chat: the message really goes through sendMessage/getMessages — the
     // in-memory API never fabricates a reply from the other person.
-    await fireEvent.press(screen.getByTestId('match-open-chat'));
-    await fireEvent.changeText(await screen.findByTestId('chat-input'), 'Merhaba!');
-    await fireEvent.press(screen.getByTestId('chat-send'));
+    await press(screen.getByTestId('match-open-chat'));
+    await typeText(await screen.findByTestId('chat-input'), 'Merhaba!');
+    await press(screen.getByTestId('chat-send'));
     expect(await screen.findByText('Merhaba!')).toBeTruthy();
 
     // The same message is what the conversation and the inbox preview show —
@@ -78,14 +79,14 @@ describe('critical flow', () => {
     await onboardAndActivateHotel();
     await checkInAtHotel();
 
-    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
+    await press(await screen.findByTestId('tab-Discovery'));
     expect(await screen.findByTestId('candidate-cand-derya')).toBeTruthy();
-    await fireEvent.press(screen.getByTestId('discovery-report-block'));
-    await fireEvent.press(await screen.findByTestId('block-start'));
-    await fireEvent.press(await screen.findByTestId('block-confirm'));
+    await press(screen.getByTestId('discovery-report-block'));
+    await press(await screen.findByTestId('block-start'));
+    await press(await screen.findByTestId('block-confirm'));
 
     // Back on the deck: the blocked person is gone, the next candidate shows.
-    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
+    await press(await screen.findByTestId('tab-Discovery'));
     expect(await screen.findByTestId('candidate-cand-mert')).toBeTruthy();
     expect(screen.queryByTestId('candidate-cand-derya')).toBeNull();
   });
@@ -93,7 +94,7 @@ describe('critical flow', () => {
   it('keeps discovery closed until a room is opened, and offers both ways in', async () => {
     await onboardAndActivateHotel();
 
-    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
+    await press(await screen.findByTestId('tab-Discovery'));
     // The pre-room orbit screen (owner's designer, 2026-07-27): no deck, a
     // named reason, and the two doors out of the state — rooms, or a
     // proximity check right here.
@@ -101,7 +102,7 @@ describe('critical flow', () => {
     expect(screen.getByText("You haven't entered a room yet")).toBeTruthy();
     expect(screen.getByTestId('discovery-go-rooms')).toBeTruthy();
 
-    await fireEvent.press(screen.getByTestId('discovery-check-proximity'));
+    await press(screen.getByTestId('discovery-check-proximity'));
     expect(await screen.findByTestId('simulate-near')).toBeTruthy();
   });
 });
@@ -110,7 +111,7 @@ describe('rooms and hotel switching', () => {
   it('shows the server-decided reason a room is still closed', async () => {
     await onboardAndActivateHotel();
 
-    await fireEvent.press(screen.getByTestId('tab-Vacation'));
+    await press(screen.getByTestId('tab-Vacation'));
     expect(
       await screen.findByText('Closed — declare your stay dates to enter.'),
     ).toBeTruthy();
@@ -126,12 +127,12 @@ describe('rooms and hotel switching', () => {
       await screen.findByText('Open — a recent check found you at the hotel.'),
     ).toBeTruthy();
 
-    await fireEvent.press(screen.getByTestId('tab-Vacation'));
+    await press(screen.getByTestId('tab-Vacation'));
     // D-054: switching means choosing again, destination first. Confirming is
     // still its own step, because the previous venue's discovery closes the
     // moment this lands (D-004).
     await chooseGoogleVenue({ destinationQuery: 'Çeşme', venueQuery: 'Ilıca' });
-    await fireEvent.press(await screen.findByTestId('confirm-switch'));
+    await press(await screen.findByTestId('confirm-switch'));
 
     // Choosing lands on the rooms now, where the consequence of the switch
     // is visible as the state itself: the new hotel's Here Now is closed.
@@ -166,8 +167,8 @@ describe('rooms and hotel switching', () => {
 
     // Force a fresh focus-triggered fetch so the mocked sequence is consumed:
     // hop to another tab and back.
-    await fireEvent.press(await screen.findByTestId('tab-Inbox'));
-    await fireEvent.press(screen.getByTestId('tab-Vacation'));
+    await press(await screen.findByTestId('tab-Inbox'));
+    await press(screen.getByTestId('tab-Vacation'));
     expect(
       await screen.findByText('Open — a recent check found you at the hotel.'),
     ).toBeTruthy();
@@ -183,15 +184,15 @@ describe('settings and blocking', () => {
     await onboardAndActivateHotel();
     await checkInAtHotel();
 
-    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
+    await press(await screen.findByTestId('tab-Discovery'));
     expect(await screen.findByTestId('candidate-cand-derya')).toBeTruthy();
-    await fireEvent.press(screen.getByTestId('discovery-report-block'));
-    await fireEvent.press(await screen.findByTestId('block-start'));
-    await fireEvent.press(await screen.findByTestId('block-confirm'));
+    await press(screen.getByTestId('discovery-report-block'));
+    await press(await screen.findByTestId('block-start'));
+    await press(await screen.findByTestId('block-confirm'));
 
-    await fireEvent.press(await screen.findByTestId('discovery-profile-ring'));
+    await press(await screen.findByTestId('discovery-profile-ring'));
     expect(await screen.findByText(/^Deniz, \d+$/)).toBeTruthy();
-    await fireEvent.press(await screen.findByTestId('unblock-cand-derya'));
+    await press(await screen.findByTestId('unblock-cand-derya'));
 
     expect(await screen.findByText('You have not blocked anyone.')).toBeTruthy();
   });
@@ -208,11 +209,11 @@ describe('the inbox for someone who cannot see it', () => {
   it('names the person, the preview, and what the row does', async () => {
     await onboardAndActivateHotel();
     await checkInAtHotel();
-    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
-    await fireEvent.press(await screen.findByTestId('swipe-like'));
-    await fireEvent.press(await screen.findByTestId('match-keep-browsing'));
+    await press(await screen.findByTestId('tab-Discovery'));
+    await press(await screen.findByTestId('swipe-like'));
+    await press(await screen.findByTestId('match-keep-browsing'));
 
-    await fireEvent.press(await screen.findByTestId('tab-Inbox'));
+    await press(await screen.findByTestId('tab-Inbox'));
     const [summary] = await getApi().getMatches();
 
     // A match with no conversation yet lives in the new-matches strip: a face,
@@ -226,8 +227,8 @@ describe('the inbox for someone who cannot see it', () => {
     // to carry the preview a sighted person sees. The message goes through the
     // API so the tab bar stays reachable; a focus round-trip refreshes the list.
     await getApi().sendMessage(summary.matchId, 'Hi!');
-    await fireEvent.press(await screen.findByTestId('tab-Discovery'));
-    await fireEvent.press(await screen.findByTestId('tab-Inbox'));
+    await press(await screen.findByTestId('tab-Discovery'));
+    await press(await screen.findByTestId('tab-Inbox'));
 
     // Wait for the refreshed list — the strip item and the row share the
     // match's testID, and querying mid-refresh can hand back the node that is
@@ -247,10 +248,10 @@ describe('authentication and profile', () => {
     );
     render(<App />);
 
-    await fireEvent.press(await screen.findByTestId('welcome-phone'));
-    await fireEvent.press(await screen.findByTestId('onboarding-continue'));
-    await fireEvent.changeText(await screen.findByTestId('auth-phone'), '+90 555 111 00 11');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await press(await screen.findByTestId('welcome-phone'));
+    await press(await screen.findByTestId('onboarding-continue'));
+    await typeText(await screen.findByTestId('auth-phone'), '+90 555 111 00 11');
+    await press(screen.getByTestId('onboarding-continue'));
 
     expect(await screen.findByTestId('screen-onboarding-otp')).toBeTruthy();
     expect(screen.getByText(COPY.phoneAuth.requestUncertain)).toBeTruthy();
@@ -269,8 +270,8 @@ describe('authentication and profile', () => {
   it('rejects an incorrect SMS code without leaving the code step', async () => {
     render(<App />);
     await requestPhoneCode('+905551110013');
-    await fireEvent.changeText(await screen.findByTestId('auth-otp'), '000000');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await typeText(await screen.findByTestId('auth-otp'), '000000');
+    await press(screen.getByTestId('onboarding-continue'));
 
     expect(await screen.findByText(COPY.errors.otpInvalid)).toBeTruthy();
     expect(screen.getByTestId('screen-onboarding-otp')).toBeTruthy();
@@ -286,49 +287,49 @@ describe('authentication and profile', () => {
     const profile = jest.spyOn(api, 'getOwnProfile').mockRejectedValue(new Error('fetch failed'));
     render(<App />);
     await requestPhoneCode('+905551110024');
-    await fireEvent.changeText(await screen.findByTestId('auth-otp'), '123456');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await typeText(await screen.findByTestId('auth-otp'), '123456');
+    await press(screen.getByTestId('onboarding-continue'));
 
     expect(await screen.findByTestId('screen-account-load-error')).toBeTruthy();
     expect(await api.currentSession()).not.toBeNull();
 
     profile.mockRestore();
-    await fireEvent.press(screen.getByTestId('account-load-retry'));
+    await press(screen.getByTestId('account-load-retry'));
     expect(await screen.findByTestId('screen-onboarding-name')).toBeTruthy();
   });
 
   it('keeps a returning session when active-hotel hydration fails, then retries it', async () => {
     const phone = '+905551110025';
     await onboardWithHotel('Already', phone);
-    await fireEvent.press(await screen.findByTestId('hotel-profile-ring'));
-    await fireEvent.press(await screen.findByTestId('sign-out'));
+    await press(await screen.findByTestId('hotel-profile-ring'));
+    await press(await screen.findByTestId('sign-out'));
 
     const api = getApi();
     const hotel = jest.spyOn(api, 'getActiveHotel').mockRejectedValue(new Error('fetch failed'));
     await requestPhoneCode(phone);
-    await fireEvent.changeText(await screen.findByTestId('auth-otp'), '123456');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await typeText(await screen.findByTestId('auth-otp'), '123456');
+    await press(screen.getByTestId('onboarding-continue'));
 
     expect(await screen.findByTestId('screen-account-load-error')).toBeTruthy();
     expect(await api.currentSession()).not.toBeNull();
 
     hotel.mockRestore();
-    await fireEvent.press(screen.getByTestId('account-load-retry'));
+    await press(screen.getByTestId('account-load-retry'));
     expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
   });
 
   it('refuses an underage birthdate with the 18+ message', async () => {
     await authenticateWithPhone('+905551110015');
 
-    await fireEvent.changeText(await screen.findByTestId('profile-name'), 'Kid');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await typeText(await screen.findByTestId('profile-name'), 'Kid');
+    await press(screen.getByTestId('onboarding-continue'));
 
     const recentYear = new Date().getFullYear() - 5;
-    await fireEvent.changeText(
+    await typeText(
       await screen.findByTestId('profile-birthdate'),
       `01/01/${recentYear}`,
     );
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await press(screen.getByTestId('onboarding-continue'));
 
     expect(await screen.findByText('Vacation Match is 18+ only.')).toBeTruthy();
     expect(screen.getByTestId('screen-onboarding-birthdate')).toBeTruthy();
@@ -348,9 +349,9 @@ describe('authentication and profile', () => {
       (await getApi().getRooms()).find((room) => room.room === 'HERE_NOW')?.eligible,
     ).toBe(true);
 
-    await fireEvent.press(screen.getByTestId('tab-Vacation'));
-    await fireEvent.press(await screen.findByTestId('open-here-now'));
-    await fireEvent.press(await screen.findByTestId('simulate-deny'));
+    await press(screen.getByTestId('tab-Vacation'));
+    await press(await screen.findByTestId('open-here-now'));
+    await press(await screen.findByTestId('simulate-deny'));
 
     // Withdrawing consent has to reach the server. Asserting on the UI alone
     // would pass even if the stored answer stayed and kept the room open for
@@ -363,8 +364,8 @@ describe('authentication and profile', () => {
   it('signs out from settings and returns to onboarding', async () => {
     await onboardAndActivateHotel();
 
-    await fireEvent.press(screen.getByTestId('hotel-profile-ring'));
-    await fireEvent.press(await screen.findByTestId('sign-out'));
+    await press(screen.getByTestId('hotel-profile-ring'));
+    await press(await screen.findByTestId('sign-out'));
 
     expect(await screen.findByTestId('screen-welcome')).toBeTruthy();
   });
@@ -394,7 +395,7 @@ describe('waiting for an SMS code', () => {
 
   it('does not verify a code while a resend request is in flight', async () => {
     await reachOtpScreen('+905551110027');
-    await fireEvent.changeText(screen.getByTestId('auth-otp'), '123456');
+    await typeText(screen.getByTestId('auth-otp'), '123456');
 
     const startedAt = Date.now();
     jest.spyOn(Date, 'now').mockReturnValue(startedAt + 61_000);
@@ -464,12 +465,12 @@ describe('waiting for an SMS code', () => {
   it('opens an existing account after the same phone completes OTP again', async () => {
     const phone = '+905551110019';
     await onboardWithHotel('Already', phone);
-    await fireEvent.press(await screen.findByTestId('hotel-profile-ring'));
-    await fireEvent.press(await screen.findByTestId('sign-out'));
+    await press(await screen.findByTestId('hotel-profile-ring'));
+    await press(await screen.findByTestId('sign-out'));
 
     await requestPhoneCode(phone);
-    await fireEvent.changeText(await screen.findByTestId('auth-otp'), '123456');
-    await fireEvent.press(screen.getByTestId('onboarding-continue'));
+    await typeText(await screen.findByTestId('auth-otp'), '123456');
+    await press(screen.getByTestId('onboarding-continue'));
 
     expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
   });
@@ -478,7 +479,7 @@ describe('waiting for an SMS code', () => {
     const phone = '+905551110020';
     await reachOtpScreen(phone);
 
-    await fireEvent.press(screen.getByLabelText(COPY.common.back));
+    await press(screen.getByLabelText(COPY.common.back));
 
     expect(await screen.findByTestId('screen-onboarding-phone')).toBeTruthy();
     // Same number, shown the way the field shows numbers: the country code is
@@ -497,8 +498,8 @@ describe('waiting for an SMS code', () => {
     await reachOtpScreen('+905551110026');
     expect(request).toHaveBeenCalledTimes(1);
 
-    await fireEvent.press(screen.getByLabelText(COPY.common.back));
-    await fireEvent.press(await screen.findByTestId('onboarding-continue'));
+    await press(screen.getByLabelText(COPY.common.back));
+    await press(await screen.findByTestId('onboarding-continue'));
 
     expect(await screen.findByTestId('screen-onboarding-otp')).toBeTruthy();
     expect(request).toHaveBeenCalledTimes(1);

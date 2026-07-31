@@ -146,7 +146,7 @@ export async function chooseGoogleVenue({
   venueIndex?: number;
   chip?: 'all' | 'stay';
 } = {}): Promise<void> {
-  await fireEvent.press(await screen.findByTestId('tab-Vacation'));
+  await press('tab-Vacation');
   await press('venue-open-picker');
   await type('destination-search', destinationQuery);
   await press(`destination-option-${destinationIndex}`);

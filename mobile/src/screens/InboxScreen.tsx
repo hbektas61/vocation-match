@@ -1,9 +1,19 @@
 import { useFocusEffect, useNavigation, type NavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
 import { Avatar, Button, EmptyState, Notice, Screen } from '../components/ui';
+import { EmptyInbox } from '../components/InboxIllustrations';
 import { ProfileRing } from '../components/ProfileRing';
 import { apiErrorMessage, COPY, COPY_FOR, roomPlate } from '../copy';
 import { ApiError, getApi, type MatchSummary } from '../data';
@@ -31,6 +41,11 @@ function inboxRowLabel(match: MatchSummary): string {
 
 export function InboxScreen() {
   const { dispatch } = useAppStore();
+  // The drawing is sized off the window rather than fixed, so it cannot be
+  // the thing that puts a scrollbar on a narrow phone: 40 of screen padding
+  // and 56 of breathing room are taken out before it gets its width.
+  const { width: windowWidth } = useWindowDimensions();
+  const artWidth = Math.min(236, windowWidth - 96);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const tabNavigation = useNavigation<NavigationProp<TabParamList>>();
   const [matches, setMatches] = useState<MatchSummary[] | null>(null);
@@ -67,18 +82,27 @@ export function InboxScreen() {
   const fresh = (matches ?? []).filter((m) => m.lastMessageAt === null && m.unmatchedAt === null);
   const talking = (matches ?? []).filter((m) => m.lastMessageAt !== null || m.unmatchedAt !== null);
 
+  const isEmpty = matches !== null && matches.length === 0;
+
   return (
-    <Screen safeTop testID="screen-inbox">
+    // `fill` only when there is nothing to list: an empty inbox is one
+    // composition and should sit in the middle of the room it has, rather
+    // than hanging off the head with the rest of the screen blank beneath it.
+    <Screen safeTop fill={isEmpty} testID="screen-inbox">
       {/* The sheet's head (12:167): the tab's name and the ring to yourself. */}
       <View style={styles.headRow}>
         <Text accessibilityRole="header" style={styles.headTitle}>{COPY.inbox.title}</Text>
         <ProfileRing testID="inbox-profile-ring" />
       </View>
+      {/* The line under the tab's name belongs to the head, not to the empty
+          composition below it — left inside that column it drifted down with
+          it and left the title stranded. */}
+      {isEmpty ? <Text style={styles.subtitle}>{COPY.inbox.subtitle}</Text> : null}
       {error ? (
         <Notice message={error} tone="error" testID="inbox-error" />
       ) : matches === null ? (
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="inbox-loading" />
-      ) : matches.length === 0 ? (
+      ) : isEmpty ? (
         /*
          * The sheet's empty inbox (12:137): the line under the head, the
          * lobby art in the 180 band, why it is empty in one sentence, and
@@ -89,19 +113,33 @@ export function InboxScreen() {
          * action and has no room for it. The explanation and the two ways
          * forward are what it was built for.
          *
-         * D-058 dropped the hero image rather than repainting it: the art was
-         * a night-theme raster (deep violet chat bubbles) that read as a hole
-         * on the cream ground, and there is no light equivalent of it. An
-         * empty inbox does not need 180pt of picture to be understood, and
-         * losing it also closes the dead space that sat under it.
+         * D-058 dropped the hero raster rather than repainting it — a violet
+         * night-theme bitmap read as a hole on the cream ground, and a colour
+         * sweep cannot see a bitmap. R-009 put a drawing back in its place,
+         * this time in the theme's own tokens (`EmptyInbox`), which also
+         * closes the ~370pt of dead space the bare card left below it.
+         *
+         * The art is hidden from assistive technology: it repeats the
+         * sentence under it and nothing more, so announcing it would only
+         * put noise between the heading and the two ways forward.
          */
         <View style={styles.empty} testID="inbox-empty">
-          <Text style={styles.subtitle}>{COPY.inbox.subtitle}</Text>
           <Text accessibilityRole="header" style={styles.emptyTitle}>
             {COPY.inbox.emptyTitle}
           </Text>
+          <View
+            style={styles.emptyArt}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            testID="inbox-empty-art"
+          >
+            <EmptyInbox width={artWidth} />
+          </View>
           <EmptyState
             message={COPY.inbox.emptyBody}
+            /* The drawing above is this card's mark; the generic disc would
+               be a second one saying the same nothing. */
+            mark={false}
             action={
               <View style={styles.emptyActions}>
                 <Button
@@ -258,8 +296,14 @@ function firstName(name: string): string {
 }
 
 const styles = StyleSheet.create({
-  /** The sheet's empty column (12:137): top-anchored, 12 between. */
-  empty: { alignSelf: 'stretch', gap: 12 },
+  /**
+   * The sheet's empty column (12:137), 12 between.
+   *
+   * It takes the room left under the head and centres itself in it, so the
+   * heading, the drawing and the card read as one block instead of three
+   * things pushed against the title with the screen empty below them.
+   */
+  empty: { alignSelf: 'stretch', flex: 1, justifyContent: 'center', gap: 12 },
   subtitle: {
     fontFamily: fontFamily.body,
     fontSize: 13,
@@ -279,7 +323,9 @@ const styles = StyleSheet.create({
     color: color.inkMuted,
     textAlign: 'center',
   },
-  /** The lobby art in the sheet's 180 band (12:142). */
+  /** R-009's drawing, centred, with air above and below it so the heading
+      and the card each keep their own space. */
+  emptyArt: { alignItems: 'center', paddingVertical: spacing.sm },
   /** The two ways forward, full width inside the centred `<EmptyState>` card. */
   emptyActions: { alignSelf: 'stretch', gap: spacing.sm },
   /** The sheet's head row (12:167). */

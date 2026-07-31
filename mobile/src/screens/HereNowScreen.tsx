@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import { useNavigation, type NavigationProp } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
 
+import { PresenceResult } from '../components/PresenceResult';
 import { Body, Button, Card, Caption, Gap, Notice, Screen } from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
 import {
@@ -12,7 +14,7 @@ import {
   type ForegroundLocationReader,
 } from '../data';
 import { getHotelById } from '../fixtures/hotels';
-import type { RootScreenProps } from '../navigation/types';
+import type { RootScreenProps, TabParamList } from '../navigation/types';
 import { useAppStore } from '../state/AppStore';
 
 type CheckOutcome =
@@ -43,8 +45,31 @@ export function HereNowScreen({
   reader = deviceLocation,
 }: RootScreenProps<'HereNow'> & { reader?: ForegroundLocationReader }) {
   const { state, dispatch } = useAppStore();
+  // This screen is pushed over the tabs, so the deck lives on an ancestor
+  // navigator rather than this one.
+  const tabNavigation = useNavigation<NavigationProp<TabParamList>>();
   const [outcome, setOutcome] = useState<CheckOutcome | null>(null);
   const [checking, setChecking] = useState(false);
+
+  /**
+   * Which rooms the server says are open, read here rather than inherited.
+   *
+   * R-011's way out is named after where it goes, and which way that is
+   * depends on whether Before the Trip is open. The trip tab happens to have
+   * loaded that already on the usual path — but "happens to" is not a source
+   * of truth, and on any other way in (a deep link, a store that was reset)
+   * the screen would have guessed. So it asks.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const rooms = await getApi().getRooms().catch(() => null);
+      if (rooms && !cancelled) dispatch({ type: 'ROOMS_LOADED', rooms });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch]);
 
   const hotel = state.hotels.find((h) => h.id === state.activeHotel?.hotelId) ?? null;
   // The fixture catalog only knows the fake's hotels; on a real project it
@@ -152,6 +177,23 @@ export function HereNowScreen({
     }
   };
 
+  /**
+   * The one place somebody can still get to without moving.
+   *
+   * Before the Trip is the room that does not need you to be anywhere, so it
+   * is the honest offer next to a failed proximity check — but only when the
+   * server says it is open. If no stay is declared the deck would be empty,
+   * so the offer becomes the step that fills it instead. Either way the
+   * button is named for where it goes.
+   */
+  const upcomingOpen = state.rooms.find((r) => r.room === 'UPCOMING')?.eligible === true;
+  const wayOut = upcomingOpen
+    ? {
+        label: COPY.hereNow.seeUpcoming,
+        go: () => tabNavigation.navigate('Discovery', { source: 'UPCOMING' as const }),
+      }
+    : { label: COPY.hereNow.addDates, go: () => navigation.navigate('Upcoming') };
+
   // Roughly 5.5 km north of the hotel — far outside the 500 m radius. Only
   // built when the fixture knows the hotel, i.e. in the credential-free run.
   const farAway = simulationSource
@@ -208,10 +250,38 @@ export function HereNowScreen({
       {outcome?.kind === 'unavailable' ? (
         <Notice message={COPY.hereNow.unavailable} tone="error" testID="here-now-unavailable" />
       ) : null}
+      {/*
+        R-011. These two refusals are the recoverable ones, and they are
+        recoverable differently — one wants you somewhere else, the other
+        wants the same place with a clearer sky — so each gets the whole
+        result rather than a shared red line. `wayOut` never leads to a shut
+        door: it offers the deck only when the server says that room is open,
+        and otherwise offers the step that opens it.
+      */}
       {outcome?.kind === 'inaccurate' ? (
-        <Notice message={COPY.hereNow.inaccurate} tone="error" testID="here-now-inaccurate" />
+        <PresenceResult
+          title={COPY.hereNow.inaccurateTitle}
+          message={COPY.hereNow.inaccurate}
+          explanation={COPY.hereNow.inaccurateWhat}
+          onRetry={() => runCheck(reader)}
+          retryBusy={checking}
+          wayOutLabel={wayOut.label}
+          onWayOut={wayOut.go}
+          testID="here-now-inaccurate"
+        />
       ) : null}
-      {outcome?.kind === 'too-far' ? <Notice message={COPY.hereNow.tooFar} tone="error" /> : null}
+      {outcome?.kind === 'too-far' ? (
+        <PresenceResult
+          title={COPY.hereNow.tooFarTitle}
+          message={COPY.hereNow.tooFar}
+          explanation={COPY.hereNow.tooFarWhat}
+          onRetry={() => runCheck(reader)}
+          retryBusy={checking}
+          wayOutLabel={wayOut.label}
+          onWayOut={wayOut.go}
+          testID="here-now-too-far"
+        />
+      ) : null}
       {outcome?.kind === 'in-range' ? (
         <>
           <Notice message={COPY.hereNow.inRange} tone="success" />

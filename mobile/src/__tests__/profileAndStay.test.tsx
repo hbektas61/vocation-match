@@ -16,6 +16,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { COPY } from '../copy';
 import { ApiError, FakeApi, getApi, setApi } from '../data';
 import { onboardWithHotel, onboardToSettings } from '../testSupport/onboarding';
+import { press, typeText } from '../testSupport/interact';
 
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
 
@@ -26,7 +27,7 @@ beforeEach(() => {
 describe('editing a profile after onboarding', () => {
   it('opens prefilled with what is actually stored', async () => {
     await onboardToSettings('Deniz');
-    await fireEvent.press(await screen.findByTestId('open-edit-profile'));
+    await press(await screen.findByTestId('open-edit-profile'));
 
     const name = await screen.findByTestId('edit-profile-name');
     expect(name.props.value).toBe('Deniz');
@@ -41,11 +42,11 @@ describe('editing a profile after onboarding', () => {
 
   it('saves a corrected name and shows it everywhere', async () => {
     await onboardToSettings('Dneiz');
-    await fireEvent.press(await screen.findByTestId('open-edit-profile'));
+    await press(await screen.findByTestId('open-edit-profile'));
 
-    await fireEvent.changeText(await screen.findByTestId('edit-profile-name'), 'Deniz');
-    await fireEvent.changeText(screen.getByTestId('edit-profile-bio'), 'Swims at sunrise.');
-    await fireEvent.press(screen.getByTestId('save-edit-profile'));
+    await typeText(await screen.findByTestId('edit-profile-name'), 'Deniz');
+    await typeText(screen.getByTestId('edit-profile-bio'), 'Swims at sunrise.');
+    await press(screen.getByTestId('save-edit-profile'));
 
     await waitFor(async () => {
       expect((await getApi().getOwnProfile())?.displayName).toBe('Deniz');
@@ -57,14 +58,14 @@ describe('editing a profile after onboarding', () => {
 
   it('does not let an edit get round the 18+ rule', async () => {
     await onboardToSettings();
-    await fireEvent.press(await screen.findByTestId('open-edit-profile'));
+    await press(await screen.findByTestId('open-edit-profile'));
 
     const recentYear = new Date(FIXED).getFullYear() - 5;
-    await fireEvent.changeText(
+    await typeText(
       await screen.findByTestId('edit-profile-birthdate'),
       `01/01/${recentYear}`,
     );
-    await fireEvent.press(screen.getByTestId('save-edit-profile'));
+    await press(screen.getByTestId('save-edit-profile'));
 
     expect(await screen.findByText(COPY.profileSetup.underAge)).toBeTruthy();
     // Still on the edit screen, and nothing was written.
@@ -80,9 +81,9 @@ describe('editing a profile after onboarding', () => {
       mimeType: 'image/jpeg',
     });
 
-    await fireEvent.press(await screen.findByTestId('open-edit-profile'));
-    await fireEvent.changeText(await screen.findByTestId('edit-profile-name'), 'Renamed');
-    await fireEvent.press(screen.getByTestId('save-edit-profile'));
+    await press(await screen.findByTestId('open-edit-profile'));
+    await typeText(await screen.findByTestId('edit-profile-name'), 'Renamed');
+    await press(screen.getByTestId('save-edit-profile'));
 
     await waitFor(async () => {
       expect((await api.getOwnProfile())?.displayName).toBe('Renamed');
@@ -94,17 +95,17 @@ describe('editing a profile after onboarding', () => {
 describe('the identity answers, after onboarding', () => {
   it('can be corrected later, including the one that decides your own feed', async () => {
     await onboardToSettings('Deniz');
-    await fireEvent.press(await screen.findByTestId('open-edit-profile'));
+    await press(await screen.findByTestId('open-edit-profile'));
 
     // Onboarding asks these once. Being wrong about yourself forever is not a
     // reasonable consequence of a mistap — and show_me in particular decides
     // whose cards you are shown, so getting it wrong with no way back leaves
     // somebody with an empty deck and no explanation.
-    await fireEvent.press(await screen.findByTestId('edit-profile-gender-man'));
-    await fireEvent.press(screen.getByTestId('edit-profile-show-gender'));
-    await fireEvent.press(screen.getByTestId('edit-profile-orientation-queer'));
-    await fireEvent.press(screen.getByTestId('edit-profile-show-me-men'));
-    await fireEvent.press(screen.getByTestId('save-edit-profile'));
+    await press(await screen.findByTestId('edit-profile-gender-man'));
+    await press(screen.getByTestId('edit-profile-show-gender'));
+    await press(screen.getByTestId('edit-profile-orientation-queer'));
+    await press(screen.getByTestId('edit-profile-show-me-men'));
+    await press(screen.getByTestId('save-edit-profile'));
 
     await waitFor(async () => {
       const saved = await getApi().getOwnProfile();
@@ -118,10 +119,10 @@ describe('the identity answers, after onboarding', () => {
   it('does not lose the completion mark when a profile is edited', async () => {
     await onboardToSettings('Deniz');
     const before = (await getApi().getOwnProfile())?.onboardingCompletedAt;
-    await fireEvent.press(await screen.findByTestId('open-edit-profile'));
+    await press(await screen.findByTestId('open-edit-profile'));
 
-    await fireEvent.changeText(await screen.findByTestId('edit-profile-name'), 'Deniz A');
-    await fireEvent.press(screen.getByTestId('save-edit-profile'));
+    await typeText(await screen.findByTestId('edit-profile-name'), 'Deniz A');
+    await press(screen.getByTestId('save-edit-profile'));
 
     // An edit that quietly turned a finished profile back into a draft would
     // take somebody out of discovery without saying so.
@@ -135,8 +136,8 @@ describe('the identity answers, after onboarding', () => {
 describe('the stay you declared', () => {
   async function openUpcoming() {
     await onboardWithHotel();
-    await fireEvent.press(await screen.findByTestId('tab-Vacation'));
-    await fireEvent.press(await screen.findByTestId('open-upcoming'));
+    await press(await screen.findByTestId('tab-Vacation'));
+    await press(await screen.findByTestId('open-upcoming'));
   }
 
 
@@ -162,7 +163,7 @@ async function pickDate(testID: string, iso: string): Promise<void> {
     await openUpcoming();
     await pickDate('upcoming-check-in', '2026-08-01');
     await pickDate('upcoming-check-out', '2026-08-08');
-    await fireEvent.press(screen.getByTestId('save-upcoming'));
+    await press(screen.getByTestId('save-upcoming'));
     await screen.findByTestId('open-upcoming');
 
     const deck = await getApi().getDiscoveryFeed('UPCOMING');
@@ -176,7 +177,7 @@ async function pickDate(testID: string, iso: string): Promise<void> {
     // And the hotel card must know: it refreshes on focus now, because the
     // owner declared a stay elsewhere and came back to a card still calling
     // the room closed.
-    await fireEvent.press(screen.getByTestId('tab-Vacation'));
+    await press(screen.getByTestId('tab-Vacation'));
     expect(await screen.findAllByText('Open')).toBeTruthy();
   });
 
@@ -184,7 +185,7 @@ async function pickDate(testID: string, iso: string): Promise<void> {
     await openUpcoming();
     await pickDate('upcoming-check-in', '2026-08-01');
     await pickDate('upcoming-check-out', '2026-08-08');
-    await fireEvent.press(screen.getByTestId('save-upcoming'));
+    await press(screen.getByTestId('save-upcoming'));
     // Q-001. The save is a round trip, and pressing "open" before it lands
     // reopens the screen against a backend that has nothing to prefill from —
     // which is why this failed intermittently under a loaded parallel run and
@@ -197,7 +198,7 @@ async function pickDate(testID: string, iso: string): Promise<void> {
     // land in Discovery: the CTA's action changed under the press.
     await screen.findByTestId('vacation-discover-upcoming', {}, { timeout: 5000 });
 
-    await fireEvent.press(await screen.findByTestId('open-upcoming'));
+    await press(await screen.findByTestId('open-upcoming'));
 
     // `upcoming-withdraw` renders only once the declaration has been loaded
     // into the screen, so it is the marker that the prefill has happened.
@@ -220,7 +221,7 @@ async function pickDate(testID: string, iso: string): Promise<void> {
     await openUpcoming();
     await pickDate('upcoming-check-in', '2026-08-01');
     await pickDate('upcoming-check-out', '2026-08-08');
-    await fireEvent.press(screen.getByTestId('save-upcoming'));
+    await press(screen.getByTestId('save-upcoming'));
     // Q-001, same race: the room only opens once the declaration is stored.
     await waitFor(async () => expect(await getApi().getUpcomingStay()).not.toBeNull());
 
@@ -229,8 +230,8 @@ async function pickDate(testID: string, iso: string): Promise<void> {
 
     // Same settle: press the update action, not the CTA mid-flip.
     await screen.findByTestId('vacation-discover-upcoming', {}, { timeout: 5000 });
-    await fireEvent.press(await screen.findByTestId('open-upcoming'));
-    await fireEvent.press(await screen.findByTestId('upcoming-withdraw', {}, { timeout: 5000 }));
+    await press(await screen.findByTestId('open-upcoming'));
+    await press(await screen.findByTestId('upcoming-withdraw', {}, { timeout: 5000 }));
 
     await waitFor(async () => {
       expect(await getApi().getUpcomingStay()).toBeNull();
@@ -257,13 +258,13 @@ describe('a match that vanishes mid-conversation', () => {
   /** Onboard, open a room, match with the fixture who likes back, open chat. */
   async function reachChat() {
     await onboardWithHotel();
-    await fireEvent.press(await screen.findByTestId('tab-Vacation'));
-    await fireEvent.press(await screen.findByTestId('open-here-now'));
-    await fireEvent.press(await screen.findByTestId('simulate-near'));
-    await fireEvent.press(await screen.findByTestId('here-now-done'));
-    await fireEvent.press(await screen.findByText('Discovery'));
-    await fireEvent.press(await screen.findByTestId('swipe-like'));
-    await fireEvent.press(await screen.findByTestId('match-open-chat'));
+    await press(await screen.findByTestId('tab-Vacation'));
+    await press(await screen.findByTestId('open-here-now'));
+    await press(await screen.findByTestId('simulate-near'));
+    await press(await screen.findByTestId('here-now-done'));
+    await press(await screen.findByText('Discovery'));
+    await press(await screen.findByTestId('swipe-like'));
+    await press(await screen.findByTestId('match-open-chat'));
     expect(await screen.findByTestId('chat-input')).toBeTruthy();
   }
 
@@ -278,8 +279,8 @@ describe('a match that vanishes mid-conversation', () => {
     );
     jest.spyOn(api, 'getMatches').mockResolvedValue([]);
 
-    await fireEvent.changeText(screen.getByTestId('chat-input'), 'still there?');
-    await fireEvent.press(screen.getByTestId('chat-send'));
+    await typeText(screen.getByTestId('chat-input'), 'still there?');
+    await press(screen.getByTestId('chat-send'));
 
     expect(await screen.findByText(COPY.chat.notAvailable)).toBeTruthy();
     expect(screen.queryByTestId('chat-input')).toBeNull();
@@ -299,8 +300,8 @@ describe('a match that vanishes mid-conversation', () => {
     );
     jest.spyOn(api, 'getMatches').mockResolvedValue([]);
 
-    await fireEvent.changeText(screen.getByTestId('chat-input'), 'hello?');
-    await fireEvent.press(screen.getByTestId('chat-send'));
+    await typeText(screen.getByTestId('chat-input'), 'hello?');
+    await press(screen.getByTestId('chat-send'));
 
     expect(await screen.findByText(COPY.chat.notAvailable)).toBeTruthy();
     jest.restoreAllMocks();
@@ -320,8 +321,8 @@ describe('a match that vanishes mid-conversation', () => {
       .spyOn(api, 'getMatches')
       .mockResolvedValue([{ ...existing, unmatchedAt: Date.now() }]);
 
-    await fireEvent.changeText(screen.getByTestId('chat-input'), 'hello?');
-    await fireEvent.press(screen.getByTestId('chat-send'));
+    await typeText(screen.getByTestId('chat-input'), 'hello?');
+    await press(screen.getByTestId('chat-send'));
 
     expect(await screen.findByTestId('chat-closed')).toBeTruthy();
     expect(screen.queryByText(COPY.chat.notAvailable)).toBeNull();
@@ -336,9 +337,9 @@ describe('a match that vanishes mid-conversation', () => {
       .mockRejectedValue(new ApiError('NOT_FOUND', 'That match is not open.'));
     jest.spyOn(api, 'getMatches').mockResolvedValue([]);
 
-    await fireEvent.press(screen.getByTestId('chat-menu'));
-    await fireEvent.press(await screen.findByTestId('chat-unmatch'));
-    await fireEvent.press(await screen.findByTestId('chat-unmatch-confirm'));
+    await press(screen.getByTestId('chat-menu'));
+    await press(await screen.findByTestId('chat-unmatch'));
+    await press(await screen.findByTestId('chat-unmatch-confirm'));
 
     expect(await screen.findByText(COPY.chat.notAvailable)).toBeTruthy();
     jest.restoreAllMocks();
@@ -353,14 +354,14 @@ describe('a match that vanishes mid-conversation', () => {
     const api = getApi();
     const unmatch = jest.spyOn(api, 'unmatch');
 
-    await fireEvent.press(screen.getByTestId('chat-menu'));
-    await fireEvent.press(await screen.findByTestId('chat-unmatch'));
+    await press(screen.getByTestId('chat-menu'));
+    await press(await screen.findByTestId('chat-unmatch'));
 
     expect(unmatch).not.toHaveBeenCalled();
     expect(await screen.findByText(COPY.chat.unmatchConfirm)).toBeTruthy();
 
     // And backing out leaves the conversation exactly as it was.
-    await fireEvent.press(screen.getByTestId('chat-unmatch-cancel'));
+    await press(screen.getByTestId('chat-unmatch-cancel'));
     expect(unmatch).not.toHaveBeenCalled();
     expect(screen.getByTestId('chat-unmatch')).toBeTruthy();
     jest.restoreAllMocks();
@@ -373,8 +374,8 @@ describe('a match that vanishes mid-conversation', () => {
     jest.spyOn(api, 'sendMessage').mockRejectedValue(new ApiError('NETWORK', 'No connection.'));
     jest.spyOn(api, 'getMatches').mockRejectedValue(new Error('fetch failed'));
 
-    await fireEvent.changeText(screen.getByTestId('chat-input'), 'hello?');
-    await fireEvent.press(screen.getByTestId('chat-send'));
+    await typeText(screen.getByTestId('chat-input'), 'hello?');
+    await press(screen.getByTestId('chat-send'));
 
     // A dropped connection is not evidence the match is gone. Throwing someone
     // out of a conversation for one would be worse than the stale copy.

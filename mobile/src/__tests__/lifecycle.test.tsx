@@ -7,11 +7,12 @@
  * failing; a request with no deadline leaves a button disabled forever. Neither
  * is visible in a test that only ever exercises the happy path.
  */
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, screen, waitFor } from '@testing-library/react-native';
 import { AppState } from 'react-native';
 
 import { FakeApi, getApi, setApi } from '../data';
 import { onboardWithHotel, onboardToSettings } from '../testSupport/onboarding';
+import { press } from '../testSupport/interact';
 
 let clock = Date.parse('2026-07-25T10:00:00Z');
 let foregroundListeners: ((state: string) => void)[];
@@ -102,8 +103,8 @@ describe('a request that never comes back', () => {
         }),
     );
 
-    await fireEvent.press(screen.getByTestId('delete-account'));
-    await fireEvent.press(screen.getByTestId('delete-account-confirm'));
+    await press(screen.getByTestId('delete-account'));
+    await press(screen.getByTestId('delete-account-confirm'));
 
     expect(await screen.findByTestId('delete-account-error')).toBeTruthy();
     expect(await api.currentSession()).not.toBeNull();

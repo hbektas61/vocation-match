@@ -6,11 +6,12 @@
  * disappears and what does not, and a failure leaves the person signed in with
  * an account that still exists rather than dropping them on a login screen.
  */
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { screen, waitFor } from '@testing-library/react-native';
 
 import { COPY } from '../copy';
 import { ApiError, FakeApi, getApi, setApi } from '../data';
 import { onboardToSettings } from '../testSupport/onboarding';
+import { press } from '../testSupport/interact';
 
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
 
@@ -23,7 +24,7 @@ describe('deleting an account', () => {
     await onboardToSettings();
     expect(await screen.findByTestId('settings-delete-account')).toBeTruthy();
 
-    await fireEvent.press(screen.getByTestId('delete-account'));
+    await press(screen.getByTestId('delete-account'));
 
     expect(await screen.findByTestId('delete-account-confirm')).toBeTruthy();
     expect(await getApi().currentSession()).not.toBeNull();
@@ -33,7 +34,7 @@ describe('deleting an account', () => {
   it('says what goes and what stays before the irreversible tap', async () => {
     await onboardToSettings();
     expect(await screen.findByTestId('settings-delete-account')).toBeTruthy();
-    await fireEvent.press(screen.getByTestId('delete-account'));
+    await press(screen.getByTestId('delete-account'));
 
     expect(screen.getByText(COPY.deleteAccount.whatGoes)).toBeTruthy();
     // The half a deletion screen usually leaves out.
@@ -44,8 +45,8 @@ describe('deleting an account', () => {
   it('can be backed out of', async () => {
     await onboardToSettings();
     expect(await screen.findByTestId('settings-delete-account')).toBeTruthy();
-    await fireEvent.press(screen.getByTestId('delete-account'));
-    await fireEvent.press(screen.getByTestId('delete-account-cancel'));
+    await press(screen.getByTestId('delete-account'));
+    await press(screen.getByTestId('delete-account-cancel'));
 
     expect(screen.queryByTestId('delete-account-confirm')).toBeNull();
     expect(await getApi().currentSession()).not.toBeNull();
@@ -56,8 +57,8 @@ describe('deleting an account', () => {
     expect(await screen.findByTestId('settings-delete-account')).toBeTruthy();
     const api = getApi();
 
-    await fireEvent.press(screen.getByTestId('delete-account'));
-    await fireEvent.press(screen.getByTestId('delete-account-confirm'));
+    await press(screen.getByTestId('delete-account'));
+    await press(screen.getByTestId('delete-account-confirm'));
 
     // Right back to the start of the app — every piece of this person's state
     // is cleared from the device, not just the token.
@@ -76,8 +77,8 @@ describe('deleting an account', () => {
     const api = getApi() as FakeApi;
     api.failNextDeleteWith(new ApiError('NETWORK', 'No connection. Try again.'));
 
-    await fireEvent.press(screen.getByTestId('delete-account'));
-    await fireEvent.press(screen.getByTestId('delete-account-confirm'));
+    await press(screen.getByTestId('delete-account'));
+    await press(screen.getByTestId('delete-account-confirm'));
 
     expect(await screen.findByTestId('delete-account-error')).toBeTruthy();
     // Still here, still signed in, account still exists — and the button is

@@ -15,6 +15,7 @@ import { act, fireEvent, screen } from '@testing-library/react-native';
 
 import { FAKE_PHONE_OTP, FakeApi, getApi, setApi } from '../data';
 import { onboard, chooseGoogleVenue } from '../testSupport/onboarding';
+import { press } from '../testSupport/interact';
 
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
 
@@ -34,8 +35,8 @@ async function settle(ms = 500): Promise<void> {
 
 async function openPicker(phone: string): Promise<void> {
   await onboard('Deniz', phone);
-  await fireEvent.press(await screen.findByTestId('tab-Vacation'));
-  await fireEvent.press(await screen.findByTestId('venue-open-picker'));
+  await press(await screen.findByTestId('tab-Vacation'));
+  await press(await screen.findByTestId('venue-open-picker'));
   await screen.findByTestId('destination-search');
 }
 
@@ -50,7 +51,7 @@ async function typeInto(testID: string, text: string): Promise<void> {
 async function pickAlacati(phone: string): Promise<void> {
   await openPicker(phone);
   await typeInto('destination-search', 'Alaçatı');
-  await fireEvent.press(await screen.findByTestId('destination-option-0'));
+  await press(await screen.findByTestId('destination-option-0'));
   await screen.findByTestId('venue-search');
 }
 
@@ -130,7 +131,7 @@ describe('choosing a destination', () => {
     await typeInto('venue-search', 'Biblos');
     expect(await screen.findByText('Biblos Resort Alaçatı')).toBeTruthy();
 
-    await fireEvent.press(screen.getByTestId('venue-change-destination'));
+    await press(screen.getByTestId('venue-change-destination'));
 
     expect(await screen.findByTestId('venue-picker-destination')).toBeTruthy();
     expect(screen.queryByText('Biblos Resort Alaçatı')).toBeNull();
@@ -162,7 +163,7 @@ describe('choosing a venue inside that destination', () => {
     // destination the brief names for it.
     await openPicker('+905551118012');
     await typeInto('destination-search', 'Çeşme');
-    await fireEvent.press(await screen.findByTestId('destination-option-0'));
+    await press(await screen.findByTestId('destination-option-0'));
     await screen.findByTestId('venue-search');
     await typeInto('venue-search', 'Ilıca');
 
@@ -183,11 +184,11 @@ describe('choosing a venue inside that destination', () => {
     // The chips refine; the default does not. Proving both directions is what
     // shows the default is genuinely unrestricted rather than accidentally so.
     await pickAlacati('+905551118014');
-    await fireEvent.press(screen.getByTestId('venue-chip-stay'));
+    await press(screen.getByTestId('venue-chip-stay'));
     await typeInto('venue-search', 'Before Sunset');
     expect(await screen.findByTestId('venue-no-results')).toBeTruthy();
 
-    await fireEvent.press(screen.getByTestId('venue-chip-all'));
+    await press(screen.getByTestId('venue-chip-all'));
     await settle();
     expect(await screen.findByText('Before Sunset Beach')).toBeTruthy();
   });
@@ -325,8 +326,8 @@ describe('what is written down', () => {
     );
 
     fake.breakGoogleResolution(true);
-    await fireEvent.press(screen.getByTestId('tab-Inbox'));
-    await fireEvent.press(screen.getByTestId('tab-Vacation'));
+    await press(screen.getByTestId('tab-Inbox'));
+    await press(screen.getByTestId('tab-Vacation'));
     await settle();
 
     expect(await screen.findByTestId('active-hotel-name')).toHaveTextContent(
@@ -484,7 +485,7 @@ describe('what it costs', () => {
 describe('the trip tab before anything is chosen', () => {
   it('offers no venues at all until somebody opens the picker', async () => {
     await onboard('Deniz', '+905551118060');
-    await fireEvent.press(await screen.findByTestId('tab-Vacation'));
+    await press(await screen.findByTestId('tab-Vacation'));
 
     expect(await screen.findByTestId('venue-open-picker')).toBeTruthy();
     expect(screen.queryByTestId('destination-search')).toBeNull();
@@ -493,7 +494,7 @@ describe('the trip tab before anything is chosen', () => {
 
   it('can be backed out of without choosing anything', async () => {
     await onboard('Deniz', '+905551118061');
-    await fireEvent.press(await screen.findByTestId('vacation-choose-for-upcoming'));
+    await press(await screen.findByTestId('vacation-choose-for-upcoming'));
     await screen.findByTestId('destination-search');
 
     // A screen you cannot leave without picking is how default selections get

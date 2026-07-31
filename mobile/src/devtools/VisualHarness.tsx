@@ -555,6 +555,20 @@ const SCENES: Record<string, Scene> = {
     seed: baseAccount,
     render: (p) => <HereNowScreen navigation={p.navigation} route={p.route as never} reader={FAR_AWAY} />,
   },
+  /**
+   * The same refusal as T-20, with a stay already declared.
+   *
+   * R-011's way out is not one button: it offers the Before the Trip deck when
+   * the server says that room is open, and the step that opens it when it is
+   * not. T-20 walks the shut case; without this one the offered case could
+   * only ever be asserted in a test.
+   */
+  'T-20b': {
+    frame: '36:192',
+    label: 'Oteldeyim — çok uzakta, tarihler beyan edilmiş',
+    seed: declaredStay,
+    render: (p) => <HereNowScreen navigation={p.navigation} route={p.route as never} reader={FAR_AWAY} />,
+  },
   'T-21': {
     frame: '36:213',
     label: 'Oteldeyim — açık',

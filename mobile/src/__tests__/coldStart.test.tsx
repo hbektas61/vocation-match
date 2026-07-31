@@ -9,7 +9,7 @@
  * api instance: the instance plays the role the keychain plays on a device —
  * it remembers the session; the freshly mounted tree remembers nothing.
  */
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, renderAsync, screen } from '@testing-library/react-native';
 import React from 'react';
 
 import App from '../../App';
@@ -27,7 +27,13 @@ async function reopenApp(view: { unmount: () => void }): Promise<void> {
   await act(async () => {
     view.unmount();
   });
-  render(<App />);
+  // Mounting is only the start of a cold start: bootstrap reads the session
+  // and then dispatches BOOTSTRAP_RESOLVED. The synchronous `render` act-wraps
+  // the first paint and nothing after it, so that dispatch landed in the gap
+  // before the next assertion opened its own act. `renderAsync` holds act open
+  // until the tree has settled — reopening the app means waiting for it to
+  // finish opening.
+  await renderAsync(<App />);
 }
 
 describe('coming back after closing the app', () => {
