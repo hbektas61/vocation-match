@@ -64,6 +64,7 @@ kanıt · severity · fix commit · gerçek yeniden test.
 | R-007 | Sohbette aynı karede dört dokunuş **üç kopya mesaj** gönderiyordu (`sending` React state olduğu için aynı tick'te false) | P2 | Senkron `sendingRef` koruması; `sending` hâlâ ekranı sürüyor | Aynı burst → **1 mesaj**; insan çift dokunuşu (180ms) zaten 1'di |
 | R-008 | Çevremde mekân listesi, uygulamada başlığının üstünde wordmark basan tek ekrandı | P2 | Owner kararı: kaldırıldı (`brandRow`/`brandText` ve artık kullanılmayan `HeartGlyph` ile birlikte) | Çalışan uygulamada başlık artık yalnız "Nearby" + profil halkası |
 | R-006 | Gelen kutusu boş durumundaki gece teması hero'su | P1 | Kaldırıldı (R-002 ile); lavanta render geri getirilmedi — owner kararı | `rt-12-inbox-no-hero.png`; ekran krem zeminde kendi kartıyla duruyor |
+| R-016 | **Otel detayı bir çıkmaz.** Google mekânında ekran ad + atıftan ibaret (D-054 gereği başka veri saklanmıyor — **veri doğru**), ama ileri giden hiçbir eylem yok ve altında ~500pt boşluk kalıyor | P2 · **owner kararı** | — | Hami: "Tatil mekânını değiştir" gibi bir çıkış ekleyelim mi, yoksa yalnız geri mi kalsın? |
 | R-014 | **"Unmatch" hiç sormadan uyguluyordu.** Sohbet menüsünde "Report or block"un hemen üstünde, tek dokunuşta konuşmayı ikisi için de kapatıyor ve bu ekrandan geri alınamıyor. Oysa engelleme, etkinlik odasından çıkma ve mekân değiştirme **hepsi önce soruyor** — koddaki gerekçesi bile yazılı | **P1** | Aynı yerinde onay adımı (soru + ne olacağı + "Evet, eşleşmeyi boz" / Vazgeç) | Çalışan uygulamada: ilk dokunuş soruyor, Vazgeç konuşmayı olduğu gibi bırakıyor; ayrıca "ilk dokunuşta bozmaz" regresyon testi eklendi |
 | R-015 | Çevremde aktif check-in'de "Check-in'i değiştir" ve **"Check-in'i bitir" 350×43** — `bigOutline`/`bigFilled` stillerinde `minHeight` yoktu | P2 | İkisine de `MIN_TOUCH` | Harness N-12'de ölçüldü |
 | R-013 | **Etkinlik canlı oda kartı, başlığında düğmenin cümlesini tekrar ediyordu** — "I am at the event now" alt alta iki kez; kart neye yaradığını söylemiyordu | P2 | Karta kendi açıklaması verildi (`events.hereNowExplainer`, TR+EN); düğme etiketi aynı kaldı | Çalışan uygulamada etiket **1 kez**; `rt-18-event-live-fixed.png` |
@@ -104,11 +105,12 @@ Figma'da görülmüş olması sayılmaz.
 | K-11 | Sohbet — mesaj gönderilemedi / yeniden dene | Ağ hatası enjekte etmek gerekiyor; jest'te kapsanıyor, runtime'da değil |
 | K-03 | **Gelen kutusu — dolu** (yeni eşleşmeler + sohbet listesi, okunmamış) | İkinci hesap gerekiyor (Day 2) |
 | K-04 | **Ayarlar alt sayfaları** — Dil, Veri sağlayıcıları, Hesabı sil | Stack ekranı; tarayıcıda geri dönülemiyor |
-| K-05 | **Çevremde** — Google gelişmiş aramada aylık hak bitti / sağlayıcı kapalı | Katalog-boş + aylık hak satırı ✅ yürütüldü; N-12 ✅ (**R-015** oradan). Hak-bitti ve sağlayıcı-kapalı durumları sahne seed'iyle açılmıyor — gelişmiş aramayı gerçekten çalıştırmak gerekiyor |
+| ~~K-05~~ | ~~Çevremde gelişmiş arama reddi~~ | ✅ **kapandı** — N-08 ve N-09 sahnelerinde gelişmiş arama gerçekten çalıştırıldı; ikisi de *"Şu an ek arama yapılamıyor. Listeden seçebilir ya da buradayım diyebilirsin."* veriyor. İki alternatif adıyla, ton **bilgi** (hata değil). Ürün hak-bitti ile sağlayıcı-kapalıyı kullanıcıya **bilerek** ayırmıyor — koddaki gerekçe: "hangi 'hayır' olduğu konusunda dürüst: seçenek yok, sokak boş değil" |
 | ~~K-06~~ | ~~Etkinlikler durumları~~ | ✅ **kapandı** — E-12 (sonuç yok), E-15 (sağlayıcı kullanılamıyor), E-16 (günlük sınır), E-17 (özellik kapalı) yürütüldü, dördü de temiz |
 | K-07 | **Canlı oda sonuçları** (E-27…E-34: başlamadı, bitti, iptal, saat belirsiz, konum yok, IN_RANGE, süre doldu) | Tarayıcı konum istemini yanıtlamıyor → **gerçek cihaz** (O-07) |
 | ~~K-08~~ | ~~Keşfet bağlamları~~ | ✅ **kapandı** — D-01 (Tatilden Önce), D-02 (Oteldeyim), D-05 (Etkinliğe Gideceğim), D-06 (açık oda yok), NAV-02, NAV-05, NAV-07 yürütüldü, hepsi temiz |
-| K-09 | **Otel detayı** (`HotelDetails`) | Aktif *tatil mekânı* kartından açılıyor; Çevremde check-in'i tatil mekânı kurmuyor (doğru davranış), yani mekân seçici zincirinden geçmek gerekiyor |
+| ~~K-09~~ | ~~Otel detayı~~ | ✅ **yürütüldü** — açılıyor, temiz, çizim + ad + Google atfı. **R-016** açıldı (aşağıda) |
+| K-11 | Sohbet — mesaj gönderilemedi / yeniden dene | Fake API bellek içi; kesilecek bir ağ yok. Jest üç gönderim-hatası yolunu kapsıyor; runtime doğrulaması **staging + iki hesap** ister → Day 2 |
 | K-10 | **Paywall placeholder** | Phase 4 — O-05 + O-09 bekliyor |
 
 `ChooseHotel` ayrı bir ekran değil: `HotelScreen`'i yeniden kullanıyor ve o
