@@ -185,32 +185,52 @@ async function pickDate(testID: string, iso: string): Promise<void> {
     await pickDate('upcoming-check-in', '2026-08-01');
     await pickDate('upcoming-check-out', '2026-08-08');
     await fireEvent.press(screen.getByTestId('save-upcoming'));
+    // Q-001. The save is a round trip, and pressing "open" before it lands
+    // reopens the screen against a backend that has nothing to prefill from —
+    // which is why this failed intermittently under a loaded parallel run and
+    // never in isolation. Wait for the state the screen will read, not for a
+    // longer timeout on the element it will eventually draw.
+    await waitFor(async () => expect(await getApi().getUpcomingStay()).not.toBeNull());
+    // …and then for the card to have caught up. `vacation-discover-upcoming`
+    // only exists once the room reads as open, so it is the marker that the
+    // screen has settled. Pressing before it is what used to make this test
+    // land in Discovery: the CTA's action changed under the press.
+    await screen.findByTestId('vacation-discover-upcoming', {}, { timeout: 5000 });
 
     await fireEvent.press(await screen.findByTestId('open-upcoming'));
+
+    // `upcoming-withdraw` renders only once the declaration has been loaded
+    // into the screen, so it is the marker that the prefill has happened.
+    // Asserting it first means the date assertions below can never read a
+    // half-populated form.
+    // A navigation plus the screen's own fetch of the declaration — not a
+    // render tick, which is all `findBy`'s 1000 ms default is meant to cover.
+    expect(await screen.findByTestId('upcoming-withdraw', {}, { timeout: 5000 })).toBeTruthy();
 
     // The dates come back, rather than the form opening blank and leaving
     // "update your stay" as a guess at what you had said.
     // The pickers carry dates now; the calendar day is what must match. The
     // host component exposes it as `date` (a timestamp or Date, by version).
     const dayOf = (raw: unknown) => new Date(raw as number).toISOString().slice(0, 10);
-    expect(dayOf((await screen.findByTestId('upcoming-check-in')).props.date)).toBe('2026-08-01');
+    expect(dayOf(screen.getByTestId('upcoming-check-in').props.date)).toBe('2026-08-01');
     expect(dayOf(screen.getByTestId('upcoming-check-out').props.date)).toBe('2026-08-08');
-    // An existing declaration shows itself through the prefilled pickers
-    // above and the withdraw action below — there is no separate badge.
-    expect(screen.getByTestId('upcoming-withdraw')).toBeTruthy();
-  });
+  }, 20000);
 
   it('can be withdrawn, and closes the room when it is', async () => {
     await openUpcoming();
     await pickDate('upcoming-check-in', '2026-08-01');
     await pickDate('upcoming-check-out', '2026-08-08');
     await fireEvent.press(screen.getByTestId('save-upcoming'));
+    // Q-001, same race: the room only opens once the declaration is stored.
+    await waitFor(async () => expect(await getApi().getUpcomingStay()).not.toBeNull());
 
     const rooms = await getApi().getRooms();
     expect(rooms.find((r) => r.room === 'UPCOMING')?.eligible).toBe(true);
 
+    // Same settle: press the update action, not the CTA mid-flip.
+    await screen.findByTestId('vacation-discover-upcoming', {}, { timeout: 5000 });
     await fireEvent.press(await screen.findByTestId('open-upcoming'));
-    await fireEvent.press(await screen.findByTestId('upcoming-withdraw'));
+    await fireEvent.press(await screen.findByTestId('upcoming-withdraw', {}, { timeout: 5000 }));
 
     await waitFor(async () => {
       expect(await getApi().getUpcomingStay()).toBeNull();
@@ -222,7 +242,7 @@ async function pickDate(testID: string, iso: string): Promise<void> {
       eligible: false,
       reason: 'NO_DECLARATION',
     });
-  });
+  }, 20000);
 });
 
 /**

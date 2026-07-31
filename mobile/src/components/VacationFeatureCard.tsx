@@ -70,7 +70,30 @@ export function VacationFeatureCard({
       <Text style={styles.body}>{body}</Text>
       {note ? <Text style={styles.note}>{note}</Text> : null}
       {counts}
-      <Button label={buttonLabel} onPress={onOpen} testID={buttonTestID} />
+      {/*
+        A closed room's button is a redirect, not the room. On the empty Tatilim
+        screen all three actions used to be filled coral — "Where are you going?"
+        and two "Choose a place first" — so the one action that actually moves
+        you forward looked exactly like the two that only point at it. The room
+        earns the primary fill when it is open and the button really is the room.
+      */}
+      <Button
+        /*
+          Keyed on the action, not just labelled with it. This one slot means
+          two different things — "declare your stay" while the room is closed,
+          "go to the deck" once it opens — and `buttonTestID` already changes
+          with it. Without the key React keeps the same element across the
+          flip, so a press already travelling to the closed-room handler runs
+          the open-room one instead: on 2026-07-31 a tap on "save your stay"
+          landed in Discovery. Keying it means the old element is gone and the
+          stray press is a no-op, which is the honest outcome.
+        */
+        key={buttonTestID}
+        label={buttonLabel}
+        onPress={onOpen}
+        variant={open ? 'primary' : 'secondary'}
+        testID={buttonTestID}
+      />
       {extra}
     </View>
   );

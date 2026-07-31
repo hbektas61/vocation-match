@@ -21,13 +21,13 @@ import {
   type UpcomingStay,
   type VenueSearchMode,
 } from '../data';
+import { HotelBuilding } from '../components/HotelIllustrations';
 import { VenuePicker } from '../components/VenuePicker';
 import { VacationFeatureCard } from '../components/VacationFeatureCard';
 import { ProfileRing } from '../components/ProfileRing';
 import { useAppStore } from '../state/AppStore';
 import { color, elevation, fontFamily, radius, spacing } from '../theme';
 
-const EMPTY_DISC = require('../../assets/dark-hotel-disc.png');
 
 /** "12 Ağu – 17 Ağu" in the device's language — dates, never documents. */
 function formatStayRange(stay: UpcomingStay): string {
@@ -411,18 +411,16 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           </View>
         </Pressable>
       ) : (
-        /* The Figma nothing-chosen card (10:79): the little hotel in its dark
-           disc, the invitation beside it, and the requirement worn as a quiet
-           badge rather than an error. */
+        /* The Figma nothing-chosen card (10:79): the little hotel in its disc,
+           the invitation beside it, and the requirement worn as a quiet badge
+           rather than an error. */
         <View style={styles.emptyCard} testID="hotel-empty-state">
-          {/* The sheet's 74 disc (10:80): the art clipped into the circle. */}
+          {/* The 74 disc (10:80). D-058: this was a raster commissioned for the
+              night theme — a navy disc that read as a hole once the card went
+              white. The drawn version is the same subject in the light tokens,
+              and it scales instead of being squeezed into the circle. */}
           <View style={styles.emptyDisc}>
-            <Image
-              source={EMPTY_DISC}
-              style={styles.emptyDiscArt}
-              resizeMode="cover"
-              accessibilityIgnoresInvertColors
-            />
+            <HotelBuilding size={44} />
           </View>
           <View style={styles.emptyText}>
             <Text style={styles.emptyTitle}>{COPY.hotel.emptyTitle}</Text>
@@ -689,7 +687,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyDiscArt: { width: 74, height: 74 },
   emptyText: { flex: 1, gap: 6 },
   emptyTitle: {
     fontFamily: fontFamily.bodySemi,

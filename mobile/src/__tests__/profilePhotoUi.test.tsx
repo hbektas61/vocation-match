@@ -35,6 +35,17 @@ const picks = () =>
     upload: { uri: 'file:///tmp/a.jpg', mimeType: 'image/jpeg' },
   });
 
+/**
+ * Q-002. `waitFor`'s default is 1000 ms, which is a render-tick budget. These
+ * waits are not waiting for a render: they wait for a photo to be picked,
+ * manipulated and stored, and on a machine running the whole gate in parallel
+ * that took longer than a second — the assertion saw three photos where four
+ * were expected, then passed 6/6 when re-run alone. The state being awaited was
+ * already the right one, so the fix is to say out loud how long an upload may
+ * take rather than to keep re-running until it fits.
+ */
+const UPLOAD = { timeout: 5000 };
+
 describe('profile photos in Settings', () => {
   it('offers the grid, and no way at all to type a link', async () => {
     await onboardToSettings();
@@ -52,7 +63,7 @@ describe('profile photos in Settings', () => {
 
     await waitFor(async () => {
       expect(await getApi().getOwnPhotos()).toHaveLength(1);
-    });
+    }, UPLOAD);
   });
 
   it('keeps the rest of the set when one photo is changed', async () => {
@@ -64,7 +75,7 @@ describe('profile photos in Settings', () => {
       await fireEvent.press(await screen.findByTestId(`settings-photo-grid-add-${slot}`));
       await waitFor(async () => {
         expect(await getApi().getOwnPhotos()).toHaveLength(slot);
-      });
+      }, UPLOAD);
     }
     const before = (await getApi().getOwnPhotos()).map((photo) => photo.path);
 
@@ -72,7 +83,7 @@ describe('profile photos in Settings', () => {
 
     await waitFor(async () => {
       expect(await getApi().getOwnPhotos()).toHaveLength(4);
-    });
+    }, UPLOAD);
     expect((await getApi().getOwnPhotos()).slice(0, 3).map((p) => p.path)).toEqual(before);
   });
 
@@ -82,13 +93,13 @@ describe('profile photos in Settings', () => {
     await fireEvent.press(await screen.findByTestId('settings-photo-grid-add-1'));
     await waitFor(async () => {
       expect(await getApi().getOwnPhotos()).toHaveLength(1);
-    });
+    }, UPLOAD);
 
     await fireEvent.press(screen.getByTestId('settings-photo-grid-remove-1'));
 
     await waitFor(async () => {
       expect(await getApi().getOwnPhotos()).toEqual([]);
-    });
+    }, UPLOAD);
     expect((await getApi().getOwnProfile())?.photoPath).toBeNull();
   });
 
@@ -100,7 +111,7 @@ describe('profile photos in Settings', () => {
 
     await waitFor(async () => {
       expect(await getApi().getOwnPhotos()).toEqual([]);
-    });
+    }, UPLOAD);
     expect(screen.queryByTestId('settings-photo-grid-error')).toBeNull();
   });
 

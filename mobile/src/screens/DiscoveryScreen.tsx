@@ -18,11 +18,11 @@ import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { color, elevation, font, fontFamily, gradient, overlay, radius, spacing } from '../theme';
 import { earliestRoomExpiry } from '../state/roomSchedule';
 import { usePhotoUrls } from '../state/usePhotoUrls';
+import { PinScene } from '../components/RoomIllustrations';
 import { useAppStore } from '../state/AppStore';
 
 /** The owner's own 3D door render (2026-07-28), bundled — not a redrawing. */
 const DOOR_HERO = require('../../assets/discovery-door.jpg');
-const NO_HOTEL_ART = require('../../assets/dark-hotel-pin.png');
 
 const XIcon = () => (
   <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke={color.ink} strokeWidth={2.6} strokeLinecap="round">
@@ -393,16 +393,12 @@ export function DiscoveryScreen() {
       <Screen safeTop testID="screen-discovery">
         <ScreenHeader title={COPY.tabs.discovery} ringTestID="discovery-profile-ring" />
         <Body>{`${COPY.roomReason.NO_ACTIVE_HOTEL} ${COPY.trust.oneHotel}`}</Body>
-        {/* The designer's night empty state (D-044): the neon hotel and pin
-            cropped from the mock, the claim, the one-hotel pill, and both
-            actions. */}
+        {/* The empty state: the pin, the claim, the one-hotel pill, and both
+            actions. D-058 replaced the raster here — it was cropped from the
+            D-044 night mock, so it stayed navy after the card went white. The
+            drawn pin carries the same idea in the light tokens. */}
         <View style={styles.noHotelCard}>
-          <Image
-            source={NO_HOTEL_ART}
-            style={styles.noHotelArt}
-            resizeMode="contain"
-            accessibilityIgnoresInvertColors
-          />
+          <PinScene size={120} />
           <Text accessibilityRole="header" style={styles.noHotelTitle}>
             {COPY.discovery.noHotelTitle}
           </Text>
@@ -766,7 +762,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  noHotelArt: { width: '92%', aspectRatio: 330 / 126 },
   noHotelTitle: {
     fontFamily: fontFamily.display,
     fontSize: font.heading,

@@ -13,7 +13,6 @@ import { useAppStore } from '../state/AppStore';
 import { color, elevation, font, fontFamily, spacing } from '../theme';
 
 /** The owner's own 3D lobby render (2026-07-28), bundled — not a redrawing. */
-const INBOX_HERO = require('../../assets/dark-inbox-chat.png');
 
 /** Everything a sighted person sees in one row, in the order they see it. */
 function inboxRowLabel(match: MatchSummary): string {
@@ -85,19 +84,19 @@ export function InboxScreen() {
          * lobby art in the 180 band, why it is empty in one sentence, and
          * both ways to change that — top-anchored, not floated.
          *
-         * The hero art and its own title are real content, not decoration,
-         * so they stay outside the shared `<EmptyState>` — that primitive's
-         * API is one message and one action and has no room for either. The
-         * explanation and the two ways forward are what it was built for.
+         * The title is real content, not decoration, so it stays outside the
+         * shared `<EmptyState>` — that primitive's API is one message and one
+         * action and has no room for it. The explanation and the two ways
+         * forward are what it was built for.
+         *
+         * D-058 dropped the hero image rather than repainting it: the art was
+         * a night-theme raster (deep violet chat bubbles) that read as a hole
+         * on the cream ground, and there is no light equivalent of it. An
+         * empty inbox does not need 180pt of picture to be understood, and
+         * losing it also closes the dead space that sat under it.
          */
         <View style={styles.empty} testID="inbox-empty">
           <Text style={styles.subtitle}>{COPY.inbox.subtitle}</Text>
-          <Image
-            source={INBOX_HERO}
-            style={styles.emptyHero}
-            resizeMode="cover"
-            accessibilityIgnoresInvertColors
-          />
           <Text accessibilityRole="header" style={styles.emptyTitle}>
             {COPY.inbox.emptyTitle}
           </Text>
@@ -281,11 +280,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   /** The lobby art in the sheet's 180 band (12:142). */
-  emptyHero: {
-    width: '100%',
-    height: 180,
-    borderRadius: 20,
-  },
   /** The two ways forward, full width inside the centred `<EmptyState>` card. */
   emptyActions: { alignSelf: 'stretch', gap: spacing.sm },
   /** The sheet's head row (12:167). */
