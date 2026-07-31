@@ -19,7 +19,7 @@
  * assistive tech presents and sighted users never see.
  */
 import * as Haptics from 'expo-haptics';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -346,28 +346,47 @@ function DraggableTile({
    */
   const reflow = useRef(new Animated.ValueXY()).current;
   const reflowTo = useRef({ x: 0, y: 0 });
-  if (reflowTo.current.x !== offset.x || reflowTo.current.y !== offset.y) {
-    reflowTo.current = offset;
-    Animated.spring(reflow, {
-      toValue: offset,
-      useNativeDriver: true,
-      speed: 24,
-      bounciness: 5,
-    }).start();
-  }
-
   /**
    * A commit renders this photo at its new index; the pixels it now earns from
-   * layout are the pixels the animations were holding. Zeroing synchronously
-   * on the same render keeps the picture still through the handover.
+   * layout are the pixels the animations were holding. Zeroing on the same
+   * frame keeps the picture still through the handover.
+   *
+   * Both of these used to run in the render body, which is how they ended up
+   * calling `setValue` on values an `Animated.View` is already subscribed to —
+   * React saw a sibling being updated mid-render and said so:
+   *
+   *   Cannot update a component (`Animated(View)`) while rendering a
+   *   different component (`DraggableTile`).
+   *
+   * A layout effect is the same frame, not the next one: it runs inside the
+   * commit, before anything is drawn, so the handover is still invisible. No
+   * dependency array, because the render body it replaces ran on every render
+   * and the two refs below are the real conditions — the guards decide, not the
+   * scheduler.
+   *
+   * The order is load-bearing and unchanged: the spring is armed first and the
+   * zeroing overwrites it, so a commit always wins over an in-flight reflow.
    */
   const settledIndex = useRef(index);
-  if (settledIndex.current !== index) {
-    settledIndex.current = index;
-    shift.setValue({ x: 0, y: 0 });
-    reflow.setValue({ x: 0, y: 0 });
-    reflowTo.current = { x: 0, y: 0 };
-  }
+  useLayoutEffect(() => {
+    if (reflowTo.current.x !== offset.x || reflowTo.current.y !== offset.y) {
+      reflowTo.current = offset;
+      Animated.spring(reflow, {
+        toValue: offset,
+        useNativeDriver: true,
+        speed: 24,
+        bounciness: 5,
+      }).start();
+    }
+    if (settledIndex.current !== index) {
+      settledIndex.current = index;
+      shift.setValue({ x: 0, y: 0 });
+      reflow.setValue({ x: 0, y: 0 });
+      // Re-armed, not merely cleared: if the parent still wants this tile
+      // somewhere other than zero, the next commit has to spring again.
+      reflowTo.current = { x: 0, y: 0 };
+    }
+  });
 
   /**
    * The grab has to be *felt*, not deduced. Three signals at the moment the

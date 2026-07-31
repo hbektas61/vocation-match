@@ -11,12 +11,12 @@
  * fixing — a presence answer could already be withdrawn, and a declaration is
  * the same kind of statement about yourself.
  */
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { screen, waitFor } from '@testing-library/react-native';
 
 import { COPY } from '../copy';
 import { ApiError, FakeApi, getApi, setApi } from '../data';
 import { onboardWithHotel, onboardToSettings } from '../testSupport/onboarding';
-import { press, typeText } from '../testSupport/interact';
+import { fire, press, typeText } from '../testSupport/interact';
 
 const FIXED = Date.parse('2026-07-25T10:00:00Z');
 
@@ -149,7 +149,12 @@ describe('the stay you declared', () => {
 async function pickDate(testID: string, iso: string): Promise<void> {
   const picker = await screen.findByTestId(testID);
   const timestamp = new Date(`${iso}T12:00:00`).getTime();
-  await fireEvent(picker, 'onChange', { nativeEvent: { timestamp, utcOffset: 0 } });
+  // `fire`, not a bare `await fireEvent(...)`: fireEvent is synchronous and
+  // returns nothing awaitable, so that await was not a wait — it yielded one
+  // microtask at the exact moment nothing was act-wrapped, which is where the
+  // handler's continuation landed. The `press`/`typeText` sweep only covered
+  // the two named events and left this generic one behind.
+  await fire(picker, 'onChange', { nativeEvent: { timestamp, utcOffset: 0 } });
 }
 
   it('starts empty, and offers no way to withdraw what does not exist', async () => {

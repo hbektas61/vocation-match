@@ -10,11 +10,11 @@ server entitlement, production hazırlığı ve store paketi.
 | | |
 |---|---|
 | Branch | `main`, `origin/main` ile eşit |
-| Baseline commit | `3995aac` — R-009/R-011/R-016/R-017 düzeltmeleri ve act temizliği |
-| Önceki | `f94d673` — Day 1'in son yürüyüş kaydı |
+| Baseline commit | `HEAD` — R-018 render-içi setState ve Q-004 |
+| Önceki | `3995aac` — R-009/R-011/R-016/R-017 ve act temizliği |
 | Full gate | `scripts/check.sh` (veritabanı dahil) **12/12 PASS** |
-| Jest | 54 suite · **663 test** yeşil |
-| React `act` uyarısı | Kendi kodumuzdan **0** (aşağıda Q-003) |
+| Jest | 54 suite · **663 test** yeşil (×3 ardışık) |
+| React uyarıları | Kendi kodumuzdan **0** — `act` (Q-003, Q-004) ve render-içi setState (R-018) |
 | Hardcoded renk taraması | `theme.ts` dışında 0 |
 | D-058 Figma | 108/108 frame, 481 prototip action — **kapalı, yeniden açılmayacak** |
 | Untracked | `.playwright-mcp/*.yml` **31 adet** — QA aracının çıktısı, ürün dosyası değil |
@@ -52,7 +52,7 @@ kanıt · severity · fix commit · gerçek yeniden test.
 |---|---|---|---|---|---|---|---|---|
 | — | — | — | — | — | Açık ürün hatası yok | — | — | — |
 
-Day 1'de bulunan 21 hatanın hepsi kapatıldı ve çalışan uygulamada yeniden
+Day 1'de bulunan 23 hatanın hepsi kapatıldı ve çalışan uygulamada yeniden
 doğrulandı. Kalanlar hata değil: gerçek cihaz, ikinci hesap ya da owner kararı
 isteyen **yürünmemiş** ekranlar — "Kalanlar" tablosunda.
 
@@ -76,6 +76,8 @@ isteyen **yürünmemiş** ekranlar — "Kalanlar" tablosunda.
 | R-011 | **İki konum reddi yalnız kırmızı bir `Notice`.** "Çok uzaktasın" ve "belirleyemedik" aynı biçimi paylaşıyordu ve tekrar deneme, az önce başarısız olan aynı düğmeden yapılıyordu | P2 | Paylaşılan `PresenceResult`: durum başlığı + bildirim + **"Ne oldu?"** kartı + birincil **"Tekrar dene"** + ikincil çıkış. Bileşen sayı almıyor — mesafe, koordinat, yarıçap prop'u **yok**, hiçbiri interpole edilmiyor (D-005). Çıkış ölü kapıya gitmiyor: sunucu Tatilden Önce'yi açık diyorsa **"Gidenleri gör"** (deste), demiyorsa **"Tarihlerini yaz"** | Çalışan uygulamada dördü ayrı ayrı: **T-19** hassas değil (açık alan yönlendirmesi dahil), **T-20** çok uzak, **T-20b** çok uzak + tarih beyan edilmiş, izin reddi. Ekranın tamamında **rakam 0** — mesafe sızmıyor. `rt-23-here-now-inaccurate.png`, `rt-24-here-now-too-far.png`, `rt-26-too-far-deck-open.png` |
 | R-017 | **`HereNowScreen` oda durumunu kendi okumuyordu.** R-011'in ikincil CTA'sı `state.rooms`'a bakıyor, ama bu önbelleği Tatilim sekmesi dolduruyor — başka bir giriş yolunda ekran tahmin ediyordu. Harness'ta yürürken bulundu: tarih beyan edilmişken bile "Tarihlerini yaz" yazıyordu | P2 | Ekran `getRooms()`'u mount'ta kendisi çağırıp `ROOMS_LOADED` dispatch ediyor | T-20b'de etiket doğru şekilde **"Gidenleri gör"**e döndü; T-20 (tarihsiz) hâlâ "Tarihlerini yaz". Ayrıca jest'te iki dal da bağlandı |
 | Q-003 | **Test çıktısında 627 `act(...)` uyarısı.** Suite yeşil geçiyordu, yani uyarılar gerçek bir kırmızıyı gizleyebilecek gürültüydü | P2 | Kök sebep: `await fireEvent.press(x)` **sahte bir await** — `fireEvent` senkron, boolean döner, dolayısıyla tam olarak hiçbir şeyin act kapsamında olmadığı anda tek microtask bırakıyor; async handler'ın devamı (kayıt, navigasyon, `finally { setBusy(false) }`) o boşluğa düşüyor. 297 çağrı act-sarmalı `testSupport/interact.ts` yardımcılarına taşındı; soğuk açılış `renderAsync` ile beklendi. **Susturma yok** — `console.error` mock'u, global filtre, kör sleep ya da şişirilmiş timeout kullanılmadı | **627 → 0.** Üç ardışık tam koşuda kendi kaynağımızdan uyarı **0**; kalan 1–3 uyarı `@react-navigation/bottom-tabs`'ın kendi 32 ms sekme-animasyonu zamanlayıcısından (`BottomTabView` `setLastUpdate`), üçüncü parti. Q-001/Q-002 üç koşuda da yeşil |
+| R-018 | **`PhotoGrid` render sırasında state güncelliyordu.** `DraggableTile` render gövdesinde `Animated.spring(...).start()` ve `reflow.setValue(...)` çağırıyordu; bu değerlere zaten abone olan `Animated.View`'a senkron bildirim gidiyor. React'in kendi uyarısı: *"Cannot update a component (`Animated(View)`) while rendering a different component (`DraggableTile`)"* | P2 | İkisi de `useLayoutEffect`'e alındı — **aynı kare**, bir sonraki değil: commit'in içinde, hiçbir şey çizilmeden önce çalışıyor, dolayısıyla devir teslim hâlâ görünmez. Dependency array yok (yerini aldığı render gövdesi her render'da çalışıyordu) ve iki ref koruması ile **sıra** aynen korundu: yay önce kuruluyor, sıfırlama üstüne yazıyor | Uyarı **1 → 0**; üç ardışık tam koşuda da 0. `photoGridUi` + `profilePhotoUi` + bileşen testleri 25/25, sürükle-bırak ve okuyucu ile yeniden sıralama yolları dahil |
+| Q-004 | **Q-003'ün taramasından kaçan `fireEvent` çağrısı.** `profileAndStay.test.tsx:152`'de `await fireEvent(picker, 'onChange', …)` — süpürme yalnız `.press` ve `.changeText` biçimlerini yakalamıştı, genel biçim kalmıştı. Aynı sahte-await, aynı boşluk | P2 | `interact.ts`'te bu iş için zaten yazılmış olan `fire()` kullanıldı; `fireEvent` importu düştü | Repo genelinde `await fireEvent(` **0**; kalan `fireEvent` çağrılarının hepsi açık `act(...)` bloklarının içinde. Jest 663/663 ×3 |
 | R-014 | **"Unmatch" hiç sormadan uyguluyordu.** Sohbet menüsünde "Report or block"un hemen üstünde, tek dokunuşta konuşmayı ikisi için de kapatıyor ve bu ekrandan geri alınamıyor. Oysa engelleme, etkinlik odasından çıkma ve mekân değiştirme **hepsi önce soruyor** — koddaki gerekçesi bile yazılı | **P1** | Aynı yerinde onay adımı (soru + ne olacağı + "Evet, eşleşmeyi boz" / Vazgeç) | Çalışan uygulamada: ilk dokunuş soruyor, Vazgeç konuşmayı olduğu gibi bırakıyor; ayrıca "ilk dokunuşta bozmaz" regresyon testi eklendi |
 | R-015 | Çevremde aktif check-in'de "Check-in'i değiştir" ve **"Check-in'i bitir" 350×43** — `bigOutline`/`bigFilled` stillerinde `minHeight` yoktu | P2 | İkisine de `MIN_TOUCH` | Harness N-12'de ölçüldü |
 | R-013 | **Etkinlik canlı oda kartı, başlığında düğmenin cümlesini tekrar ediyordu** — "I am at the event now" alt alta iki kez; kart neye yaradığını söylemiyordu | P2 | Karta kendi açıklaması verildi (`events.hereNowExplainer`, TR+EN); düğme etiketi aynı kaldı | Çalışan uygulamada etiket **1 kez**; `rt-18-event-live-fixed.png` |
