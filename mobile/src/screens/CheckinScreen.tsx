@@ -200,12 +200,6 @@ const StopIcon = ({ tone = DEEP, size = 20 }: { tone?: string; size?: number }) 
   </Svg>
 );
 
-const HeartGlyph = ({ tone = color.accentDeep, size = 16 }: { tone?: string; size?: number }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill={tone}>
-    <Path d="M12 8c0-4.5-7.2-4.5-7.2 0 0 4 4.7 6.8 7.2 8.7 2.5-1.9 7.2-4.7 7.2-8.7 0-4.5-7.2-4.5-7.2 0z" />
-  </Svg>
-);
-
 /* ------------------------------------------------------- category styling */
 
 /**
@@ -803,10 +797,6 @@ export function CheckinScreen({
     const shown = searching ? results : nearby;
     return (
       <Screen safeTop testID="screen-checkin">
-        <View style={styles.brandRow}>
-          <Text style={styles.brandText}>{COPY.appName}</Text>
-          <HeartGlyph size={14} />
-        </View>
         <View style={styles.headRow}>
           <Text accessibilityRole="header" style={styles.titleSm}>{COPY.tabs.nearbyTab}</Text>
           {/* The sheet's corner ring (11:76), still doing the useful job:
@@ -1070,18 +1060,6 @@ export function CheckinScreen({
 }
 
 const styles = StyleSheet.create({
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  /** The brand line over the list (11:73): 15, in the brand's dark sibling. */
-  brandText: {
-    fontFamily: fontFamily.display,
-    fontSize: 15,
-    color: DEEP,
-  },
   headRow: {
     flexDirection: 'row',
     alignItems: 'center',

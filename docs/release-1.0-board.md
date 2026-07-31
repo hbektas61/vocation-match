@@ -42,11 +42,11 @@ kanıt · severity · fix commit · gerçek yeniden test.
 
 | ID | Ekran / akış | Viewport | Tekrar | Beklenen | Görülen | Sev | Fix | Yeniden test |
 |---|---|---|---|---|---|---|---|---|
-| R-008 | Çevremde — mekân listesi | 390×844 | Nearby → mekânları bul | Başlık her sekmede olduğu gibi yalnız ekran adı + profil halkası | Ekranın tepesinde ortalanmış "Vacation Match ♥" wordmark var; uygulamada başka hiçbir sekmede yok (yalnız onboarding Karşılama'da) | P2 · **owner kararı** | — | Hami: kalsın mı? |
-| R-006 | Gelen kutusu — boş | 390×844 | Mesajlar sekmesi, eşleşme yokken | Boş durum krem zeminde kendi kartıyla durur | Hero kaldırıldı; yerine `assets/inbox-empty.jpg` (sahibin açık render'ı) konabilir ama o da lavanta — emekli D-043 paleti | **Owner kararı** | — | Hami seçecek |
+| R-009 | Gelen kutusu — boş durum görseli | — | — | Temaya uygun (mercan paleti) bir görsel | Şu an görselsiz; alt tarafta ~370pt boş alan | P2 · **bekliyor** | — | Görsel hazırlanınca |
 
-> R-006 bir hata değil, bir tercih: hero'yu tamamen kaldırdım (şu anki hâl) ya da
-> lavanta render'ı geri koyarız. Karar Hami'nin.
+> R-009: Hami "lavanta render dönmesin, temaya uygun bir şey koyarız" dedi.
+> Görsel gelene kadar boş durum kartı tek başına duruyor — okunur ve sistem
+> içinde, ama altındaki boşluk görsel gelince kapanacak.
 
 ### Kapalı
 
@@ -61,6 +61,8 @@ kanıt · severity · fix commit · gerçek yeniden test.
 | R-004 | **Eşleşme ekranında "Bakmaya devam et" görünmez.** Beyaz etiket + beyaz kenar, gradyanın *açık* ucunda — çalışan uygulamada **1.04:1** ölçüldü | **P1** | Etiket ve kenar lacivere alındı (açık durakta 11:1'in üstünde) | Çalışan uygulamada `rgb(16,26,58)` ölçüldü; `docs/qa/day1/rt-08-match-fixed.png` |
 | R-005 | Eşleşme anı tam kanamıyordu: gradyanın üstünde 24pt, altında 153pt krem şerit | P2 | `Screen bleed scroll={false}`; CTA sırası kendi 20pt payını taşıyor | Gradyan `y0..804 x0..390`, CTA'lar x20 w350; `rt-09-match-bleed.png` |
 | R-007 | Sohbette aynı karede dört dokunuş **üç kopya mesaj** gönderiyordu (`sending` React state olduğu için aynı tick'te false) | P2 | Senkron `sendingRef` koruması; `sending` hâlâ ekranı sürüyor | Aynı burst → **1 mesaj**; insan çift dokunuşu (180ms) zaten 1'di |
+| R-008 | Çevremde mekân listesi, uygulamada başlığının üstünde wordmark basan tek ekrandı | P2 | Owner kararı: kaldırıldı (`brandRow`/`brandText` ve artık kullanılmayan `HeartGlyph` ile birlikte) | Çalışan uygulamada başlık artık yalnız "Nearby" + profil halkası |
+| R-006 | Gelen kutusu boş durumundaki gece teması hero'su | P1 | Kaldırıldı (R-002 ile); lavanta render geri getirilmedi — owner kararı | `rt-12-inbox-no-hero.png`; ekran krem zeminde kendi kartıyla duruyor |
 
 ## Day 1 — runtime ekran envanteri
 
@@ -96,8 +98,19 @@ Durum kodları: `⬜ denenmedi` · `🟦 yürütüldü` · `✅ yürütüldü + 
 | 22 | Sohbet — boş, yazma, gönderme, hızlı tekrar dokunma | ✅ **R-007** |
 | 23 | Etkinlikler — bölge seçilmemiş | ✅ |
 | 24 | Ayarlar — profil, fotoğraf ızgarası | ✅ |
+| 25 | Tatilden Önce — tarih beyanı | ⬜ aktif tatil mekânı gerekiyor |
+| 26 | Profilini düzenle | ✅ |
+| 27 | Ayarlar → fotoğraf ızgarası | ✅ |
 | — | Paywall placeholder | ⬜ Phase 4, O-05/O-09 bekliyor |
-| — | Etkinlik listesi/detayı, canlı oda sonuçları | ⬜ staging verisi gerekiyor (Day 2) |
+| — | Etkinlik listesi/detayı, canlı oda sonuç ekranları (E-27…E-34, T-19…T-22) | 🟦 **kısmen** — D-058 Figma'da 108/108 var, jest metinlerini doğruluyor, harness'ta beş sahne (E-27, E-16, T-17, C-03, M-04) temiz ölçüldü; kalanların runtime yürüyüşü sürüyor |
+
+**QA yöntemi sınırı — dürüstçe kaydedilmiştir.** Web export'ta
+`react-native-screens` native-stack başlığını çizmiyor, bu yüzden stack'e
+push edilen ekranlardan (Profilini düzenle, Tarihler, Etkinlik detayı) tarayıcıda
+geri dönülemiyor; iOS'ta bu başlık ve geri düğmesi platformun kendisinden gelir.
+Bunu bir uygulama hatası olarak kaydetmedim — cihaz kontrolüne bağlı (O-07,
+D-057 device checklist #10). Aynı şekilde kontrast ölçüm aracım fotoğraf
+üstündeki scrim'i göremiyor; on-photo metin ekran görüntüsüyle doğrulanıyor.
 
 Yürüyüş yöntemi: gerçek 390×844 viewport, çalışan uygulama, her ekranda canlı
 DOM üzerinde ölçüm — kesilen metin, 44 altı dokunma hedefi, yatay taşma, WCAG
