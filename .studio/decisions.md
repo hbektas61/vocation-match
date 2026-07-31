@@ -149,3 +149,44 @@ These decisions are owner-approved and must not be silently changed.
   needs its own model (a pre-match conversation the other person can refuse),
   safety rules, and screens; staged as the next premium slice, not smuggled
   into this one.
+
+## D-058 — Light Social Theme (2026-07-31)
+
+The owner approved a new visual direction and the studio built it: the
+D-043/D-044 "rendevuu" night palette and the D-046 sunset ground are retired.
+The ground is warm cream `#FFF9F5`, surfaces are white, type is navy `#101A3A`,
+and the brand is a single coral `#FF5E62`.
+
+**What the measurements forced.** Coral is 2.99:1 on white and cannot carry
+white text at any size, so every label on a coral fill is navy (5.7:1) and the
+brand reads as text in a darker sibling `#B3272C` (6.5:1). The brief named
+`#7C8194` as `text.secondary`; it measures 3.87:1, so it was kept as
+`text.tertiary` — placeholders and disabled controls, where WCAG does not ask
+for 4.5 — and a darker sibling `#5F6478` (5.9:1) does the reading. This is a
+deviation from the brief's table and it is deliberate: the same brief requires
+AA to be verified.
+
+**Two gradients survive.** The match moment (`gradient.match`, opening on the
+pressed coral so white display type clears 3:1) and the scrim under text on a
+photograph. Everything else is flat.
+
+**Type.** The display face is the platform serif (Georgia on iOS, `serif` on
+Android). No new font dependency, and nothing that can fail to arrive; Nunito is
+no longer loaded. Figma stands Lora in for it, which has no Georgia.
+
+**Enforcement.** `src/__tests__/lightTheme.test.ts` reads every runtime file and
+fails the build if a colour is named outside `theme.ts` or if a retired hex
+appears anywhere, including in a comment. `theme.test.ts` computes every
+contrast claim. `copyParity.test.ts` holds the two languages to one shape and
+proves no internal outcome code reaches a person.
+
+**Figma.** `D-058 — Light Social Theme` (page `62:911`) mirrors all 108 real
+product frames of `D-057 — Four-Feature IA` one-to-one, with 481 prototype
+actions. The D-057 page is untouched and stays for comparison. The row-by-row
+mapping is `docs/d058-figma-frame-parity.md`.
+
+**Unchanged.** Room eligibility, premium entitlements, Google/Ticketmaster
+provider behaviour, location privacy and accuracy thresholds, the schema and its
+migrations, matching/swipe/chat rules, the D-057 information architecture, and
+the production feature flags. D-058 is a visual system, and it did not vote on
+any of those.
