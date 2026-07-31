@@ -68,6 +68,8 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   const [sending, setSending] = useState(false);
   /** The synchronous half of `sending`; see `send` below. */
   const sendingRef = useRef(false);
+  /** Unmatching asks first, the way blocking and leaving an event room do. */
+  const [unmatching, setUnmatching] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   // True once a server lookup for a not-yet-cached match has finished,
@@ -188,6 +190,7 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   };
 
   const unmatch = async () => {
+    setUnmatching(false);
     setMenuOpen(false);
     try {
       await getApi().unmatch(matchId);
@@ -259,13 +262,42 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
            dots — available, and neither the loudest thing on the screen. */
         <View style={styles.menu} testID="chat-menu-sheet">
           {!closed ? (
-            <Button
-              label={COPY.chat.unmatchButton}
-              variant="secondary"
-              compact
-              onPress={unmatch}
-              testID="chat-unmatch"
-            />
+            unmatching ? (
+              /*
+                Unmatching closes the conversation for both people and there is
+                no way back from this screen. Blocking asks first, leaving an
+                event room asks first, switching a vacation place asks first —
+                this was the one that fired on the first press, from a menu item
+                sitting directly above "Report or block". Same in-place
+                confirmation the event room uses, rather than a system dialog.
+              */
+              <>
+                <Text style={styles.menuQuestion}>{COPY.chat.unmatchConfirm}</Text>
+                <Text style={styles.menuBody}>{COPY.chat.unmatchBody}</Text>
+                <Button
+                  label={COPY.chat.unmatchYes}
+                  variant="danger"
+                  compact
+                  onPress={unmatch}
+                  testID="chat-unmatch-confirm"
+                />
+                <Button
+                  label={COPY.common.cancel}
+                  variant="secondary"
+                  compact
+                  onPress={() => setUnmatching(false)}
+                  testID="chat-unmatch-cancel"
+                />
+              </>
+            ) : (
+              <Button
+                label={COPY.chat.unmatchButton}
+                variant="secondary"
+                compact
+                onPress={() => setUnmatching(true)}
+                testID="chat-unmatch"
+              />
+            )
           ) : null}
           <Button
             label={COPY.chat.reportBlockButton}
@@ -366,6 +398,17 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
 }
 
 const styles = StyleSheet.create({
+  menuQuestion: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.body,
+    color: color.ink,
+  },
+  menuBody: {
+    fontFamily: fontFamily.body,
+    fontSize: font.caption,
+    lineHeight: font.caption * 1.45,
+    color: color.inkMuted,
+  },
   /** The sheet's head row (13:154): 12 between everything, one line. */
   headRow: {
     flexDirection: 'row',

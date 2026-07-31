@@ -64,6 +64,8 @@ kanıt · severity · fix commit · gerçek yeniden test.
 | R-007 | Sohbette aynı karede dört dokunuş **üç kopya mesaj** gönderiyordu (`sending` React state olduğu için aynı tick'te false) | P2 | Senkron `sendingRef` koruması; `sending` hâlâ ekranı sürüyor | Aynı burst → **1 mesaj**; insan çift dokunuşu (180ms) zaten 1'di |
 | R-008 | Çevremde mekân listesi, uygulamada başlığının üstünde wordmark basan tek ekrandı | P2 | Owner kararı: kaldırıldı (`brandRow`/`brandText` ve artık kullanılmayan `HeartGlyph` ile birlikte) | Çalışan uygulamada başlık artık yalnız "Nearby" + profil halkası |
 | R-006 | Gelen kutusu boş durumundaki gece teması hero'su | P1 | Kaldırıldı (R-002 ile); lavanta render geri getirilmedi — owner kararı | `rt-12-inbox-no-hero.png`; ekran krem zeminde kendi kartıyla duruyor |
+| R-014 | **"Unmatch" hiç sormadan uyguluyordu.** Sohbet menüsünde "Report or block"un hemen üstünde, tek dokunuşta konuşmayı ikisi için de kapatıyor ve bu ekrandan geri alınamıyor. Oysa engelleme, etkinlik odasından çıkma ve mekân değiştirme **hepsi önce soruyor** — koddaki gerekçesi bile yazılı | **P1** | Aynı yerinde onay adımı (soru + ne olacağı + "Evet, eşleşmeyi boz" / Vazgeç) | Çalışan uygulamada: ilk dokunuş soruyor, Vazgeç konuşmayı olduğu gibi bırakıyor; ayrıca "ilk dokunuşta bozmaz" regresyon testi eklendi |
+| R-015 | Çevremde aktif check-in'de "Check-in'i değiştir" ve **"Check-in'i bitir" 350×43** — `bigOutline`/`bigFilled` stillerinde `minHeight` yoktu | P2 | İkisine de `MIN_TOUCH` | Harness N-12'de ölçüldü |
 | R-013 | **Etkinlik canlı oda kartı, başlığında düğmenin cümlesini tekrar ediyordu** — "I am at the event now" alt alta iki kez; kart neye yaradığını söylemiyordu | P2 | Karta kendi açıklaması verildi (`events.hereNowExplainer`, TR+EN); düğme etiketi aynı kaldı | Çalışan uygulamada etiket **1 kez**; `rt-18-event-live-fixed.png` |
 | R-012 | Etkinlikler listesinde "Konumu değiştir" **95×15** (hitSlop ile 31) | P2 | 44pt satır; hitSlop korundu | Listede 44 altı hedef **0** |
 | R-010 | VenuePicker'da "Change destination" **350×16** — seçilen destinasyonu atan gerçek bir kontrol, 44'ün çok altında | P2 | `minHeight: MIN_TOUCH` | Çalışan uygulamada ölçüldü |
@@ -97,14 +99,15 @@ Figma'da görülmüş olması sayılmaz.
 
 | # | Ekran / durum | Neden bekliyor |
 |---|---|---|
-| K-01 | **Bildir / engelle** (`ReportBlock`) — hiç açılmadı | Sohbet menüsünden erişiliyor; Apple UGC 1.2 için kritik (Phase 3) |
-| K-02 | **Sohbet — kapanmış oda**, unmatch onayı, mesaj gönderilemedi/yeniden dene | Harness'ta C-03 temizdi; gerçek akış yürünmedi |
+| ~~K-01~~ | ~~Bildir / engelle~~ | ✅ **kapandı** — altı sebep, sebep seçilmeden gönderilemiyor, engelleme kendi onayını istiyor, raporun aynı zamanda engellediği yazılı. `rt-19-report-block.png` |
+| ~~K-02~~ | ~~Sohbet — unmatch onayı, kapanmış oda~~ | ✅ **kapandı** — **R-014** burada bulundu; kapalı oda harness C-03'te temiz. Mesaj gönderilemedi/yeniden dene hâlâ açık (aşağıda K-11) |
+| K-11 | Sohbet — mesaj gönderilemedi / yeniden dene | Ağ hatası enjekte etmek gerekiyor; jest'te kapsanıyor, runtime'da değil |
 | K-03 | **Gelen kutusu — dolu** (yeni eşleşmeler + sohbet listesi, okunmamış) | İkinci hesap gerekiyor (Day 2) |
 | K-04 | **Ayarlar alt sayfaları** — Dil, Veri sağlayıcıları, Hesabı sil | Stack ekranı; tarayıcıda geri dönülemiyor |
-| K-05 | **Çevremde** — katalog araması, Google gelişmiş arama, aylık hak/hak bitti, sağlayıcı kapalı, "Buradayım", check-in süresi doldu | Harness'ta N-08/N-09/N-12 var; runtime yürüyüşü yapılmadı |
-| K-06 | **Etkinlikler** — sonuç yok, sağlayıcı kullanılamıyor, çevrimdışı, günlük sınır, özellik kapalı, katılımı geri çek | Harness sahneleri mevcut (E-12/E-15/E-16/E-17) |
+| K-05 | **Çevremde** — katalog araması, Google gelişmiş arama, aylık hak/hak bitti, sağlayıcı kapalı, "Buradayım" | N-12 (genel alanda aktif) ✅ yürütüldü ve **R-015** orada bulundu. N-08/N-09 sahneleri tanıtım ekranında açılıyor — durumları arama akışından geçmeyi gerektiriyor |
+| K-06 | **Etkinlikler** — sonuç yok, sağlayıcı kullanılamıyor, çevrimdışı, katılımı geri çek | E-16 (günlük sınır) ✅ ve E-17 (özellik kapalı) ✅ yürütüldü. E-12/E-15 sahneleri bölge seçicide açılıyor; durumları bölge seçtikten sonra geliyor |
 | K-07 | **Canlı oda sonuçları** (E-27…E-34: başlamadı, bitti, iptal, saat belirsiz, konum yok, IN_RANGE, süre doldu) | Tarayıcı konum istemini yanıtlamıyor → **gerçek cihaz** (O-07) |
-| K-08 | **Keşfet** — boş oda/yeniden tara, bağlam seçici sayfası, beş bağlamın her biri | Harness'ta NAV-02/05/07 ve D-01…D-06 var; runtime yürüyüşü kısmi |
+| K-08 | **Keşfet** — bağlam seçici sayfası, beş bağlamın her biri | NAV-05 (uygun oda yok) ✅ ve NAV-07 (boş oda / yeniden tara) ✅ yürütüldü. Seçici sayfası ve D-01…D-06 kaldı |
 | K-09 | **Otel detayı** (`HotelDetails`) | Rota var, giriş noktası yürünmedi |
 | K-10 | **Paywall placeholder** | Phase 4 — O-05 + O-09 bekliyor |
 

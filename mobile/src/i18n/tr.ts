@@ -549,6 +549,10 @@ export const tr: Copy = {
     sendButton: 'Gönder',
     sendingButton: 'Gönderiliyor…',
     unmatchButton: 'Eşleşmeyi bitir',
+    unmatchConfirm: 'Eşleşmeyi bozmak istiyor musun?',
+    unmatchBody:
+      'Konuşma ikiniz için de kapanır ve birbirinizin destesinde görünmezsiniz. Geçmiş okunur kalır; yazdıklarınızın hiçbiri silinmez.',
+    unmatchYes: 'Evet, eşleşmeyi boz',
     reportBlockButton: 'Bildir veya engelle',
     loadError: 'Bu konuşma yüklenemedi. Tekrar dene.',
     sendError: 'Mesaj gönderilemedi. Tekrar dene.',

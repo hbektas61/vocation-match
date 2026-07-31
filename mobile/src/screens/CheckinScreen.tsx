@@ -43,7 +43,7 @@ import { MIN_QUERY_WEIGHT, normalizeQuery, queryWeight } from '../domain/searchQ
 import { getHotelById } from '../fixtures/hotels';
 import type { TabParamList } from '../navigation/types';
 
-import { color, elevation, font, fontFamily, radius, spacing } from '../theme';
+import { color, elevation, font, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
 
 const HERO = require('../../assets/nearby-hero.jpg');
 
@@ -1332,6 +1332,7 @@ const styles = StyleSheet.create({
   },
   /** Flat coral, the same recipe the shared `Button`'s primary variant uses. */
   bigFilled: {
+    minHeight: MIN_TOUCH,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1350,11 +1351,18 @@ const styles = StyleSheet.create({
     color: color.onAccent,
   },
   /** White, 1.5 control edge — the shared `Button`'s secondary variant. */
+  /**
+   * 12 + a 19pt line + 12 comes to 43, one point under the minimum — measured
+   * on the running app, on the pair that changes and *ends* a check-in. The
+   * shared `Button` carries a `minHeight` for exactly this reason; these
+   * hand-rolled pills did not.
+   */
   bigOutline: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
+    minHeight: MIN_TOUCH,
     backgroundColor: color.surface,
     borderWidth: 1.5,
     borderColor: color.border,

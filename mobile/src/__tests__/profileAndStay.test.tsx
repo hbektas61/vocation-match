@@ -338,8 +338,31 @@ describe('a match that vanishes mid-conversation', () => {
 
     await fireEvent.press(screen.getByTestId('chat-menu'));
     await fireEvent.press(await screen.findByTestId('chat-unmatch'));
+    await fireEvent.press(await screen.findByTestId('chat-unmatch-confirm'));
 
     expect(await screen.findByText(COPY.chat.notAvailable)).toBeTruthy();
+    jest.restoreAllMocks();
+  });
+
+  it('does not unmatch on the first press', async () => {
+    // R-014. Unmatching closes the conversation for both people and cannot be
+    // undone from this screen, and the menu item sits directly above "Report or
+    // block" — so it asks, the way blocking and leaving an event room already
+    // did. It used to fire immediately.
+    await reachChat();
+    const api = getApi();
+    const unmatch = jest.spyOn(api, 'unmatch');
+
+    await fireEvent.press(screen.getByTestId('chat-menu'));
+    await fireEvent.press(await screen.findByTestId('chat-unmatch'));
+
+    expect(unmatch).not.toHaveBeenCalled();
+    expect(await screen.findByText(COPY.chat.unmatchConfirm)).toBeTruthy();
+
+    // And backing out leaves the conversation exactly as it was.
+    await fireEvent.press(screen.getByTestId('chat-unmatch-cancel'));
+    expect(unmatch).not.toHaveBeenCalled();
+    expect(screen.getByTestId('chat-unmatch')).toBeTruthy();
     jest.restoreAllMocks();
   });
 

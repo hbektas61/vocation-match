@@ -607,6 +607,16 @@ export const en = {
     sendButton: 'Send',
     sendingButton: 'Sending…',
     unmatchButton: 'Unmatch',
+    /**
+     * Unmatching closes the conversation for both people and cannot be undone
+     * from here. Blocking asks first, leaving an event room asks first, and
+     * switching a vacation place asks first — this was the one that fired on
+     * the first press, from a menu item sitting next to "Report or block".
+     */
+    unmatchConfirm: 'Unmatch with this person?',
+    unmatchBody:
+      'The conversation closes for both of you and you stop appearing in each other’s decks. The history stays readable, and nothing either of you wrote is deleted.',
+    unmatchYes: 'Yes, unmatch',
     reportBlockButton: 'Report or block',
     loadError: 'Could not load this conversation. Try again.',
     sendError: 'Could not send that message. Try again.',
