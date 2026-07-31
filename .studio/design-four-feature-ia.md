@@ -743,6 +743,10 @@ existing value, not because the screen is wrong.
 | N-09 provider unavailable | `38:174` | `app-N-09-google.png` | matches | none | — | "Şu an ek arama yapılamıyor. Listeden seçebilir ya da buradayım diyebilirsin." |
 | N-08 allowance exhausted | `38:155` | `app-N-08-google.png` | **frame and behaviour differ** | see below | none — the behaviour is the correct one | — |
 
+| N-10 Çevremde — Buradayım | `38:191` | `app-N-12-x.png` | matches | none | — | the anchor card says "Bulunduğun yer" and never a venue name, beside a named check-in that does |
+| N-14 Çevremde — keşfe geç | `38:344` | `app-N-14.png` | matches | none | — | "Çevremdekileri keşfet" lands on the deck reading "Çevremde. Lara Shore Resort · 3 sa 0 dk kaldı" — a name and a clock, no distance |
+| N-13 Çevremde — expired | `38:300` | — | **not reached** | both Çevremde fixtures hold a *live* check-in; nothing ages one out inside a scene | needs a scene whose check-in is already past its three hours | outstanding |
+
 **N-08 is where the frame is wrong, and D-053 is right.** The frame draws the
 exhausted allowance as a *pre-search block*. The product does not block the
 search: D-053 spends the right only on a **completed** Google-labelled
