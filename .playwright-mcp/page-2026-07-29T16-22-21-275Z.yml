@@ -1,0 +1,14 @@
+- generic [ref=e39]:
+  - progressbar "Adım 1/10" [ref=e40]
+  - button "Geri" [ref=e43] [cursor=pointer]:
+    - generic [ref=e44]: ←
+  - generic [ref=e46]:
+    - generic [ref=e48]:
+      - heading "Yalnız yetişkinler, ve kısa bir söz." [level=1] [ref=e49]
+      - generic [ref=e50]: Vacation Match 18 yaş ve üzeri içindir. Devam ederek en az 18 yaşında olduğunu onaylıyorsun.
+      - generic [ref=e51]:
+        - generic [ref=e52]: Kendin ol. İsim ve fotoğraf sana ait olmalı.
+        - generic [ref=e55]: İlk buluşmayı kalabalık bir yerde yap ve birine nereye gittiğini söyle.
+        - generic [ref=e58]: Nazik ol. Alıntılanmasını istemeyeceğin bir konuşmayı yeniden düşün.
+        - generic [ref=e61]: Yanlış hissettiren her şeyi bildir. Bildirimin bir insana ulaşır; engellemek tek dokunuş.
+    - button "Kabul ediyorum" [ref=e65] [cursor=pointer]

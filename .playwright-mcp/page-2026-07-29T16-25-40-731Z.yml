@@ -1,0 +1,20 @@
+- generic [ref=e186]:
+  - progressbar "Adım 6/10" [ref=e187]
+  - button "Geri" [ref=e190] [cursor=pointer]:
+    - generic [ref=e191]: ←
+  - generic [ref=e193]:
+    - generic [ref=e195]:
+      - heading "Ben bir" [level=1] [ref=e196]
+      - generic [ref=e197]: Kendini nasıl tanımlıyorsan öyle. Kartında görünüp görünmeyeceğini ayrıca sen seçersin.
+      - generic [ref=e198]:
+        - button "Kadın" [ref=e199] [cursor=pointer]
+        - button "Erkek" [ref=e205] [cursor=pointer]
+        - button "Non-binary" [ref=e211] [cursor=pointer]
+        - button "Cinsiyet akışkan" [ref=e217] [cursor=pointer]
+        - button "Cinsiyetsiz" [ref=e222] [cursor=pointer]
+        - button "Trans kadın" [ref=e228] [cursor=pointer]
+        - button "Trans erkek" [ref=e234] [cursor=pointer]
+        - button "Kendim tanımlamayı tercih ederim" [ref=e240] [cursor=pointer]
+    - generic [ref=e242]:
+      - checkbox "Cinsiyetimi profilimde göster" [ref=e243] [cursor=pointer]
+      - button "Devam et" [disabled]

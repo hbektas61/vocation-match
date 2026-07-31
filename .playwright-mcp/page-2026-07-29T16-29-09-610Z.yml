@@ -1,0 +1,26 @@
+- generic [ref=e451]:
+  - generic [ref=e457]:
+    - generic [ref=e458]:
+      - heading "Tatilim" [level=1] [ref=e459]
+      - button "Ayarlar" [ref=e460] [cursor=pointer]
+    - generic [ref=e461]: Tatiline başlayacağın oteli seç.
+    - generic [ref=e462]: OTEL ARA
+    - textbox "Otel ara" [ref=e469]:
+      - /placeholder: Otel adı veya şehir
+    - generic [ref=e529]:
+      - generic [ref=e530]: Henüz bir otel seçmedin
+      - generic [ref=e531]: Bulunduğun ya da gideceğin oteli arayarak seç. Odalar seçtiğin otele göre açılır.
+      - generic [ref=e532]: Otel seçimi gerekli
+    - generic [ref=e538]:
+      - generic [ref=e539]:
+        - generic [ref=e540]: TATİLDEN ÖNCE
+        - generic "Kapalı" [ref=e541]
+      - generic [ref=e544]: Konaklama tarihlerini sen beyan edersin.
+      - generic [ref=e545]: Aynı tarihlerde aynı otelde olacak kişilerle tatilden önce tanış.
+      - button "Önce otel seç" [ref=e546] [cursor=pointer]
+  - generic [ref=e494]:
+    - button "Tatilim" [ref=e495] [cursor=pointer]
+    - button "Çevremde" [ref=e501] [cursor=pointer]
+    - button "Keşfet" [ref=e507] [cursor=pointer]
+    - button "Gelen kutusu" [ref=e513] [cursor=pointer]
+    - button "Ayarlar" [ref=e519] [cursor=pointer]

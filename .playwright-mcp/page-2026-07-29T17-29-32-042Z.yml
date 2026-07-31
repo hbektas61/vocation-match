@@ -1,0 +1,13 @@
+- generic [ref=f1e210]:
+  - generic [ref=f1e211]:
+    - button "Geri" [ref=f1e212] [cursor=pointer]
+    - generic [ref=f1e215]: E
+    - generic [ref=f1e217]:
+      - generic [ref=f1e218]: Ece, 30
+      - generic [ref=f1e219]: Tatilden önce · Lara Shore Resort
+    - button "Konuşma işlemleri" [ref=f1e220] [cursor=pointer]
+  - generic [ref=f1e225]: "Bir merhaba de: Ece!"
+  - generic [ref=f1e228]:
+    - textbox "Mesaj Ece" [ref=f1e229]:
+      - /placeholder: Bir mesaj yaz
+    - button "Gönder" [disabled]

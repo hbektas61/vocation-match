@@ -1,0 +1,29 @@
+- generic [ref=e328]:
+  - progressbar "Adım 9/10" [ref=e329]
+  - generic [ref=e331]:
+    - button "Geri" [ref=e332] [cursor=pointer]:
+      - generic [ref=e333]: ←
+    - button "Atla" [ref=e334] [cursor=pointer]
+  - generic [ref=e336]:
+    - generic [ref=e338]:
+      - heading "Tutkular" [level=1] [ref=e339]
+      - generic [ref=e340]: Nelerden hoşlandığını profiline ekle, herkes bilsin.
+      - generic [ref=e341]:
+        - generic [ref=e342]: En fazla 5 seç. Kaldırmak için tekrar dokun.
+        - generic [ref=e343]:
+          - button "Swimming" [ref=e344] [cursor=pointer]
+          - button "Running" [ref=e351] [cursor=pointer]
+          - button "Diving" [ref=e357] [cursor=pointer]
+          - button "Food" [ref=e363] [cursor=pointer]
+          - button "Coffee" [ref=e368] [cursor=pointer]
+          - button "Live music" [ref=e374] [cursor=pointer]
+          - button "Reading" [ref=e381] [cursor=pointer]
+          - button "Photography" [ref=e386] [cursor=pointer]
+          - button "Hiking" [ref=e393] [cursor=pointer]
+          - button "Museums" [ref=e398] [cursor=pointer]
+          - button "Board games" [ref=e403] [cursor=pointer]
+          - button "Nightlife" [ref=e409] [cursor=pointer]
+          - button "Tennis" [ref=e414] [cursor=pointer]
+          - button "Yoga" [ref=e420] [cursor=pointer]
+    - generic [ref=e426]:
+      - button "Devam et 0/5" [disabled]

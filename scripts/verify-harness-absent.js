@@ -23,6 +23,32 @@ const FORBIDDEN = [
   'D-057 visual gate',
 ];
 
+/**
+ * A preview flag baked into the export with a truthy value.
+ *
+ * The two dev-only affordances are gated differently, and the difference
+ * decides what an export can honestly be asked:
+ *
+ *   - The **harness** is a literal `process.env.EXPO_PUBLIC_VISUAL_HARNESS ===
+ *     '1'` in `App.tsx`. Expo inlines that comparison, so with the flag off the
+ *     branch is dead and the minifier takes the whole harness with it. Absence
+ *     is therefore provable, and `FORBIDDEN` proves it.
+ *
+ *   - The **simulate controls** are gated on `isFakeApiEnabled()`, which reads
+ *     `env.EXPO_PUBLIC_USE_FAKE_API` off a parameter. That is a *runtime*
+ *     read, so nothing is inlined and the branch survives minification. Their
+ *     test IDs are in every export — including correct ones. Demanding their
+ *     absence was tried and was simply a false alarm: the check failed against
+ *     a build whose gate was shut.
+ *
+ * What is true of a correct export, and false of a dangerous one, is that it
+ * carries no *assignment* of either preview flag to a truthy value. A clean
+ * build leaves `process.env` empty but for `NODE_ENV`; a build exported with
+ * the flag set bakes it in, and that build must not ship.
+ */
+const BAKED_IN_PREVIEW_FLAG =
+  /EXPO_PUBLIC_(?:USE_FAKE_API|VISUAL_HARNESS)["']?\s*[:=]\s*["'](?:1|true)["']/i;
+
 function bundleFiles(dir) {
   const found = [];
   const walk = (current) => {
@@ -44,13 +70,19 @@ function selfTest() {
   const os = require('node:os');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'harness-scan-'));
   fs.writeFileSync(path.join(dir, 'planted.js'), `var x=${JSON.stringify(FORBIDDEN[0])};`);
+  fs.writeFileSync(path.join(dir, 'flag.js'), 'process.env.EXPO_PUBLIC_USE_FAKE_API="1";');
   const found = scan(dir);
   fs.rmSync(dir, { recursive: true, force: true });
-  if (found.length === 0) {
-    console.error('self-test failed: the scan did not find a planted marker');
+  const caughtMarker = found.some((hit) => hit.includes(FORBIDDEN[0]));
+  const caughtFlag = found.some((hit) => hit.includes('EXPO_PUBLIC_USE_FAKE_API'));
+  if (!caughtMarker || !caughtFlag) {
+    console.error(
+      `self-test failed: planted marker ${caughtMarker ? 'caught' : 'MISSED'},`
+      + ` planted flag ${caughtFlag ? 'caught' : 'MISSED'}`,
+    );
     process.exit(1);
   }
-  console.log('self-test ok: a planted marker is caught');
+  console.log('self-test ok: a planted marker and a planted preview flag are both caught');
 }
 
 function scan(dir) {
@@ -60,6 +92,8 @@ function scan(dir) {
     for (const needle of FORBIDDEN) {
       if (text.includes(needle)) hits.push(`${path.relative(dir, file)}: ${needle}`);
     }
+    const baked = text.match(BAKED_IN_PREVIEW_FLAG);
+    if (baked) hits.push(`${path.relative(dir, file)}: ${baked[0]}`);
   }
   return hits;
 }
@@ -78,9 +112,14 @@ function main() {
 
   const hits = scan(DIST);
   if (hits.length > 0) {
-    console.error('the visual harness reached the production bundle:');
+    console.error('a dev-only affordance reached the production bundle:');
     for (const hit of hits) console.error(`  ${hit}`);
-    console.error('\nit must be excluded — check the EXPO_PUBLIC_VISUAL_HARNESS branch in App.tsx');
+    console.error(
+      '\nharness markers: check the EXPO_PUBLIC_VISUAL_HARNESS branch in App.tsx.'
+      + '\nbaked-in preview flag: this export was built with a preview flag set,'
+      + '\nso it can run the in-memory fake and offer the simulate controls to'
+      + '\nwhoever it is served to. Re-export without it.',
+    );
     process.exit(1);
   }
 

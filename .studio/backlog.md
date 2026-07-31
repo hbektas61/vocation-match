@@ -450,6 +450,39 @@ client work; the server already allowed every one of them.
       the second time" is how a real intermittent failure gets dismissed, so it
       is written down. Fix by awaiting the state the button depends on rather
       than the button.
+- [ ] Q-002 Same class, second test. `profilePhotoUi.test.tsx` ›
+      "keeps the rest of the set when one photo is changed" failed once inside
+      the full mobile gate on 2026-07-31 at load average **4.10** (the Expo
+      harness dev server on 8098 was competing for CPU). The assertion is
+      `waitFor(() => expect(getOwnPhotos()).toHaveLength(4))` and it saw 3 —
+      the fourth upload had not landed inside `waitFor`'s default 1000 ms.
+      Re-run alone three times: **6/6 passed each time, 6.34 s / 4.76 s /
+      4.26 s**. So it is the same shape as Q-001 — a default timeout that is
+      generous on an idle machine and not on a busy one — and the same fix
+      applies: wait on the state, and give uploads a timeout that reflects what
+      they actually do. Recorded rather than re-run into silence.
+
+## Accessibility — found by the D-057 visual gate
+
+- [ ] A-001 `Button`'s `busy` prop does not reach the accessibility tree.
+      The component's own comment says `busy` exists because "a screen reader
+      does not re-announce the label of a control that already has focus" —
+      but `Pressable` whitelists the props it forwards, so neither the native
+      test tree nor the web export carries it. Measured two ways on
+      2026-07-31: the exported web markup for a busy button was
+      `<button aria-label="Kontrol ediliyor…" role="button" aria-disabled="true" disabled>`
+      with **no `aria-busy`**, and `document.querySelectorAll('[aria-busy]')`
+      returned **0** for the whole page; in jest the host node's prop list was
+      `accessibilityRole, accessibilityLabel, testID, accessible,
+      accessibilityState, focusable, accessibilityValue, …` — `accessibilityState`
+      is there, an `aria-busy` passed alongside it is dropped.
+      Passing `aria-busy` explicitly was tried and reverted: it changed
+      nothing, and an inert line under a confident comment is worse than no
+      line. What still works is the *label*, which every busy button already
+      swaps ("Kontrol ediliyor…", "Kaydediliyor…"), so the announcement is
+      probably fine in practice — but "probably" is why this is written down.
+      Settle it with a real screen reader on a device (VoiceOver and TalkBack),
+      not in a browser; it is row 17 of `.studio/d057-device-checklist.md`.
 
 ## Superseded — the wording these replaced
 

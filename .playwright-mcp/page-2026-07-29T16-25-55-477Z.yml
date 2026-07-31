@@ -1,0 +1,24 @@
+- generic [ref=e252]:
+  - progressbar "Adım 7/10" [ref=e253]
+  - generic [ref=e255]:
+    - button "Geri" [ref=e256] [cursor=pointer]:
+      - generic [ref=e257]: ←
+    - button "Atla" [ref=e258] [cursor=pointer]
+  - generic [ref=e260]:
+    - generic [ref=e262]:
+      - heading "Cinsel yönelimim" [level=1] [ref=e263]
+      - generic [ref=e264]: En fazla 3 seç
+      - generic [ref=e265]:
+        - button "Heteroseksüel" [ref=e266] [cursor=pointer]
+        - button "Gey" [ref=e268] [cursor=pointer]
+        - button "Lezbiyen" [ref=e270] [cursor=pointer]
+        - button "Biseksüel" [ref=e272] [cursor=pointer]
+        - button "Aseksüel" [ref=e274] [cursor=pointer]
+        - button "Demiseksüel" [ref=e276] [cursor=pointer]
+        - button "Panseksüel" [ref=e278] [cursor=pointer]
+        - button "Queer" [ref=e280] [cursor=pointer]
+        - button "Sorgulama sürecinde" [ref=e282] [cursor=pointer]
+      - generic [ref=e284]: Bu bilgi, sana kimin gösterileceğine asla karar vermez.
+    - generic [ref=e285]:
+      - checkbox "Yönelimimi profilimde göster" [ref=e286] [cursor=pointer]
+      - button "Devam et" [ref=e289] [cursor=pointer]

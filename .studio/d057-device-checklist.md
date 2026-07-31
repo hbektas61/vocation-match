@@ -41,12 +41,16 @@ recording where it failed.
 | 14 | Etkinlikler → Etkinliğe Gideceğim → Keşfet | The deck opens on the event; the membership stands |
 | 15 | Etkinlikler → **Şu An Etkinlikteyim without declaring** → Keşfet | The live room opens and **no upcoming membership is created** (E-21). Check `Etkinliklerin` afterwards: it must be empty |
 | 16 | Match → Chat | The match moment names the room it came from; the chat header carries the same source line; neither claims a venue you were not at |
+| 17 | **VoiceOver / TalkBack on any button that works** (save dates, presence check, rescan) | Pressing it announces that something is happening. The web export carries **no `aria-busy`** and `Pressable` drops the prop, so `busy` may be doing nothing and only the label swap (“Kontrol ediliyor…”) is left. This is backlog A-001, and a browser cannot answer it |
 
 ## Notes for whoever runs this
 
-- The Here Now simulate card appears only for a venue the fixture catalogue
-  knows. Against a real backend it does not exist — if you see it on a
-  staging build with real data, that is a defect worth reporting.
+- The Here Now simulate card is gated on the preview build flag
+  (`EXPO_PUBLIC_USE_FAKE_API`), not on the fixture catalogue — it used to be
+  the catalogue, which is bundled, so a real venue carrying a fixture id could
+  have shown it. Against a real backend the card does not exist at all, and
+  `scripts/check.sh` fails the export if its test IDs appear. If you see it on
+  a staging build with real data, stop and report it.
 - Events are off in production (`EVENTS_FEATURE_ENABLED`), pending E-012.
   On the preview build they are on, which is why rows 14 and 15 are testable.
 - If a check fails, the frame it belongs to is in

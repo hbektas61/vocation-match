@@ -8,6 +8,7 @@ import {
   deviceLocation,
   fixedLocation,
   getApi,
+  isFakeApiEnabled,
   type ForegroundLocationReader,
 } from '../data';
 import { getHotelById } from '../fixtures/hotels';
@@ -50,7 +51,16 @@ export function HereNowScreen({
   // knows nothing, and requiring it here told people with a real active
   // hotel that they had none. It now gates only the simulation card, which
   // is the one thing that genuinely needs the fixture's coordinates.
-  const simulationSource = getHotelById(state.activeHotel?.hotelId ?? null);
+  //
+  // The fixture catalog is *bundled*, though, so "the catalog knows this id"
+  // was never a safe gate on its own: a real member whose active venue
+  // happened to carry a fixture id would have been handed three buttons that
+  // fake a location reading. The build flag is the actual gate — the same one
+  // `CheckinScreen` uses — and it is inlined at build time, so in a real
+  // export this card is not merely hidden, it is not there.
+  const simulationSource = isFakeApiEnabled()
+    ? getHotelById(state.activeHotel?.hotelId ?? null)
+    : null;
 
   if (!state.activeHotel) {
     return (
@@ -158,9 +168,9 @@ export function HereNowScreen({
       <Card>
         <Body>{COPY.hereNow.realCheckIntro}</Body>
         <Button
-          label={COPY.hereNow.realCheckButton}
+          label={checking ? COPY.hereNow.checking : COPY.hereNow.realCheckButton}
+          busy={checking}
           onPress={() => runCheck(reader)}
-          disabled={checking}
           testID="check-presence"
         />
       </Card>

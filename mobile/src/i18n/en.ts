@@ -431,6 +431,12 @@ export const en = {
     checkButton: 'Check place proximity',
     realCheckIntro: 'Use your current location for a one-time foreground check. Nothing runs in the background.',
     realCheckButton: 'Use my current location',
+    /**
+     * A disabled button with an unchanged label tells nobody that their press
+     * registered. This check can also wait on a permission prompt, so the
+     * screen has to say what it is doing rather than just going quiet.
+     */
+    checking: 'Checking…',
     inRange: 'You are in. At the Hotel is open for this place.',
     goToDiscovery: 'Go to discovery',
     stopSharingError:

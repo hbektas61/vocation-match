@@ -1,0 +1,21 @@
+- generic [ref=e692]:
+  - heading "Tatilden Önce" [level=1] [ref=e693]
+  - generic [ref=e694]: Konaklama tarihlerini beyan et. Belge yok, kanıt yok — beyanın yeter.
+  - generic [ref=e695]:
+    - generic [ref=e696]: GİRİŞ TARİHİ
+    - generic [ref=e697]:
+      - textbox "Giriş tarihi" [ref=e699]:
+        - /placeholder: 2026-08-01
+        - text: 2026-07-29
+      - generic [ref=e700]: YYYY-AA-GG biçimini kullan, örneğin 2026-08-01.
+  - generic [ref=e701]:
+    - generic [ref=e702]: ÇIKIŞ TARİHİ
+    - generic [ref=e703]:
+      - textbox "Çıkış tarihi" [ref=e705]:
+        - /placeholder: 2026-08-01
+        - text: 2026-08-05
+      - generic [ref=e706]: YYYY-AA-GG biçimini kullan, örneğin 2026-08-01.
+  - generic [ref=e707]: Tarihlerini yalnız tarihleri çakışanlar bilir; kimseye belge gösterilmez.
+  - alert [ref=e713]:
+    - generic [ref=e714]: Devam etmek için yeniden giriş yap.
+  - button "Tarihleri kaydet" [ref=e711] [cursor=pointer]

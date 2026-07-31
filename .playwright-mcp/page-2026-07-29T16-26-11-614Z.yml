@@ -1,0 +1,13 @@
+- generic [ref=e291]:
+  - progressbar "Adım 8/10" [ref=e292]
+  - button "Geri" [ref=e295] [cursor=pointer]:
+    - generic [ref=e296]: ←
+  - generic [ref=e298]:
+    - generic [ref=e300]:
+      - heading "Bana göster" [level=1] [ref=e301]
+      - generic [ref=e302]: Bu senin akışını şekillendirir. Profilinde asla görünmez.
+      - generic [ref=e303]:
+        - button "Kadınlar" [ref=e304] [cursor=pointer]
+        - button "Erkekler" [ref=e309] [cursor=pointer]
+        - button "Herkes" [active] [ref=e314] [cursor=pointer]
+    - button "Devam et" [ref=e327] [cursor=pointer]

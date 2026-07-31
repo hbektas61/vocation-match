@@ -672,6 +672,89 @@ the `event_id`. Across a cold start it does not. Closing this needs either
 "what am I live at" read — **a backend contract change, which this pass is not
 allowed to make.** Recorded rather than worked around.
 
+### Group 2 — Tatilim, the venue chain end to end
+
+Driven through the ordinary app (no harness): onboarding → destination →
+venue → dates → presence check, at 390×844.
+
+| Frame | Node | Capture | Comparison | Difference found | Fix | Re-verified |
+| --- | --- | --- | --- | --- | --- | --- |
+| T-04 destination — no result | `33:177` | `app-T-04.png` | matches | none | — | "Bu aramayla eşleşen yer yok." and the field keeps what was typed |
+| T-06 venue — Konaklama filter | `33:223` | `app-T-06.png` | matches | none | — | the chip narrows to lodging, one result, "Powered by Google" beneath the list rather than beside a pin |
+| T-13 dates — form | `35:200` | `app-T-13b.png` | matches | none | — | pre-filled with today and +7, each field carrying its own YYYY-AA-GG hint |
+| T-14 Tatilden Önce — open | `35:222` | `app-T-14.png` | matches | none | — | "Açık · Tarihlerin: 10 Ağu – 15 Ağu. Tarihi çakışan kişiler destede." and the card gains the dates |
+| T-18 Oteldeyim — checking | `36:154` | `app-T-18.png` | **differed** | the button went disabled and said nothing | label + `busy` | reads "Kontrol ediliyor…" mid-flight |
+
+**Two defects, one of them the owner's own constraint.**
+
+1. **T-18 said nothing while it worked.** `HereNowScreen` passed
+   `disabled={checking}`, so the control greyed out with its label unchanged.
+   Every other screen in the app already does `label={busy ? …ing : …}` plus
+   `busy=`; this one was the exception. It matters more here than elsewhere,
+   because this check can sit waiting on an OS permission prompt — in the
+   browser run it never resolved at all, leaving a dead grey button and no
+   explanation. Now `COPY.hereNow.checking` / `busy`, verified in a real
+   render: `{"label":"Kontrol ediliyor…"}`.
+
+2. **The simulate buttons could reach a real build.** The brief says plainly:
+   *"Production/staging kullanıcılarına simulate veya visual harness yolu
+   açma."* `CheckinScreen` gates its preview chips on `isFakeApiEnabled()`.
+   `HereNowScreen` gated its three on `getHotelById(activeHotelId)` — the
+   *fixture catalogue*, which is bundled. So a member on the real backend
+   whose active venue happened to carry a fixture id would have been handed
+   "Simulate: I am at the hotel" — a button that fakes the one reading the
+   presence check exists to make unfakeable. Now gated on the same build flag,
+   with two regression tests (present in the preview build, absent without it,
+   and the real check surviving either way).
+
+   **The first attempt at proving this was wrong, and the gate caught it.**
+   `scripts/verify-harness-absent.js` was extended to demand the simulate test
+   IDs be absent from the export — and it failed against a build whose gate
+   was shut. The reason is worth keeping: the harness flag is a literal
+   `process.env.EXPO_PUBLIC_VISUAL_HARNESS === '1'` in `App.tsx`, which Expo
+   inlines, so the branch really is dead and really is removed. But
+   `isFakeApiEnabled()` reads `env.EXPO_PUBLIC_USE_FAKE_API` off a parameter —
+   a *runtime* read. Nothing is inlined, the branch survives minification, and
+   its test IDs are in every export including a correct one. Absence was never
+   true, so it was the wrong thing to assert.
+
+   What a correct export *does* prove is that no preview flag is baked into
+   it: a clean build leaves `process.env` holding nothing but `NODE_ENV`,
+   while a build exported with the flag set writes it in. That is what the
+   scanner checks now, and its self-test plants both a harness marker and a
+   truthy flag and fails if either is missed. The behaviour itself — the
+   controls not being offered — is held by the two regression tests, which is
+   the right place for a runtime gate to be held.
+
+**Not a defect, though it looked like one.** The date fields refuse
+`20260810` and want `2026-08-10`. That is what the hint asks for, and they
+arrive pre-filled with a valid pair, so pressing save without typing anything
+works. The first automated attempts failed because the typing appended to the
+existing value, not because the screen is wrong.
+
+### Group 3 — Çevremde, the Google chain
+
+| Frame | Node | Capture | Comparison | Difference found | Fix | Re-verified |
+| --- | --- | --- | --- | --- | --- | --- |
+| N-02 intro / permission | `37:156` | `app-N-02.png` | matches | none | — | the explanation precedes the reading, and declining leaves the list and the anchor working |
+| N-03/N-04 list and catalogue search | `37:175` / `37:241` | `app-N-04.png` | matches | none | — | list, search field, OSM credit, `checkin-here` always present |
+| N-05 advanced-search entry | `37:271` | `app-N-05.png` | matches | none | — | "Google ile daha fazla mekân ara" appears only after a name is typed *and* the catalogue came up empty |
+| N-07 allowance remaining | `37:321` | `app-N-11-google.png` | matches | none | — | "Bu ay 10 Google destekli check-in hakkının 10 tanesi kaldı" — from the server, named for the thing it counts |
+| N-09 provider unavailable | `38:174` | `app-N-09-google.png` | matches | none | — | "Şu an ek arama yapılamıyor. Listeden seçebilir ya da buradayım diyebilirsin." |
+| N-08 allowance exhausted | `38:155` | `app-N-08-google.png` | **frame and behaviour differ** | see below | none — the behaviour is the correct one | — |
+
+**N-08 is where the frame is wrong, and D-053 is right.** The frame draws the
+exhausted allowance as a *pre-search block*. The product does not block the
+search: D-053 spends the right only on a **completed** Google-labelled
+check-in, precisely so that a search finding nothing costs the user nothing.
+Somebody with no allowance left can still search and is refused at check-in.
+
+What the screen does owe them is fair warning, and that is what the N-07 line
+now gives — it reads "0 kaldı" before the button is pressed rather than after.
+The frame should be corrected to match the product, not the other way round.
+Reaching the exhausted state in the browser would mean completing three
+Google-labelled check-ins in the seed; it is **not claimed as seen**.
+
 ### Still not done
 
 - **84 frames** not yet compared against a render.

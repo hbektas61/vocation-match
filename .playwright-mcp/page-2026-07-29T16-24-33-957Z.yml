@@ -1,0 +1,10 @@
+- generic [ref=e112]:
+  - progressbar "Adım 4/10" [ref=e113]
+  - generic [ref=e118]:
+    - generic [ref=e120]:
+      - heading "Sana nasıl seslenelim?" [level=1] [ref=e121]
+      - generic [ref=e122]: Kartında görünen isim bu. Başkaları bundan fazlasını görmez.
+      - textbox "Görünen ad" [active] [ref=e125]:
+        - /placeholder: Seni nasıl gösterelim?
+    - generic [ref=e126]:
+      - button "Devam et" [disabled]

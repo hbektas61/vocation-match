@@ -1,0 +1,15 @@
+- generic [ref=e86]:
+  - progressbar "Adım 3/10" [ref=e87]
+  - button "Geri" [ref=e90] [cursor=pointer]:
+    - generic [ref=e91]: ←
+  - generic [ref=e93]:
+    - generic [ref=e95]:
+      - heading "Altı haneli kodu gir." [level=1] [ref=e96]
+      - generic [ref=e97]: SMS ile gönderdik. Aynı kod yeni hesap açar ya da mevcut hesabını açar.
+      - generic [ref=e98]: "Kod şu numaraya gönderildi: +••••••2333"
+      - textbox "Altı haneli SMS kodu" [active] [ref=e101]:
+        - /placeholder: "123456"
+      - 'button "Yeni kod: 60 sn sonra" [disabled]'
+      - generic [ref=e103]: "Önizleme kodu: 123456"
+    - generic [ref=e104]:
+      - button "Kodu onayla" [disabled]

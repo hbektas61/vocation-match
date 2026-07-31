@@ -1,0 +1,35 @@
+- generic [ref=e552]:
+  - generic [ref=e558]:
+    - generic [ref=e559]:
+      - heading "Tatilim" [level=1] [ref=e560]
+      - button "Ayarlar" [ref=e561] [cursor=pointer]
+    - textbox "Otel ara" [ref=e570]:
+      - /placeholder: Otel adı veya şehir
+    - button "Lara Shore Resort. Otel detaylarını gör" [ref=e650] [cursor=pointer]:
+      - generic [ref=e653]:
+        - generic [ref=e654]: Lara Shore Resort
+        - generic [ref=e655]: Antalya, Türkiye
+        - generic [ref=e660]: Seçildi · Aktif
+    - generic [ref=e664]:
+      - generic [ref=e665]:
+        - generic [ref=e666]: TATİLDEN ÖNCE
+        - generic "Kapalı" [ref=e667]
+      - generic [ref=e670]: Konaklama tarihlerini sen beyan edersin.
+      - generic [ref=e671]: Aynı tarihlerde aynı otelde olacak kişilerle tatilden önce tanış.
+      - generic [ref=e672]: Kapalı — girmek için konaklama tarihlerini beyan et.
+      - generic [ref=e673]: 7 kişi
+      - button "Tarihleri kaydet" [ref=e674] [cursor=pointer]
+    - generic [ref=e676]:
+      - generic [ref=e677]:
+        - generic [ref=e678]: OTELDEYİM
+        - generic "Kapalı" [ref=e679]
+      - generic [ref=e682]: Oteldeyim, uygulama açıkken yapılan tek seferlik bir konum kontrolüyle açılır.
+      - generic [ref=e683]: Oteldeyken tek seferlik konum kontrolüyle şu an oradakilerle tanış.
+      - generic [ref=e684]: Kapalı — girmek için bir yakınlık kontrolü yap.
+      - button "Otel yakınlığını kontrol et" [ref=e685] [cursor=pointer]
+  - generic [ref=e595]:
+    - button "Tatilim" [ref=e596] [cursor=pointer]
+    - button "Çevremde" [ref=e602] [cursor=pointer]
+    - button "Keşfet" [ref=e608] [cursor=pointer]
+    - button "Gelen kutusu" [ref=e614] [cursor=pointer]
+    - button "Ayarlar" [ref=e620] [cursor=pointer]

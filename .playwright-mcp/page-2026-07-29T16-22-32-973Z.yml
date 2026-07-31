@@ -1,0 +1,14 @@
+- generic [ref=e67]:
+  - progressbar "Adım 2/10" [ref=e68]
+  - button "Geri" [ref=e71] [cursor=pointer]:
+    - generic [ref=e72]: ←
+  - generic [ref=e74]:
+    - generic [ref=e76]:
+      - heading "Telefon numaran nedir?" [level=1] [ref=e77]
+      - generic [ref=e78]: Numaranı yalnız giriş için kullanırız; profilinde asla görünmez.
+      - generic [ref=e80]:
+        - generic [ref=e81]: "+90"
+        - textbox "Telefon numarası, Türkiye, ülke kodu artı 90" [active] [ref=e82]:
+          - /placeholder: 555 111 22 33
+    - generic [ref=e83]:
+      - button "Kod gönder" [disabled]

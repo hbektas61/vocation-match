@@ -406,6 +406,7 @@ export const tr: Copy = {
     checkButton: 'Mekân yakınlığını kontrol et',
     realCheckIntro: 'Mevcut konumun tek seferlik, ön planda bir kontrol için kullanılır. Arka planda hiçbir şey çalışmaz.',
     realCheckButton: 'Mevcut konumumu kullan',
+    checking: 'Kontrol ediliyor…',
     inRange: 'İçerdesin. Oteldeyim bu mekân için açık.',
     goToDiscovery: 'Keşfete git',
     stopSharingError:

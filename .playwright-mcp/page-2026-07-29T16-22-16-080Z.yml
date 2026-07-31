@@ -1,0 +1,12 @@
+- generic [ref=e12]:
+  - radiogroup "Dil" [ref=e36]:
+    - radio "English" [ref=e18] [cursor=pointer]
+    - radio "Türkçe" [active] [ref=e20] [cursor=pointer]
+  - generic [ref=e22]:
+    - heading "Vacation Match" [level=1] [ref=e23]
+    - heading "Otelindeki insanlarla şimdi tanış ❤" [level=1] [ref=e37]
+    - generic [ref=e25]: Şu an olduğun ya da gideceğin oteli seç; aynı tarihlerde orada olanlarla eşleş. Aynı anda tek otel.
+    - generic [ref=e31]:
+      - generic [ref=e32]: Güvenli ve gizli
+      - generic [ref=e33]: Kimliğin gizli kalır. Rezervasyon, belge ya da kimlik istenmez.
+    - button "Telefonla devam et" [ref=e38] [cursor=pointer]

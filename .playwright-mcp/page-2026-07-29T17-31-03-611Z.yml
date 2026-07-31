@@ -1,0 +1,34 @@
+- generic [ref=f1e243]:
+  - generic [ref=f1e249]:
+    - generic [ref=f1e250]:
+      - heading "Tatilim" [level=1] [ref=f1e251]
+      - button "Ayarlar" [ref=f1e252] [cursor=pointer]
+    - textbox "Otel ara" [ref=f1e259]:
+      - /placeholder: Otel adı veya şehir
+    - button "Lara Shore Resort. Otel detaylarını gör" [ref=f1e260] [cursor=pointer]:
+      - generic [ref=f1e263]:
+        - generic [ref=f1e264]: Lara Shore Resort
+        - generic [ref=f1e265]: Antalya, Türkiye · 29 Tem – 5 Ağu
+        - generic [ref=f1e270]: Seçildi · Aktif
+    - generic [ref=f1e274]:
+      - generic [ref=f1e275]:
+        - generic [ref=f1e276]: TATİLDEN ÖNCE
+        - generic "Açık" [ref=f1e277]
+      - generic [ref=f1e280]: "Tarihlerin: 29 Tem – 5 Ağu. Tarihi çakışan kişiler destede."
+      - generic [ref=f1e281]: 6 kişi
+      - button "Kişileri keşfet" [ref=f1e282] [cursor=pointer]
+      - button "Tarihleri güncelle" [ref=f1e284] [cursor=pointer]
+    - generic [ref=f1e286]:
+      - generic [ref=f1e287]:
+        - generic [ref=f1e288]: OTELDEYİM
+        - generic "Kapalı" [ref=f1e289]
+      - generic [ref=f1e292]: Oteldeyim, uygulama açıkken yapılan tek seferlik bir konum kontrolüyle açılır.
+      - generic [ref=f1e293]: Oteldeyken tek seferlik konum kontrolüyle şu an oradakilerle tanış.
+      - generic [ref=f1e294]: Kapalı — girmek için bir yakınlık kontrolü yap.
+      - button "Otel yakınlığını kontrol et" [ref=f1e295] [cursor=pointer]
+  - generic [ref=f1e298]:
+    - button "Tatilim" [ref=f1e299] [cursor=pointer]
+    - button "Çevremde" [ref=f1e305] [cursor=pointer]
+    - button "Keşfet" [ref=f1e311] [cursor=pointer]
+    - button "Gelen kutusu" [ref=f1e317] [cursor=pointer]
+    - button "Ayarlar" [ref=f1e323] [cursor=pointer]

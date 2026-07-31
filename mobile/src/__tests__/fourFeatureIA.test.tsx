@@ -463,3 +463,51 @@ describe('D-057 the deck offers the event rooms it promises', () => {
     expect(selector.props.accessibilityLabel).toContain(COPY.events.joinUpcoming);
   });
 });
+
+describe('the simulation controls are a preview-build affordance', () => {
+  /**
+   * These chips fake a location reading, which is the one thing a presence
+   * check exists to make impossible to fake. They were gated on the *fixture
+   * catalogue* knowing the active venue's id — and that catalogue is bundled,
+   * so a real member whose venue carried a fixture id would have been handed
+   * them. The gate is the build flag now.
+   */
+  it('is there in the preview build', async () => {
+    await onboardWithHotel('Deniz');
+    await fireEvent.press(await screen.findByTestId('tab-Vacation'));
+    await fireEvent.press(await screen.findByTestId('open-here-now'));
+
+    expect(await screen.findByTestId('simulate-near')).toBeTruthy();
+  });
+
+  it('is absent from a build that is not the in-memory preview', async () => {
+    const flag = process.env.EXPO_PUBLIC_USE_FAKE_API;
+    delete process.env.EXPO_PUBLIC_USE_FAKE_API;
+    try {
+      await onboardWithHotel('Deniz');
+      await fireEvent.press(await screen.findByTestId('tab-Vacation'));
+      await fireEvent.press(await screen.findByTestId('open-here-now'));
+
+      expect(screen.queryByTestId('simulate-near')).toBeNull();
+      expect(screen.queryByTestId('simulate-far')).toBeNull();
+      expect(screen.queryByTestId('simulate-deny')).toBeNull();
+      // The real check is still offered — the gate removes the fakes, not the
+      // one control that actually asks the device where it is.
+      expect(await screen.findByTestId('check-presence')).toBeTruthy();
+    } finally {
+      process.env.EXPO_PUBLIC_USE_FAKE_API = flag;
+    }
+  });
+
+  it('says a check is running rather than going quiet', async () => {
+    await onboardWithHotel('Deniz');
+    await fireEvent.press(await screen.findByTestId('tab-Vacation'));
+    await fireEvent.press(await screen.findByTestId('open-here-now'));
+
+    const button = await screen.findByTestId('check-presence');
+    // A disabled control whose label never changes tells nobody their press
+    // registered, and this check can sit waiting on a permission prompt.
+    expect(button.props.accessibilityLabel).toBe(COPY.hereNow.realCheckButton);
+    expect(COPY.hereNow.checking).not.toBe(COPY.hereNow.realCheckButton);
+  });
+});

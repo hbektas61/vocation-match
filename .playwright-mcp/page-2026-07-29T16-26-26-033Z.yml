@@ -1,0 +1,22 @@
+- generic [ref=e428]:
+  - progressbar "Adım 10/10" [ref=e429]
+  - button "Geri" [ref=e432] [cursor=pointer]:
+    - generic [ref=e433]: ←
+  - generic [ref=e435]:
+    - generic [ref=e437]:
+      - heading "Bir fotoğraf ekle." [level=1] [ref=e438]
+      - generic [ref=e439]: Fotoğrafın özel olarak saklanır. Yalnız şu an seninle aynı odada olanlar ya da eşleştiklerin görebilir.
+      - generic [ref=e440]:
+        - generic [ref=e441]: En fazla 9. Sırayı değiştirmek için bir fotoğrafı basılı tutup sürükle — ilki, insanların ilk gördüğüdür.
+        - generic [ref=e442]:
+          - button "Fotoğraf 1 ekle" [ref=e443] [cursor=pointer]:
+            - generic [ref=e444]: +
+          - button "Fotoğraf 2 ekle" [disabled]
+          - button "Fotoğraf 3 ekle" [disabled]
+          - button "Fotoğraf 4 ekle" [disabled]
+          - button "Fotoğraf 5 ekle" [disabled]
+          - button "Fotoğraf 6 ekle" [disabled]
+          - button "Fotoğraf 7 ekle" [disabled]
+          - button "Fotoğraf 8 ekle" [disabled]
+          - button "Fotoğraf 9 ekle" [disabled]
+    - button "Bitti" [ref=e446] [cursor=pointer]

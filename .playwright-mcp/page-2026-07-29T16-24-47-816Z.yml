@@ -1,0 +1,39 @@
+- generic [ref=e129]:
+  - progressbar "Adım 5/10" [ref=e130]
+  - button "Geri" [ref=e133] [cursor=pointer]:
+    - generic [ref=e134]: ←
+  - generic [ref=e136]:
+    - generic [ref=e138]:
+      - heading "Doğum tarihin nedir?" [level=1] [ref=e139]
+      - generic [ref=e140]: Yalnız yaşın görünür. Tarihin kendisi kimseyle paylaşılmaz.
+      - generic [ref=e141]:
+        - generic [ref=e142] [cursor=pointer]:
+          - generic: GG/AA/YYYY
+          - textbox "Doğum tarihi" [active] [ref=e143]
+        - generic [ref=e144]: Gün, ay, yıl — örneğin 01/03/1994.
+      - generic [ref=e145]:
+        - generic [ref=e146]:
+          - button "1" [ref=e147] [cursor=pointer]
+          - button "2" [ref=e149] [cursor=pointer]:
+            - generic [ref=e151]: ABC
+          - button "3" [ref=e152] [cursor=pointer]:
+            - generic [ref=e154]: DEF
+        - generic [ref=e155]:
+          - button "4" [ref=e156] [cursor=pointer]:
+            - generic [ref=e158]: GHI
+          - button "5" [ref=e159] [cursor=pointer]:
+            - generic [ref=e161]: JKL
+          - button "6" [ref=e162] [cursor=pointer]:
+            - generic [ref=e164]: MNO
+        - generic [ref=e165]:
+          - button "7" [ref=e166] [cursor=pointer]:
+            - generic [ref=e168]: PQRS
+          - button "8" [ref=e169] [cursor=pointer]:
+            - generic [ref=e171]: TUV
+          - button "9" [ref=e172] [cursor=pointer]:
+            - generic [ref=e174]: WXYZ
+        - generic [ref=e175]:
+          - button "0" [ref=e177] [cursor=pointer]
+          - button "Geri" [ref=e179] [cursor=pointer]
+    - generic [ref=e183]:
+      - button "Devam et" [disabled]
