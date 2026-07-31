@@ -28,7 +28,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { Caption, Chip, EmptyState, Field, Notice } from './ui';
 import { COPY } from '../copy';
 import { ApiError, getApi, type GooglePlaceHit, type VenueSearchMode } from '../data';
-import { color, fontFamily, radius, spacing } from '../theme';
+import { color, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
 
 /** The server's floor, mirrored so a request is never made below it. */
 export const VENUE_MIN_QUERY = 3;
@@ -332,11 +332,18 @@ const styles = StyleSheet.create({
     color: color.inkMuted,
     marginBottom: spacing.sm,
   },
+  /**
+   * "Change destination" is a real control — it throws away the destination you
+   * picked and starts the search again — but it was a bare text row, measured
+   * 350×16 on the running app. Everything else operable in this product is at
+   * least 44 tall; a link that undoes a step should not be the exception.
+   */
   changeRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: MIN_TOUCH,
     gap: spacing.xs,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   changeText: {
     fontFamily: fontFamily.body,

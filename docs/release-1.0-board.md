@@ -42,6 +42,7 @@ kanıt · severity · fix commit · gerçek yeniden test.
 
 | ID | Ekran / akış | Viewport | Tekrar | Beklenen | Görülen | Sev | Fix | Yeniden test |
 |---|---|---|---|---|---|---|---|---|
+| R-011 | Yakınlık kontrolü sonucu — sonuç ekranı yalnız bir `Notice` | 390×844 | Oteldeyim → konum kontrolü → çok uzak/hassas değil | D-058 çerçevesi (T-19/T-20): bildirim + "ne oldu" kartı + iki adlandırılmış CTA | Yalnız kırmızı bildirim; tekrar deneme aynı izin düğmesinden yapılıyor | P2 | — | Hami: zenginleştirelim mi? |
 | R-009 | Gelen kutusu — boş durum görseli | — | — | Temaya uygun (mercan paleti) bir görsel | Şu an görselsiz; alt tarafta ~370pt boş alan | P2 · **bekliyor** | — | Görsel hazırlanınca |
 
 > R-009: Hami "lavanta render dönmesin, temaya uygun bir şey koyarız" dedi.
@@ -63,6 +64,7 @@ kanıt · severity · fix commit · gerçek yeniden test.
 | R-007 | Sohbette aynı karede dört dokunuş **üç kopya mesaj** gönderiyordu (`sending` React state olduğu için aynı tick'te false) | P2 | Senkron `sendingRef` koruması; `sending` hâlâ ekranı sürüyor | Aynı burst → **1 mesaj**; insan çift dokunuşu (180ms) zaten 1'di |
 | R-008 | Çevremde mekân listesi, uygulamada başlığının üstünde wordmark basan tek ekrandı | P2 | Owner kararı: kaldırıldı (`brandRow`/`brandText` ve artık kullanılmayan `HeartGlyph` ile birlikte) | Çalışan uygulamada başlık artık yalnız "Nearby" + profil halkası |
 | R-006 | Gelen kutusu boş durumundaki gece teması hero'su | P1 | Kaldırıldı (R-002 ile); lavanta render geri getirilmedi — owner kararı | `rt-12-inbox-no-hero.png`; ekran krem zeminde kendi kartıyla duruyor |
+| R-010 | VenuePicker'da "Change destination" **350×16** — seçilen destinasyonu atan gerçek bir kontrol, 44'ün çok altında | P2 | `minHeight: MIN_TOUCH` | Çalışan uygulamada ölçüldü |
 
 ## Day 1 — runtime ekran envanteri
 
@@ -98,7 +100,14 @@ Durum kodları: `⬜ denenmedi` · `🟦 yürütüldü` · `✅ yürütüldü + 
 | 22 | Sohbet — boş, yazma, gönderme, hızlı tekrar dokunma | ✅ **R-007** |
 | 23 | Etkinlikler — bölge seçilmemiş | ✅ |
 | 24 | Ayarlar — profil, fotoğraf ızgarası | ✅ |
-| 25 | Tatilden Önce — tarih beyanı | ⬜ aktif tatil mekânı gerekiyor |
+| 25 | Tatilden Önce — tarih beyanı + kaydetme | ✅ `rt-13-upcoming.png` |
+| 28 | Tatil mekânı seçimi — destinasyon boşta / sonuçlar | ✅ |
+| 29 | Tatil mekânı seçimi — mekân boşta / sonuçlar / çipler | ✅ **R-010** |
+| 30 | Tatil mekânı — seçildi ve aktifleşti | ✅ |
+| 31 | Oteldeyim — izin ekranı | ✅ |
+| 32 | Oteldeyim — "Kontrol ediliyor…" (yükleme) | ✅ |
+| 33 | Oteldeyim — çok uzakta (TOO_FAR) | ✅ `rt-14-too-far.png` · **R-011** |
+| 34 | Oteldeyim — konum hassas değil | ✅ harness, temiz |
 | 26 | Profilini düzenle | ✅ |
 | 27 | Ayarlar → fotoğraf ızgarası | ✅ |
 | — | Paywall placeholder | ⬜ Phase 4, O-05/O-09 bekliyor |
