@@ -320,6 +320,8 @@ export const en = {
     permissionDenied: 'Location permission is needed to search around you.',
     joinUpcoming: 'I am going',
     joinHereNow: 'I am at the event now',
+    joining: 'Saving…',
+    checkingLive: 'Checking…',
     roomChoiceTitle: 'How do you want to join this event?',
     joined: 'You are going. The room is open.',
     joinedRoomCta: 'See who is going',

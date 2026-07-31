@@ -306,6 +306,8 @@ export const tr: Copy = {
     permissionDenied: 'Çevrende aramak için konum izni gerekli.',
     joinUpcoming: 'Etkinliğe Gideceğim',
     joinHereNow: 'Şu An Etkinlikteyim',
+    joining: 'Kaydediliyor…',
+    checkingLive: 'Kontrol ediliyor…',
     roomChoiceTitle: 'Bu etkinlikte nasıl katılmak istiyorsun?',
     joined: 'Gidiyorsun. Oda açıldı.',
     joinedRoomCta: 'Gidenleri gör',

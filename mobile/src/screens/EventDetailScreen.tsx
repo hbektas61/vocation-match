@@ -52,14 +52,22 @@ export function EventDetailScreen({
   reader = deviceLocation,
 }: RootScreenProps<'EventDetail'> & { reader?: ForegroundLocationReader }) {
   const [joined, setJoined] = useState<MyEvent | null>(null);
-  const [busy, setBusy] = useState(false);
+  /**
+   * Which action is in flight, not merely *that* one is. A single boolean
+   * disabled both CTAs and changed neither label, so pressing one left the
+   * screen inert and silent — and this check waits on a location prompt, so
+   * "inert and silent" can last a while. Knowing which one lets exactly that
+   * button say what it is doing.
+   */
+  const [pending, setPending] = useState<'join' | 'live' | 'verify' | null>(null);
+  const busy = pending !== null;
   /** E-24: the withdraw confirmation is open. */
   const [withdrawing, setWithdrawing] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<EventPresenceAnswer['outcome'] | null>(null);
 
   const join = async () => {
-    setBusy(true);
+    setPending('join');
     setProblem(null);
     try {
       const mine = await getApi().joinEventUpcoming(route.params.selectionToken);
@@ -67,7 +75,7 @@ export function EventDetailScreen({
     } catch (error) {
       setProblem(error instanceof ApiError ? apiErrorMessage(error.code) : COPY.errors.unknown);
     } finally {
-      setBusy(false);
+      setPending(null);
     }
   };
 
@@ -77,7 +85,7 @@ export function EventDetailScreen({
    * somebody who *has* joined — it needs no token and re-uses their event.
    */
   const verifyFromSelection = async () => {
-    setBusy(true);
+    setPending('live');
     setProblem(null);
     setOutcome(null);
     try {
@@ -97,13 +105,13 @@ export function EventDetailScreen({
     } catch (error) {
       setProblem(error instanceof ApiError ? apiErrorMessage(error.code) : COPY.errors.unknown);
     } finally {
-      setBusy(false);
+      setPending(null);
     }
   };
 
   const verify = async () => {
     if (!joined) return;
-    setBusy(true);
+    setPending('verify');
     setProblem(null);
     setOutcome(null);
     try {
@@ -129,7 +137,7 @@ export function EventDetailScreen({
     } catch (error) {
       setProblem(error instanceof ApiError ? apiErrorMessage(error.code) : COPY.errors.unknown);
     } finally {
-      setBusy(false);
+      setPending(null);
     }
   };
 
@@ -200,13 +208,15 @@ export function EventDetailScreen({
               separate claims, and the hotel room has been protected from that
               same inversion since D-002. */}
           <Button
-            label={COPY.events.joinUpcoming}
+            label={pending === 'join' ? COPY.events.joining : COPY.events.joinUpcoming}
+            busy={pending === 'join'}
             onPress={join}
             disabled={busy}
             testID="event-join-upcoming"
           />
           <Button
-            label={COPY.events.joinHereNow}
+            label={pending === 'live' ? COPY.events.checkingLive : COPY.events.joinHereNow}
+            busy={pending === 'live'}
             variant="secondary"
             onPress={verifyFromSelection}
             disabled={busy}
@@ -219,7 +229,8 @@ export function EventDetailScreen({
         <Card>
           <Body>{COPY.events.joinHereNow}</Body>
           <Button
-            label={COPY.events.joinHereNow}
+            label={pending === 'verify' ? COPY.events.checkingLive : COPY.events.joinHereNow}
+            busy={pending === 'verify'}
             onPress={verify}
             disabled={busy}
             testID="event-verify-here-now"

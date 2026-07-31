@@ -759,6 +759,34 @@ The frame should be corrected to match the product, not the other way round.
 Reaching the exhausted state in the browser would mean completing three
 Google-labelled check-ins in the seed; it is **not claimed as seen**.
 
+### Group 4 — Etkinlikler, walked from a real account
+
+| Frame | Node | Capture | Comparison | Difference found | Fix | Re-verified |
+| --- | --- | --- | --- | --- | --- | --- |
+| E-01 area picker | `40:71` | `app-E-01b.png` | matches | none | — | free-text area, "buradayım" shortcut, and an empty state before any area is chosen |
+| E-03 area chosen — list | `40:150` | `app-E-05b.png` | matches | none | — | region label + "Konumu değiştir", four category chips, two buckets |
+| E-06 today — empty | `41:118` | `app-E-05b.png` | matches | none | — | "Bu bölgede ve bu tarihlerde etkinlik bulunamadı." under its own heading, while the upcoming bucket still lists nine |
+| E-07 upcoming — list | `41:140` | `app-E-05b.png` | matches | none | — | each card: name, `venue · city · date · time`, "Powered by Ticketmaster" |
+| E-08 venue TBA | `41:166` | `app-E-05b.png` | matches | none | — | "Venue To Be Announced · TBA · İstanbul" — the row says TBA rather than inventing a place |
+| E-22 detail — both CTAs | `42:96` | `app-E-22b.png` | matches | none | — | name **and** `venue · city · date · time`, "Bu bir beyandır, bilet kanıtı değildir", two CTAs, "Konum kontrolü bilet değildir" |
+| E-21 live check — in flight | `42:140` | `app-E-21-live.png` | **differed** | pressing either CTA disabled both and changed neither label | per-action pending state | the pressed one reads "Kontrol ediliyor…"; the other keeps its own name |
+
+**The E-21 screen went silent under the hand.** `EventDetailScreen` held one
+boolean `busy`, so a press disabled both CTAs and relabelled neither. On the
+web run the location read never returned, which left the two most consequential
+buttons in the feature dead and wordless — and this is exactly the screen the
+brief asked to make legible, since being at an event and planning to go are
+separate claims a person is choosing between.
+
+It now tracks *which* action is in flight (`'join' | 'live' | 'verify'`), so
+the pressed button says what it is doing and the other keeps its own name
+rather than appearing to be the thing that was pressed. Verified in a real
+render: `{"live":{"label":"Kontrol ediliyor…"},"join":{"label":"Etkinliğe Gideceğim"}}`.
+
+This is the same defect found in T-18 an hour earlier, in a second screen. Both
+came from the same habit — `disabled={busy}` with a fixed label — and neither
+was visible to a test, only to a finger.
+
 ### Still not done
 
 - **84 frames** not yet compared against a render.
