@@ -25,12 +25,11 @@ import {
   Text,
   View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Notice, useScreenChangeAnnouncement } from '../components/ui';
 import { COPY } from '../copy';
-import { color, fontFamily, gradient, MIN_TOUCH, radius, spacing, backgroundGradient } from '../theme';
+import { color, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
 
 export function OnboardingProgress({ step, total }: { step: number; total: number }) {
   const ratio = Math.max(0, Math.min(1, total > 0 ? step / total : 0));
@@ -42,12 +41,7 @@ export function OnboardingProgress({ step, total }: { step: number; total: numbe
       accessibilityLabel={COPY.onboarding.progressLabel(step, total)}
       testID="onboarding-progress"
     >
-      <LinearGradient
-        colors={[...gradient.primary]}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
-        style={[styles.progressFill, { width: `${ratio * 100}%` }]}
-      />
+      <View style={[styles.progressFill, { width: `${ratio * 100}%` }]} />
     </View>
   );
 }
@@ -100,15 +94,9 @@ export function OnboardingScaffold({
   );
 
   return (
+    // D-058 dropped the sunset ground: onboarding is the same cream ground
+    // and white cards as every other screen now, not a full-bleed gradient.
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']} testID={testID}>
-      <LinearGradient
-        colors={[...backgroundGradient]}
-        locations={[0, 0.45, 0.78, 1]}
-        start={{ x: 0.2, y: 0 }}
-        end={{ x: 0.8, y: 1 }}
-        style={StyleSheet.absoluteFillObject}
-        pointerEvents="none"
-      />
       {/* The sheet's one head row (8:85): the arrow and the progress side
           by side — and the skip, on the steps honest enough to offer one. */}
       <View style={styles.bar}>
@@ -178,15 +166,6 @@ export function OnboardingScaffold({
             ]}
             testID={actionTestID}
           >
-            {actionEnabled && !actionBusy ? (
-              <LinearGradient
-                colors={[...gradient.primary]}
-                start={{ x: 0, y: 0.5 }}
-                end={{ x: 1, y: 0.5 }}
-                style={StyleSheet.absoluteFillObject}
-                pointerEvents="none"
-              />
-            ) : null}
             <Text style={[styles.ctaLabel, (!actionEnabled || actionBusy) && styles.ctaLabelDisabled]}>
               {actionLabel}
             </Text>
@@ -200,14 +179,14 @@ export function OnboardingScaffold({
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   screen: { flex: 1, backgroundColor: color.background },
-  /** The sheet's track (3:9): 6 tall over the rule colour, gradient fill. */
+  /** The sheet's track (3:9): 6 tall over the inert well, a flat coral fill. */
   progressTrack: {
     height: 6,
-    backgroundColor: color.rule,
+    backgroundColor: color.veil,
     borderRadius: radius.pill,
     overflow: 'hidden',
   },
-  progressFill: { height: 6, borderRadius: radius.pill },
+  progressFill: { height: 6, borderRadius: radius.pill, backgroundColor: color.accent },
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -263,7 +242,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: color.accent,
     overflow: 'hidden',
-    shadowColor: '#EC4899',
+    shadowColor: color.accent,
     shadowOpacity: 0.45,
     shadowRadius: 11,
     shadowOffset: { width: 0, height: 8 },

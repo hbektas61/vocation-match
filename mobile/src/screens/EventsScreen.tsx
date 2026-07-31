@@ -20,9 +20,18 @@ import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Svg, { Circle, Path } from 'react-native-svg';
 
-import { Button, Caption, EmptyState, Field, Notice, Screen, ScreenHeader } from '../components/ui';
+import {
+  Button,
+  Caption,
+  Chip,
+  ContextRibbon,
+  EmptyState,
+  Field,
+  Notice,
+  Screen,
+  ScreenHeader,
+} from '../components/ui';
 import { COPY, COPY_FOR, upperCase } from '../copy';
 import {
   deviceLocation,
@@ -35,14 +44,7 @@ import {
   type MyEvent,
 } from '../data';
 import type { RootStackParamList } from '../navigation/types';
-import { color, fontFamily, glass, radius, spacing } from '../theme';
-
-const PinIcon = () => (
-  <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <Path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-    <Circle cx={12} cy={10} r={3} />
-  </Svg>
-);
+import { color, elevation, fontFamily, overlay, radius, spacing, tokens } from '../theme';
 
 const CHIPS: { key: EventCategory; label: () => string }[] = [
   { key: 'all', label: () => COPY.events.chipAll },
@@ -372,24 +374,25 @@ export function EventsScreen({
       ) : (
         /* E-05: the chosen area is a standing header, not a line that
            scrolls away — it is the one piece of context every result below
-           depends on, and changing it is one press from anywhere in the list. */
-        <View style={styles.areaRow}>
-          <PinIcon />
-          <View style={styles.areaWords}>
-            <Text style={styles.areaKicker}>{upperCase(COPY.events.areaLabel)}</Text>
-            <Text style={styles.areaLabel} numberOfLines={1} testID="events-area-label">
-              {area.label}
-            </Text>
+           depends on, and changing it is one press from anywhere in the list.
+           The ribbon is the shared deep-navy plate every venue/event context
+           uses; the "Değiştir" link sits beside it rather than inside it, so
+           it stays its own reachable control rather than being swallowed by
+           the ribbon's single `accessibilityLabel`. */
+        <View style={styles.areaBlock}>
+          <Text style={styles.areaKicker}>{upperCase(COPY.events.areaLabel)}</Text>
+          <View style={styles.areaRow}>
+            <ContextRibbon label={area.label} glyph="•" testID="events-area-label" />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={COPY.events.changeArea}
+              onPress={() => setChoosingArea(true)}
+              hitSlop={8}
+              testID="events-change-area"
+            >
+              <Text style={styles.changeArea}>{COPY.events.changeArea}</Text>
+            </Pressable>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={COPY.events.changeArea}
-            onPress={() => setChoosingArea(true)}
-            hitSlop={8}
-            testID="events-change-area"
-          >
-            <Text style={styles.changeArea}>{COPY.events.changeArea}</Text>
-          </Pressable>
         </View>
       )}
 
@@ -398,16 +401,13 @@ export function EventsScreen({
           {CHIPS.map((chip) => {
             const selected = chip.key === category;
             return (
-              <Pressable
+              <Chip
                 key={chip.key}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
+                label={chip.label()}
+                selected={selected}
                 onPress={() => chooseChip(chip.key)}
-                style={[styles.chip, selected && styles.chipOn]}
                 testID={`events-chip-${chip.key}`}
-              >
-                <Text style={[styles.chipText, selected && styles.chipTextOn]}>{chip.label()}</Text>
-              </Pressable>
+              />
             );
           })}
         </View>
@@ -514,44 +514,29 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     marginBottom: spacing.xs,
   },
-  /** E-05: the standing area header — a glass box, not a bare row. */
-  areaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: glass.edge,
-    backgroundColor: glass.strong,
-    paddingVertical: 11,
-    paddingHorizontal: 14,
-    marginBottom: spacing.sm,
-  },
-  areaWords: { flex: 1, gap: 1 },
+  /** E-05: the standing area header — the ribbon and its "Değiştir" pair. */
+  areaBlock: { marginBottom: spacing.sm, gap: 4 },
+  areaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   areaKicker: {
     fontFamily: fontFamily.bodySemi,
     fontSize: 9,
     letterSpacing: 0.6,
     color: color.inkMuted,
   },
-  areaLabel: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 15,
-    color: color.ink,
-  },
   changeArea: {
     fontFamily: fontFamily.bodySemi,
     fontSize: 12,
     color: color.accentDeep,
   },
-  /** E-06: busy, without taking the results away. */
+  /** E-06: busy, without taking the results away — the same neutral pill a
+      standing notice uses, so "still working" never reads as an error. */
   busyLine: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: spacing.sm,
     borderRadius: radius.pill,
-    backgroundColor: glass.strong,
+    backgroundColor: color.infoSoft,
     paddingVertical: 7,
     paddingHorizontal: 12,
   },
@@ -564,7 +549,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   sectionCount: { fontFamily: fontFamily.body, fontSize: 11, color: color.inkMuted },
-  /** E-18: the state as a word and a glyph first. */
+  /**
+   * E-18: the state as a word and a glyph first. The plate is deliberately
+   * self-contained (deep navy, near-opaque) rather than a scrim-dependent
+   * label, because it sits both on a photo and, when there is none, directly
+   * on a white card — one recipe that reads on either.
+   */
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -572,37 +562,27 @@ const styles = StyleSheet.create({
     gap: 5,
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
-    backgroundColor: 'rgba(26, 26, 46, 0.72)',
+    borderColor: tokens.border.inverse,
+    backgroundColor: overlay.plate,
     paddingVertical: 4,
     paddingHorizontal: 9,
   },
   badgeBad: { borderColor: color.danger, backgroundColor: color.dangerSoft },
-  badgeGlyph: { fontFamily: fontFamily.bodySemi, fontSize: 9, color: color.inkMuted },
-  badgeText: { fontFamily: fontFamily.bodySemi, fontSize: 10, color: color.ink },
+  badgeGlyph: { fontFamily: fontFamily.bodySemi, fontSize: 9, color: color.onInverse },
+  badgeText: { fontFamily: fontFamily.bodySemi, fontSize: 10, color: color.onInverse },
   badgeTextBad: { color: color.danger },
   badgeOnImage: { position: 'absolute', left: 11, bottom: 9 },
   /** A cancelled or postponed event is dimmed as well as labelled. */
   dimmed: { opacity: 0.45 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
-  chip: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: glass.edge,
-    backgroundColor: glass.fill,
-  },
-  chipOn: { borderColor: color.accentDeep, backgroundColor: color.accentSoft },
-  chipText: { fontFamily: fontFamily.body, fontSize: 13, color: color.inkMuted },
-  chipTextOn: { color: color.ink },
   card: {
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: glass.edge,
-    backgroundColor: glass.fill,
+    borderColor: color.rule,
+    backgroundColor: color.surface,
     overflow: 'hidden',
     marginBottom: spacing.xs,
+    ...elevation.card,
   },
   cardPressed: { opacity: 0.7 },
   cardImage: { width: '100%', height: 120, backgroundColor: color.veil },

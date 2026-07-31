@@ -2,16 +2,24 @@
  * The two no-hotel drawings from the designer's screens (2026-07-27):
  * for Rooms, a room door standing ready beside the hotel that holds it;
  * for Discovery, a compass over the landscape the search will cover.
- * Flat SVG in the pinned palette, on the soft cloud-blob ground both
- * references share.
+ * Flat SVG on the soft cloud-blob ground both references share.
+ *
+ * D-058 recoloured the set from the night theme's plum-tinted pink to the
+ * light system: navy line work, the brand coral for the mid layer, and the
+ * two pale coral steps for what used to be alpha-blended tints — there is no
+ * literal transparency here, only the palette's own soft/wash pair, so the
+ * shapes read the same on the white card either theme draws them on.
  */
 import React from 'react';
 import Svg, { Circle, Ellipse, Path, Rect } from 'react-native-svg';
 
-const DEEP = '#0F1B3D';
-const MID = 'rgba(236, 72, 153, 0.45)';
-const SOFT = 'rgba(236, 72, 153, 0.18)';
-const FAINT = 'rgba(236, 72, 153, 0.10)';
+import { color } from '../theme';
+
+const DEEP = color.ink;
+const MID = color.accent;
+const SOFT = color.accentSoft;
+const FAINT = color.accentWash;
+const WHITE = color.surface;
 
 /** A numbered door, the hotel behind it, a plant keeping it company. */
 export function DoorScene({ width = 240 }: { width?: number }) {
@@ -27,9 +35,9 @@ export function DoorScene({ width = 240 }: { width?: number }) {
       <Path d="M186 34a6 6 0 0 1 10-2 5 5 0 0 1 8 2z" fill={SOFT} />
       <Path d="M206 60l1.6 3.6 3.6 1.6-3.6 1.6-1.6 3.6-1.6-3.6-3.6-1.6 3.6-1.6z" fill={MID} />
       {/* hotel wing */}
-      <Rect x={52} y={52} width={52} height={70} rx={4} fill="#FFFFFF" stroke={SOFT} strokeWidth={2.5} />
+      <Rect x={52} y={52} width={52} height={70} rx={4} fill={WHITE} stroke={SOFT} strokeWidth={2.5} />
       <Rect x={66} y={42} width={14} height={12} rx={2} fill={DEEP} />
-      <Path d="M71 45v6M75 45v6M71 48h4" stroke="#FFFFFF" strokeWidth={1.4} strokeLinecap="round" />
+      <Path d="M71 45v6M75 45v6M71 48h4" stroke={WHITE} strokeWidth={1.4} strokeLinecap="round" />
       {[60, 74, 88].map((y) =>
         [59, 71, 83, 95].map((x) => (
           <Rect key={`${x}-${y}`} x={x} y={y} width={7} height={8} rx={1.5} fill={SOFT} />
@@ -45,10 +53,10 @@ export function DoorScene({ width = 240 }: { width?: number }) {
         d="M118 122V71a22 22 0 0 1 44 0v51z"
         fill={DEEP}
       />
-      <Rect x={130} y={62} width={20} height={12} rx={2} fill="#FFFFFF" opacity={0.9} />
+      <Rect x={130} y={62} width={20} height={12} rx={2} fill={WHITE} opacity={0.9} />
       <Path d="M133.5 68.5h13" stroke={DEEP} strokeWidth={0} />
-      <Circle cx={158} cy={96} r={2.6} fill="#FFFFFF" opacity={0.9} />
-      <Rect x={155} y={92} width={6} height={2.4} rx={1.2} fill="#FFFFFF" opacity={0.9} />
+      <Circle cx={158} cy={96} r={2.6} fill={WHITE} opacity={0.9} />
+      <Rect x={155} y={92} width={6} height={2.4} rx={1.2} fill={WHITE} opacity={0.9} />
       {/* plant */}
       <Path d="M196 122v-14m0 4c-4-6-10-7-14-4m14 1c3-7 9-9 13-7m-13 2c0-8-4-13-9-14" stroke={MID} strokeWidth={2.5} strokeLinecap="round" fill="none" />
       <Path d="M188 122h16l-2 12h-12z" fill={SOFT} stroke={MID} strokeWidth={2} strokeLinejoin="round" />
@@ -74,9 +82,9 @@ export function CompassScene({ width = 240 }: { width?: number }) {
       <Path d="M156 118l26-38 22 38z" fill={SOFT} />
       <Path d="M176 118l16-22 14 22z" fill={FAINT} />
       {/* small hotel */}
-      <Rect x={30} y={70} width={40} height={48} rx={3} fill="#FFFFFF" stroke={SOFT} strokeWidth={2.5} />
+      <Rect x={30} y={70} width={40} height={48} rx={3} fill={WHITE} stroke={SOFT} strokeWidth={2.5} />
       <Rect x={41} y={62} width={12} height={10} rx={2} fill={DEEP} />
-      <Path d="M45 64.5v5M49 64.5v5M45 67h4" stroke="#FFFFFF" strokeWidth={1.2} strokeLinecap="round" />
+      <Path d="M45 64.5v5M49 64.5v5M45 67h4" stroke={WHITE} strokeWidth={1.2} strokeLinecap="round" />
       {[78, 90].map((y) =>
         [36, 46, 56].map((x) => (
           <Rect key={`${x}-${y}`} x={x} y={y} width={6} height={7} rx={1.5} fill={SOFT} />
@@ -94,7 +102,7 @@ export function CompassScene({ width = 240 }: { width?: number }) {
         fill="none"
       />
       {/* the compass */}
-      <Circle cx={126} cy={78} r={44} fill="#FFFFFF" stroke={SOFT} strokeWidth={8} />
+      <Circle cx={126} cy={78} r={44} fill={WHITE} stroke={SOFT} strokeWidth={8} />
       <Circle cx={126} cy={78} r={44} stroke={MID} strokeWidth={3} fill="none" />
       <Circle cx={126} cy={78} r={35} stroke={FAINT} strokeWidth={2} fill="none" />
       {/* rose ticks */}
@@ -102,13 +110,13 @@ export function CompassScene({ width = 240 }: { width?: number }) {
       {/* needle */}
       <Path d="M126 78L104 56l32 12z" fill={DEEP} />
       <Path d="M126 78l22 22-32-12z" fill={SOFT} />
-      <Circle cx={126} cy={78} r={5} fill={DEEP} stroke="#FFFFFF" strokeWidth={2} />
+      <Circle cx={126} cy={78} r={5} fill={DEEP} stroke={WHITE} strokeWidth={2} />
       {/* the pin on the far ground */}
       <Path
         d="M186 100c-6 0-11 4.8-11 10.7 0 8 11 19.3 11 19.3s11-11.3 11-19.3c0-5.9-5-10.7-11-10.7z"
         fill={MID}
       />
-      <Circle cx={186} cy={111} r={4} fill="#FFFFFF" />
+      <Circle cx={186} cy={111} r={4} fill={WHITE} />
     </Svg>
   );
 }

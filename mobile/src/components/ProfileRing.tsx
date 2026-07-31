@@ -64,13 +64,13 @@ export function ProfileRing({
 }
 
 const styles = StyleSheet.create({
-  /** The Figma ring (10:74): 46 across, 1.4 of half-pink. */
+  /** The Figma ring (10:74): 46 across, the quiet card edge. */
   ring: {
     width: 46,
     height: 46,
     borderRadius: 23,
     borderWidth: 1.4,
-    borderColor: 'rgba(244, 114, 182, 0.5)',
+    borderColor: color.rule,
     alignItems: 'center',
     justifyContent: 'center',
   },

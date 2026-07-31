@@ -1,4 +1,3 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useNavigation, type NavigationProp } from '@react-navigation/native';
@@ -7,7 +6,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 
-import { Body, Button, Caption, Card, Heading, Notice, Screen } from '../components/ui';
+import { Body, Button, Caption, Card, Heading, Notice, PhotoScrim, Screen } from '../components/ui';
 import { nowMs } from '../clock';
 import { earliestRoomExpiry } from '../state/roomSchedule';
 import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation } from '../copy';
@@ -26,15 +25,9 @@ import { VenuePicker } from '../components/VenuePicker';
 import { VacationFeatureCard } from '../components/VacationFeatureCard';
 import { ProfileRing } from '../components/ProfileRing';
 import { useAppStore } from '../state/AppStore';
-import { color, fontFamily, glass, radius, spacing } from '../theme';
+import { color, elevation, fontFamily, radius, spacing } from '../theme';
 
 const EMPTY_DISC = require('../../assets/dark-hotel-disc.png');
-
-/**
- * The photo band's stand-in (10:118): plum falling into the night ground,
- * for the hotel the catalogue holds no photograph of.
- */
-const BAND_FALLBACK = ['#6B2E63', '#1C172E'] as const;
 
 /** "12 Ağu – 17 Ağu" in the device's language — dates, never documents. */
 function formatStayRange(stay: UpcomingStay): string {
@@ -364,12 +357,21 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
                 testID="active-hotel-photo"
               />
             ) : (
-              <LinearGradient colors={[...BAND_FALLBACK]} style={styles.hotelCardBand} />
+              // No photograph on file: a flat inert well rather than a
+              // decorative gradient — D-058 keeps full-bleed colour to its
+              // two allowlisted moments, and this band is neither.
+              <View style={styles.hotelCardBand} />
             )}
             {activeHotel.photoUrl && activeHotel.photoAttribution ? (
-              <Text style={styles.photoCredit} numberOfLines={1}>
-                {activeHotel.photoAttribution}
-              </Text>
+              <>
+                {/* The credit sits on the photo itself, so it needs the same
+                    scrim any text on a photograph needs — a photo can be any
+                    brightness, and the licence line has to stay legible. */}
+                <PhotoScrim />
+                <Text style={styles.photoCredit} numberOfLines={1}>
+                  {activeHotel.photoAttribution}
+                </Text>
+              </>
             ) : null}
           </View>
           <View style={styles.hotelCardBody}>
@@ -591,13 +593,6 @@ const styles = StyleSheet.create({
     lineHeight: 34 * 1.15,
     color: color.ink,
   },
-  profileRing: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    borderWidth: 1.4,
-    borderColor: 'rgba(244, 114, 182, 0.5)',
-  },
   subtitle: {
     fontFamily: fontFamily.body,
     fontSize: 14,
@@ -611,31 +606,27 @@ const styles = StyleSheet.create({
   },
   /** The Figma placeholder size (10:78). */
   searchInput: { fontSize: 14 },
-  /** The Figma card shell (10:117): glass, the light hairline, 22 corners. */
+  /** The Figma card shell (10:117): white, the quiet hairline, the card radius. */
   hotelCard: {
-    backgroundColor: glass.fill,
+    backgroundColor: color.surface,
     borderWidth: 1,
-    borderColor: glass.edge,
-    borderRadius: 22,
+    borderColor: color.rule,
+    borderRadius: radius.lg,
     overflow: 'hidden',
-    shadowColor: '#000000',
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 2,
+    ...elevation.card,
   },
-  hotelCardBand: { height: 140 },
+  /** The stand-in band for a hotel the catalogue holds no photo of. */
+  hotelCardBand: { height: 140, backgroundColor: color.veil },
   hotelPhoto: { width: '100%', height: 140, backgroundColor: color.veil },
-  /** The licence's half of the bargain, on the photo it pays for. */
+  /** The licence's half of the bargain, on the photo it pays for — the
+      PhotoScrim above it is what keeps this legible on any image. */
   photoCredit: {
     position: 'absolute',
     bottom: 4,
     right: 8,
     fontFamily: fontFamily.body,
     fontSize: 10,
-    color: 'rgba(255,255,255,0.9)',
-    textShadowColor: 'rgba(0,0,0,0.6)',
-    textShadowRadius: 3,
+    color: color.onPhoto,
     maxWidth: '80%',
   },
   hotelCardBody: {
@@ -681,11 +672,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 14,
     alignItems: 'center',
-    backgroundColor: glass.fill,
+    backgroundColor: color.surface,
     borderWidth: 1,
-    borderColor: glass.edge,
-    borderRadius: 20,
+    borderColor: color.rule,
+    borderRadius: radius.lg,
     padding: 16,
+    ...elevation.card,
   },
   /** The 74 disc (10:80): a circle over the pink-soft fill, the art inside. */
   emptyDisc: {

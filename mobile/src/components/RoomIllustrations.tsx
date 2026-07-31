@@ -2,30 +2,37 @@
  * The two room drawings from the designer's Rooms screen (2026-07-27):
  * a ring-bound calendar with a check for Upcoming (you say when), and a
  * dropped pin between a palm and the town for Here Now (you are near).
- * Flat SVG in the pinned palette — the reference's 3D renders translated
- * into the app's own flat language.
+ * Flat SVG — the reference's 3D renders translated into the app's own flat
+ * language.
+ *
+ * D-058: navy line work, the brand coral for the mid layer, and its two pale
+ * steps for what were alpha-blended pink tints on the old night ground — the
+ * same recolour `HotelIllustrations.tsx` and `NoHotelIllustrations.tsx` use.
  */
 import React from 'react';
 import Svg, { Circle, Ellipse, Path, Rect } from 'react-native-svg';
 
-const DEEP = '#0F1B3D';
-const MID = 'rgba(236, 72, 153, 0.45)';
-const SOFT = 'rgba(236, 72, 153, 0.18)';
-const FAINT = 'rgba(236, 72, 153, 0.10)';
+import { color } from '../theme';
+
+const DEEP = color.ink;
+const MID = color.accent;
+const SOFT = color.accentSoft;
+const FAINT = color.accentWash;
+const WHITE = color.surface;
 
 /** A ring-bound calendar with a check badge: the stay you declare. */
 export function CalendarIllustration({ size = 96 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 96 96" fill="none">
       {/* body */}
-      <Rect x={14} y={22} width={62} height={56} rx={8} fill="#FFFFFF" stroke={MID} strokeWidth={2.5} />
+      <Rect x={14} y={22} width={62} height={56} rx={8} fill={WHITE} stroke={MID} strokeWidth={2.5} />
       {/* header band */}
       <Path d="M14 30a8 8 0 0 1 8-8h46a8 8 0 0 1 8 8v8H14z" fill={DEEP} />
       {/* binder rings */}
       <Path d="M30 14v12M45 14v12M60 14v12" stroke={MID} strokeWidth={3.5} strokeLinecap="round" />
-      <Circle cx={30} cy={14} r={3.5} stroke={MID} strokeWidth={2.5} fill="#FFFFFF" />
-      <Circle cx={45} cy={14} r={3.5} stroke={MID} strokeWidth={2.5} fill="#FFFFFF" />
-      <Circle cx={60} cy={14} r={3.5} stroke={MID} strokeWidth={2.5} fill="#FFFFFF" />
+      <Circle cx={30} cy={14} r={3.5} stroke={MID} strokeWidth={2.5} fill={WHITE} />
+      <Circle cx={45} cy={14} r={3.5} stroke={MID} strokeWidth={2.5} fill={WHITE} />
+      <Circle cx={60} cy={14} r={3.5} stroke={MID} strokeWidth={2.5} fill={WHITE} />
       {/* date grid */}
       {[46, 56, 66].map((y) =>
         [24, 37, 50, 63].map((x) => (
@@ -34,8 +41,7 @@ export function CalendarIllustration({ size = 96 }: { size?: number }) {
       )}
       {/* check badge */}
       <Circle cx={72} cy={70} r={15} fill={MID} />
-      <Circle cx={72} cy={70} r={15} fill="rgba(236, 72, 153, 0.25)" />
-      <Path d="M65 70.5l4.5 4.5 9-9" stroke="#FFFFFF" strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M65 70.5l4.5 4.5 9-9" stroke={WHITE} strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
@@ -46,15 +52,15 @@ export function ShieldLock({ size = 64 }: { size?: number }) {
     <Svg width={size} height={size} viewBox="0 0 64 64" fill="none">
       <Path
         d="M32 6c6 4.5 12.5 7 19 7v17c0 12.5-8.5 19.5-18.2 23a2.4 2.4 0 0 1-1.6 0C21.5 49.5 13 42.5 13 30V13c6.5 0 13-2.5 19-7z"
-        fill="rgba(236, 72, 153, 0.10)"
+        fill={FAINT}
         stroke={MID}
         strokeWidth={2.5}
       />
       <Rect x={24} y={26} width={16} height={13} rx={3} fill={DEEP} />
       <Path d="M27 26v-4a5 5 0 0 1 10 0v4" stroke={DEEP} strokeWidth={2.5} fill="none" />
-      <Circle cx={32} cy={32} r={2.2} fill="#FFFFFF" />
+      <Circle cx={32} cy={32} r={2.2} fill={WHITE} />
       <Circle cx={44} cy={46} r={8} fill={MID} />
-      <Path d="M40.5 46l2.6 2.6 5-5" stroke="#FFFFFF" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M40.5 46l2.6 2.6 5-5" stroke={WHITE} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
@@ -81,7 +87,7 @@ export function PinScene({ size = 96 }: { size?: number }) {
         d="M46 24c-9.4 0-17 7.4-17 16.6C29 53 46 70 46 70s17-17 17-29.4C63 31.4 55.4 24 46 24z"
         fill={DEEP}
       />
-      <Circle cx={46} cy={41} r={6.5} fill="#FFFFFF" />
+      <Circle cx={46} cy={41} r={6.5} fill={WHITE} />
     </Svg>
   );
 }

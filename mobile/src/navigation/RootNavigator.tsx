@@ -26,10 +26,20 @@ import { useAppStore } from '../state/AppStore';
 import { color, fontFamily } from '../theme';
 import type { RootStackParamList, TabParamList } from './types';
 
-/** The pushed screens share the app's warm ground rather than system white. */
+/**
+ * D-058: a white sheet header rather than the cream ground, so a pushed
+ * screen reads as a surface lifted above the app rather than a continuation
+ * of it — the same distinction a card makes against the background.
+ *
+ * `headerStyle` on native-stack only accepts `backgroundColor` (there is no
+ * prop for the divider's colour), so the hairline itself is the platform's
+ * own default shadow/border rather than a literal `color.rule` — left on
+ * (`headerShadowVisible` true) instead of the old suppressed shadow, since a
+ * white header needs *some* edge to separate it from white content below.
+ */
 const stackHeader = {
-  headerStyle: { backgroundColor: color.background },
-  headerShadowVisible: false,
+  headerStyle: { backgroundColor: color.surface },
+  headerShadowVisible: true,
   headerTintColor: color.ink,
   headerTitleStyle: { fontFamily: fontFamily.displaySemi, fontSize: 18 },
 } as const;

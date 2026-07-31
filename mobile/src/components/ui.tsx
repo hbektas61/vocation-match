@@ -2,6 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import {
   AccessibilityInfo,
+  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -24,13 +25,16 @@ import { ProfileRing } from './ProfileRing';
 import {
   ACTION_TOUCH,
   color,
+  elevation,
   font,
   fontFamily,
+  gradient,
   MIN_TOUCH,
+  overlay,
   radius,
   roomTone,
   spacing,
-  gradient, glass, backgroundGradient } from '../theme';
+} from '../theme';
 
 export function Screen({
   children,
@@ -51,6 +55,11 @@ export function Screen({
    * the clock — which is exactly how this prop got here.
    */
   safeTop = false,
+  /**
+   * A screen that is a white sheet rather than the cream ground: the chat,
+   * and anything presented modally over another screen.
+   */
+  tone = 'ground',
   testID,
 }: {
   children: React.ReactNode;
@@ -58,6 +67,7 @@ export function Screen({
   bleed?: boolean;
   resetScrollOnFocus?: boolean;
   safeTop?: boolean;
+  tone?: 'ground' | 'sheet';
   testID?: string;
 }) {
   const scrollRef = React.useRef<ScrollView>(null);
@@ -89,15 +99,11 @@ export function Screen({
     </KeyboardAvoidingView>
   );
   return (
-    <SafeAreaView style={styles.screen} edges={safeTop ? ['top', 'bottom'] : ['bottom']} testID={testID}>
-      <LinearGradient
-        colors={[...backgroundGradient]}
-        locations={[0, 0.45, 0.78, 1]}
-        start={{ x: 0.2, y: 0 }}
-        end={{ x: 0.8, y: 1 }}
-        style={StyleSheet.absoluteFillObject}
-        pointerEvents="none"
-      />
+    <SafeAreaView
+      style={[styles.screen, tone === 'sheet' && styles.screenSheet]}
+      edges={safeTop ? ['top', 'bottom'] : ['bottom']}
+      testID={testID}
+    >
       {content}
     </SafeAreaView>
   );
@@ -244,42 +250,38 @@ export function Button({
         compact && styles.buttonCompact,
         variant === 'primary' && styles.buttonPrimary,
         variant === 'secondary' && styles.buttonSecondary,
-        // Outlined rather than filled, now that the brand itself is red: two
+        // Outlined rather than filled, now that the brand itself is coral: two
         // solid red buttons on one screen, one of which deletes an account,
         // would be the same shout for two very different things.
         variant === 'danger' && styles.buttonDanger,
         (disabled || busy) && styles.buttonDisabled,
-        pressed && !disabled && !busy && styles.buttonPressed,
+        pressed && !disabled && !busy && variant === 'primary' && styles.buttonPrimaryPressed,
+        pressed && !disabled && !busy && variant !== 'primary' && styles.buttonPressed,
       ]}
     >
-      {({ pressed }) => (
-        <>
-          {variant === 'primary' && !disabled && !busy ? (
-            // The owner's gradient (D-043): gold into pink, the pressed state
-            // its lighter ramp. Behind the label, inside the pill's clip.
-            <LinearGradient
-              colors={[...(pressed ? gradient.primaryPressed : gradient.primary)]}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={StyleSheet.absoluteFillObject}
-              pointerEvents="none"
-            />
-          ) : null}
-          <Text
-        style={[
-          styles.buttonLabel,
-          compact && styles.buttonLabelCompact,
-          variant === 'primary' && styles.buttonLabelOnColor,
-          variant === 'secondary' && styles.buttonLabelSecondary,
-          variant === 'danger' && styles.buttonLabelDanger,
-          // Last, so it wins over the variant colour.
-          (disabled || busy) && styles.buttonLabelDisabled,
-        ]}
-          >
-            {label}
-          </Text>
-        </>
-      )}
+      <View style={styles.buttonInner}>
+        {busy ? (
+          <ActivityIndicator
+            size="small"
+            color={color.inkMuted}
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+          />
+        ) : null}
+        <Text
+          style={[
+            styles.buttonLabel,
+            compact && styles.buttonLabelCompact,
+            variant === 'primary' && styles.buttonLabelOnColor,
+            variant === 'secondary' && styles.buttonLabelSecondary,
+            variant === 'danger' && styles.buttonLabelDanger,
+            // Last, so it wins over the variant colour.
+            (disabled || busy) && styles.buttonLabelDisabled,
+          ]}
+        >
+          {label}
+        </Text>
+      </View>
     </Pressable>
   );
 }
@@ -347,13 +349,12 @@ export function ActionButton({
  * Two things here are the whole reason it exists rather than each screen
  * rolling its own `TextInput`:
  *
- * - **Focus.** The owner asked for the focused border to be exactly the brand
- *   lavender, and it is. But that colour is 1.55:1 against white, well under
- *   the 3:1 WCAG 1.4.11 wants from the thing marking a control — so on its own
- *   it would be a focus state a good number of people simply cannot see. The
- *   exact colour is kept and given a companion: the border thickens, and a
- *   ring in the darker sibling (5.96:1) is drawn outside it. Colour, weight
- *   and a second edge, so no one signal has to carry it.
+ * - **Focus.** D-058's ground is light, so the focus state is drawn in the
+ *   brand's dark sibling (6.5:1 on white) rather than the coral itself, which
+ *   is 2.99:1 there and would be a focus ring a good number of people simply
+ *   cannot see. Colour is not asked to carry it alone either: the border
+ *   thickens and the box takes the brand wash, so weight and fill say the same
+ *   thing.
  * - **Vertical centring.** Android puts extra room under the baseline and
  *   top-aligns the text in a fixed-height box, which is what made every field
  *   look like the text had been pushed up against the ceiling.
@@ -380,10 +381,7 @@ export function Field(
     invalid?: boolean;
     /** Rendered inside the box, before the text. The `+90` on the phone step. */
     prefix?: React.ReactNode;
-    /**
-     * The Figma search shape (10:77): a full-round glass pill with the pink
-     * edge at half strength, instead of the squared panel input.
-     */
+    /** The search shape: a full-round white pill instead of the squared box. */
     pill?: boolean;
   },
 ) {
@@ -410,7 +408,7 @@ export function Field(
         <TextInput
           accessibilityLabel={label}
           accessibilityHint={hint}
-          placeholderTextColor={color.inkMuted}
+          placeholderTextColor={color.inkFaint}
           underlineColorAndroid="transparent"
           onFocus={(event) => {
             setFocused(true);
@@ -424,7 +422,7 @@ export function Field(
           {...inputProps}
         />
       </View>
-      {hint ? <Text style={styles.fieldHint}>{hint}</Text> : null}
+      {hint ? <Text style={[styles.fieldHint, invalid && styles.fieldHintInvalid]}>{hint}</Text> : null}
     </View>
   );
 }
@@ -433,9 +431,9 @@ export function Field(
  * The signature object: a hotel key card.
  *
  * A rounded panel crossed near the top by one flat band — the magstripe, the
- * most touched object in the product's world. A lavender band is an open
- * door; a hollow hairline band is a closed one. Deliberately nothing else of
- * the artefact is drawn (no chip, no hologram): one band keeps it a reference
+ * most touched object in the product's world. A coral band is an open door; a
+ * hollow hairline band is a closed one. Deliberately nothing else of the
+ * artefact is drawn (no chip, no hologram): one band keeps it a reference
  * rather than a costume. Used in exactly two places — the rooms, and the
  * match moment — so it stays a signature rather than wallpaper.
  */
@@ -458,9 +456,9 @@ export function KeyCard({
 }
 
 /**
- * Open / closed, as a word with a mark. The Figma pair (10:89/10:127) wears
- * no container at all: a dot and the word, green and semibold when live,
- * muted when shut — the word is the first signal, the dot the second.
+ * Open / closed, as a word with a mark: a dot and the word, dark green and
+ * semibold when live, muted when shut — the word is the first signal, the dot
+ * the second.
  */
 export function StateChip({ open, label, testID }: { open: boolean; label: string; testID?: string }) {
   return (
@@ -496,7 +494,7 @@ export function DoorPlate({ children }: { children: React.ReactNode }) {
  *
  * The box is drawn rather than imported so the checked state is a mark and a
  * fill, not a tint — the brand colour cannot carry a state on its own, and a
- * checkbox whose only "on" signal is a pale lavender square is one a lot of
+ * checkbox whose only "on" signal is a pale coral square is one a lot of
  * people would read as off.
  */
 export function Checkbox({
@@ -531,16 +529,155 @@ export function Checkbox({
 export function Card({
   children,
   style,
+  /** `flat` drops the lift for a card nested inside another surface. */
+  tone = 'raised',
   testID,
 }: {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
+  tone?: 'raised' | 'flat' | 'brand';
   testID?: string;
 }) {
   return (
-    <View style={[styles.card, style]} testID={testID}>
+    <View
+      style={[
+        styles.card,
+        tone === 'flat' && styles.cardFlat,
+        tone === 'brand' && styles.cardBrand,
+        style,
+      ]}
+      testID={testID}
+    >
       {children}
     </View>
+  );
+}
+
+/**
+ * A selectable pill: a filter, an interest, a room mode.
+ *
+ * Selected is three signals deep — the wash fills, the label goes coral and
+ * semibold, and `accessibilityState` says so — because the brief's own rule is
+ * that colour never carries a state alone.
+ */
+export function Chip({
+  label,
+  selected = false,
+  onPress,
+  disabled = false,
+  testID,
+}: {
+  label: string;
+  selected?: boolean;
+  onPress?: () => void;
+  disabled?: boolean;
+  testID?: string;
+}) {
+  const content = (
+    <Text style={[styles.chipLabel, selected && styles.chipLabelSelected, disabled && styles.chipLabelDisabled]}>
+      {label}
+    </Text>
+  );
+  if (!onPress) {
+    return (
+      <View style={[styles.chip, selected && styles.chipSelected]} testID={testID}>
+        {content}
+      </View>
+    );
+  }
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected, disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      testID={testID}
+      style={({ pressed }) => [
+        styles.chip,
+        selected && styles.chipSelected,
+        disabled && styles.chipDisabled,
+        pressed && !disabled && styles.buttonPressed,
+      ]}
+    >
+      {content}
+    </Pressable>
+  );
+}
+
+/**
+ * The compact deep plate that keeps a screen's context visible: the venue,
+ * the event, the place you checked into. Deep navy with cream type, so it
+ * reads as a fixed piece of chrome rather than another card.
+ */
+export function ContextRibbon({
+  label,
+  glyph,
+  right,
+  testID,
+}: {
+  label: string;
+  /** A small mark before the label. Decorative — the label carries the meaning. */
+  glyph?: string;
+  right?: React.ReactNode;
+  testID?: string;
+}) {
+  return (
+    <View style={styles.contextRibbon} testID={testID} accessible accessibilityRole="text" accessibilityLabel={label}>
+      {glyph ? (
+        <Text style={styles.contextRibbonGlyph} accessibilityElementsHidden importantForAccessibility="no">
+          {glyph}
+        </Text>
+      ) : null}
+      <Text style={styles.contextRibbonText} numberOfLines={1}>
+        {label}
+      </Text>
+      {right}
+    </View>
+  );
+}
+
+/**
+ * Premium, as a plate rather than a colour: pale sand with dark gold type.
+ * The metal on its own is 2.1:1 on white and could not carry the word.
+ */
+export function PremiumBadge({ label, testID }: { label: string; testID?: string }) {
+  return (
+    <View style={styles.premiumBadge} testID={testID} accessible accessibilityRole="text" accessibilityLabel={label}>
+      <Text style={styles.premiumBadgeGlyph} accessibilityElementsHidden importantForAccessibility="no">
+        ★
+      </Text>
+      <Text style={styles.premiumBadgeText}>{upperCase(label)}</Text>
+    </View>
+  );
+}
+
+/** A confirmed fact: pale green, dark green type, and a tick that is not the colour. */
+export function SuccessBadge({ label, testID }: { label: string; testID?: string }) {
+  return (
+    <View style={styles.successBadge} testID={testID} accessible accessibilityRole="text" accessibilityLabel={label}>
+      <Text style={styles.successBadgeGlyph} accessibilityElementsHidden importantForAccessibility="no">
+        ✓
+      </Text>
+      <Text style={styles.successBadgeText}>{label}</Text>
+    </View>
+  );
+}
+
+/**
+ * The fixed readability scrim under anything printed on a photograph. A photo
+ * can be any brightness, so the text over it is only safe if the darkness is
+ * drawn rather than hoped for.
+ */
+export function PhotoScrim({ style }: { style?: StyleProp<ViewStyle> }) {
+  return (
+    <LinearGradient
+      colors={[...gradient.photoScrim]}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={[StyleSheet.absoluteFillObject, style]}
+      pointerEvents="none"
+    />
   );
 }
 
@@ -597,7 +734,7 @@ export function RoomRibbon({
           already carries the meaning; this is so the two are still a pair when
           the colours are not doing any work. */}
       <View style={[styles.ribbonDot, room === 'UPCOMING' && styles.ribbonDotOpen]} />
-      <Text style={[styles.ribbonText, onPhoto && styles.ribbonTextOnPhoto]} numberOfLines={1}>
+      <Text style={styles.ribbonText} numberOfLines={1}>
         {hotelName ? `${state.toUpperCase()} · ${hotelName.toUpperCase()}` : state.toUpperCase()}
       </Text>
     </View>
@@ -660,13 +797,32 @@ function initialOf(name: string): string {
   return trimmed ? trimmed[0].toUpperCase() : '?';
 }
 
-export function EmptyState({ message, testID }: { message: string; testID?: string }) {
+/**
+ * Nothing here yet, said as a card rather than as a hole.
+ *
+ * D-058's rule: an empty state keeps the same hierarchy a full one has — a
+ * surface, a mark, a sentence — because a centred line of grey text in forty
+ * points of dead space reads as a screen that failed to load.
+ */
+export function EmptyState({
+  message,
+  /** The one thing worth doing from here, when there is one. */
+  action,
+  testID,
+}: {
+  message: string;
+  action?: React.ReactNode;
+  testID?: string;
+}) {
   return (
     <View style={styles.empty} accessibilityRole="text" testID={testID}>
-      <Text style={styles.emptyGlyph} accessibilityElementsHidden importantForAccessibility="no">
-        ·
-      </Text>
-      <Text style={styles.body}>{message}</Text>
+      <View style={styles.emptyMark}>
+        <Text style={styles.emptyGlyph} accessibilityElementsHidden importantForAccessibility="no">
+          ·
+        </Text>
+      </View>
+      <Text style={styles.emptyText}>{message}</Text>
+      {action}
     </View>
   );
 }
@@ -685,6 +841,10 @@ export function EmptyState({ message, testID }: { message: string; testID?: stri
  * "Sending…", and then hearing nothing at all is indistinguishable from the
  * button having done nothing. `info` stays silent — it is for standing text
  * that was already there when the screen appeared.
+ *
+ * Each tone carries a glyph as well as a fill: on a light ground a pale green
+ * and a pale red panel are close enough in value that the fill alone is not a
+ * signal for everybody.
  */
 export function Notice({
   message,
@@ -714,7 +874,26 @@ export function Notice({
       accessibilityRole={tone === 'error' ? 'alert' : 'text'}
       accessibilityLiveRegion={announced ? 'polite' : 'none'}
     >
-      <Text style={[styles.body, tone === 'error' && styles.noticeErrorText]}>{message}</Text>
+      <Text
+        style={[
+          styles.noticeGlyph,
+          tone === 'error' && styles.noticeGlyphError,
+          tone === 'success' && styles.noticeGlyphSuccess,
+        ]}
+        accessibilityElementsHidden
+        importantForAccessibility="no"
+      >
+        {tone === 'error' ? '!' : tone === 'success' ? '✓' : 'i'}
+      </Text>
+      <Text
+        style={[
+          styles.noticeText,
+          tone === 'error' && styles.noticeErrorText,
+          tone === 'success' && styles.noticeSuccessText,
+        ]}
+      >
+        {message}
+      </Text>
     </View>
   );
 }
@@ -749,11 +928,12 @@ export function Rule() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   screen: { flex: 1, backgroundColor: color.background },
-  /** The Figma screen shell (10:71/10:111): 20 aside, 24 above, 16 below, 14 between. */
+  screenSheet: { backgroundColor: color.surface },
+  /** The screen shell: 20 aside, 24 above, 16 below, 14 between. */
   screenContent: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: spacing.md, gap: 14 },
   screenBleed: { paddingBottom: spacing.xl, gap: 14 },
 
-  /** The Figma head (10:74/12:167): title left, 46 ring right, centred on it. */
+  /** The head: title left, 46 ring right, centred on it. */
   screenHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -763,21 +943,24 @@ const styles = StyleSheet.create({
   screenHeaderTitle: {
     flexShrink: 1,
     fontFamily: fontFamily.display,
-    fontSize: 34,
-    lineHeight: 34 * 1.15,
+    fontWeight: '700',
+    fontSize: 32,
+    lineHeight: 32 * 1.2,
     color: color.ink,
   },
 
   display: {
     fontFamily: fontFamily.display,
+    fontWeight: '700',
     fontSize: font.display,
-    lineHeight: font.display * 1.1,
+    lineHeight: font.display * 1.2,
     color: color.ink,
   },
   title: {
     fontFamily: fontFamily.display,
+    fontWeight: '700',
     fontSize: font.title,
-    lineHeight: font.title * 1.15,
+    lineHeight: font.title * 1.2,
     color: color.ink,
   },
   heading: {
@@ -811,50 +994,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
-    // The Figma action (10:92): 14 above and below the label.
     paddingVertical: 14,
+  },
+  buttonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
   },
   buttonCompact: { paddingHorizontal: spacing.sm },
   /**
-   * The brand fill with a dark label on it — 11.68:1 — rather than white,
-   * which the lavender cannot carry. The border is the darker sibling at
-   * 5.96:1 on white, because the fill alone is 1.55:1 and a primary action
-   * whose edge nobody can find is not a primary action.
+   * Flat coral with a navy label — 5.71:1. White is not an option here: the
+   * brand coral carries white at 2.99:1, under even the 3:1 large-text floor,
+   * and D-058 asks for a CTA whose contrast is verified rather than assumed.
    */
   buttonPrimary: {
-    // The gradient is painted inside; the fill is its fallback frame and the
-    // clip that keeps it a pill.
     backgroundColor: color.accent,
-    overflow: 'hidden',
-    shadowColor: '#FB7185',
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    ...elevation.card,
+    shadowColor: color.accent,
+    shadowOpacity: 0.28,
   },
+  buttonPrimaryPressed: { backgroundColor: color.accentPressed, shadowOpacity: 0.16 },
   buttonSecondary: {
-    backgroundColor: glass.fill,
+    backgroundColor: color.surface,
     borderWidth: 1.5,
-    borderColor: 'rgba(236, 72, 153, 0.5)',
+    borderColor: color.border,
   },
   buttonDanger: {
-    backgroundColor: 'transparent',
+    backgroundColor: color.surface,
     borderWidth: 1.5,
     borderColor: color.danger,
   },
   /**
-   * A real state rather than a fade. Half-opacity white on ocean measured
-   * 1.99:1 — the label of a button somebody is being asked to read and act on.
-   * This is 4.61:1, and it still reads as unavailable because the fill is flat
-   * and the label is grey.
+   * A real state rather than a fade: the fill goes flat and neutral and the
+   * label goes grey, so it reads as unavailable without becoming a label
+   * nobody can make out.
    */
-  buttonDisabled: { backgroundColor: color.accentSoft, borderColor: color.border, shadowOpacity: 0, elevation: 0 },
-  buttonLabelDisabled: { color: color.inkMuted },
+  buttonDisabled: {
+    backgroundColor: color.veil,
+    borderColor: color.rule,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  buttonLabelDisabled: { color: color.inkFaint },
   actionDisabled: { opacity: 0.45 },
-  buttonPressed: { opacity: 0.82 },
+  buttonPressed: { backgroundColor: color.veil },
   buttonLabel: {
-    // The Figma label (10:93): semibold at 15, which the warm gradient can
-    // carry now that the ink on it is dark rather than white.
     fontFamily: fontFamily.bodySemi,
     fontSize: 15,
     letterSpacing: 0.2,
@@ -870,16 +1055,17 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+    ...elevation.card,
   },
   actionPass: {
-    backgroundColor: color.background,
+    backgroundColor: color.surface,
     borderWidth: 1.5,
-    borderColor: 'rgba(236, 72, 153, 0.35)',
+    borderColor: color.rule,
   },
   actionLike: {
     backgroundColor: color.accent,
     borderWidth: 1.5,
-    borderColor: color.accentDeep,
+    borderColor: color.accent,
   },
   actionGlyph: {
     fontSize: 26,
@@ -895,6 +1081,7 @@ const styles = StyleSheet.create({
     fontSize: font.caption,
     marginTop: spacing.xs,
   },
+  fieldHintInvalid: { color: color.danger },
   fieldLabel: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
@@ -916,26 +1103,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     backgroundColor: color.surface,
   },
-  /** The Figma search pill (10:77): glass fill, half-pink edge at 1.2. */
+  /** The search shape: a white pill on the cream ground. */
   inputShellPill: {
     borderRadius: radius.pill,
-    backgroundColor: glass.fill,
-    borderWidth: 1.2,
-    borderColor: 'rgba(236, 72, 153, 0.5)',
+    backgroundColor: color.surface,
+    borderWidth: 1.5,
+    borderColor: color.border,
   },
   /** A composer grows downward, so its text starts at the top and stays there. */
   inputShellMultiline: { alignItems: 'stretch', paddingVertical: spacing.sm },
   /**
-   * The exact colour the owner asked for, on the border and only on the border
-   * — the owner tried the filled version and asked for it to go. What keeps
-   * the state perceivable without the fill is the weight: 1.5 to 2.5 is a
-   * visible change even for someone the hue does not register for.
+   * Focus, in the brand's dark sibling rather than the coral itself — the
+   * coral is 2.99:1 on white and would be a state some people cannot see.
+   * Weight and fill say it too, so no one signal has to carry it.
    */
   inputShellFocused: {
-    borderColor: color.accent,
+    borderColor: color.focus,
     borderWidth: 2.5,
+    backgroundColor: color.accentWash,
   },
-  inputShellInvalid: { borderColor: color.danger },
+  inputShellInvalid: { borderColor: color.danger, backgroundColor: color.dangerSoft },
   input: {
     flex: 1,
     paddingHorizontal: 0,
@@ -964,23 +1151,96 @@ const styles = StyleSheet.create({
   },
 
   /**
-   * The surface and the ground are both white now, so a card is told apart by
-   * its edge and its lift rather than by its fill. Neither alone was enough at
-   * 375pt: the border is quiet by design and the shadow disappears on Android
-   * without `elevation`.
+   * White on cream: the card is told apart from the ground by a quiet edge and
+   * a soft lift rather than by a different fill. Neither alone is enough at
+   * 375pt — the border is deliberately quiet and the shadow disappears on
+   * Android without `elevation`.
    */
   card: {
-    backgroundColor: glass.fill,
+    backgroundColor: color.surface,
     borderWidth: 1,
-    borderColor: glass.edge,
+    borderColor: color.rule,
     borderRadius: radius.lg,
     padding: spacing.md,
     gap: spacing.sm,
-    shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    ...elevation.card,
+  },
+  cardFlat: { ...elevation.none, backgroundColor: color.veil, borderColor: color.rule },
+  cardBrand: { backgroundColor: color.accentWash, borderColor: color.accentSoft },
+
+  chip: {
+    minHeight: MIN_TOUCH,
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: color.rule,
+    backgroundColor: color.surface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  chipSelected: { backgroundColor: color.accentSoft, borderColor: color.accent },
+  chipDisabled: { backgroundColor: color.veil, borderColor: color.rule },
+  chipLabel: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: font.caption + 1,
+    color: color.ink,
+  },
+  chipLabelSelected: { fontFamily: fontFamily.bodySemi, color: color.accentDeep },
+  chipLabelDisabled: { color: color.inkFaint },
+
+  contextRibbon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    borderRadius: radius.pill,
+    backgroundColor: color.inverse,
+    paddingHorizontal: spacing.md - 2,
+    paddingVertical: spacing.sm + 1,
+  },
+  contextRibbonGlyph: { fontSize: font.caption, color: color.accent },
+  contextRibbonText: {
+    flexShrink: 1,
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.caption,
+    color: color.onInverse,
+  },
+
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs + 1,
+    alignSelf: 'flex-start',
+    borderRadius: radius.pill,
+    backgroundColor: color.premiumSoft,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: spacing.xs + 1,
+  },
+  premiumBadgeGlyph: { fontSize: font.label, color: color.premium },
+  premiumBadgeText: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.label - 1,
+    letterSpacing: 0.8,
+    color: color.premium,
+  },
+
+  successBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs + 1,
+    alignSelf: 'flex-start',
+    borderRadius: radius.pill,
+    backgroundColor: color.successSoft,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: spacing.xs + 1,
+  },
+  successBadgeGlyph: { fontSize: font.label, color: color.success },
+  successBadgeText: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.caption,
+    color: color.success,
   },
 
   badge: {
@@ -990,16 +1250,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs + 2,
   },
   keyCard: {
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: color.rule,
     backgroundColor: color.surface,
     overflow: 'hidden',
-    shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    ...elevation.card,
   },
   keyStripe: { height: 14, marginTop: spacing.md },
   keyStripeOpen: { backgroundColor: color.accent },
@@ -1016,17 +1272,15 @@ const styles = StyleSheet.create({
     gap: 5,
     alignSelf: 'flex-start',
   },
-  /* The Figma pair (10:89/10:127): no pill, no border — "● Açık" in the live
-     green, "● Kapalı" in the muted line colour, both at 11. */
   stateChipText: {
     fontSize: 11,
     lineHeight: 14,
   },
-  stateChipTextOpen: { fontFamily: fontFamily.bodySemi, color: '#34D399' },
+  stateChipTextOpen: { fontFamily: fontFamily.bodySemi, color: color.success },
   stateChipTextClosed: { fontFamily: fontFamily.bodyMedium, color: color.inkMuted },
   stateDot: { width: 6, height: 6, borderRadius: radius.pill },
-  stateDotOpen: { backgroundColor: '#34D399' },
-  stateDotClosed: { backgroundColor: color.inkMuted },
+  stateDotOpen: { backgroundColor: color.successMark },
+  stateDotClosed: { backgroundColor: color.inkFaint },
   doorPlate: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
@@ -1046,12 +1300,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     // A control has to look pressable while unchecked; the hairline tint is
     // too quiet for that job.
-    borderColor: color.inkMuted,
+    borderColor: color.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkboxBoxOn: { backgroundColor: color.accent, borderColor: color.accentDeep },
-  checkboxMark: { color: color.ink, fontSize: 14, lineHeight: 16, fontWeight: '900' },
+  checkboxBoxOn: { backgroundColor: color.accent, borderColor: color.accent },
+  checkboxMark: { color: color.onAccent, fontSize: 14, lineHeight: 16, fontWeight: '900' },
   checkboxLabel: {
     flex: 1,
     fontFamily: fontFamily.body,
@@ -1071,30 +1325,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     alignSelf: 'flex-start',
+    maxWidth: '100%',
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm + 4,
     paddingVertical: spacing.xs + 3,
   },
-  ribbonInline: { backgroundColor: color.surface },
-  ribbonOnPhoto: { backgroundColor: 'rgba(25, 16, 22, 0.78)' },
+  /** Inline and on a photo are the same deep plate, so the pair reads as one thing. */
+  ribbonInline: { backgroundColor: color.inverse },
+  ribbonOnPhoto: { backgroundColor: overlay.plate },
   ribbonDot: {
     width: 8,
     height: 8,
     borderRadius: radius.pill,
-    backgroundColor: color.accentDeep,
+    backgroundColor: color.accent,
   },
   ribbonDotOpen: {
     backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: color.inkMuted,
+    borderColor: color.onInverse,
   },
   ribbonText: {
+    flexShrink: 1,
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
     letterSpacing: 1.3,
-    color: color.ink,
+    color: color.onInverse,
   },
-  ribbonTextOnPhoto: { color: color.onPhoto },
 
 
   avatar: {
@@ -1108,32 +1364,73 @@ const styles = StyleSheet.create({
   avatarImage: { resizeMode: 'cover' },
   avatarInitial: {
     fontFamily: fontFamily.display,
+    fontWeight: '700',
     fontSize: font.heading,
     color: color.inkMuted,
   },
 
   empty: {
-    paddingVertical: spacing.xl,
+    backgroundColor: color.surface,
+    borderWidth: 1,
+    borderColor: color.rule,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
+    ...elevation.card,
+  },
+  emptyMark: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.pill,
+    backgroundColor: color.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyGlyph: {
     fontFamily: fontFamily.display,
-    fontSize: 40,
-    lineHeight: 40,
-    color: color.veil,
+    fontWeight: '700',
+    fontSize: 34,
+    lineHeight: 38,
+    color: color.accentDeep,
+  },
+  emptyText: {
+    fontFamily: fontFamily.body,
+    fontSize: font.body,
+    lineHeight: font.body * 1.45,
+    color: color.inkMuted,
+    textAlign: 'center',
   },
 
   notice: {
-    backgroundColor: color.surface,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    backgroundColor: color.infoSoft,
     borderRadius: radius.sm,
     padding: spacing.md,
   },
-  // 4.76:1 for the error text on it.
   noticeError: { backgroundColor: color.dangerSoft },
-  noticeSuccess: { backgroundColor: color.accentSoft },
+  noticeSuccess: { backgroundColor: color.successSoft },
+  noticeGlyph: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.caption,
+    lineHeight: font.body * 1.45,
+    color: color.inkMuted,
+  },
+  noticeGlyphError: { color: color.danger },
+  noticeGlyphSuccess: { color: color.success },
+  noticeText: {
+    flex: 1,
+    fontFamily: fontFamily.body,
+    fontSize: font.body,
+    lineHeight: font.body * 1.45,
+    color: color.inkMuted,
+  },
   noticeErrorText: { color: color.danger },
+  noticeSuccessText: { color: color.success },
 
   rule: { height: 1, backgroundColor: color.rule },
 });

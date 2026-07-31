@@ -15,7 +15,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Image, ImageSourcePropType, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { fontFamily, radius, spacing } from '../theme';
+import { PhotoScrim } from './ui';
+import { color, fontFamily, overlay, radius, spacing } from '../theme';
 
 export function DestinationCard({
   name,
@@ -43,11 +44,10 @@ export function DestinationCard({
         <View style={styles.fill}>
           <Image source={source} style={StyleSheet.absoluteFillObject} resizeMode="cover" accessibilityIgnoresInvertColors />
           {/* The name has to read on any photograph, so it stands on its own
-              scrim rather than trusting the picture to be dark. */}
-          <LinearGradient
-            colors={['transparent', 'rgba(10, 6, 20, 0.72)']}
-            style={styles.scrim}
-          />
+              scrim rather than trusting the picture to be dark. The shared
+              scrim already runs the full height of the card, transparent at
+              the top and dark at the foot where the name sits. */}
+          <PhotoScrim />
           <View style={styles.content}>
             <View style={styles.chevron}>
               <Text style={styles.chevronGlyph}>›</Text>
@@ -78,13 +78,6 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.85 },
   fill: { flex: 1 },
-  scrim: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 64,
-  },
   content: {
     flex: 1,
     padding: spacing.sm + 4,
@@ -95,18 +88,21 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    // A plate rather than a tinted glass circle — there is no translucent
+    // white in this theme's token set, and a deep navy plate is exactly what
+    // D-058 already uses for any control that has to sit on a photograph.
+    backgroundColor: overlay.plate,
     alignItems: 'center',
     justifyContent: 'center',
   },
   chevronGlyph: {
-    color: '#FFFFFF',
+    color: color.onPhoto,
     fontFamily: fontFamily.bodySemi,
     fontSize: 18,
     lineHeight: 20,
   },
   name: {
-    color: '#FFFFFF',
+    color: color.onPhoto,
     fontFamily: fontFamily.display,
     fontSize: 18,
   },

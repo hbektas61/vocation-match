@@ -6,16 +6,15 @@
  * Each label is written in its own language ("English", "Türkçe"): the person
  * who needs to switch is precisely the person who cannot read the current one.
  *
- * The Figma pair (4:5/4:7): the resting pill is glass with the light
- * hairline, the chosen one wears the warm gradient with dark ink on it.
+ * The Figma pair (4:5/4:7): the resting pill is a white pill with the light
+ * hairline, the chosen one is flat coral with navy ink on it.
  */
-import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { COPY, type Locale } from '../copy';
 import { useAppStore } from '../state/AppStore';
-import { color, fontFamily, glass, gradient, radius, spacing } from '../theme';
+import { color, fontFamily, radius, spacing } from '../theme';
 
 const OPTIONS: { locale: Locale; label: string }[] = [
   { locale: 'en', label: 'English' },
@@ -39,15 +38,6 @@ export function LanguageSwitch({ testID = 'language-switch' }: { testID?: string
             style={[styles.pill, selected && styles.pillSelected]}
             testID={`${testID}-${option.locale}`}
           >
-            {selected ? (
-              <LinearGradient
-                colors={[...gradient.primary]}
-                start={{ x: 0, y: 0.5 }}
-                end={{ x: 1, y: 0.5 }}
-                style={StyleSheet.absoluteFillObject}
-                pointerEvents="none"
-              />
-            ) : null}
             <Text style={[styles.label, selected && styles.labelSelected]}>{option.label}</Text>
           </Pressable>
         );
@@ -64,11 +54,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: glass.edge,
-    backgroundColor: glass.fill,
+    borderColor: color.rule,
+    backgroundColor: color.surface,
     overflow: 'hidden',
   },
-  /** The fill is the gradient's fallback frame and the clip keeping it a pill. */
   pillSelected: { backgroundColor: color.accent, borderWidth: 0 },
   label: {
     fontFamily: fontFamily.bodySemi,

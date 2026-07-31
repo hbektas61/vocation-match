@@ -1,13 +1,13 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 import { LanguageSwitch } from '../../components/LanguageSwitch';
+import { PhotoScrim } from '../../components/ui';
 import { COPY } from '../../copy';
 import { useAppStore } from '../../state/AppStore';
-import { color, fontFamily, glass, gradient, backgroundGradient } from '../../theme';
+import { color, elevation, fontFamily } from '../../theme';
 import type { StepProps } from './types';
 
 /**
@@ -21,7 +21,7 @@ const ShieldDisc = () => (
   <View style={styles.shieldDisc}>
     <Svg width={22} height={22} viewBox="0 0 24 24" fill={color.accentDeep} stroke={color.accentDeep} strokeWidth={1.5} strokeLinejoin="round">
       <Path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
-      <Path d="M8.5 11.8l2.6 2.6 4.8-4.8" stroke="#FFFFFF" strokeWidth={2.2} fill="none" strokeLinecap="round" />
+      <Path d="M8.5 11.8l2.6 2.6 4.8-4.8" stroke={color.surface} strokeWidth={2.2} fill="none" strokeLinecap="round" />
     </Svg>
   </View>
 );
@@ -41,15 +41,9 @@ export function WelcomeStep({ go }: StepProps) {
   return (
     // The hero bleeds to the very top of the sheet (4:3), so only the bottom
     // edge takes the inset; the language pills carry the top inset themselves.
+    // D-058 dropped the sunset ground behind it: the screen below is the same
+    // flat cream every other screen sits on.
     <SafeAreaView style={styles.screen} edges={['bottom']} testID="screen-welcome">
-      <LinearGradient
-        colors={[...backgroundGradient]}
-        locations={[0, 0.45, 0.78, 1]}
-        start={{ x: 0.2, y: 0 }}
-        end={{ x: 0.8, y: 1 }}
-        style={StyleSheet.absoluteFillObject}
-        pointerEvents="none"
-      />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.heroWrap}>
           <Image
@@ -58,13 +52,9 @@ export function WelcomeStep({ go }: StepProps) {
             resizeMode="cover"
             accessibilityIgnoresInvertColors
           />
-          {/* The sheet's stand-in falls into #12162E at its foot; the real
-              photograph does the same so the words below stand on night. */}
-          <LinearGradient
-            colors={['transparent', '#12162E']}
-            style={styles.heroFade}
-            pointerEvents="none"
-          />
+          {/* The shared photo scrim, so the hero darkens at its foot the same
+              way any photograph with text over it does. */}
+          <PhotoScrim style={styles.heroFade} />
           {/* The first decision on the first screen: which language the rest
               of this conversation happens in. Floats over the hero (4:4). */}
           <View style={[styles.languageRow, { top: insets.top + 14 }]}>
@@ -79,7 +69,7 @@ export function WelcomeStep({ go }: StepProps) {
           </Text>
           <Text style={styles.body}>{COPY.onboarding.welcome.body}</Text>
 
-          {/* The trust card (4:12): glass at 18, the 44 disc, 14/12 words. */}
+          {/* The trust card (4:12): a white card at 18, the 44 disc, 14/12 words. */}
           <View style={styles.trustCard}>
             <ShieldDisc />
             <View style={styles.trustWords}>
@@ -88,8 +78,8 @@ export function WelcomeStep({ go }: StepProps) {
             </View>
           </View>
 
-          {/* The sheet's outsized welcome action (4:17): the warm gradient,
-              a hundred tall, with the pink glow under it. */}
+          {/* The sheet's outsized welcome action (4:17): flat coral,
+              a hundred tall, with the coral glow under it. */}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={COPY.onboarding.welcome.continueWithPhone}
@@ -100,13 +90,6 @@ export function WelcomeStep({ go }: StepProps) {
             style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
             testID="welcome-phone"
           >
-            <LinearGradient
-              colors={[...gradient.primary]}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={StyleSheet.absoluteFillObject}
-              pointerEvents="none"
-            />
             <Text style={styles.ctaLabel}>{COPY.onboarding.welcome.continueWithPhone}</Text>
           </Pressable>
         </View>
@@ -157,17 +140,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     alignSelf: 'stretch',
-    backgroundColor: glass.fill,
+    backgroundColor: color.surface,
     borderWidth: 1,
-    borderColor: glass.edge,
+    borderColor: color.rule,
     borderRadius: 18,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...elevation.card,
   },
   shieldDisc: {
     width: 44,
@@ -198,7 +177,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.accent,
     overflow: 'hidden',
     marginTop: 'auto',
-    shadowColor: '#EC4899',
+    shadowColor: color.accent,
     shadowOpacity: 0.45,
     shadowRadius: 11,
     shadowOffset: { width: 0, height: 8 },

@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { COPY } from '../../copy';
-import { color, fontFamily, glass } from '../../theme';
+import { color, fontFamily } from '../../theme';
 import { OnboardingScaffold } from '../OnboardingScaffold';
 import type { StepProps } from './types';
 
@@ -26,8 +26,8 @@ export function PromiseStep({ step, total, go, onBack }: StepProps) {
       onAction={() => go('phone')}
       testID="screen-onboarding-promise"
     >
-      {/* The sheet's rules card (8:91): glass at 20, the pink point before
-          each promise, every word in ink at 13. */}
+      {/* The sheet's rules card (8:91): a white card at 20, the coral point
+          before each promise, every word in ink at 13. */}
       <View style={styles.rulesCard}>
         {COPY.onboarding.promise.points.map((point) => (
           <View key={point} style={styles.point}>
@@ -42,9 +42,9 @@ export function PromiseStep({ step, total, go, onBack }: StepProps) {
 
 const styles = StyleSheet.create({
   rulesCard: {
-    backgroundColor: glass.fill,
+    backgroundColor: color.surface,
     borderWidth: 1,
-    borderColor: glass.edge,
+    borderColor: color.rule,
     borderRadius: 20,
     padding: 16,
     gap: 12,

@@ -8,10 +8,10 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Button, StateChip } from './ui';
+import { Button, PremiumBadge, StateChip } from './ui';
 import { COPY, roomPlate, upperCase } from '../copy';
 import type { RoomKey, RoomStatus } from '../data';
-import { color, fontFamily, glass, palette } from '../theme';
+import { color, elevation, fontFamily, radius } from '../theme';
 
 export function VacationFeatureCard({
   room,
@@ -54,7 +54,10 @@ export function VacationFeatureCard({
       <View style={styles.head}>
         <Text style={styles.plate}>{upperCase(roomPlate(room))}</Text>
         {tag ? (
-          <Text style={styles.tag}>{upperCase(tag)}</Text>
+          // The shared premium plate — pale sand with dark gold type — rather
+          // than a bespoke label, so a gated feature reads the same way
+          // wherever Premium is mentioned.
+          <PremiumBadge label={tag} />
         ) : (
           <StateChip
             open={open}
@@ -75,37 +78,29 @@ export function VacationFeatureCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: glass.fill,
+    backgroundColor: color.surface,
     borderWidth: 1,
-    borderColor: glass.edge,
-    borderRadius: 20,
+    borderColor: color.rule,
+    borderRadius: radius.lg,
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 10,
-    shadowColor: '#000000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...elevation.card,
   },
   head: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  /* The Figma plate (10:88): a bare tracked label in gold, no pill. */
+  /* The Figma plate (10:88): a bare tracked label, no pill. D-058 moved it off
+     the metal gold — which was never about premium here, just a stylistic
+     accent — onto the brand's text sibling, so the card keeps a spot of
+     colour without borrowing a hue that means something else on this screen. */
   plate: {
     fontFamily: fontFamily.bodySemi,
     fontSize: 11,
     letterSpacing: 1.6,
-    color: palette.gold,
-  },
-  /* PREMIUM (10:134): a size down from the plate, in the brand pink. */
-  tag: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 10,
-    letterSpacing: 1.2,
-    color: color.accent,
+    color: color.accentDeep,
   },
   lead: {
     fontFamily: fontFamily.bodySemi,

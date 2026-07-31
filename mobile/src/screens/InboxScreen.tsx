@@ -3,15 +3,14 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Avatar, Button, Notice, Screen } from '../components/ui';
+import { Avatar, Button, EmptyState, Notice, Screen } from '../components/ui';
 import { ProfileRing } from '../components/ProfileRing';
-import { LinearGradient } from 'expo-linear-gradient';
 import { apiErrorMessage, COPY, COPY_FOR, roomPlate } from '../copy';
 import { ApiError, getApi, type MatchSummary } from '../data';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
-import { color, font, fontFamily, glass } from '../theme';
+import { color, elevation, font, fontFamily, spacing } from '../theme';
 
 /** The owner's own 3D lobby render (2026-07-28), bundled — not a redrawing. */
 const INBOX_HERO = require('../../assets/dark-inbox-chat.png');
@@ -81,9 +80,16 @@ export function InboxScreen() {
       ) : matches === null ? (
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="inbox-loading" />
       ) : matches.length === 0 ? (
-        /* The sheet's empty inbox (12:137): the line under the head, the
-           lobby art in the 180 band, why it is empty in one sentence, and
-           both ways to change that — top-anchored, not floated. */
+        /*
+         * The sheet's empty inbox (12:137): the line under the head, the
+         * lobby art in the 180 band, why it is empty in one sentence, and
+         * both ways to change that — top-anchored, not floated.
+         *
+         * The hero art and its own title are real content, not decoration,
+         * so they stay outside the shared `<EmptyState>` — that primitive's
+         * API is one message and one action and has no room for either. The
+         * explanation and the two ways forward are what it was built for.
+         */
         <View style={styles.empty} testID="inbox-empty">
           <Text style={styles.subtitle}>{COPY.inbox.subtitle}</Text>
           <Image
@@ -95,17 +101,23 @@ export function InboxScreen() {
           <Text accessibilityRole="header" style={styles.emptyTitle}>
             {COPY.inbox.emptyTitle}
           </Text>
-          <Text style={styles.emptyBody}>{COPY.inbox.emptyBody}</Text>
-          <Button
-            label={COPY.inbox.startDiscovering}
-            onPress={() => tabNavigation.navigate('Discovery')}
-            testID="inbox-start-discovering"
-          />
-          <Button
-            label={COPY.inbox.viewRooms}
-            variant="secondary"
-            onPress={() => tabNavigation.navigate('Vacation')}
-            testID="inbox-view-rooms"
+          <EmptyState
+            message={COPY.inbox.emptyBody}
+            action={
+              <View style={styles.emptyActions}>
+                <Button
+                  label={COPY.inbox.startDiscovering}
+                  onPress={() => tabNavigation.navigate('Discovery')}
+                  testID="inbox-start-discovering"
+                />
+                <Button
+                  label={COPY.inbox.viewRooms}
+                  variant="secondary"
+                  onPress={() => tabNavigation.navigate('Vacation')}
+                  testID="inbox-view-rooms"
+                />
+              </View>
+            }
           />
         </View>
       ) : (
@@ -124,19 +136,17 @@ export function InboxScreen() {
                     style={styles.freshItem}
                     testID={`inbox-${match.matchId}`}
                   >
-                    <LinearGradient
-                      colors={['#FBBF24', '#FB7185', '#EC4899']}
-                      start={{ x: 0, y: 0.5 }}
-                      end={{ x: 1, y: 0.5 }}
-                      style={styles.freshRing}
-                    >
+                    {/* A fresh match's collar is a solid coral mark rather
+                        than a gradient — D-058 keeps the sunset gradient out
+                        of anything that is not the match moment itself. */}
+                    <View style={styles.freshRing}>
                       <Avatar
                         url={match.photoPath ? photoUrls[match.photoPath] ?? null : null}
                         name={match.displayName}
                         size="md"
                         testID={`inbox-photo-${match.matchId}`}
                       />
-                    </LinearGradient>
+                    </View>
                     <Text style={styles.freshName}>{firstName(match.displayName)}</Text>
                   </Pressable>
                 ))}
@@ -276,6 +286,8 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 20,
   },
+  /** The two ways forward, full width inside the centred `<EmptyState>` card. */
+  emptyActions: { alignSelf: 'stretch', gap: spacing.sm },
   /** The sheet's head row (12:167). */
   headRow: {
     flexDirection: 'row',
@@ -288,42 +300,31 @@ const styles = StyleSheet.create({
     lineHeight: 34 * 1.15,
     color: color.ink,
   },
-  profileRing: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    borderWidth: 1.4,
-    borderColor: 'rgba(244, 114, 182, 0.5)',
-  },
-  pressedDim: { opacity: 0.8 },
   /** The new-match strip (12:170): 14 between faces, 6 under each. */
   freshRow: { flexDirection: 'row', gap: 14 },
   freshItem: { alignItems: 'center', gap: 6 },
-  /** The warm 64 collar (12:172): 4 of gradient around the 56 face. */
+  /** The 64 collar (12:172): 4 of solid coral around the 56 face. */
   freshRing: {
     padding: 4,
     borderRadius: 32,
+    backgroundColor: color.accent,
   },
   freshName: {
     fontFamily: fontFamily.bodyMedium,
     fontSize: 12,
     color: color.ink,
   },
-  /** The sheet's conversation row (12:183): glass, 18 corners, 12 inside. */
+  /** The sheet's conversation row (12:183): white, 18 corners, 12 inside. */
   chatCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: glass.fill,
+    backgroundColor: color.surface,
     borderWidth: 1,
-    borderColor: glass.edge,
+    borderColor: color.rule,
     borderRadius: 18,
     padding: 12,
-    shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...elevation.card,
   },
   /** Readable, dimmed: a closed conversation is history, not a mistake. */
   rowClosed: { opacity: 0.55 },

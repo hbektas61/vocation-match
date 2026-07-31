@@ -6,12 +6,14 @@
  * worse than none — it is the reason a reviewer stops checking. So the ratios
  * are computed here from the actual tokens.
  *
- * The second half is about the brand colours specifically (the owner's
- * "rendevuu" trial, D-043): neither pink can carry body text on white, and
- * the gold end of the gradient cannot carry white at all — which is why the
- * navy does the reading and every label on the gradient is ink.
+ * D-058 moved the ground from night navy to warm cream, which inverts every
+ * one of those questions: what a colour may do on a light surface is not what
+ * it could do on a dark one. The second half is about the coral specifically.
+ * It cannot carry small text on white (2.99:1) and cannot carry white text at
+ * all (2.99:1), so the brand does its reading in a darker sibling and every
+ * label on a coral fill is navy.
  */
-import { color, gradient, palette, roomTone } from '../theme';
+import { color, elevation, gradient, palette, radius, roomTone, tokens } from '../theme';
 
 /** WCAG 2.x relative luminance. */
 function luminance(hex: string): number {
@@ -31,79 +33,150 @@ function contrast(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-const GROUND = '#2A2350';
+/** The two grounds every light surface is measured against. */
+const GROUND = '#FFF9F5';
+const SURFACE = '#FFFFFF';
 
-describe('the owner’s palette', () => {
-  it('uses exactly the rendevuu hexes that were specified (D-043/D-044)', () => {
-    // Not "about these colours". The owner gave the hexes; drifting off one
-    // by a shade to win a contrast argument would answer a different brief.
-    expect(palette.navy).toBe('#0F1B3D');
-    expect(palette.inkDark).toBe('#1A1A2E');
-    expect(palette.gold).toBe('#FBBF24');
-    expect(palette.goldLight).toBe('#FCD34D');
-    expect(palette.coral).toBe('#FB7185');
-    expect(palette.pink).toBe('#EC4899');
-    expect(palette.pinkLight).toBe('#F472B6');
-    expect(gradient.primary).toEqual(['#FBBF24', '#FB7185', '#EC4899']);
-    expect(gradient.primaryPressed).toEqual(['#FCD34D', '#FB7185', '#F472B6']);
+describe('the D-058 palette', () => {
+  it('uses exactly the hexes the brief specified', () => {
+    // Not "about these colours". The brief gave the hexes; drifting off one by
+    // a shade to win a contrast argument would answer a different brief. The
+    // one value that had to move is `text.secondary`, and it moved by being
+    // kept as `text.tertiary` rather than by being changed — see below.
+    expect(tokens.background.primary).toBe('#FFF9F5');
+    expect(tokens.surface.primary).toBe('#FFFFFF');
+    expect(tokens.text.primary).toBe('#101A3A');
+    expect(tokens.text.tertiary).toBe('#7C8194');
+    expect(tokens.border.subtle).toBe('#E8EBEF');
+    expect(tokens.brand.primary).toBe('#FF5E62');
+    expect(tokens.brand.primaryPressed).toBe('#E94F54');
+    expect(tokens.brand.soft).toBe('#FFE3E0');
+    expect(tokens.brand.navy).toBe('#101A3A');
+    expect(tokens.premium.gold).toBe('#D4AF37');
+    expect(tokens.success.base).toBe('#22C55E');
   });
 
-  it('has no lavender, sand, sea or ocean left anywhere in it', () => {
+  it('has no night ground, sunset gradient or rendevuu pink left in it', () => {
     const retired = [
-      '#E1C4FF', '#7B4FA8', '#F3E9FF', '#9678BE', '#8A5FD6',
-      '#E6CF9D', '#FAF2DF', '#176B7A', '#70C7D8', '#DDF3F7', '#F1FAFB', '#17343C',
+      // D-046's sunset ground and its stops.
+      '#241E49', '#3A2B63', '#8A4A6F', '#D97B52',
+      // D-044's night surfaces.
+      '#2A2350', '#3A3168', '#0F1B3D', '#321F45', '#2A3052',
+      // D-043's pinks, golds and night inks.
+      '#EC4899', '#F472B6', '#FBBF24', '#FCD34D', '#FB7185', '#1A1A2E',
+      '#F5F6FA', '#A3A9C9', '#F87171', '#3B1F2B', '#34D399',
     ];
-    const inUse = Object.values(palette).map((v) => v.toUpperCase());
+    const inUse = [
+      ...Object.values(palette),
+      ...Object.values(tokens).flatMap((group) => Object.values(group)),
+    ].map((v) => String(v).toUpperCase());
     for (const gone of retired) {
       expect(inUse).not.toContain(gone);
     }
   });
 
-  it('puts the lifted indigo under everything (D-046)', () => {
-    expect(color.background).toBe('#2A2350');
-    expect(color.surface).toBe('#3A3168');
+  it('puts the warm cream under everything and white on top of it', () => {
+    expect(color.background).toBe('#FFF9F5');
+    expect(color.surface).toBe('#FFFFFF');
+    // A white card only reads as lifted off a cream ground if it is actually a
+    // different value and it is actually lifted.
+    expect(color.surface).not.toBe(color.background);
+    expect(elevation.card.elevation).toBeGreaterThan(0);
+    expect(elevation.card.shadowOpacity).toBeGreaterThan(0);
+  });
+
+  it('keeps the card radius inside the 18–22 the brief asked for', () => {
+    expect(radius.lg).toBeGreaterThanOrEqual(18);
+    expect(radius.lg).toBeLessThanOrEqual(22);
   });
 });
 
-describe('what the pinks are allowed to do at night', () => {
-  it('the light pink reads as accent text on the ground', () => {
+describe('what the coral is allowed to do on a light ground', () => {
+  it('never carries small text on white, so the brand reads in its dark sibling', () => {
+    // The measurement that decides the whole system: 2.99:1.
+    expect(contrast(tokens.brand.primary, SURFACE)).toBeLessThan(4.5);
+    // …which is why anything coral-and-readable is this one instead.
+    expect(contrast(color.accentDeep, SURFACE)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(color.accentDeep, GROUND)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(color.accentDeep, color.accentSoft)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(color.accentDeep, color.accentWash)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('the strong pink clears a control edge on the ground', () => {
-    expect(contrast(palette.pink, GROUND)).toBeGreaterThanOrEqual(3);
-  });
-
-  it('never carries white text on the fill, and the gradient label is the dark ink', () => {
-    expect(color.onAccent).toBe(palette.inkDark);
+  it('never carries white on the fill, and the label on a coral CTA is navy', () => {
+    expect(contrast('#FFFFFF', tokens.brand.primary)).toBeLessThan(3);
+    expect(color.onAccent).toBe(tokens.brand.navy);
     expect(contrast(color.onAccent, color.accent)).toBeGreaterThanOrEqual(4.5);
-    // The label must survive the gradient's WORST stop, not its average.
-    for (const stop of gradient.primary) {
-      expect(contrast(palette.inkDark, stop)).toBeGreaterThanOrEqual(4.5);
-    }
+    // The pressed fill is a state of the same button, so its label must survive too.
+    expect(contrast(color.onAccent, tokens.brand.primaryPressed)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('opens the match moment on a stop white display type can actually sit on', () => {
+    // The one full-colour screen. Display type is large text, so 3:1 — and the
+    // brand coral would give 2.99, which is why the gradient starts deeper.
+    expect(contrast('#FFFFFF', gradient.match[0])).toBeGreaterThanOrEqual(3);
+    // Its pale end carries the supporting sentence, in navy, at body contrast.
+    expect(contrast(color.ink, gradient.match[gradient.match.length - 1])).toBeGreaterThanOrEqual(4.5);
   });
 });
 
-describe('text and edges against the ground they are used on', () => {
-  it('reads at body-text contrast on the night ground', () => {
-    expect(contrast(color.ink, GROUND)).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(color.inkMuted, GROUND)).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(color.ink, color.surface)).toBeGreaterThanOrEqual(4.5);
+describe('text and edges against the surfaces they are used on', () => {
+  it('reads at body-text contrast on both the ground and a card', () => {
+    for (const ground of [GROUND, SURFACE]) {
+      expect(contrast(color.ink, ground)).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(color.inkMuted, ground)).toBeGreaterThanOrEqual(4.5);
+    }
+    // The sunken step inside a card is a third surface and gets asked too.
+    expect(contrast(color.inkMuted, color.veil)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('keeps the brief’s secondary grey only where WCAG does not ask for 4.5', () => {
+    // #7C8194 measures 3.87:1 on white. It is still in the system — as the
+    // placeholder and disabled colour, which is exempt — but nothing anybody
+    // has to read is drawn in it.
+    expect(contrast(tokens.text.tertiary, SURFACE)).toBeLessThan(4.5);
+    expect(color.inkMuted).not.toBe(tokens.text.tertiary);
   });
 
   it('marks where a control starts at 3:1', () => {
-    // WCAG 1.4.11. `rule` is exempt on purpose: it divides paragraphs and is
-    // never the edge of anything you can operate.
+    // WCAG 1.4.11. `rule` is exempt on purpose: it divides content and edges
+    // cards, and is never the boundary of anything you can operate.
+    expect(contrast(color.border, SURFACE)).toBeGreaterThanOrEqual(3);
     expect(contrast(color.border, GROUND)).toBeGreaterThanOrEqual(3);
   });
 
-  it('keeps the error colour readable both ways round', () => {
-    expect(contrast(color.danger, GROUND)).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(color.onDanger, color.danger)).toBeGreaterThanOrEqual(4.5);
+  it('draws focus in something visible rather than in the coral', () => {
+    expect(contrast(color.focus, SURFACE)).toBeGreaterThanOrEqual(3);
   });
 
-  it('reads on a selected surface', () => {
+  it('keeps the error colour readable both ways round, and apart from the brand', () => {
+    expect(contrast(color.danger, GROUND)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(color.danger, color.dangerSoft)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(color.onDanger, color.danger)).toBeGreaterThanOrEqual(4.5);
+    // A destructive action must not be the same red as a like.
+    expect(color.danger).not.toBe(color.accent);
+    expect(color.danger).not.toBe(color.accentDeep);
+  });
+
+  it('reads on every tinted surface the system offers', () => {
     expect(contrast(color.ink, color.accentSoft)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(color.success, color.successSoft)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(color.premium, color.premiumSoft)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(color.ink, color.infoSoft)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('reads on the one deep surface: the context ribbon', () => {
+    expect(contrast(color.onInverse, color.inverse)).toBeGreaterThanOrEqual(4.5);
+    // The coral mark on it is a mark, not text, so 3:1 is the bar it has to clear.
+    expect(contrast(color.accent, color.inverse)).toBeGreaterThanOrEqual(3);
+  });
+
+  it('does not let the gold or the green carry their own word', () => {
+    // Both are marks. The text beside them is the dark sibling, and this is
+    // the assertion that stops somebody "simplifying" that away.
+    expect(contrast(color.premiumMark, SURFACE)).toBeLessThan(4.5);
+    expect(contrast(color.successMark, SURFACE)).toBeLessThan(4.5);
+    expect(contrast(color.premium, SURFACE)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(color.success, SURFACE)).toBeGreaterThanOrEqual(4.5);
   });
 });
 

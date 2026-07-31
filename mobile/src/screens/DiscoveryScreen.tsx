@@ -6,7 +6,7 @@ import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'rea
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import { Body, Button, Notice, Screen, ScreenHeader } from '../components/ui';
+import { Body, Button, ContextRibbon, Notice, RoomRibbon, Screen, ScreenHeader } from '../components/ui';
 import { BigActionButton } from '../components/BigActionButton';
 import { RadarEmpty } from '../components/RadarEmpty';
 import { ContextSelector, CONTEXT_ORDER, type ContextRow } from '../components/ContextSelector';
@@ -15,7 +15,7 @@ import { apiErrorMessage, COPY, COPY_FOR, upperCase, roomPlate, roomStatusExplan
 import { ApiError, getApi, type CandidateCard, type MyEvent, type RoomKey, type RoomStatus } from '../data';
 import { resolveDeckLabels } from '../data/venueLabels';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
-import { color, font, fontFamily, palette, radius, spacing, gradient } from '../theme';
+import { color, elevation, font, fontFamily, gradient, overlay, radius, spacing } from '../theme';
 import { earliestRoomExpiry } from '../state/roomSchedule';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
@@ -25,33 +25,38 @@ const DOOR_HERO = require('../../assets/discovery-door.jpg');
 const NO_HOTEL_ART = require('../../assets/dark-hotel-pin.png');
 
 const XIcon = () => (
-  <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke={'#0F1B3D'} strokeWidth={2.6} strokeLinecap="round">
+  <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke={color.ink} strokeWidth={2.6} strokeLinecap="round">
     <Path d="M6 6l12 12M18 6L6 18" />
   </Svg>
 );
 
+// The like button is a coral fill (D-058), and coral cannot carry a white
+// glyph at 4.5:1 any more than it can carry white text — this is the same
+// `color.onAccent` navy the shared `<ActionButton tone="like">` draws.
 const HeartIcon = () => (
-  <Svg width={34} height={34} viewBox="0 0 24 24" fill="#FFFFFF">
+  <Svg width={34} height={34} viewBox="0 0 24 24" fill={color.onAccent}>
     <Path d="M12 8c0-4.5-7.2-4.5-7.2 0 0 4 4.7 6.8 7.2 8.7 2.5-1.9 7.2-4.7 7.2-8.7 0-4.5-7.2-4.5-7.2 0z" />
   </Svg>
 );
 
 const FlagIcon = () => (
-  <Svg width={22} height={22} viewBox="0 0 24 24" fill="#0F1B3D" stroke="#0F1B3D" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
-    <Path d="M4 21V4c3-2 6 2 9 0s4-1 7 0v11c-3-1-4-2-7 0s-6-2-9 0z" fill="#0F1B3D" />
-    <Path d="M4 22V3" stroke="#0F1B3D" fill="none" />
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill={color.ink} stroke={color.ink} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M4 21V4c3-2 6 2 9 0s4-1 7 0v11c-3-1-4-2-7 0s-6-2-9 0z" fill={color.ink} />
+    <Path d="M4 22V3" stroke={color.ink} fill="none" />
   </Svg>
 );
 
+// These two ride on the deep navy plates over the photo, so they take the
+// same `onPhoto` white the plates' text does.
 const BuildingTinyIcon = () => (
-  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={color.onPhoto} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
     <Rect x={5} y={3} width={14} height={18} rx={2} />
     <Path d="M9 8h2m2 0h2M9 12h2m2 0h2M10 21v-4h4v4" />
   </Svg>
 );
 
 const PinTinyIcon = () => (
-  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={color.onPhoto} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
     <Path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
     <Circle cx={12} cy={10} r={3} />
   </Svg>
@@ -578,16 +583,21 @@ export function DiscoveryScreen() {
             </>
           ) : null}
 
-          {/* The two chips of the reference: the room, white on the photo,
-              and the bond — same venue, or the neighbour's venue by name
-              (D-038): the label is what keeps the region pool honest. */}
+          {/* The two chips of the reference: the room, on its own deep-navy
+              plate over the photo, and the bond — same venue, or the
+              neighbour's venue by name (D-038): the label is what keeps the
+              region pool honest. D-058: the room chip is the shared
+              `<RoomRibbon>` for the two hotel rooms, so this card gets the
+              same filled/hollow-dot distinction the rest of the app already
+              draws between Here Now and Upcoming; Çevremde and the two event
+              rooms fall back to the generic `<ContextRibbon>` plate, since
+              `RoomRibbon` only speaks the hotel rooms' vocabulary. */}
           <View style={styles.chipRowTop} pointerEvents="none">
-            <View style={styles.roomChip} testID="candidate-room">
-              <View style={styles.roomChipDot} />
-              <Text style={styles.roomChipText}>
-                {upperCase(roomPlate(room))}
-              </Text>
-            </View>
+            {room === 'UPCOMING' || room === 'HERE_NOW' ? (
+              <RoomRibbon room={room} hotelName={null} onPhoto testID="candidate-room" />
+            ) : (
+              <ContextRibbon label={upperCase(roomPlate(room))} testID="candidate-room" />
+            )}
             <View
               style={styles.sameHotelChip}
               testID={candidate.sameVenue ? 'card-bond-same' : 'card-bond-nearby'}
@@ -609,9 +619,12 @@ export function DiscoveryScreen() {
           </View>
 
           {/* Identity on the photo's foot, on its own scrim: name and age,
-              the bio, and the hotel worn as a pill. */}
+              the bio, and the hotel worn as a pill. `gradient.photoScrim` is
+              the fixed readability scrim D-058 asks every photo carry — a
+              photo can be any brightness, so the darkness is drawn rather
+              than hoped for. */}
           <LinearGradient
-            colors={['transparent', 'rgba(8, 5, 16, 0.82)']}
+            colors={[...gradient.photoScrim]}
             style={styles.cardScrim}
             pointerEvents="none"
           />
@@ -673,13 +686,6 @@ export function DiscoveryScreen() {
             style={styles.actionHeart}
             testID="swipe-like"
           >
-            <LinearGradient
-              colors={[...gradient.primary]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFillObject}
-              pointerEvents="none"
-            />
             <HeartIcon />
           </Pressable>
           <Pressable
@@ -811,7 +817,11 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
     gap: spacing.sm + 2,
   },
-  /** The card is the screen: everything else stands on the photograph. */
+  /**
+   * The card is the screen: everything else stands on the photograph. Lifted
+   * with the shared `elevation.raised` rather than a hand-rolled shadow, since
+   * this is the one floating surface on the whole screen.
+   */
   card: {
     flex: 1,
     marginHorizontal: spacing.md,
@@ -819,11 +829,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     overflow: 'hidden',
     backgroundColor: color.veil,
-    shadowColor: '#000000',
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
+    ...elevation.raised,
   },
   cardPhoto: { ...StyleSheet.absoluteFillObject },
   chipRowTop: {
@@ -835,33 +841,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  roomChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#FFFFFF',
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm + 6,
-    paddingVertical: 8,
-  },
-  roomChipDot: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    borderWidth: 2.5,
-    borderColor: color.accentDeep,
-  },
-  roomChipText: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.label,
-    letterSpacing: 1,
-    color: color.accentDeep,
-  },
+  /**
+   * The bond chip — same venue, or a neighbour's by name. A deep navy plate
+   * over the photo, matching the room ribbon it sits beside.
+   */
   sameHotelChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(40, 36, 50, 0.55)',
+    backgroundColor: overlay.plate,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm + 6,
     paddingVertical: 8,
@@ -869,7 +857,7 @@ const styles = StyleSheet.create({
   sameHotelText: {
     fontFamily: fontFamily.bodyMedium,
     fontSize: font.caption,
-    color: '#FFFFFF',
+    color: color.onPhoto,
   },
   cardScrim: {
     position: 'absolute',
@@ -888,25 +876,26 @@ const styles = StyleSheet.create({
   cardName: {
     fontFamily: fontFamily.display,
     fontSize: 36,
-    color: '#FFFFFF',
+    color: color.onPhoto,
   },
   cardAge: {
     fontFamily: fontFamily.body,
     fontSize: 34,
-    color: 'rgba(255,255,255,0.95)',
+    color: color.onPhoto,
   },
   cardBio: {
     fontFamily: fontFamily.body,
     fontSize: font.body,
     lineHeight: font.body * 1.4,
-    color: 'rgba(255,255,255,0.95)',
+    color: color.onPhoto,
   },
+  /** A deep navy plate, matching the ribbon and the bond chip above it. */
   hotelChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    backgroundColor: overlay.plate,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm + 6,
     paddingVertical: 8,
@@ -914,7 +903,7 @@ const styles = StyleSheet.create({
   hotelChipText: {
     fontFamily: fontFamily.bodyMedium,
     fontSize: font.caption,
-    color: '#FFFFFF',
+    color: color.onPhoto,
   },
   /** Under the card, as the reference draws them. */
   segments: {
@@ -927,7 +916,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(20, 22, 26, 0.12)',
+    backgroundColor: color.veil,
   },
   segmentActive: { backgroundColor: color.accentDeep },
   /** Three circles on the ground: 64 · 84 · 64, the heart carrying the size. */
@@ -938,28 +927,28 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     paddingVertical: spacing.sm + 4,
   },
+  /** Pass and the safety flag: white, with the quiet card edge. */
   actionCircle: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: color.surface,
+    borderWidth: 1.5,
+    borderColor: color.rule,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    ...elevation.raised,
   },
+  /** Like: a flat coral fill — never a gradient, per D-058. */
   actionHeart: {
     overflow: 'hidden',
     width: 84,
     height: 84,
     borderRadius: 42,
-    backgroundColor: color.accentDeep,
+    backgroundColor: color.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: color.accentDeep,
+    shadowColor: color.accent,
     shadowOpacity: 0.35,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 6 },
@@ -974,7 +963,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.display,
     fontSize: 128,
     lineHeight: 140,
-    color: palette.placeholder,
+    color: color.inkFaint,
   },
   /** Below the top scrim and the action row, so both stay tappable. */
   tapZoneLeft: {

@@ -1,20 +1,16 @@
 /**
  * The hero-state action button from the owner's mocks (2026-07-28): a tall
- * pill with a leading icon, the label, and a trailing chevron — filled in
- * the deep brand purple with white type, or outlined with the purple type.
- * Used on the empty hero screens (Discovery before a room, the empty
+ * pill with a leading icon, the label, and a trailing chevron — filled flat
+ * coral with the navy the fill can carry, or outlined white with the navy
+ * type. Used on the empty hero screens (Discovery before a room, the empty
  * inbox), where the mocks size actions louder than the app's regular
  * buttons.
  */
 import React from 'react';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { gradient, fontFamily, radius, spacing } from '../theme';
-
-const FILL = '#EC4899';
-const DEEP = '#0F1B3D';
+import { color, fontFamily, radius, spacing } from '../theme';
 
 export type BigActionIcon = 'door' | 'compass' | 'sparkle';
 
@@ -64,7 +60,9 @@ export function BigActionButton({
   onPress: () => void;
   testID?: string;
 }) {
-  const tone = filled ? '#1A1A2E' : DEEP;
+  // Filled: navy on the coral fill, the same rule as every coral surface —
+  // the fill cannot carry white at 4.5:1. Outline: navy on white.
+  const tone = filled ? color.onAccent : color.ink;
   return (
     <Pressable
       accessibilityRole="button"
@@ -77,16 +75,7 @@ export function BigActionButton({
       ]}
       testID={testID}
     >
-      {filled ? (
-        <LinearGradient
-          colors={[...gradient.primary]}
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          style={StyleSheet.absoluteFillObject}
-          pointerEvents="none"
-        />
-      ) : null}
-      <View style={[styles.iconSeat, filled && styles.iconSeatFilled]}>
+      <View style={styles.iconSeat}>
         <Icon name={icon} color={tone} />
       </View>
       <Text style={[styles.label, { color: tone }]} numberOfLines={1}>
@@ -106,19 +95,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     gap: spacing.sm,
   },
+  /** A flat coral fill — never a gradient, per D-058. */
   filled: {
-    overflow: 'hidden',
-    backgroundColor: FILL,
-    shadowColor: FILL,
+    backgroundColor: color.accent,
+    shadowColor: color.accent,
     shadowOpacity: 0.35,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 5 },
     elevation: 4,
   },
   outline: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: color.surface,
     borderWidth: 1.5,
-    borderColor: 'rgba(236, 72, 153, 0.5)',
+    borderColor: color.border,
   },
   pressed: { opacity: 0.85 },
   iconSeat: {
@@ -128,7 +117,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconSeatFilled: { backgroundColor: 'rgba(255, 255, 255, 0.35)' },
   label: {
     flex: 1,
     textAlign: 'center',

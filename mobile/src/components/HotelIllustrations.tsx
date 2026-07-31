@@ -2,16 +2,24 @@
  * The hotel screen's two drawings, from the designer's reference
  * (2026-07-27): a little hotel standing in a pale disc for the
  * nothing-chosen card, and a magnifying glass over a quiet landscape for
- * the type-to-search state. Both are flat SVG in the pinned palette —
- * no photos, no emoji — so they render identically everywhere and weigh
- * nothing.
+ * the type-to-search state. Both are flat SVG — no photos, no emoji — so
+ * they render identically everywhere and weigh nothing.
+ *
+ * D-058: navy line work, the brand coral for the mid layer, and its two pale
+ * steps for what were alpha-blended pink tints on the old night ground. No
+ * literal transparency remains — every tier is one of the theme's own flat
+ * tokens, chosen so the drawing still reads on a white card.
  */
 import React from 'react';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-const DEEP = '#0F1B3D';
-const MID = 'rgba(236, 72, 153, 0.45)';
-const SOFT = 'rgba(236, 72, 153, 0.18)';
+import { color } from '../theme';
+
+const DEEP = color.ink;
+const MID = color.accent;
+const SOFT = color.accentSoft;
+const FAINT = color.accentWash;
+const WHITE = color.surface;
 
 /** A small hotel with an H sign, two trees, and a cloud. */
 export function HotelBuilding({ size = 64 }: { size?: number }) {
@@ -23,13 +31,13 @@ export function HotelBuilding({ size = 64 }: { size?: number }) {
         fill={SOFT}
       />
       {/* building */}
-      <Rect x={22} y={14} width={20} height={38} rx={2} fill="#FFFFFF" stroke={MID} strokeWidth={2} />
+      <Rect x={22} y={14} width={20} height={38} rx={2} fill={WHITE} stroke={MID} strokeWidth={2} />
       {/* roof sign */}
       <Rect x={27} y={7} width={10} height={8} rx={2} fill={DEEP} />
-      <Path d="M30.6 9v4M33.4 9v4M30.6 11h2.8" stroke="#FFFFFF" strokeWidth={1.4} strokeLinecap="round" />
+      <Path d="M30.6 9v4M33.4 9v4M30.6 11h2.8" stroke={WHITE} strokeWidth={1.4} strokeLinecap="round" />
       {/* wings */}
-      <Rect x={14} y={26} width={8} height={26} rx={2} fill="#FFFFFF" stroke={SOFT} strokeWidth={2} />
-      <Rect x={42} y={26} width={8} height={26} rx={2} fill="#FFFFFF" stroke={SOFT} strokeWidth={2} />
+      <Rect x={14} y={26} width={8} height={26} rx={2} fill={WHITE} stroke={SOFT} strokeWidth={2} />
+      <Rect x={42} y={26} width={8} height={26} rx={2} fill={WHITE} stroke={SOFT} strokeWidth={2} />
       {/* windows */}
       {[20, 28, 36].map((y) => (
         <React.Fragment key={y}>
@@ -55,8 +63,8 @@ export function SearchScene({ width = 220 }: { width?: number }) {
   return (
     <Svg width={width} height={height} viewBox="0 0 220 120" fill="none">
       {/* hills */}
-      <Path d="M0 104c30-18 62-18 92 0z" fill="rgba(236, 72, 153, 0.08)" />
-      <Path d="M118 104c32-20 70-20 102 0z" fill="rgba(236, 72, 153, 0.08)" />
+      <Path d="M0 104c30-18 62-18 92 0z" fill={FAINT} />
+      <Path d="M118 104c32-20 70-20 102 0z" fill={FAINT} />
       {/* small trees */}
       <Path d="M36 100v-6m148 6v-6" stroke={SOFT} strokeWidth={2.4} strokeLinecap="round" />
       <Circle cx={36} cy={90} r={5} fill={SOFT} />
@@ -67,15 +75,15 @@ export function SearchScene({ width = 220 }: { width?: number }) {
       {/* sparkles */}
       <Path d="M158 16l1.6 3.6L163 21l-3.4 1.4L158 26l-1.6-3.6L153 21l3.4-1.4zM60 22l1 2.4 2.4 1-2.4 1L60 28l-1-2.6-2.4-1 2.4-1z" fill={MID} />
       {/* the tiny hotel under the lens */}
-      <Rect x={96} y={38} width={26} height={40} rx={2} fill="rgba(236, 72, 153, 0.16)" />
+      <Rect x={96} y={38} width={26} height={40} rx={2} fill={FAINT} />
       {[44, 54, 64].map((y) => (
         <React.Fragment key={y}>
-          <Rect x={101} y={y} width={5} height={6} rx={1} fill="rgba(236, 72, 153, 0.35)" />
-          <Rect x={111} y={y} width={5} height={6} rx={1} fill="rgba(236, 72, 153, 0.35)" />
+          <Rect x={101} y={y} width={5} height={6} rx={1} fill={MID} />
+          <Rect x={111} y={y} width={5} height={6} rx={1} fill={MID} />
         </React.Fragment>
       ))}
       {/* magnifier */}
-      <Circle cx={109} cy={56} r={30} stroke={MID} strokeWidth={4} fill="rgba(255,255,255,0.35)" />
+      <Circle cx={109} cy={56} r={30} stroke={MID} strokeWidth={4} fill={WHITE} />
       <Path d="M131 78l16 16" stroke={MID} strokeWidth={6} strokeLinecap="round" />
     </Svg>
   );

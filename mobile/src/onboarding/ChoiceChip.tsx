@@ -9,11 +9,10 @@
  * by tapping: `ChoiceGroup` prints it and gives the group an accessibility hint
  * carrying the same sentence.
  */
-import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { color, font, fontFamily, gradient, MIN_TOUCH, radius, spacing, glass } from '../theme';
+import { color, font, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
 import { CheckBadge } from './stepIcons';
 
 export function ChoiceChip({
@@ -49,24 +48,14 @@ export function ChoiceChip({
       style={({ pressed }) => [
         styles.chip,
         selected ? styles.chipSelected : styles.chipIdle,
-        // After the state styles on purpose: the wide pill's pink border
-        // must win over the idle grey, and the array is the cascade.
+        // After the state styles on purpose: `chipWideSelected`'s brand edge
+        // must win over the idle rule colour, and the array is the cascade.
         wide && styles.chipWide,
         wide && selected && styles.chipWideSelected,
         disabled && !selected && styles.chipDisabled,
         pressed && styles.chipPressed,
       ]}
     >
-      {selected && !wide ? (
-        // The mock's selected passion chip is the brand gradient itself.
-        <LinearGradient
-          colors={[...gradient.primary]}
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          style={styles.chipGradient}
-          pointerEvents="none"
-        />
-      ) : null}
       {icon ? <View style={styles.chipIcon}>{icon}</View> : null}
       <Text
         style={[
@@ -173,7 +162,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: 'hidden',
   },
-  chipGradient: { ...StyleSheet.absoluteFillObject },
   chipIcon: { marginRight: 2 },
   chipBadge: { position: 'absolute', right: spacing.sm + 2 },
   /**
@@ -190,23 +178,23 @@ const styles = StyleSheet.create({
     // its pill on a real phone.
     alignItems: 'center',
     minHeight: 56,
-    // The owner's colour, thin. At 1.55:1 the lavender is not the boundary's
-    // only job here: the label inside is the affordance, and the selected
-    // state still changes fill and weight.
     borderWidth: 1.5,
-    borderColor: color.accent,
+    // Idle takes the same quiet edge every chip does (`chipIdle`); only the
+    // size differs here. The border colour used to be brand-coloured on every
+    // wide pill regardless of state, which is what the contract's "unselected
+    // white + rule" rule is for.
   },
-  /** Selected keeps the deeper edge so the state is more than a fill. */
+  /** Selected keeps the brand edge so the state is more than a fill. */
   chipWideSelected: {
-    borderColor: color.border,
+    borderColor: color.accent,
     backgroundColor: color.accentSoft,
-    shadowColor: color.border,
-    shadowOpacity: 0.5,
+    shadowColor: color.accent,
+    shadowOpacity: 0.35,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 0 },
     elevation: 3,
   },
-  chipLabelSelectedWide: { fontFamily: fontFamily.bodySemi, color: color.ink },
+  chipLabelSelectedWide: { fontFamily: fontFamily.bodySemi, color: color.accentDeep },
   chipTrailing: {
     position: 'absolute',
     right: spacing.md,
@@ -224,8 +212,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     borderWidth: 1.5,
-    borderColor: glass.edge,
-    backgroundColor: glass.fill,
+    borderColor: color.rule,
+    backgroundColor: color.surface,
     marginBottom: spacing.sm,
   },
   rowLabel: {
@@ -234,8 +222,8 @@ const styles = StyleSheet.create({
     color: color.ink,
   },
   rowLabelSelected: { fontFamily: fontFamily.bodySemi, color: color.accentDeep },
-  chipIdle: { backgroundColor: glass.fill, borderColor: glass.edge },
-  chipSelected: { backgroundColor: color.accentSoft, borderColor: 'transparent' },
+  chipIdle: { backgroundColor: color.surface, borderColor: color.rule },
+  chipSelected: { backgroundColor: color.accentSoft, borderColor: color.accent },
   chipDisabled: { opacity: 0.45 },
   chipPressed: { opacity: 0.85 },
   chipLabel: {
@@ -249,6 +237,5 @@ const styles = StyleSheet.create({
    * border and fill carry the structure, so the label can speak quietly.
    */
   chipLabelWide: { fontFamily: fontFamily.body, fontSize: font.body },
-  /** On the gradient: the dark ink, which survives its worst stop (D-043). */
-  chipLabelSelected: { fontFamily: fontFamily.bodySemi, color: '#1A1A2E' },
+  chipLabelSelected: { fontFamily: fontFamily.bodySemi, color: color.accentDeep },
 });

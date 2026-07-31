@@ -6,7 +6,6 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { LanguageSwitch } from '../components/LanguageSwitch';
 import { unregisterPush } from '../notifications/push';
 import { PhotoGrid } from '../components/PhotoGrid';
-import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 
 import { Avatar, Body, Button, Caption, Card, EmptyState, Heading, Notice, Screen, SectionLabel } from '../components/ui';
@@ -16,7 +15,7 @@ import { resetDeckLabels } from '../data/venueLabels';
 import type { RootStackParamList } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
-import { color, gradient, spacing } from '../theme';
+import { color, spacing } from '../theme';
 
 /**
  * What the app is entitled to claim about a deletion that did not visibly work.
@@ -137,15 +136,10 @@ export function SettingsScreen() {
           {/* The face first: this screen's subject is the person, and a card
               that opens with a section label reads as a form about them. */}
           <View style={styles.profileHead}>
-            {/* The designer's ring (D-044): the avatar inside the brand
-                gradient, the crown only when Premium is actually true. */}
+            {/* The designer's ring (D-044): the avatar inside a flat brand
+                ring, the crown only when Premium is actually true. */}
             <View>
-              <LinearGradient
-                colors={[...gradient.primary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.avatarRing}
-              >
+              <View style={styles.avatarRing}>
                 <View style={styles.avatarSeat}>
                   <Avatar
                     url={state.profile.photoPath ? profileUrls[state.profile.photoPath] ?? null : null}
@@ -153,10 +147,10 @@ export function SettingsScreen() {
                     size="md"
                   />
                 </View>
-              </LinearGradient>
+              </View>
               {state.profile.isPremium ? (
                 <View style={styles.crownBadge} testID="settings-premium-crown">
-                  <Svg width={14} height={14} viewBox="0 0 24 24" fill="#FBBF24">
+                  <Svg width={14} height={14} viewBox="0 0 24 24" fill={color.premiumMark}>
                     <Path d="M3 8l4.5 4L12 5l4.5 7L21 8l-1.8 10H4.8z" />
                   </Svg>
                 </View>
@@ -301,7 +295,7 @@ export function SettingsScreen() {
 
 const styles = StyleSheet.create({
   profileHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  avatarRing: { borderRadius: 999, padding: 3 },
+  avatarRing: { borderRadius: 999, padding: 3, backgroundColor: color.accent },
   avatarSeat: { borderRadius: 999, padding: 3, backgroundColor: color.surface },
   crownBadge: {
     position: 'absolute',
@@ -312,7 +306,7 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     backgroundColor: color.background,
     borderWidth: 1.5,
-    borderColor: '#FBBF24',
+    borderColor: color.premiumMark,
     alignItems: 'center',
     justifyContent: 'center',
   },

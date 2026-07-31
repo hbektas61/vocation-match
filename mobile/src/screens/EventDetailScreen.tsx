@@ -249,7 +249,7 @@ export function EventDetailScreen({
       {outcome ? (
         <Notice
           message={outcomeMessage(outcome)}
-          tone={outcome === 'IN_RANGE' ? 'info' : 'error'}
+          tone={outcome === 'IN_RANGE' ? 'success' : 'error'}
           testID={`event-outcome-${outcome}`}
         />
       ) : null}

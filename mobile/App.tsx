@@ -1,6 +1,5 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from '@expo-google-fonts/inter';
-import { Nunito_700Bold, Nunito_800ExtraBold } from '@expo-google-fonts/nunito';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
@@ -31,9 +30,10 @@ function ProductApp() {
   // moment before the files arrive, which is a slightly different shape rather
   // than a blank screen — and a blank screen while a network fetches a font is
   // a worse first impression than either.
+  // D-058 retired the rounded display face: the one display voice is now the
+  // platform serif, which is already on the device. Only the reading family
+  // has to arrive.
   useFonts({
-    Nunito_700Bold,
-    Nunito_800ExtraBold,
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,

@@ -1,4 +1,3 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -17,7 +16,7 @@ import { Body, Button, Notice, Screen } from '../components/ui';
 import { apiErrorMessage, COPY, upperCase, roomPlate } from '../copy';
 import { ApiError, getApi, type ChatMessage } from '../data';
 import type { RootScreenProps } from '../navigation/types';
-import { color, font, fontFamily, radius, spacing, glass, gradient } from '../theme';
+import { color, elevation, font, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
 
@@ -35,9 +34,10 @@ const DotsIcon = () => (
   </Svg>
 );
 
-/** On the warm disc, so it wears the dark ink the gradient can carry. */
+// On the coral disc, so it wears the navy the fill can carry (`onAccent`) —
+// the same rule that keeps every coral fill off white text.
 const SendIcon = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#1A1A2E" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color.onAccent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <Path d="M22 2L11 13" />
     <Path d="M22 2l-7 20-4-9-9-4z" />
   </Svg>
@@ -134,13 +134,13 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   if (!match) {
     if (!checkedServer) {
       return (
-        <Screen safeTop testID="screen-chat">
+        <Screen safeTop tone="sheet" testID="screen-chat">
           <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="chat-match-loading" />
         </Screen>
       );
     }
     return (
-      <Screen safeTop testID="screen-chat">
+      <Screen safeTop tone="sheet" testID="screen-chat">
         <Notice message={COPY.chat.notAvailable} />
         <Button label={COPY.common.back} variant="secondary" onPress={() => navigation.goBack()} />
       </Screen>
@@ -199,7 +199,7 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   }
 
   return (
-    <Screen safeTop testID="screen-chat" scroll={false}>
+    <Screen safeTop tone="sheet" testID="screen-chat" scroll={false}>
       {/* The sheet's one header row (13:154): the way back, the person, the
           bond in one small line, and the dots. It does not scroll away. */}
       <View style={styles.headRow}>
@@ -291,8 +291,13 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
               {group.items.map((message) => {
                 const mine = message.senderId === selfId;
                 return (
-                  /* The sheet's bubbles (13:163/13:167): glass for theirs,
-                     the warm gradient for mine, the clock inside each. */
+                  /*
+                   * The sheet's bubbles (13:163/13:167), D-058: mine is a
+                   * flat `accentSoft` wash rather than the old warm gradient
+                   * — coral cannot carry the reading text a bubble is full
+                   * of, only navy can, so the fill stays pale and the text
+                   * stays `color.ink` on both sides.
+                   */
                   <View key={message.id} style={mine ? styles.rowMine : styles.rowTheirs}>
                     <View
                       style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleTheirs]}
@@ -300,19 +305,8 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
                       accessibilityRole="text"
                       accessibilityLabel={`${mine ? COPY.chat.senderYou : match.displayName}: ${message.body}`}
                     >
-                      {mine ? (
-                        <LinearGradient
-                          colors={[...gradient.primary]}
-                          start={{ x: 0, y: 0.5 }}
-                          end={{ x: 1, y: 0.5 }}
-                          style={StyleSheet.absoluteFillObject}
-                          pointerEvents="none"
-                        />
-                      ) : null}
-                      <Text style={[styles.bubbleText, mine && styles.bubbleTextMine]}>{message.body}</Text>
-                      <Text style={[styles.bubbleTime, mine && styles.bubbleTimeMine]}>
-                        {timeOf(message.createdAt)}
-                      </Text>
+                      <Text style={styles.bubbleText}>{message.body}</Text>
+                      <Text style={styles.bubbleTime}>{timeOf(message.createdAt)}</Text>
                     </View>
                   </View>
                 );
@@ -325,15 +319,16 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
       </ScrollView>
 
       {!closed ? (
-        /* The sheet's composer (13:174): one glass pill holding the words
-           and the warm send disc together. */
+        /* The sheet's composer (13:174): one bordered pill holding the words
+           and the coral send disc together — the input rules the contract
+           gives every pill-shaped field. */
         <View style={styles.composer}>
           <TextInput
             accessibilityLabel={`${COPY.chat.messageLabel} ${match.displayName}`}
             value={draft}
             onChangeText={setDraft}
             placeholder={COPY.chat.messagePlaceholder}
-            placeholderTextColor={color.inkMuted}
+            placeholderTextColor={color.inkFaint}
             editable={!sending}
             style={styles.composerInput}
             testID="chat-input"
@@ -351,13 +346,6 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
             ]}
             testID="chat-send"
           >
-            <LinearGradient
-              colors={[...gradient.primary]}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={StyleSheet.absoluteFillObject}
-              pointerEvents="none"
-            />
             <SendIcon />
           </Pressable>
         </View>
@@ -374,14 +362,18 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingBottom: spacing.sm,
   },
-  /** The 40 glass squares (13:155/13:160) holding the back and the dots. */
+  /**
+   * The discs holding the back and the dots. Drawn at 40 in D-057's Figma;
+   * the D-058 device sweep measured them as the one control in the app under
+   * the 44 minimum, so they are 44 — the rule is a floor, not a preference.
+   */
   squareButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: glass.fill,
+    width: MIN_TOUCH,
+    height: MIN_TOUCH,
+    borderRadius: radius.pill,
+    backgroundColor: color.veil,
     borderWidth: 1,
-    borderColor: glass.edge,
+    borderColor: color.rule,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -389,7 +381,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#4A2E5C',
+    backgroundColor: color.veil,
   },
   headAvatarEmpty: { alignItems: 'center', justifyContent: 'center' },
   headInitial: { fontFamily: fontFamily.display, fontSize: 20, color: color.accentDeep },
@@ -411,11 +403,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     padding: spacing.sm,
     marginBottom: spacing.sm,
-    shadowColor: '#000000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    ...elevation.raised,
   },
   thread: { paddingVertical: spacing.md, gap: 12, flexGrow: 1 },
   dayGroup: { gap: 12 },
@@ -437,33 +425,37 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   bubbleTheirs: {
-    backgroundColor: glass.fill,
+    backgroundColor: color.veil,
     borderWidth: 1,
-    borderColor: glass.edge,
+    borderColor: color.rule,
   },
-  bubbleMine: { backgroundColor: color.accent, overflow: 'hidden' },
+  /**
+   * The own bubble, D-058: a pale coral wash rather than a coral fill — the
+   * fill cannot carry the reading text a bubble is full of at 4.5:1, only
+   * `color.ink` can, and this is the "selected/highlighted surface" job
+   * `accentSoft` is for.
+   */
+  bubbleMine: { backgroundColor: color.accentSoft },
   bubbleText: {
     color: color.ink,
     fontSize: 14,
     lineHeight: 14 * 1.4,
     fontFamily: fontFamily.body,
   },
-  bubbleTextMine: { color: '#1A1A2E' },
   bubbleTime: {
     fontFamily: fontFamily.body,
     fontSize: 10,
-    color: 'rgba(163, 169, 201, 0.7)',
+    color: color.inkMuted,
   },
-  bubbleTimeMine: { color: 'rgba(26, 26, 46, 0.7)' },
-  /** The sheet's composer pill (13:174): the words and the disc together. */
+  /** The sheet's composer pill (13:174): the input rules, pill-shaped. */
   composer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     marginTop: spacing.sm,
-    backgroundColor: glass.fill,
-    borderWidth: 1,
-    borderColor: glass.edge,
+    backgroundColor: color.surface,
+    borderWidth: 1.5,
+    borderColor: color.border,
     borderRadius: radius.pill,
     paddingLeft: 16,
     paddingRight: 10,
@@ -476,13 +468,12 @@ const styles = StyleSheet.create({
     color: color.ink,
     paddingVertical: 0,
   },
-  /** The 40 warm disc (13:176), the gradient painted inside. */
+  /** The coral send disc (13:176): a flat fill, never a gradient. 44 for the same reason. */
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: MIN_TOUCH,
+    height: MIN_TOUCH,
+    borderRadius: radius.pill,
     backgroundColor: color.accent,
-    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },

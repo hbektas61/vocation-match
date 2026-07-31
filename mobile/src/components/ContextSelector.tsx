@@ -24,7 +24,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 
 import { COPY } from '../copy';
 import type { RoomKey } from '../data';
-import { color, fontFamily, glass, MIN_TOUCH, radius, spacing } from '../theme';
+import { color, fontFamily, MIN_TOUCH, overlay, radius, spacing } from '../theme';
 
 /** Below this, the control warns that the room is about to close. */
 export const EXPIRING_WITHIN_MS = 10 * 60 * 1000;
@@ -198,7 +198,9 @@ export function ContextSelector({
 }
 
 const styles = StyleSheet.create({
-  /** The Figma control (NAV-02): glass, 16 corners, 10/14 padding. */
+  /** The Figma control (NAV-02): white, 16 corners, 10/14 padding — a control
+      edge (`color.border`) rather than a card's quiet `color.rule`, since
+      this row is operable, not just a surface. */
   closed: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -207,11 +209,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingVertical: 10,
     paddingHorizontal: 14,
-    backgroundColor: glass.strong,
+    backgroundColor: color.surface,
     borderWidth: 1,
-    borderColor: glass.edge,
+    borderColor: color.border,
   },
-  closedOff: { backgroundColor: glass.fill, borderColor: 'rgba(255,255,255,0.10)' },
+  // No room open: the same flat, neutral disabled fill `Button` uses.
+  closedOff: { backgroundColor: color.veil, borderColor: color.rule },
   /** About to close: a heavier brand edge beside the minutes in the meta line. */
   closedExpiring: { borderWidth: 1.5, borderColor: color.accent },
   closedText: { flex: 1, gap: 2 },
@@ -234,13 +237,15 @@ const styles = StyleSheet.create({
   dotLive: { backgroundColor: color.accent },
   dotIdle: { borderWidth: 2, borderColor: color.inkMuted },
 
-  scrim: { flex: 1, backgroundColor: 'rgba(11, 8, 24, 0.62)', justifyContent: 'flex-end' },
+  scrim: { flex: 1, backgroundColor: overlay.backdrop, justifyContent: 'flex-end' },
+  // A white sheet lifted over the cream ground — the same distinction
+  // `Screen tone="sheet"` draws everywhere else a modal appears.
   sheet: {
-    backgroundColor: color.background,
+    backgroundColor: color.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderWidth: 1,
-    borderColor: glass.edge,
+    borderColor: color.rule,
     paddingHorizontal: 18,
     paddingTop: 12,
     paddingBottom: 28,
@@ -252,7 +257,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    // Decoration only, never read as text — the faint tier is exactly the
+    // job this token is for.
+    backgroundColor: color.inkFaint,
   },
   sheetTitle: {
     fontFamily: fontFamily.displaySemi,
@@ -262,6 +269,9 @@ const styles = StyleSheet.create({
   sheetNote: { fontFamily: fontFamily.body, fontSize: 12, color: color.inkMuted },
   sheetList: { flexGrow: 0 },
   sheetListInner: { gap: spacing.sm },
+  // A row nested inside the white sheet: the recessed `veil` fill a card
+  // uses for something sitting on top of another surface, not a card of its
+  // own weight.
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -270,9 +280,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 11,
     paddingHorizontal: 12,
-    backgroundColor: glass.fill,
+    backgroundColor: color.veil,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: color.rule,
   },
   rowSelected: { backgroundColor: color.accentSoft, borderColor: color.accent },
   rowOff: { opacity: 0.7 },
@@ -284,12 +294,14 @@ const styles = StyleSheet.create({
     color: color.ink,
   },
   rowMeta: { fontFamily: fontFamily.body, fontSize: 12, color: color.inkMuted },
-  check: { fontFamily: fontFamily.bodySemi, fontSize: 12, color: color.accent, width: 10, textAlign: 'center' },
+  // Text, not a fill — the dark sibling is what the brand can carry at this
+  // size. Same reasoning as every other small coral glyph in this theme.
+  check: { fontFamily: fontFamily.bodySemi, fontSize: 12, color: color.accentDeep, width: 10, textAlign: 'center' },
   footNote: {
     borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: color.infoSoft,
   },
   footNoteText: { fontFamily: fontFamily.body, fontSize: 11, color: color.inkMuted },
 });

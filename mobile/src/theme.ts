@@ -1,138 +1,237 @@
 /**
  * Design tokens. One file, so no screen writes a colour of its own.
  *
- * The palette is the owner's "rendevuu" night set (D-043/D-044, 2026-07-29,
- * from the designer's dark screens): a deep navy ground, near-white text,
- * the pinks as fills and accents, and the warm gold→coral→pink gradient for
- * the one primary action. The old habit survives the repaint: every value
- * is measured against the surface it is actually used on and the ratio is
- * in the comment, because the first accessibility audit (R-004) found real
- * failures nobody had written down.
+ * D-058 turned the product from the "rendevuu" night set (D-043/D-044) into a
+ * light social theme: a warm cream ground, navy type, coral as the single
+ * accent, and photographs carrying the colour. The old habit survives the
+ * repaint — every value is measured against the surface it is actually used
+ * on and the ratio is in the comment — and `__tests__/theme.test.ts` computes
+ * those ratios rather than trusting them.
+ *
+ * The semantic groups below (`tokens.background.primary`, `tokens.brand.soft`,
+ * …) carry the same names as the Figma variables on the `D-058 — Light Social
+ * Theme` page, so a colour can be discussed once and found in both places.
+ * `color` underneath is the flat alias every screen already imports.
  */
+
+import { Platform } from 'react-native';
 
 /**
  * The canonical palette. Screens use the semantic names below rather than
  * these, so a hue can move without touching a screen.
  */
 export const palette = {
-  /**
-   * The brand fill, exactly as the owner specified it (lightPink). Ink on it
-   * measures 6.0:1, so a chip or a filled pill can carry dark text; it never
-   * carries white text and never marks a boundary alone.
-   */
-  pinkLight: '#F472B6',
-  /**
-   * The strong brand hue (pink). 3.9:1 on white: enough for a control edge
-   * (WCAG 1.4.11 wants 3:1), not enough for body text — text jobs go to the
-   * navy below.
-   */
-  pink: '#EC4899',
-  /** The warm ends of the primary gradient, per the owner's spec. */
-  gold: '#FBBF24',
-  goldLight: '#FCD34D',
-  coral: '#FB7185',
-  /** The owner's navy, kept as the deep end of the night ground. */
-  navy: '#0F1B3D',
-  /**
-   * The ground's base indigo (D-046): lifted well out of "developer dark"
-   * per the owner, and the top stop of the sunset gradient below.
-   */
-  midnight: '#2A2350',
-  /** A card floating on the ground. Light text on it is 10.4:1. */
-  panel: '#3A3168',
-  /** A pink-washed selected surface on the night ground. */
-  pinkSoft: '#321F45',
-
+  /** The ground: warm cream, not white, so white cards lift off it. */
+  cream: '#FFF9F5',
+  /** Cards, sheets, the bottom bar. */
   white: '#FFFFFF',
-  /** The reading colour at night: near-white. 16.6:1 on the midnight ground. */
-  ink: '#F5F6FA',
-  /** The dark ink for text sitting ON a warm fill (chips, the gradient). */
-  inkDark: '#1A1A2E',
-  /** Secondary lines. 6.6:1 on the midnight ground. */
-  muted: '#A3A9C9',
+  /** The wash under an input on cream, and the sunken step inside a card. */
+  creamSunken: '#FBF2EC',
+
   /**
-   * The edge of an input or a pill — often the only thing saying where a
-   * control starts (WCAG 1.4.11: 3:1). The pink clears it at 4.3:1 on the
-   * night ground.
+   * The reading colour and the brand's deep end. 16.4:1 on white — this is
+   * what does every text job the coral cannot.
    */
-  edge: '#EC4899',
-  /** Decorative hairlines only: a divider between paragraphs, never an edge. */
-  rule: '#2A3052',
-  /** 5.1:1 on the night ground; the dark ink on it is 5.9:1. */
-  error: '#F87171',
-  /** The wash behind an error notice. */
-  errorSoft: '#3B1F2B',
-  /** The initial standing in for a missing photo. 5.6:1 on the pink-soft fill. */
-  placeholder: '#F472B6',
+  navy: '#101A3A',
+  /**
+   * Supporting prose. 5.9:1 on white, 5.7:1 on the cream ground.
+   *
+   * D-058's brief named `#7C8194` here. That value measures 3.87:1 on white,
+   * under the 4.5:1 AA asks of body text, so the brief's hue is kept one step
+   * darker for anything anybody has to read and the original is kept below as
+   * `text.tertiary` for the jobs where WCAG does not ask for 4.5 — disabled
+   * controls, placeholders, decorative marks.
+   */
+  slate: '#5F6478',
+  /** The brief's `text.secondary` hex. Decorative, disabled, placeholder only. */
+  slateLight: '#7C8194',
+
+  /** A divider, or the quiet edge of a card. Never the edge of a control. */
+  line: '#E8EBEF',
+  /**
+   * The edge of an input, a chip, a switch — the thing that says where a
+   * control starts. 3.18:1 on white, which is what WCAG 1.4.11 asks for.
+   */
+  lineStrong: '#8A91A1',
+
+  /** The brand. A fill, a glyph, a large mark — never small text on white. */
+  coral: '#FF5E62',
+  coralPressed: '#E94F54',
+  /**
+   * The brand as *text*. #FF5E62 is 2.99:1 on white, so a coral word, a coral
+   * icon beside a word, or a coral count is drawn in this darker sibling:
+   * 6.5:1 on white and 5.3:1 on the soft fill.
+   */
+  coralInk: '#B3272C',
+  /** A selected chip, a live-room badge, the wash behind a brand moment. */
+  coralSoft: '#FFE3E0',
+  /** One step paler again: a whole panel that should read as brand-adjacent. */
+  coralWash: '#FFF1EF',
+
+  /** Premium. The metal itself is a fill or a glyph; the text is the dark one. */
+  gold: '#D4AF37',
+  goldInk: '#7A5B12',
+  goldSoft: '#FBF3DF',
+
+  /** Success. Same split: the bright green marks, the dark green reads. */
+  green: '#22C55E',
+  greenInk: '#15803D',
+  greenSoft: '#E7F8EE',
+
+  /**
+   * Danger. Deliberately darker and browner than the brand coral so a
+   * destructive action is not the same red as a like.
+   */
+  red: '#9B1C1C',
+  redSoft: '#FDECEA',
+
+  /** A neutral notice: standing information, no alarm. */
+  infoSoft: '#F1F4F9',
 } as const;
 
 /**
- * The one gradient in the app: the primary action, warm gold into pink,
- * exactly as the owner wrote it. Labels on it are ink — the gold end cannot
- * carry white. The pressed variant is the owner's lighter ramp.
+ * The semantic layer. These names are the Figma variable names.
  */
-/**
- * The glass system from the designer's Figma (D-045): a breath of white over
- * the night ground, a one-pixel light edge, and depth from shadow. Read as
- * frosted glass against the navy without costing a native blur pass.
- */
-/**
- * The sunset ground (D-046, from the owner's reference): indigo falling
- * through violet into a warm coral glow at the foot of every screen. The
- * solid `color.background` is the same family's base and the fallback.
- */
-export const backgroundGradient = ['#241E49', '#3A2B63', '#8A4A6F', '#D97B52'] as const;
-/** The gradient's warm end — the ground the floating tab bar sits on. */
-export const warmEnd = '#D97B52';
-
-export const glass = {
-  fill: 'rgba(255, 255, 255, 0.06)',
-  strong: 'rgba(255, 255, 255, 0.10)',
-  edge: 'rgba(255, 255, 255, 0.14)',
+export const tokens = {
+  background: {
+    /** Every screen's ground. */
+    primary: palette.cream,
+    /** A screen that is deliberately a white sheet (a modal, the chat). */
+    elevated: palette.white,
+    /** A recessed strip inside a light surface. */
+    sunken: palette.creamSunken,
+    /** The one deep surface: a context ribbon, a live-room banner. */
+    inverse: palette.navy,
+  },
+  surface: {
+    primary: palette.white,
+    /** An inert fill inside a card — a thumbnail well, a progress track. */
+    muted: palette.creamSunken,
+    /** A brand-tinted panel. */
+    brand: palette.coralWash,
+    inverse: palette.navy,
+  },
+  text: {
+    primary: palette.navy,
+    secondary: palette.slate,
+    /** Decorative, disabled and placeholder text only. See `palette.slate`. */
+    tertiary: palette.slateLight,
+    /** On a coral fill. Navy, 5.7:1 — the coral cannot carry white at 4.5. */
+    onBrand: palette.navy,
+    /** On the navy ribbon and the deep surfaces. 15.7:1. */
+    onInverse: palette.cream,
+    /** Over a photograph, on top of `overlay.photo`. */
+    onPhoto: palette.white,
+    /** A coral word on a light surface. */
+    brand: palette.coralInk,
+  },
+  border: {
+    /** A card edge, a divider. Not a control. */
+    subtle: palette.line,
+    /** A control edge — input, chip, secondary button. 3.18:1 on white. */
+    control: palette.lineStrong,
+    /** Focus. Drawn thicker as well, so weight carries it too. */
+    focus: palette.coralInk,
+    inverse: 'rgba(255, 249, 245, 0.24)',
+  },
+  brand: {
+    primary: palette.coral,
+    primaryPressed: palette.coralPressed,
+    soft: palette.coralSoft,
+    wash: palette.coralWash,
+    ink: palette.coralInk,
+    navy: palette.navy,
+  },
+  premium: { gold: palette.gold, ink: palette.goldInk, soft: palette.goldSoft },
+  success: { base: palette.green, ink: palette.greenInk, soft: palette.greenSoft },
+  danger: { base: palette.red, ink: palette.red, soft: palette.redSoft },
+  info: { soft: palette.infoSoft },
+  overlay: {
+    /** The fixed readability scrim under text on a photograph. */
+    photo: 'rgba(16, 26, 58, 0.55)',
+    /** The deeper end of a photo's foot, where the name and the ribbon sit. */
+    photoDeep: 'rgba(16, 26, 58, 0.82)',
+    /** A ribbon or plate over a photograph. */
+    plate: 'rgba(16, 26, 58, 0.88)',
+    /** Behind a modal or a sheet. */
+    backdrop: 'rgba(16, 26, 58, 0.45)',
+    /** A pressed state on a light surface, and a disabled fill. */
+    pressed: 'rgba(16, 26, 58, 0.06)',
+  },
 } as const;
 
+/**
+ * The controlled full-colour moments (D-058). Everything else on a main screen
+ * is light; these are the exceptions, and there are only two.
+ *
+ * `match` starts at the pressed coral rather than the brand coral on purpose:
+ * white display type needs 3:1 and #FF5E62 gives 2.99, while #E94F54 gives
+ * 3.7. The supporting sentence lower down sits on the pale end in navy.
+ */
 export const gradient = {
-  primary: ['#FBBF24', '#FB7185', '#EC4899'],
-  primaryPressed: ['#FCD34D', '#FB7185', '#F472B6'],
+  match: ['#E94F54', '#FF7E7A', '#FFC7BC'],
+  /** A photograph's foot, so a name and a ribbon stay readable on any image. */
+  photoScrim: ['rgba(16, 26, 58, 0)', 'rgba(16, 26, 58, 0.82)'],
 } as const;
 
 export const color = {
-  /** The brand fill: a selected surface, chips, the focus border. */
-  accent: palette.pinkLight,
-  /**
-   * Where the brand has to be legible or load-bearing on the night ground:
-   * the light pink reads at 6.4:1 there, so icons and accent text wear it.
-   */
-  accentDeep: palette.pinkLight,
+  /** The brand fill: a like button, a selected surface, a live mark. */
+  accent: tokens.brand.primary,
+  /** The same fill, held down. */
+  accentPressed: tokens.brand.primaryPressed,
+  /** Where the brand has to be legible as text or a small glyph. 6.5:1. */
+  accentDeep: tokens.brand.ink,
   /** A selected or highlighted surface. */
-  accentSoft: palette.pinkSoft,
+  accentSoft: tokens.brand.soft,
+  /** One step paler: a whole brand-tinted panel. */
+  accentWash: tokens.brand.wash,
 
-  ink: palette.ink,
-  inkMuted: palette.muted,
+  ink: tokens.text.primary,
+  inkMuted: tokens.text.secondary,
+  /** Decorative, disabled and placeholder text. */
+  inkFaint: tokens.text.tertiary,
 
-  /** The app's ground. The designer's night navy (D-044). */
-  background: palette.midnight,
-  /** Cards and inert fills: a panel a step lighter than the ground. */
-  surface: palette.panel,
-  /** A fill only. The ground behind a missing photo. */
-  veil: palette.pinkSoft,
-  /** Control boundaries. See `palette.edge`. */
-  border: palette.edge,
-  /** Dividers between content, where no control edge is being marked. */
-  rule: palette.rule,
+  /** The app's ground. */
+  background: tokens.background.primary,
+  /** Cards and sheets. */
+  surface: tokens.surface.primary,
+  /** An inert fill: a thumbnail well, a track, the ground behind a photo. */
+  veil: tokens.surface.muted,
+  /** The deep surface: the context ribbon, a live-room banner. */
+  inverse: tokens.surface.inverse,
+  onInverse: tokens.text.onInverse,
 
-  /** Text and glyphs sitting on the brand fill or the gradient. Dark, never white. */
-  onAccent: palette.inkDark,
+  /** Control boundaries. See `palette.lineStrong`. */
+  border: tokens.border.control,
+  /** Dividers and card edges, where no control edge is being marked. */
+  rule: tokens.border.subtle,
+  focus: tokens.border.focus,
+
+  /** Text and glyphs sitting on the brand fill. Navy, never white. */
+  onAccent: tokens.text.onBrand,
   /** Text over the scrim at the foot of a photo. */
-  onPhoto: palette.white,
+  onPhoto: tokens.text.onPhoto,
 
-  danger: palette.error,
-  dangerSoft: palette.errorSoft,
-  onDanger: palette.inkDark,
+  danger: tokens.danger.ink,
+  dangerSoft: tokens.danger.soft,
+  onDanger: palette.white,
 
-  textPrimary: palette.ink,
-  textSecondary: palette.muted,
+  success: tokens.success.ink,
+  successSoft: tokens.success.soft,
+  successMark: tokens.success.base,
+
+  premium: tokens.premium.ink,
+  premiumSoft: tokens.premium.soft,
+  premiumMark: tokens.premium.gold,
+
+  infoSoft: tokens.info.soft,
+
+  textPrimary: tokens.text.primary,
+  textSecondary: tokens.text.secondary,
 } as const;
+
+/** Scrims, plates and backdrops. Named so no screen invents its own alpha. */
+export const overlay = tokens.overlay;
 
 /**
  * The two rooms are the one thing this product has that no other dating app
@@ -143,8 +242,8 @@ export const color = {
  * separate the two hues.
  */
 export const roomTone = {
-  HERE_NOW: { fill: color.accent, text: palette.inkDark, solid: true },
-  UPCOMING: { fill: palette.panel, text: palette.ink, solid: false },
+  HERE_NOW: { fill: tokens.brand.soft, text: tokens.brand.ink, solid: true },
+  UPCOMING: { fill: tokens.surface.primary, text: tokens.text.primary, solid: false },
 } as const;
 
 export const spacing = {
@@ -156,13 +255,18 @@ export const spacing = {
 } as const;
 
 /**
- * Two families, two jobs. Nunito's rounded terminals carry the warmth in names
- * and headlines; Inter does the reading, because it is the better face at 13px
- * in a bio nobody asked to squint at.
+ * Two families, two jobs. Inter does all of the reading, the forms, the chips
+ * and the navigation — unchanged from D-057, because it is the better face at
+ * 13px in a bio nobody asked to squint at.
+ *
+ * `display` is D-058's one controlled indulgence: the platform serif, on
+ * screen titles, names and the match moment only. It is the system face on
+ * both platforms rather than a new download, so there is no font to fail to
+ * arrive and no new dependency (D-058 forbids both).
  */
 export const fontFamily = {
-  display: 'Nunito_800ExtraBold',
-  displaySemi: 'Nunito_700Bold',
+  display: Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia' }) as string,
+  displaySemi: 'Inter_600SemiBold',
   body: 'Inter_400Regular',
   bodyMedium: 'Inter_500Medium',
   bodySemi: 'Inter_600SemiBold',
@@ -180,10 +284,43 @@ export const font = {
 } as const;
 
 export const radius = {
-  sm: 10,
+  xs: 8,
+  sm: 12,
   md: 16,
-  lg: 24,
+  /** The card radius D-058 asks for: 18–22. */
+  lg: 20,
+  xl: 28,
   pill: 999,
+} as const;
+
+/**
+ * Lift, not glass. A light card is told apart from a light ground by a quiet
+ * edge and a soft shadow; Android needs `elevation` for any of it to appear.
+ */
+export const elevation = {
+  card: {
+    shadowColor: palette.navy,
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  raised: {
+    shadowColor: palette.navy,
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
+  },
+  /** The bottom bar, lifting off the content that scrolls under it. */
+  nav: {
+    shadowColor: palette.navy,
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: -2 },
+    elevation: 12,
+  },
+  none: { shadowOpacity: 0, shadowRadius: 0, elevation: 0 },
 } as const;
 
 /** Minimum touch target per platform accessibility guidance. */

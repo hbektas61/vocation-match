@@ -11,7 +11,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Button } from './ui';
 import { COPY } from '../copy';
-import { color, font, fontFamily, radius, spacing } from '../theme';
+import { color, elevation, font, fontFamily, radius, spacing } from '../theme';
 
 const InfoIcon = () => (
   <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round">
@@ -61,16 +61,14 @@ export function NoHotelCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: color.surface,
+    borderWidth: 1,
+    borderColor: color.rule,
     borderRadius: radius.lg,
     padding: spacing.md,
     paddingVertical: spacing.lg,
     alignItems: 'center',
     gap: spacing.sm,
-    shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
+    ...elevation.card,
   },
   art: { marginBottom: spacing.xs },
   title: {
@@ -91,7 +89,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(236, 72, 153, 0.06)',
+    backgroundColor: color.accentWash,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm + 4,
     paddingVertical: 7,

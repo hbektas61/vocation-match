@@ -1,8 +1,13 @@
 /**
  * The designer's tab bar (2026-07-27): a floating rounded card with five
- * drawn icons, the active one sitting in a filled lavender pill. One
- * component replaces the platform bar everywhere, which is what keeps the
- * five screens' footers identical.
+ * drawn icons, the active one sitting in a filled pill. One component
+ * replaces the platform bar everywhere, which is what keeps the five
+ * screens' footers identical.
+ *
+ * D-058 moved it from a floating glass dock to the flat white surface the
+ * contract asks for: `color.surface` with a `color.rule` hairline on top
+ * and `elevation.nav`, so it reads as one continuous strip rather than a
+ * card lifted off the ground.
  *
  * Accessibility is the platform's contract kept by hand: each item is a
  * button carrying its title and selected state, so tests and screen
@@ -10,11 +15,11 @@
  */
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import React from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import { color, fontFamily, MIN_TOUCH, radius, spacing, warmEnd } from '../theme';
+import { color, elevation, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
 
 function iconFor(routeName: string, active: boolean) {
   const stroke = active ? color.accentDeep : color.inkMuted;
@@ -80,8 +85,8 @@ function iconFor(routeName: string, active: boolean) {
 export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.dock, { paddingBottom: Math.max(insets.bottom - 6, 0) }]}>
-      <View style={styles.bar}>
+    <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
+      <View style={styles.row}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
           const label = options.title ?? route.name;
@@ -123,29 +128,21 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
 }
 
 const styles = StyleSheet.create({
-  /** The floating card sits on the ground, not glued to the screen edge. */
-  /* The dock wears the gradient's warm end, so the bar never floats on a
-     stray white band (the owner's screenshot bug) and the glass reads like
-     the reference. */
-  dock: {
-    backgroundColor: warmEnd,
-    paddingHorizontal: spacing.sm,
-  },
-  /** The Figma bar (10:95): the deep wash at .92, the light hairline, 22 corners. */
+  /**
+   * D-058: a flat white strip, not a floating glass dock. The hairline on
+   * top is the only edge — the same quiet `color.rule` a card uses — and
+   * `elevation.nav` lifts it off whatever scrolls underneath.
+   */
   bar: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(58, 49, 104, 0.92)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.14)',
-    borderRadius: 22,
-    paddingVertical: 10,
+    backgroundColor: color.surface,
+    borderTopWidth: 1,
+    borderTopColor: color.rule,
     paddingHorizontal: spacing.sm,
-    shadowColor: '#000000',
-    shadowOpacity: 0.1,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
-    marginBottom: Platform.OS === 'web' ? spacing.sm : 2,
+    paddingTop: spacing.xs,
+    ...elevation.nav,
+  },
+  row: {
+    flexDirection: 'row',
   },
   /**
    * D-057 / R-06: 44 is the floor, and measuring found 40 — the icon seat plus
@@ -168,11 +165,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconSeatActive: { backgroundColor: color.veil },
+  // The selected surface, same job a selected chip does: a pale brand wash,
+  // never the coral fill itself, which would put the small glyph on top of
+  // a colour that cannot carry it.
+  iconSeatActive: { backgroundColor: color.accentSoft },
   label: {
     fontFamily: fontFamily.bodyMedium,
     fontSize: 10,
   },
+  // The coral itself is 2.99:1 on white — too faint for a 10px label — so the
+  // active tab reads in its dark sibling instead, same as every other small
+  // brand glyph in this theme.
   labelActive: { color: color.accentDeep },
   labelIdle: { color: color.inkMuted },
 });

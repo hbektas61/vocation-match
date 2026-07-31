@@ -36,7 +36,7 @@ import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, MAX_PHOTOS, type ProfilePhoto } from '../data';
 import { pickProfilePhoto } from '../data/imagePicker';
 import { usePhotoUrls } from '../state/usePhotoUrls';
-import { color, font, fontFamily, radius, spacing } from '../theme';
+import { color, font, fontFamily, overlay, radius, spacing } from '../theme';
 
 const COLUMNS = 3;
 const ROWS = 3;
@@ -541,7 +541,7 @@ const styles = StyleSheet.create({
   slotLifted: {
     zIndex: 10,
     elevation: 8,
-    shadowColor: '#000000',
+    shadowColor: color.ink,
     shadowOpacity: 0.25,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
@@ -571,8 +571,10 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
     letterSpacing: 0.6,
-    color: color.ink,
+    // Navy on the coral fill — the fill cannot carry white here either.
+    color: color.onAccent,
   },
+  /** Floats on the photo, so it takes the same deep-navy plate a ribbon does. */
   removeChip: {
     position: 'absolute',
     top: spacing.xs,
@@ -582,7 +584,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(20, 22, 26, 0.55)',
+    backgroundColor: overlay.plate,
   },
   removeGlyph: {
     fontFamily: fontFamily.bodySemi,

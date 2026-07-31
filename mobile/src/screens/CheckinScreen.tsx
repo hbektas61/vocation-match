@@ -22,7 +22,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import { Caption, Notice, Screen } from '../components/ui';
+import { Caption, EmptyState, Notice, PhotoScrim, Screen, StateChip } from '../components/ui';
 import { ProfileRing } from '../components/ProfileRing';
 import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
 import {
@@ -42,13 +42,12 @@ import {
 import { MIN_QUERY_WEIGHT, normalizeQuery, queryWeight } from '../domain/searchQuery';
 import { getHotelById } from '../fixtures/hotels';
 import type { TabParamList } from '../navigation/types';
-import { LinearGradient } from 'expo-linear-gradient';
 
-import { color, font, fontFamily, gradient, radius, spacing, glass } from '../theme';
+import { color, elevation, font, fontFamily, radius, spacing } from '../theme';
 
 const HERO = require('../../assets/nearby-hero.jpg');
 
-const VIVID = '#EC4899';
+/** The brand as text or a small glyph — the fill itself cannot carry a word. */
 const DEEP = color.accentDeep;
 
 /**
@@ -93,7 +92,7 @@ const BuildingIcon = ({ tone = DEEP }: { tone?: string }) => (
   </Svg>
 );
 
-const CoffeeIcon = ({ tone = '#B4690E' }: { tone?: string }) => (
+const CoffeeIcon = ({ tone = color.premium }: { tone?: string }) => (
   <Svg {...stroke(tone)}>
     <Path d="M4 11h12v4a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z" />
     <Path d="M16 12h1.5a2.5 2.5 0 0 1 0 5H16" />
@@ -101,7 +100,7 @@ const CoffeeIcon = ({ tone = '#B4690E' }: { tone?: string }) => (
   </Svg>
 );
 
-const CutleryIcon = ({ tone = '#D6336C' }: { tone?: string }) => (
+const CutleryIcon = ({ tone = color.accentDeep }: { tone?: string }) => (
   <Svg {...stroke(tone)}>
     <Path d="M8 3v7a2 2 0 0 1-2 2v9M6 3v5M10 3v5" />
     <Path d="M16 3c-1.5 1.5-2 4-2 6 0 1.5 1 3 2 3v9" />
@@ -121,7 +120,7 @@ const CocktailIcon = ({ tone = DEEP }: { tone?: string }) => (
   </Svg>
 );
 
-const WavesIcon = ({ tone = '#0E8A78' }: { tone?: string }) => (
+const WavesIcon = ({ tone = color.success }: { tone?: string }) => (
   <Svg {...stroke(tone)}>
     <Path d="M3 10c2-2 4-2 6 0s4 2 6 0 4-2 6 0M3 16c2-2 4-2 6 0s4 2 6 0 4-2 6 0" />
   </Svg>
@@ -201,7 +200,7 @@ const StopIcon = ({ tone = DEEP, size = 20 }: { tone?: string; size?: number }) 
   </Svg>
 );
 
-const HeartGlyph = ({ tone = VIVID, size = 16 }: { tone?: string; size?: number }) => (
+const HeartGlyph = ({ tone = color.accentDeep, size = 16 }: { tone?: string; size?: number }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill={tone}>
     <Path d="M12 8c0-4.5-7.2-4.5-7.2 0 0 4 4.7 6.8 7.2 8.7 2.5-1.9 7.2-4.7 7.2-8.7 0-4.5-7.2-4.5-7.2 0z" />
   </Svg>
@@ -210,26 +209,30 @@ const HeartGlyph = ({ tone = VIVID, size = 16 }: { tone?: string; size?: number 
 /* ------------------------------------------------------- category styling */
 
 /**
- * The sheet's category tints (11:81/11:97/11:105): each kind's colour at the
- * same 0.18 breath over the night ground, the label in the colour itself.
+ * The sheet's category tints, D-058 style: three semantic families rather
+ * than one hue per kind — coral for the places a stay or a night out is
+ * built around, gold for a stop along the way, green for the shore — each
+ * the pale `Soft` fill with the matching dark-sibling `tone` for the glyph
+ * and the chip label, so every combination clears text contrast on its own
+ * tint (`__tests__/theme.test.ts` proves the pairs, not just this file).
  */
 const KIND_META: Record<string, { label: () => string; tint: string; tone: string }> = {
-  hotel: { label: () => COPY.checkin.kindHotel, tint: 'rgba(244, 114, 182, 0.18)', tone: DEEP },
-  area: { label: () => COPY.checkin.kindArea, tint: 'rgba(244, 114, 182, 0.18)', tone: DEEP },
-  cafe: { label: () => COPY.checkin.kindCafe, tint: 'rgba(251, 191, 36, 0.18)', tone: '#FBBF24' },
-  restaurant: { label: () => COPY.checkin.kindRestaurant, tint: 'rgba(251, 113, 133, 0.18)', tone: '#FB7185' },
-  bar: { label: () => COPY.checkin.kindBar, tint: 'rgba(244, 114, 182, 0.18)', tone: DEEP },
-  beach: { label: () => COPY.checkin.kindBeach, tint: 'rgba(52, 211, 153, 0.18)', tone: '#34D399' },
+  hotel: { label: () => COPY.checkin.kindHotel, tint: color.accentSoft, tone: color.accentDeep },
+  area: { label: () => COPY.checkin.kindArea, tint: color.accentSoft, tone: color.accentDeep },
+  cafe: { label: () => COPY.checkin.kindCafe, tint: color.premiumSoft, tone: color.premium },
+  restaurant: { label: () => COPY.checkin.kindRestaurant, tint: color.accentSoft, tone: color.accentDeep },
+  bar: { label: () => COPY.checkin.kindBar, tint: color.accentSoft, tone: color.accentDeep },
+  beach: { label: () => COPY.checkin.kindBeach, tint: color.successSoft, tone: color.success },
   // D-049: places built for a crowd — arenas, açıkhavas, parks, museums.
-  venue: { label: () => COPY.checkin.kindVenue, tint: 'rgba(251, 191, 36, 0.18)', tone: '#FBBF24' },
+  venue: { label: () => COPY.checkin.kindVenue, tint: color.premiumSoft, tone: color.premium },
 };
 
 function kindMeta(kind: string | null) {
   return (
     (kind && KIND_META[kind]) || {
       label: () => COPY.checkin.kindVenue,
-      tint: 'rgba(244, 114, 182, 0.18)',
-      tone: DEEP,
+      tint: color.accentSoft,
+      tone: color.accentDeep,
     }
   );
 }
@@ -705,12 +708,17 @@ export function CheckinScreen({
                 testID="checkin-active-photo"
               />
               {checkin.photoAttribution ? (
-                <Text style={styles.photoCredit} numberOfLines={1}>{checkin.photoAttribution}</Text>
+                <>
+                  {/* Mandatory under any text on a photograph — the credit is
+                      real text sitting on real photos of any brightness. */}
+                  <PhotoScrim />
+                  <Text style={styles.photoCredit} numberOfLines={1}>{checkin.photoAttribution}</Text>
+                </>
               ) : null}
             </View>
           ) : (
-            /* The sheet's photo band stand-in (11:151): warm copper into night. */
-            <LinearGradient colors={['#A65940', '#1F1A33']} style={styles.activePhotoBand} />
+            /* No photo yet: the same inert well a thumbnail uses elsewhere. */
+            <View style={styles.activePhotoBand} />
           )}
           <View style={styles.activeBody}>
             <View style={[styles.activeDisc, { backgroundColor: meta.tint }]}>
@@ -728,10 +736,7 @@ export function CheckinScreen({
               {checkin.googlePlaceId && activeLabel ? (
                 <Text style={styles.attribution}>{COPY.checkin.googleAttribution}</Text>
               ) : null}
-              <View style={styles.activeChip}>
-                <View style={styles.activeChipDot} />
-                <Text style={styles.activeChipText}>{COPY.checkin.activeChip}</Text>
-              </View>
+              <StateChip open label={COPY.checkin.activeChip} />
               <View style={styles.untilRow}>
                 <ClockIcon tone={color.inkMuted} size={14} />
                 <Text style={styles.untilText}>{COPY_FOR.untilTime(hhmm)}</Text>
@@ -746,14 +751,7 @@ export function CheckinScreen({
           style={({ pressed }) => [styles.bigFilled, pressed && styles.pressed]}
           testID="checkin-see-nearby"
         >
-          <LinearGradient
-            colors={[...gradient.primary]}
-            start={{ x: 0, y: 0.5 }}
-            end={{ x: 1, y: 0.5 }}
-            style={StyleSheet.absoluteFillObject}
-            pointerEvents="none"
-          />
-          <PeopleIcon tone="#1A1A2E" size={18} />
+          <PeopleIcon tone={color.onAccent} size={18} />
           <Text style={styles.bigFilledLabel}>{COPY.checkin.seeNearby}</Text>
         </Pressable>
         <Pressable
@@ -777,7 +775,7 @@ export function CheckinScreen({
           <Text style={styles.bigOutlineLabel}>{COPY.checkin.checkOut}</Text>
         </Pressable>
 
-        {/* The sheet's safety card (11:166): glass, 18 corners, the 44 disc. */}
+        {/* The sheet's safety card (11:166): a white card, 18 corners, the 44 well. */}
         <View style={styles.safeCard}>
           <View style={styles.safeDisc}>
             <ShieldLockIcon size={22} />
@@ -850,9 +848,7 @@ export function CheckinScreen({
           <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="checkin-looking" />
         ) : null}
         {shown.length === 0 && !busy ? (
-          <Text style={styles.emptyBody} testID="checkin-no-venues">
-            {COPY.checkin.noVenues}
-          </Text>
+          <EmptyState message={COPY.checkin.noVenues} testID="checkin-no-venues" />
         ) : (
           shown.map((venue) => venueRow(venue, searching ? 'found' : 'near'))
         )}
@@ -875,7 +871,7 @@ export function CheckinScreen({
                 style={({ pressed }) => [styles.venueRow, pressed && styles.pressed]}
                 testID={`checkin-google-${place.selectionToken}`}
               >
-                <View style={[styles.venueDisc, { backgroundColor: 'rgba(244, 114, 182, 0.18)' }]}>
+                <View style={[styles.venueDisc, { backgroundColor: color.accentSoft }]}>
                   <PinIcon tone={DEEP} size={18} />
                 </View>
                 <View style={styles.venueWords}>
@@ -938,16 +934,7 @@ export function CheckinScreen({
           ]}
           testID="checkin-here"
         >
-          {shown.length === 0 ? (
-            <LinearGradient
-              colors={[...gradient.primary]}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={StyleSheet.absoluteFillObject}
-              pointerEvents="none"
-            />
-          ) : null}
-          <PinIcon tone={shown.length === 0 ? '#1A1A2E' : color.ink} size={16} />
+          <PinIcon tone={shown.length === 0 ? color.onAccent : color.ink} size={16} />
           <Text style={shown.length === 0 ? styles.bigFilledLabel : styles.bigOutlineLabel}>
             {COPY.checkin.hereCta}
           </Text>
@@ -1012,13 +999,6 @@ export function CheckinScreen({
           style={({ pressed }) => [styles.findButton, pressed && styles.pressed]}
           testID="checkin-look-around"
         >
-          <LinearGradient
-            colors={[...gradient.primary]}
-            start={{ x: 0, y: 0.5 }}
-            end={{ x: 1, y: 0.5 }}
-            style={StyleSheet.absoluteFillObject}
-            pointerEvents="none"
-          />
           <Text style={styles.findButtonLabel}>{COPY.checkin.findVenues}</Text>
         </Pressable>
         {busy ? (
@@ -1096,7 +1076,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
   },
-  /** The brand line over the list (11:73): 15, in the light pink. */
+  /** The brand line over the list (11:73): 15, in the brand's dark sibling. */
   brandText: {
     fontFamily: fontFamily.display,
     fontSize: 15,
@@ -1119,13 +1099,13 @@ const styles = StyleSheet.create({
     lineHeight: 34 * 1.15,
     color: color.ink,
   },
-  /** The corner ring (11:76): the empty frame, 1.4 of half-pink. */
+  /** The corner ring (11:76): the empty frame, an operable control's edge. */
   profileRing: {
     width: 46,
     height: 46,
     borderRadius: 23,
     borderWidth: 1.4,
-    borderColor: 'rgba(244, 114, 182, 0.5)',
+    borderColor: color.border,
   },
   ringCentered: { alignItems: 'center', justifyContent: 'center' },
   cornerPair: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -1143,8 +1123,8 @@ const styles = StyleSheet.create({
     lineHeight: 13 * 1.5,
     color: color.inkMuted,
   },
-  subtitleHeart: { color: VIVID },
-  /** The corner badge (1:5): the panel disc with the half-pink 1.5 edge. */
+  subtitleHeart: { color: color.accentDeep },
+  /** The corner badge (1:5): the panel disc with the 1.5 control edge. */
   pressed: { opacity: 0.8 },
 
   /* list — the sheet's search pill (11:78) and venue rows (11:80). */
@@ -1152,9 +1132,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: glass.fill,
-    borderWidth: 1,
-    borderColor: glass.edge,
+    backgroundColor: color.surface,
+    borderWidth: 1.5,
+    borderColor: color.border,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
   },
@@ -1169,16 +1149,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: glass.fill,
+    backgroundColor: color.surface,
     borderWidth: 1,
-    borderColor: glass.edge,
+    borderColor: color.rule,
     borderRadius: 18,
     padding: 12,
-    shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...elevation.card,
   },
   venueDisc: {
     width: 44,
@@ -1215,24 +1191,13 @@ const styles = StyleSheet.create({
     color: color.inkMuted,
     paddingHorizontal: 2,
   },
-  emptyBody: {
-    fontFamily: fontFamily.body,
-    fontSize: font.body,
-    lineHeight: font.body * 1.5,
-    color: color.inkMuted,
-  },
-
   /* intro — the Figma hero (1:7): a solid panel, 28 corners, 16 inside. */
   heroCard: {
     backgroundColor: color.surface,
     borderRadius: 28,
     padding: spacing.md,
     gap: spacing.md,
-    shadowColor: '#000000',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    ...elevation.card,
   },
   heroColumns: { flexDirection: 'row', gap: spacing.md },
   heroWords: { flex: 1, gap: 10 },
@@ -1277,25 +1242,24 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     minHeight: 300,
   },
+  /** Flat coral, same recipe as the shared `Button`'s primary variant. */
   findButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: VIVID,
+    backgroundColor: color.accent,
     overflow: 'hidden',
     borderRadius: radius.pill,
     paddingVertical: 16,
-    shadowColor: VIVID,
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 4,
+    ...elevation.card,
+    shadowColor: color.accent,
+    shadowOpacity: 0.28,
   },
   findButtonLabel: {
     fontFamily: fontFamily.bodySemi,
     fontSize: 16,
-    color: '#1A1A2E',
+    color: color.onAccent,
   },
   previewRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   previewChip: {
@@ -1318,11 +1282,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    ...elevation.card,
   },
   infoDisc: {
     width: 48,
@@ -1346,26 +1306,23 @@ const styles = StyleSheet.create({
   },
   /* active — the sheet's card (11:150), buttons (11:160-164), safety (11:166). */
   activeCard: {
-    backgroundColor: glass.fill,
+    backgroundColor: color.surface,
     borderWidth: 1,
-    borderColor: glass.edge,
+    borderColor: color.rule,
     borderRadius: 22,
     overflow: 'hidden',
-    shadowColor: '#000000',
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    ...elevation.card,
   },
   activePhoto: { width: '100%', height: 170 },
-  activePhotoBand: { width: '100%', height: 170 },
+  /** No photo yet: the same inert well a thumbnail uses everywhere else. */
+  activePhotoBand: { width: '100%', height: 170, backgroundColor: color.veil },
   photoCredit: {
     position: 'absolute',
     right: 8,
     bottom: 6,
     fontFamily: fontFamily.body,
     fontSize: 10,
-    color: 'rgba(255, 255, 255, 0.85)',
+    color: color.onPhoto,
   },
   activeBody: {
     flexDirection: 'row',
@@ -1389,33 +1346,13 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: color.ink,
   },
-  activeChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
-    borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  activeChipDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: '#34D399',
-  },
-  activeChipText: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 11,
-    color: '#34D399',
-  },
   untilRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   untilText: {
     fontFamily: fontFamily.body,
     fontSize: 13,
     color: color.inkMuted,
   },
+  /** Flat coral, the same recipe the shared `Button`'s primary variant uses. */
   bigFilled: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1425,25 +1362,24 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderRadius: radius.pill,
     paddingVertical: 14,
-    shadowColor: '#FB7185',
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    ...elevation.card,
+    shadowColor: color.accent,
+    shadowOpacity: 0.28,
   },
   bigFilledLabel: {
     fontFamily: fontFamily.bodySemi,
     fontSize: 15,
-    color: '#1A1A2E',
+    color: color.onAccent,
   },
+  /** White, 1.5 control edge — the shared `Button`'s secondary variant. */
   bigOutline: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: glass.fill,
-    borderWidth: 1.4,
-    borderColor: 'rgba(236, 72, 153, 0.5)',
+    backgroundColor: color.surface,
+    borderWidth: 1.5,
+    borderColor: color.border,
     borderRadius: radius.pill,
     paddingVertical: 12,
   },
@@ -1452,14 +1388,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: color.ink,
   },
-  /** The sheet's safety card (11:166): glass, 18 corners, the 44 veil disc. */
+  /** The sheet's safety card (11:166): a white card, 18 corners, the 44 veil disc. */
   safeCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: glass.fill,
+    backgroundColor: color.surface,
     borderWidth: 1,
-    borderColor: glass.edge,
+    borderColor: color.rule,
     borderRadius: 18,
     paddingHorizontal: 16,
     paddingVertical: 14,

@@ -214,7 +214,7 @@ export function HereNowScreen({
       {outcome?.kind === 'too-far' ? <Notice message={COPY.hereNow.tooFar} tone="error" /> : null}
       {outcome?.kind === 'in-range' ? (
         <>
-          <Notice message={COPY.hereNow.inRange} />
+          <Notice message={COPY.hereNow.inRange} tone="success" />
           <Button label={COPY.hereNow.goToDiscovery} onPress={() => navigation.goBack()} testID="here-now-done" />
         </>
       ) : null}

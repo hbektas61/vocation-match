@@ -25,10 +25,10 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { Caption, EmptyState, Field, Notice } from './ui';
+import { Caption, Chip, EmptyState, Field, Notice } from './ui';
 import { COPY } from '../copy';
 import { ApiError, getApi, type GooglePlaceHit, type VenueSearchMode } from '../data';
-import { color, fontFamily, glass, radius, spacing } from '../theme';
+import { color, fontFamily, radius, spacing } from '../theme';
 
 /** The server's floor, mirrored so a request is never made below it. */
 export const VENUE_MIN_QUERY = 3;
@@ -267,21 +267,15 @@ export function VenuePicker({
         /* Optional refinements (§3). `Tümü` is the default and is the mode
            that sends Google no type restriction at all. */
         <View style={styles.chipRow}>
-          {CHIPS.map((chip) => {
-            const selected = chip.mode === mode;
-            return (
-              <Pressable
-                key={chip.mode}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                onPress={() => setMode(chip.mode)}
-                style={[styles.chip, selected && styles.chipOn]}
-                testID={`venue-chip-${chip.mode}`}
-              >
-                <Text style={[styles.chipText, selected && styles.chipTextOn]}>{chip.label()}</Text>
-              </Pressable>
-            );
-          })}
+          {CHIPS.map((chip) => (
+            <Chip
+              key={chip.mode}
+              label={chip.label()}
+              selected={chip.mode === mode}
+              onPress={() => setMode(chip.mode)}
+              testID={`venue-chip-${chip.mode}`}
+            />
+          ))}
         </View>
       ) : null}
 
@@ -354,31 +348,11 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginBottom: spacing.sm,
   },
-  chip: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: glass.edge,
-    backgroundColor: glass.fill,
-  },
-  chipOn: {
-    borderColor: color.accentDeep,
-    backgroundColor: color.accentSoft,
-  },
-  chipText: {
-    fontFamily: fontFamily.body,
-    fontSize: 13,
-    color: color.inkMuted,
-  },
-  chipTextOn: {
-    color: color.ink,
-  },
   row: {
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: glass.edge,
-    backgroundColor: glass.fill,
+    borderColor: color.rule,
+    backgroundColor: color.surface,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     marginBottom: spacing.xs,

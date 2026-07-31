@@ -10,7 +10,7 @@ import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { Body, Caption, Screen, Title } from '../components/ui';
+import { Body, Caption, PhotoScrim, Screen, Title } from '../components/ui';
 import { HotelBuilding } from '../components/HotelIllustrations';
 import { COPY, upperCase } from '../copy';
 import { getApi, readBackendConfig } from '../data';
@@ -77,9 +77,14 @@ export function HotelDetailsScreen({ route }: RootScreenProps<'HotelDetails'>) {
         <View style={styles.photoWrap}>
           <Image source={source} style={styles.photo} resizeMode="cover" accessibilityIgnoresInvertColors />
           {hotel.photoAttribution ? (
-            <Text style={styles.credit} numberOfLines={1}>
-              {hotel.photoAttribution}
-            </Text>
+            <>
+              {/* The credit prints on the photo, so it needs the same scrim
+                  every piece of text on an image needs. */}
+              <PhotoScrim />
+              <Text style={styles.credit} numberOfLines={1}>
+                {hotel.photoAttribution}
+              </Text>
+            </>
           ) : null}
         </View>
       ) : (
@@ -125,15 +130,16 @@ const styles = StyleSheet.create({
     right: 8,
     fontFamily: fontFamily.body,
     fontSize: 10,
-    color: 'rgba(255,255,255,0.9)',
-    textShadowColor: 'rgba(0,0,0,0.6)',
-    textShadowRadius: 3,
+    color: color.onPhoto,
     maxWidth: '80%',
   },
+  // No photograph on file: the inert well a thumbnail ground uses, with the
+  // building mark centred on it — the same job color.veil does everywhere
+  // else an image would otherwise sit.
   artWrap: {
     height: 160,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(236, 72, 153, 0.06)',
+    backgroundColor: color.veil,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -72,39 +72,41 @@ export const CrowdIcon = ({ tone, size = 28 }: { tone: string; size?: number }) 
 );
 
 /**
- * Gender answer → glyph, in the mock's own hues (each sits beside a label;
- * hue is flavour, not information).
+ * Gender answer → glyph. D-058's palette dropped the mock's per-answer hues —
+ * there is no blue or purple token left to spend, only the brand and its
+ * neutrals — so every glyph now draws in the same brand ink. The label beside
+ * it still carries the answer; the mark was always flavour, never information.
  */
 export function genderIcon(value: string, size = 20): React.ReactNode {
   switch (value) {
     case 'WOMAN':
-      return <VenusIcon tone="#FB7185" size={size} />;
+      return <VenusIcon tone={color.accentDeep} size={size} />;
     case 'MAN':
-      return <MarsIcon tone="#60A5FA" size={size} />;
+      return <MarsIcon tone={color.accentDeep} size={size} />;
     case 'Non-binary':
-      return <TransIcon tone="#F472B6" size={size} />;
+      return <TransIcon tone={color.accentDeep} size={size} />;
     case 'Genderfluid':
-      return <FluidIcon tone="#FBBF24" size={size} />;
+      return <FluidIcon tone={color.accentDeep} size={size} />;
     case 'Agender':
-      return <NoneIcon tone="#A78BFA" size={size} />;
+      return <NoneIcon tone={color.accentDeep} size={size} />;
     case 'Transgender woman':
-      return <TransIcon tone="#C084FC" size={size} />;
+      return <TransIcon tone={color.accentDeep} size={size} />;
     case 'Transgender man':
-      return <TransIcon tone="#818CF8" size={size} />;
+      return <TransIcon tone={color.accentDeep} size={size} />;
     default:
       return null;
   }
 }
 
-/** Show-me card → the mock's three marks. */
+/** Show-me card → the mock's three marks, in the one brand ink D-058 leaves. */
 export function showMeIcon(value: string, size = 30): React.ReactNode {
   switch (value) {
     case 'WOMEN':
-      return <VenusIcon tone="#FB7185" size={size} />;
+      return <VenusIcon tone={color.accentDeep} size={size} />;
     case 'MEN':
-      return <MarsIcon tone="#60A5FA" size={size} />;
+      return <MarsIcon tone={color.accentDeep} size={size} />;
     default:
-      return <CrowdIcon tone="#A78BFA" size={size} />;
+      return <CrowdIcon tone={color.accentDeep} size={size} />;
   }
 }
 
@@ -230,7 +232,7 @@ export const CheckBadge = ({ size = 22 }: { size?: number }) => (
     <Circle cx={12} cy={12} r={11} fill={color.border} />
     <Path
       d="m7.5 12.5 3 3 6-6.5"
-      stroke="#FFFFFF"
+      stroke={color.surface}
       strokeWidth={2.4}
       strokeLinecap="round"
       strokeLinejoin="round"

@@ -10,7 +10,7 @@ import { apiErrorMessage, COPY, upperCase } from '../copy';
 import { ApiError, getApi, type UpcomingStay } from '../data';
 import { validateStayDates } from '../domain/upcoming';
 import type { RootScreenProps } from '../navigation/types';
-import { color, fontFamily, glass } from '../theme';
+import { color, elevation, fontFamily, radius } from '../theme';
 
 const CalendarGlyph = () => (
   <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -292,7 +292,7 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
 
 const styles = StyleSheet.create({
   pressed: { opacity: 0.8 },
-  /** The sheet's head (13:113): 28, left, on the night ground. */
+  /** The sheet's head (13:113): 28, left, on the cream ground. */
   title: {
     fontFamily: fontFamily.display,
     fontSize: 28,
@@ -305,14 +305,15 @@ const styles = StyleSheet.create({
     lineHeight: 13 * 1.5,
     color: color.inkMuted,
   },
-  /** The date card (13:115): glass, 20 corners, 16 inside, 10 between. */
+  /** The date card (13:115): white, the card radius, 16 inside, 10 between. */
   dateCard: {
-    backgroundColor: glass.fill,
+    backgroundColor: color.surface,
     borderWidth: 1,
-    borderColor: glass.edge,
-    borderRadius: 20,
+    borderColor: color.rule,
+    borderRadius: radius.lg,
     padding: 16,
     gap: 10,
+    ...elevation.card,
   },
   dateLabel: {
     fontFamily: fontFamily.bodySemi,
@@ -331,15 +332,17 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: color.ink,
   },
-  /** The privacy line's card (13:121). */
+  /** The privacy line's card (13:121): white with the quiet edge, deliberately
+      without the card shadow — a standing note rather than another surface
+      competing with the two date cards above it. */
   noteCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    backgroundColor: glass.fill,
+    backgroundColor: color.surface,
     borderWidth: 1,
-    borderColor: glass.edge,
-    borderRadius: 20,
+    borderColor: color.rule,
+    borderRadius: radius.lg,
     padding: 16,
   },
   noteText: {

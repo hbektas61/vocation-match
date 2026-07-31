@@ -4,9 +4,11 @@
  * From the owner's reference (2026-07-26): when a room has nobody in it, the
  * screen should not shrug — it should look like the app is still listening.
  * Concentric rings around a glowing point, a pulse sweeping outward, and the
- * words underneath it. The reference was a dark theme; this is the same
- * composition translated into the app's own ground: white surface, lavender
- * rings deepening toward the centre, the dot in the deep accent.
+ * words underneath it. The reference was a dark theme; D-058 moved the whole
+ * app to a light one, so the rings are drawn in the brand coral instead of
+ * the retired pink, deepening toward the centre, the dot in the brand's dark
+ * sibling — every ring is a real token, faded with the view's own `opacity`
+ * rather than a bespoke rgba, since no translucent-coral token exists.
  *
  * The pulse animates only when the platform's reduce-motion setting allows
  * it; otherwise the rings simply stand still, which reads fine — the point
@@ -19,12 +21,12 @@ import { color } from '../theme';
 
 const SIZE = 280;
 
-/** Border and fill pairs, outermost first — the reference's graduated depth. */
+/** Diameter and opacity pairs, outermost first — the reference's graduated depth. */
 const RINGS = [
-  { diameter: 280, border: 'rgba(236, 72, 153, 0.10)', fill: 'rgba(236, 72, 153, 0.02)' },
-  { diameter: 210, border: 'rgba(236, 72, 153, 0.16)', fill: 'rgba(236, 72, 153, 0.03)' },
-  { diameter: 148, border: 'rgba(236, 72, 153, 0.28)', fill: 'rgba(236, 72, 153, 0.05)' },
-  { diameter: 90, border: 'rgba(236, 72, 153, 0.45)', fill: 'rgba(236, 72, 153, 0.08)' },
+  { diameter: 280, opacity: 0.12 },
+  { diameter: 210, opacity: 0.2 },
+  { diameter: 148, opacity: 0.34 },
+  { diameter: 90, opacity: 0.55 },
 ];
 
 export function RadarEmpty({ testID }: { testID?: string }) {
@@ -77,8 +79,7 @@ export function RadarEmpty({ testID }: { testID?: string }) {
               width: ring.diameter,
               height: ring.diameter,
               borderRadius: ring.diameter / 2,
-              borderColor: ring.border,
-              backgroundColor: ring.fill,
+              opacity: ring.opacity,
             },
           ]}
         />
@@ -102,9 +103,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignSelf: 'center',
   },
+  /**
+   * The border carries the coral, the fill the same brand wash a selected
+   * chip uses — `opacity` on the whole view is what fades it ring by ring,
+   * since the palette has no translucent-coral token to reach for instead.
+   */
   ring: {
     position: 'absolute',
     borderWidth: 1.5,
+    borderColor: color.accent,
+    backgroundColor: color.accentSoft,
   },
   /** The outward sweep: a ring the size of the field, born at the centre. */
   pulse: {
@@ -121,7 +129,8 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(236, 72, 153, 0.22)',
+    backgroundColor: color.accentSoft,
+    opacity: 0.85,
   },
   dot: {
     width: 24,
