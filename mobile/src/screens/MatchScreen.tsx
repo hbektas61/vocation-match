@@ -130,7 +130,13 @@ export function MatchScreen({ navigation, route }: RootScreenProps<'Match'>) {
   }
 
   return (
-    <Screen safeTop testID="screen-match">
+    /*
+      `bleed` because this is the one screen D-058 lets go full colour, and a
+      padded Screen was leaving 24pt of cream above the gradient and 153pt
+      below it — measured on the running app. A full-bleed moment with a cream
+      strip under it is not a full-bleed moment.
+    */
+    <Screen safeTop bleed scroll={false} testID="screen-match">
       {/*
        * The one allowlisted full-colour screen (D-058): `gradient.match`
        * fills the page behind everything else, so it is drawn first as an
@@ -347,7 +353,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: spacing.md,
   },
-  actions: { gap: spacing.sm, paddingBottom: spacing.sm },
+  /**
+   * The gradient bleeds; the buttons must not. `Screen bleed` drops the shell's
+   * 20pt gutter so the colour can reach the edges, which left both CTAs
+   * touching the sides of the phone — so the row carries the gutter itself.
+   */
+  actions: { gap: spacing.sm, paddingHorizontal: 20, paddingBottom: spacing.sm },
   /** White pill, coral-ink label — the primary CTA legible on the gradient. */
   ctaPrimary: {
     minHeight: MIN_TOUCH,
@@ -365,7 +376,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     color: color.accentDeep,
   },
-  /** Transparent with a white border — the secondary CTA on the gradient. */
+  /**
+   * Transparent, bordered — the secondary CTA on the gradient.
+   *
+   * It was white on white, and it sits at the *pale* end of `gradient.match`:
+   * measured on the running app the label came out at 1.04:1, which is not a
+   * low-contrast label, it is an invisible one. Navy reads on that pale stop
+   * at better than 11:1, and the pill keeps its shape.
+   */
   ctaSecondary: {
     minHeight: MIN_TOUCH,
     borderRadius: radius.pill,
@@ -374,13 +392,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: 14,
     borderWidth: 1.5,
-    borderColor: color.onPhoto,
+    borderColor: color.ink,
   },
   ctaSecondaryLabel: {
     fontFamily: fontFamily.bodySemi,
     fontSize: 15,
     letterSpacing: 0.2,
-    color: color.onPhoto,
+    color: color.ink,
   },
   ctaPressed: { opacity: 0.85 },
 });

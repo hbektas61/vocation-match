@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -66,6 +66,8 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   const [messages, setMessages] = useState<ChatMessage[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  /** The synchronous half of `sending`; see `send` below. */
+  const sendingRef = useRef(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   // True once a server lookup for a not-yet-cached match has finished,
@@ -153,7 +155,15 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
 
   const send = async () => {
     const text = draft.trim();
-    if (!text || sending || closed) return;
+    // `sending` is React state, so it is not true yet for a second press that
+    // arrives in the same tick as the first: three taps inside one frame sent
+    // three copies of the same message to the other person. Measured on the
+    // running app — a human double-tap (180ms apart) was always fine, so this
+    // only bites on a stalled frame, which is exactly when somebody taps
+    // again. The ref closes the window synchronously; `sending` still drives
+    // what the screen shows.
+    if (!text || sending || sendingRef.current || closed) return;
+    sendingRef.current = true;
     setSending(true);
     setSendError(null);
     try {
@@ -172,6 +182,7 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
       }
       setSendError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
     } finally {
+      sendingRef.current = false;
       setSending(false);
     }
   };

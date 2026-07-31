@@ -42,6 +42,7 @@ kanıt · severity · fix commit · gerçek yeniden test.
 
 | ID | Ekran / akış | Viewport | Tekrar | Beklenen | Görülen | Sev | Fix | Yeniden test |
 |---|---|---|---|---|---|---|---|---|
+| R-008 | Çevremde — mekân listesi | 390×844 | Nearby → mekânları bul | Başlık her sekmede olduğu gibi yalnız ekran adı + profil halkası | Ekranın tepesinde ortalanmış "Vacation Match ♥" wordmark var; uygulamada başka hiçbir sekmede yok (yalnız onboarding Karşılama'da) | P2 · **owner kararı** | — | Hami: kalsın mı? |
 | R-006 | Gelen kutusu — boş | 390×844 | Mesajlar sekmesi, eşleşme yokken | Boş durum krem zeminde kendi kartıyla durur | Hero kaldırıldı; yerine `assets/inbox-empty.jpg` (sahibin açık render'ı) konabilir ama o da lavanta — emekli D-043 paleti | **Owner kararı** | — | Hami seçecek |
 
 > R-006 bir hata değil, bir tercih: hero'yu tamamen kaldırdım (şu anki hâl) ya da
@@ -57,6 +58,9 @@ kanıt · severity · fix commit · gerçek yeniden test.
 | R-003 | Tatilim boş ekranında üç eşdeğer mercan CTA — gerçek eylem ("Nereye gidiyorsun?") iki yönlendirmeden ayırt edilemiyordu | P2 | Kapalı oda CTA'sı `variant="secondary"` | Çalışan uygulamada ölçüldü: 1 mercan dolgu + 2 beyaz/kontrol kenarlı |
 | Q-001 | `profileAndStay` iki testi aralıklı kırmızı | **P1** | Kaydın gerçekten indiğini ve kartın oturduğunu bekleyen state-based wait; timeout körlemesine büyütülmedi | Jest ×3 ardışık 648/648 |
 | Q-002 | `profilePhotoUi` yükleme testi aralıklı kırmızı | **P1** | Yükleme beklemelerine gerekçesi yazılmış `UPLOAD` bütçesi (render tick değil, gerçek yükleme) | Jest ×3 ardışık 648/648 |
+| R-004 | **Eşleşme ekranında "Bakmaya devam et" görünmez.** Beyaz etiket + beyaz kenar, gradyanın *açık* ucunda — çalışan uygulamada **1.04:1** ölçüldü | **P1** | Etiket ve kenar lacivere alındı (açık durakta 11:1'in üstünde) | Çalışan uygulamada `rgb(16,26,58)` ölçüldü; `docs/qa/day1/rt-08-match-fixed.png` |
+| R-005 | Eşleşme anı tam kanamıyordu: gradyanın üstünde 24pt, altında 153pt krem şerit | P2 | `Screen bleed scroll={false}`; CTA sırası kendi 20pt payını taşıyor | Gradyan `y0..804 x0..390`, CTA'lar x20 w350; `rt-09-match-bleed.png` |
+| R-007 | Sohbette aynı karede dört dokunuş **üç kopya mesaj** gönderiyordu (`sending` React state olduğu için aynı tick'te false) | P2 | Senkron `sendingRef` koruması; `sending` hâlâ ekranı sürüyor | Aynı burst → **1 mesaj**; insan çift dokunuşu (180ms) zaten 1'di |
 
 ## Day 1 — runtime ekran envanteri
 
@@ -84,7 +88,16 @@ Durum kodları: `⬜ denenmedi` · `🟦 yürütüldü` · `✅ yürütüldü + 
 | 14 | Keşfet — otel yok | ✅ R-002 |
 | 15 | Mesajlar — boş gelen kutusu | ✅ R-002, R-006 |
 | 16 | Alt navigasyon — beş sekme, 75×44 | ✅ |
-| — | Çevremde, Etkinlikler, Ayarlar, Match, chat, paywall placeholder | ⬜ **sırada** |
+| 17 | Çevremde — tanıtım | ✅ |
+| 18 | Çevremde — mekân listesi | ✅ R-008 |
+| 19 | Çevremde — aktif check-in | ✅ |
+| 20 | Keşfet — deste (fotoğrafsız aday, scrim) | ✅ |
+| 21 | Eşleşme anı | ✅ **R-004, R-005** |
+| 22 | Sohbet — boş, yazma, gönderme, hızlı tekrar dokunma | ✅ **R-007** |
+| 23 | Etkinlikler — bölge seçilmemiş | ✅ |
+| 24 | Ayarlar — profil, fotoğraf ızgarası | ✅ |
+| — | Paywall placeholder | ⬜ Phase 4, O-05/O-09 bekliyor |
+| — | Etkinlik listesi/detayı, canlı oda sonuçları | ⬜ staging verisi gerekiyor (Day 2) |
 
 Yürüyüş yöntemi: gerçek 390×844 viewport, çalışan uygulama, her ekranda canlı
 DOM üzerinde ölçüm — kesilen metin, 44 altı dokunma hedefi, yatay taşma, WCAG
