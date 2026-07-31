@@ -70,73 +70,63 @@ kanıt · severity · fix commit · gerçek yeniden test.
 
 ## Day 1 — runtime ekran envanteri
 
-Kaynak: `src/navigation/RootNavigator.tsx` + `src/screens/*` + onboarding.
-"Manuel denendi" = **çalışan uygulamada** açıldı ve dokunulabilir alanları
-yürütüldü; Figma'da görülmüş olması sayılmaz.
+Kaynak: `RootNavigator` içindeki her rota + onboarding adımları.
+"Yürütüldü" = **çalışan uygulamada** açıldı ve dokunulabilir alanları denendi;
+Figma'da görülmüş olması sayılmaz.
 
-Durum kodları: `⬜ denenmedi` · `🟦 yürütüldü` · `✅ yürütüldü + temiz`
+`✅ yürütüldü, temiz` · `🟦 kısmen` · `⬜ denenmedi`
 
-| # | Ekran / durum | Durum |
+### Yürütülenler (39)
+
+| Alan | Ekran / durum | Durum |
 |---|---|---|
-| 1 | Onboarding — Karşılama | ✅ |
-| 2 | Onboarding — Söz / 18+ | ✅ |
-| 3 | Onboarding — Telefon | ✅ |
-| 4 | Onboarding — OTP (+ resend geri sayımı) | ✅ |
-| 5 | Onboarding — İsim | ✅ |
-| 6 | Onboarding — Doğum tarihi | ✅ |
-| 7 | Onboarding — Cinsiyet | ✅ |
-| 8 | Onboarding — Yönelim | ✅ |
-| 9 | Onboarding — Bana göster | ✅ |
-| 10 | Onboarding — Tutkular (seçili/seçilmemiş) | ✅ |
-| 11 | Onboarding — Fotoğraf | ✅ |
-| 12 | Tatilim — mekân yok | ✅ R-002, R-003 burada bulundu |
-| 13 | Tatilim — oda kartı açılma anı | ✅ **R-001 burada bulundu** |
-| 14 | Keşfet — otel yok | ✅ R-002 |
-| 15 | Mesajlar — boş gelen kutusu | ✅ R-002, R-006 |
-| 16 | Alt navigasyon — beş sekme, 75×44 | ✅ |
-| 17 | Çevremde — tanıtım | ✅ |
-| 18 | Çevremde — mekân listesi | ✅ R-008 |
-| 19 | Çevremde — aktif check-in | ✅ |
-| 20 | Keşfet — deste (fotoğrafsız aday, scrim) | ✅ |
-| 21 | Eşleşme anı | ✅ **R-004, R-005** |
-| 22 | Sohbet — boş, yazma, gönderme, hızlı tekrar dokunma | ✅ **R-007** |
-| 23 | Etkinlikler — bölge seçilmemiş | ✅ |
-| 24 | Ayarlar — profil, fotoğraf ızgarası | ✅ |
-| 25 | Tatilden Önce — tarih beyanı + kaydetme | ✅ `rt-13-upcoming.png` |
-| 28 | Tatil mekânı seçimi — destinasyon boşta / sonuçlar | ✅ |
-| 29 | Tatil mekânı seçimi — mekân boşta / sonuçlar / çipler | ✅ **R-010** |
-| 30 | Tatil mekânı — seçildi ve aktifleşti | ✅ |
-| 31 | Oteldeyim — izin ekranı | ✅ |
-| 32 | Oteldeyim — "Kontrol ediliyor…" (yükleme) | ✅ |
-| 33 | Oteldeyim — çok uzakta (TOO_FAR) | ✅ `rt-14-too-far.png` · **R-011** |
-| 34 | Oteldeyim — konum hassas değil | ✅ harness, temiz |
-| 35 | Etkinlikler — bölge seçici | ✅ |
-| 36 | Etkinlikler — liste (bugün + yaklaşan, çipler, bölge şeridi) | ✅ **R-012** · `rt-15-events-list.png` |
-| 37 | Etkinlikler — görselsiz kart (sağlayıcı görseli düşünce) | ✅ düzgün bozuluyor |
-| 38 | Etkinlik detayı — katılmadın (iki oda) | ✅ `rt-16-event-detail.png` |
-| 39 | Etkinlik detayı — gidiyorsun, oda açık | ✅ **R-013** · `rt-17-event-going.png` |
-| — | Canlı oda sonuçları (E-27…E-34) | 🟦 tarayıcıda konum yanıtlanmıyor; harness'ta T-19/T-20 doğrulandı, kalanı cihazda |
+| Onboarding | Karşılama · Söz/18+ · Telefon · OTP+geri sayım · İsim · Doğum tarihi · Cinsiyet · Yönelim · Bana göster · Tutkular · Fotoğraf | ✅ 11 |
+| Tatilim | Mekân yok · oda kartı açılma anı · mekân aktif | ✅ 3 · **R-001, R-002, R-003** |
+| Mekân seçimi | Destinasyon (boşta/sonuçlar) · mekân (boşta/sonuçlar/çipler) · seçildi ve aktifleşti | ✅ 5 · **R-010** |
+| Tatilden Önce | Tarih beyanı · kaydetme · oda açıldı | ✅ 3 |
+| Oteldeyim | İzin · "Kontrol ediliyor…" · çok uzakta · konum hassas değil | ✅ 4 · **R-011** |
+| Çevremde | Tanıtım · mekân listesi · aktif check-in | ✅ 3 · **R-008** |
+| Keşfet | Otel yok · deste (fotoğrafsız aday + scrim) | ✅ 2 |
+| Eşleşme | Match anı | ✅ 1 · **R-004, R-005** |
+| Mesajlar | Boş gelen kutusu · sohbet (boş, yazma, gönderme, hızlı tekrar dokunma) | ✅ 2 · **R-006, R-007** |
+| Etkinlikler | Bölge seçilmemiş · bölge seçici · liste · görselsiz kart · detay · katılım sonrası | ✅ 6 · **R-012, R-013** |
+| Ayarlar | Ayarlar + fotoğraf ızgarası · Profilini düzenle | ✅ 2 |
+| Navigasyon | Alt bar, beş sekme 75×44 | ✅ 1 |
 
-**Harness notu.** `E-05` sahnesi "E-05…E-20 bu sahneden gezilir" diyor ama
-`EventDetail` rotasını mount etmiyor; sahneden detaya gidilmek istendiğinde
-navigator hata veriyor. Ürün hatası değil (gerçek uygulamada rota var ve
-çalışıyor), geliştirme aracının eksiği — Day 3'te harness'a bakılırken düzeltilebilir.
-| 26 | Profilini düzenle | ✅ |
-| 27 | Ayarlar → fotoğraf ızgarası | ✅ |
-| — | Paywall placeholder | ⬜ Phase 4, O-05/O-09 bekliyor |
-| — | Etkinlik listesi/detayı, canlı oda sonuç ekranları (E-27…E-34, T-19…T-22) | 🟦 **kısmen** — D-058 Figma'da 108/108 var, jest metinlerini doğruluyor, harness'ta beş sahne (E-27, E-16, T-17, C-03, M-04) temiz ölçüldü; kalanların runtime yürüyüşü sürüyor |
+### Kalanlar
 
-**QA yöntemi sınırı — dürüstçe kaydedilmiştir.** Web export'ta
-`react-native-screens` native-stack başlığını çizmiyor, bu yüzden stack'e
-push edilen ekranlardan (Profilini düzenle, Tarihler, Etkinlik detayı) tarayıcıda
-geri dönülemiyor; iOS'ta bu başlık ve geri düğmesi platformun kendisinden gelir.
-Bunu bir uygulama hatası olarak kaydetmedim — cihaz kontrolüne bağlı (O-07,
-D-057 device checklist #10). Aynı şekilde kontrast ölçüm aracım fotoğraf
-üstündeki scrim'i göremiyor; on-photo metin ekran görüntüsüyle doğrulanıyor.
+| # | Ekran / durum | Neden bekliyor |
+|---|---|---|
+| K-01 | **Bildir / engelle** (`ReportBlock`) — hiç açılmadı | Sohbet menüsünden erişiliyor; Apple UGC 1.2 için kritik (Phase 3) |
+| K-02 | **Sohbet — kapanmış oda**, unmatch onayı, mesaj gönderilemedi/yeniden dene | Harness'ta C-03 temizdi; gerçek akış yürünmedi |
+| K-03 | **Gelen kutusu — dolu** (yeni eşleşmeler + sohbet listesi, okunmamış) | İkinci hesap gerekiyor (Day 2) |
+| K-04 | **Ayarlar alt sayfaları** — Dil, Veri sağlayıcıları, Hesabı sil | Stack ekranı; tarayıcıda geri dönülemiyor |
+| K-05 | **Çevremde** — katalog araması, Google gelişmiş arama, aylık hak/hak bitti, sağlayıcı kapalı, "Buradayım", check-in süresi doldu | Harness'ta N-08/N-09/N-12 var; runtime yürüyüşü yapılmadı |
+| K-06 | **Etkinlikler** — sonuç yok, sağlayıcı kullanılamıyor, çevrimdışı, günlük sınır, özellik kapalı, katılımı geri çek | Harness sahneleri mevcut (E-12/E-15/E-16/E-17) |
+| K-07 | **Canlı oda sonuçları** (E-27…E-34: başlamadı, bitti, iptal, saat belirsiz, konum yok, IN_RANGE, süre doldu) | Tarayıcı konum istemini yanıtlamıyor → **gerçek cihaz** (O-07) |
+| K-08 | **Keşfet** — boş oda/yeniden tara, bağlam seçici sayfası, beş bağlamın her biri | Harness'ta NAV-02/05/07 ve D-01…D-06 var; runtime yürüyüşü kısmi |
+| K-09 | **Otel detayı** (`HotelDetails`) | Rota var, giriş noktası yürünmedi |
+| K-10 | **Paywall placeholder** | Phase 4 — O-05 + O-09 bekliyor |
+
+`ChooseHotel` ayrı bir ekran değil: `HotelScreen`'i yeniden kullanıyor ve o
+yürütüldü.
+
+**QA yöntemi sınırları — dürüstçe kaydedilmiştir.**
+
+1. Web export'ta `react-native-screens` native-stack başlığını çizmiyor, bu
+   yüzden stack'e push edilen ekranlardan tarayıcıda geri dönülemiyor; her biri
+   için baştan onboarding gerekiyor. iOS'ta başlık ve geri düğmesi platformdan
+   gelir — uygulama hatası olarak kaydedilmedi (O-07, device checklist #10).
+2. Tarayıcı konum iznini yanıtlamıyor, bu yüzden yakınlık sonuçlarının bir kısmı
+   yalnız harness'tan veya cihazdan görülebiliyor.
+3. Kontrast ölçüm aracı fotoğraf üstündeki scrim'i göremiyor; on-photo metin
+   ekran görüntüsüyle doğrulanıyor.
+4. Harness'ın `E-05` sahnesi `EventDetail` rotasını mount etmiyor — sahneden
+   detaya gidilemiyor. Ürün hatası değil, aracın eksiği.
 
 Yürüyüş yöntemi: gerçek 390×844 viewport, çalışan uygulama, her ekranda canlı
-DOM üzerinde ölçüm — kesilen metin, 44 altı dokunma hedefi, yatay taşma, WCAG
-kontrastı (pasif kontroller hariç tutulur) ve kullanıcıya sızan enum kodu.
+DOM ölçümü — kesilen metin, 44 altı dokunma hedefi, yatay taşma, WCAG kontrastı
+(pasif kontroller hariç) ve kullanıcıya sızan enum kodu.
 
 ## Owner işlemleri (Hami) — engineering bunları yapamaz
 
