@@ -10,7 +10,7 @@ server entitlement, production hazırlığı ve store paketi.
 | | |
 |---|---|
 | Branch | `main`, `origin/main` ile eşit |
-| Baseline commit | `HEAD` — R-018 render-içi setState ve Q-004 |
+| Baseline commit | `6e2dcc8` — R-018 render-içi setState ve Q-004 |
 | Önceki | `3995aac` — R-009/R-011/R-016/R-017 ve act temizliği |
 | Full gate | `scripts/check.sh` (veritabanı dahil) **12/12 PASS** |
 | Jest | 54 suite · **663 test** yeşil (×3 ardışık) |
