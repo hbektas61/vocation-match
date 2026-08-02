@@ -820,12 +820,8 @@ const styles = StyleSheet.create({
    */
   card: {
     flex: 1,
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.md,
-    borderRadius: radius.lg,
     overflow: 'hidden',
     backgroundColor: color.veil,
-    ...elevation.raised,
   },
   cardPhoto: { ...StyleSheet.absoluteFillObject },
   chipRowTop: {
@@ -866,7 +862,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: spacing.md,
     right: spacing.md,
-    bottom: spacing.md,
+    // Above the action circles now floating on the photo's foot.
+    bottom: 104,
     gap: spacing.sm,
   },
   cardName: {
@@ -916,12 +913,16 @@ const styles = StyleSheet.create({
   },
   segmentActive: { backgroundColor: color.accentDeep },
   /** Three circles on the ground: 64 · 84 · 64, the heart carrying the size. */
+  /** K-01: the circles float on the photo, not on a strip under it. */
   cardActions: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.lg,
-    paddingVertical: spacing.sm + 4,
   },
   /** Pass and the safety flag: white, with the quiet card edge. */
   actionCircle: {
