@@ -1,10 +1,10 @@
 /**
- * Choosing where the holiday is (D-054), in two steps.
+ * Choosing where the holiday is (D-060), in three explicit steps.
  *
- * Step A asks for a *destination* — a city, an island, a resort area — and
- * accepts nothing that is a business. Step B asks for a venue inside it, and
- * its default mode carries no type restriction at all, which is the whole
- * reason a beach club Google files under `bar` is findable here.
+ * Step A is a local country list and costs nothing. Step B asks for a city,
+ * island or holiday area inside that country and accepts nothing that is a
+ * business. Step C starts with Google's reliable lodging refinement, while an
+ * explicit broader option keeps beach clubs and named beaches findable.
  *
  * The cost controls the brief asks for live in this file, because this is
  * where the keystrokes are (§6):
@@ -25,9 +25,15 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { Caption, Chip, EmptyState, Field, Notice } from './ui';
-import { COPY } from '../copy';
+import { Button, Caption, Chip, EmptyState, Field, Notice } from './ui';
+import { COPY, getLocale, upperCase } from '../copy';
 import { ApiError, getApi, type GooglePlaceHit, type VenueSearchMode } from '../data';
+import {
+  countryOptions,
+  filterCountries,
+  suggestedCountries,
+  type CountryOption,
+} from '../domain/countries';
 import { color, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
 
 /** The server's floor, mirrored so a request is never made below it. */
@@ -44,17 +50,65 @@ const MagnifierIcon = () => (
   </View>
 );
 
-const PinIcon = () => (
-  <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <Path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-    <Circle cx={12} cy={10} r={3} />
-  </Svg>
-);
-
 const CHIPS: { mode: VenueSearchMode; label: () => string }[] = [
-  { mode: 'all', label: () => COPY.venue.chipAll },
   { mode: 'stay', label: () => COPY.venue.chipStay },
+  { mode: 'all', label: () => COPY.venue.chipAll },
 ];
+
+type PickerStep = 'country' | 'destination' | 'venue';
+
+/**
+ * Which of the three steps this is.
+ *
+ * This was three 110pt chips on a 44pt row. At 320px the labels truncated —
+ * "Şehir" lost its tail — and the row cost a whole control's worth of height
+ * on every screen of the wizard. A hairline plus the step named once says the
+ * same thing in half the space and cannot truncate, because the only text is a
+ * single line that wraps if it must.
+ *
+ * The accessible name is unchanged: a progressbar that reports 2 of 3.
+ */
+function WizardProgress({ step }: { step: PickerStep }) {
+  const steps: { key: PickerStep; label: string }[] = [
+    { key: 'country', label: COPY.venue.stepCountry },
+    { key: 'destination', label: COPY.venue.stepDestination },
+    { key: 'venue', label: COPY.venue.stepVenue },
+  ];
+  const current = steps.findIndex((candidate) => candidate.key === step);
+
+  return (
+    <View
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityLabel={COPY.venue.stepProgress(current + 1, steps.length)}
+      accessibilityValue={{ min: 1, max: steps.length, now: current + 1 }}
+      style={styles.progress}
+      testID="venue-picker-progress"
+    >
+      <View style={styles.progressBar}>
+        {steps.map((candidate, index) => (
+          <View
+            key={candidate.key}
+            style={[
+              styles.progressSegment,
+              index <= current && styles.progressSegmentDone,
+            ]}
+            testID={`venue-step-${candidate.key}`}
+          />
+        ))}
+      </View>
+      {/* Hidden from assistive tech: the progressbar above already says
+          "step 2 of 3", and repeating it is noise before the actual content. */}
+      <Text
+        style={styles.progressLabel}
+        accessibilityElementsHidden
+        importantForAccessibility="no"
+      >
+        {COPY.venue.stepProgress(current + 1, steps.length)} · {steps[current]?.label}
+      </Text>
+    </View>
+  );
+}
 
 /** Enough characters to be a search rather than a letter. */
 export function longEnough(text: string): boolean {
@@ -64,13 +118,22 @@ export function longEnough(text: string): boolean {
 export function VenuePicker({
   onChosen,
   busy = false,
+  confirmSelection = true,
 }: {
   /** A single-use token, and the chip it was found under. */
   onChosen: (selectionToken: string, mode: VenueSearchMode, name: string) => void;
   busy?: boolean;
+  /**
+   * First-time selection gets the calm “is this your hotel?” review. Replacing
+   * an active venue already has the stronger destructive confirmation owned by
+   * HotelScreen, so it must not be followed by a second confirmation.
+   */
+  confirmSelection?: boolean;
 }) {
+  const [country, setCountry] = useState<CountryOption | null>(null);
+  const [countryQuery, setCountryQuery] = useState('');
   const [destination, setDestination] = useState<{ name: string; sessionId: string } | null>(null);
-  const [mode, setMode] = useState<VenueSearchMode>('all');
+  const [mode, setMode] = useState<VenueSearchMode>('stay');
   const [query, setQuery] = useState('');
   /**
    * The last answer. `null` is "nothing has been asked yet"; `[]` is a real
@@ -81,8 +144,22 @@ export function VenuePicker({
    */
   const [results, setResults] = useState<GooglePlaceHit[] | null>(null);
   const [loading, setLoading] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
+  /**
+   * Which kind of refusal the search hit, not a pre-rendered sentence.
+   *
+   * The two kinds want different screens (E-02, E-03): a provider outage is
+   * retryable in place, a lapsed billing session is not — retrying it would
+   * be a fresh chargeable request wearing an old session id. Storing the kind
+   * keeps that decision at render time instead of baked into a string.
+   */
+  const [problem, setProblem] = useState<'provider' | 'session' | null>(null);
+  const [retryTick, setRetryTick] = useState(0);
   const [committing, setCommitting] = useState(false);
+  const [pendingChoice, setPendingChoice] = useState<{
+    selectionToken: string;
+    mode: VenueSearchMode;
+    name: string;
+  } | null>(null);
 
   /** The destination step's own session, so Google bills one per search. */
   const destinationSession = useRef<string | undefined>(undefined);
@@ -105,7 +182,7 @@ export function VenuePicker({
   const inFlight = useRef(false);
   const queued = useRef<{ text: string; ticket: number; mode: VenueSearchMode } | null>(null);
 
-  const reset = useCallback((keepDestination: boolean) => {
+  const resetSearch = useCallback(() => {
     ticketRef.current += 1;
     inFlight.current = false;
     queued.current = null;
@@ -113,15 +190,25 @@ export function VenuePicker({
     setResults(null);
     setLoading(false);
     setProblem(null);
-    if (!keepDestination) {
-      destinationSession.current = undefined;
-      setDestination(null);
-      setMode('all');
-    }
+    setPendingChoice(null);
   }, []);
+
+  const changeDestination = useCallback(() => {
+    resetSearch();
+    destinationSession.current = undefined;
+    setDestination(null);
+    setMode('stay');
+  }, [resetSearch]);
+
+  const changeCountry = useCallback(() => {
+    changeDestination();
+    setCountry(null);
+    setCountryQuery('');
+  }, [changeDestination]);
 
   const search = useCallback(
     async (text: string, ticket: number, currentMode: VenueSearchMode) => {
+      if (!destination && !country) return;
       if (inFlight.current) {
         // Remembered, not dropped: it runs as soon as the current one lands.
         queued.current = { text, ticket, mode: currentMode };
@@ -133,13 +220,17 @@ export function VenuePicker({
         const api = getApi();
         const answer = destination
           ? await api.searchVacationVenues(text, destination.sessionId, currentMode)
-          : await api.searchDestinations(text, destinationSession.current);
+          : await api.searchDestinations(
+              text,
+              country!.code,
+              destinationSession.current,
+            );
         // Stale: a newer query is already the question on screen.
         if (ticket !== ticketRef.current) return;
         if (!answer) {
           // Null is "do not offer this" — unconfigured, a ceiling, a limit, an
           // unwell provider. Never "there is no such place".
-          setProblem(COPY.venue.unavailable);
+          setProblem('provider');
           setResults([]);
           return;
         }
@@ -155,14 +246,16 @@ export function VenuePicker({
       } catch (error) {
         if (ticket !== ticketRef.current) return;
         if (error instanceof ApiError && error.code === 'DESTINATION_REQUIRED') {
-          // The venue session lapsed. Nothing typed here will work until a
-          // destination is chosen again, so the step goes back rather than
-          // offering a retry that cannot succeed.
-          reset(false);
-          setProblem(COPY.errors.destinationRequired);
+          // The venue session lapsed (E-03). This used to bounce straight back
+          // to the destination step, which read as the app losing your place.
+          // The screen now says what happened — a session is the provider's
+          // billing unit, and searching on a dead one would be a fresh
+          // chargeable request — and offers the two ways on by name.
+          setProblem('session');
+          setResults(null);
           return;
         }
-        setProblem(COPY.venue.unavailable);
+        setProblem('provider');
         setResults([]);
       } finally {
         inFlight.current = false;
@@ -175,17 +268,24 @@ export function VenuePicker({
         }
       }
     },
-    [destination, reset],
+    [country, destination],
   );
 
   useEffect(() => {
-    if (!longEnough(query)) return;
+    if (!country || !longEnough(query)) return;
     const ticket = (ticketRef.current += 1);
     const timer = setTimeout(() => {
       search(query.trim(), ticket, mode);
     }, VENUE_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [query, mode, search]);
+  }, [country, query, mode, search, retryTick]);
+
+  /** E-02's way out: the query is still in state, so retrying is one tap. */
+  const retrySearch = () => {
+    setProblem(null);
+    setResults(null);
+    setRetryTick((tick) => tick + 1);
+  };
 
   const changeQuery = (text: string) => {
     setQuery(text);
@@ -206,10 +306,10 @@ export function VenuePicker({
     try {
       const choice = await getApi().chooseDestination(hit.selectionToken);
       if (!choice) {
-        setProblem(COPY.venue.unavailable);
+        setProblem('provider');
         return;
       }
-      reset(true);
+      resetSearch();
       destinationSession.current = undefined;
       setDestination({ name: hit.name, sessionId: choice.sessionId });
     } finally {
@@ -217,11 +317,95 @@ export function VenuePicker({
     }
   };
 
-  const step: 'destination' | 'venue' = destination ? 'venue' : 'destination';
+  const chooseCountry = (next: CountryOption) => {
+    resetSearch();
+    destinationSession.current = undefined;
+    setCountry(next);
+    setCountryQuery('');
+    setDestination(null);
+    setMode('stay');
+  };
+
+  const step: 'country' | 'destination' | 'venue' = !country
+    ? 'country'
+    : destination
+      ? 'venue'
+      : 'destination';
+  const locale = getLocale();
+  const allCountries = countryOptions(locale);
+  const countries = countryQuery.trim()
+    ? filterCountries(allCountries, countryQuery)
+    : suggestedCountries(locale);
+
+  if (!country) {
+    return (
+      <View testID="venue-picker-country">
+        <Text accessibilityRole="header" style={styles.heading}>
+          {COPY.venue.countryTitle}
+        </Text>
+        <WizardProgress step="country" />
+        <Text style={styles.hint}>{COPY.venue.countryHint}</Text>
+        <Field
+          label={COPY.venue.countryLabel}
+          hideLabel
+          pill
+          value={countryQuery}
+          onChangeText={setCountryQuery}
+          placeholder={COPY.venue.countryPlaceholder}
+          prefix={<MagnifierIcon />}
+          testID="country-search"
+        />
+        <Text style={styles.sectionLabel}>
+          {upperCase(countryQuery.trim() ? COPY.venue.countryResults : COPY.venue.countryPopular)}
+        </Text>
+        {countries.length === 0 ? (
+          /* E-05. Free and local, and it says so — then the frequent list
+             stays underneath, because "no match" must never mean "no way
+             forward". */
+          <>
+            <Notice
+              message={COPY.venue.countryNoResults}
+              tone="info"
+              testID="country-no-results"
+            />
+            <Text style={styles.hint}>{COPY.venue.countryLocalNote}</Text>
+            <Text style={styles.sectionLabel}>{upperCase(COPY.venue.countryPopular)}</Text>
+            {suggestedCountries(locale).map((option) => (
+              <Pressable
+                key={option.code}
+                accessibilityRole="button"
+                accessibilityLabel={`${option.name}, ${option.code}`}
+                onPress={() => chooseCountry(option)}
+                style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+                testID={`country-option-${option.code}`}
+              >
+                <Text style={styles.rowName}>{option.name}</Text>
+                <Text style={styles.countryCode}>{option.code}</Text>
+              </Pressable>
+            ))}
+          </>
+        ) : (
+          countries.map((option) => (
+            <Pressable
+              key={option.code}
+              accessibilityRole="button"
+              accessibilityLabel={`${option.name}, ${option.code}`}
+              onPress={() => chooseCountry(option)}
+              style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+              testID={`country-option-${option.code}`}
+            >
+              <Text style={styles.rowName}>{option.name}</Text>
+              <Text style={styles.countryCode}>{option.code}</Text>
+            </Pressable>
+          ))
+        )}
+      </View>
+    );
+  }
+
   const heading = destination
-    ? COPY.venue.destinationChosen(destination.name)
+    ? COPY.venue.venueTitle(destination.name)
     : COPY.venue.destinationTitle;
-  const noResults = destination ? COPY.venue.venueNoResults : COPY.venue.destinationNoResults;
   /**
    * The line under the empty field. On the destination step it used to repeat
    * `destinationHint` — which is already printed above the field — so the same
@@ -231,23 +415,45 @@ export function VenuePicker({
    */
   const prompt = destination ? COPY.venue.venuePrompt : COPY.venue.minQuery;
 
+  /**
+   * Confirming happens where the choosing happened.
+   *
+   * This used to replace the whole screen: the results vanished, a headline
+   * asked "Is this your hotel?", and backing out re-rendered the search from
+   * nothing. The list is still in state the whole time, so throwing it away
+   * was only ever a visual decision — and it made cancelling feel like losing
+   * your place. The chosen row expands instead; everything around it stays put.
+   */
   return (
     <View testID={`venue-picker-${step}`}>
       <Text accessibilityRole="header" style={styles.heading}>
         {heading}
       </Text>
-      {destination ? (
+      <WizardProgress step={step} />
+      {/*
+        Where you are, in one line.
+        This was one 105pt card per chosen thing — two of them stacked by the
+        third step, 210pt of screen spent restating two words. The line says
+        the same and leaves the room to the results.
+      */}
+      <View style={styles.scopeLine} testID="venue-search-context">
+        <Text style={styles.scopeText} numberOfLines={1}>
+          {destination ? `${country.name} · ${destination.name}` : country.name}
+        </Text>
         <Pressable
           accessibilityRole="button"
-          onPress={() => reset(false)}
-          style={styles.changeRow}
-          testID="venue-change-destination"
+          accessibilityLabel={
+            destination ? COPY.venue.changeDestination : COPY.venue.changeCountry
+          }
+          onPress={destination ? changeDestination : changeCountry}
+          style={styles.scopeAction}
+          testID={destination ? 'venue-change-destination' : 'venue-change-country'}
         >
-          <PinIcon />
-          <Text style={styles.changeText}>{COPY.venue.changeDestination}</Text>
+          <Text style={styles.changeText}>{COPY.venue.change}</Text>
         </Pressable>
-      ) : (
-        <Text style={styles.hint}>{COPY.venue.destinationHint}</Text>
+      </View>
+      {destination ? null : (
+        <Text style={styles.hint}>{COPY.venue.destinationHint(country.name)}</Text>
       )}
 
       <Field
@@ -264,50 +470,158 @@ export function VenuePicker({
       />
 
       {destination ? (
-        /* Optional refinements (§3). `Tümü` is the default and is the mode
-           that sends Google no type restriction at all. */
-        <View style={styles.chipRow}>
-          {CHIPS.map((chip) => (
-            <Chip
-              key={chip.mode}
-              label={chip.label()}
-              selected={chip.mode === mode}
-              onPress={() => setMode(chip.mode)}
-              testID={`venue-chip-${chip.mode}`}
-            />
-          ))}
+        <View>
+          <View style={styles.chipRow}>
+            {CHIPS.map((chip) => (
+              <Chip
+                key={chip.mode}
+                label={chip.label()}
+                selected={chip.mode === mode}
+                onPress={() => setMode(chip.mode)}
+                testID={`venue-chip-${chip.mode}`}
+              />
+            ))}
+          </View>
+          <View style={styles.scopeNote} testID="venue-search-scope-note">
+            <Text style={styles.scopeTitle}>{COPY.venue.broaderSearchTitle}</Text>
+            <Text style={styles.scopeBody}>{COPY.venue.broaderSearchBody}</Text>
+          </View>
         </View>
       ) : null}
 
-      {problem ? <Notice message={problem} tone="error" testID="venue-problem" /> : null}
-
-      {!longEnough(query) ? (
+      {problem === 'session' ? (
+        /* E-03. The one state that must not quietly re-bill: the session is
+           the provider's billing unit, so the way on is a fresh one. */
+        <View style={styles.stateBlock} testID="venue-session-lapsed">
+          <Notice message={COPY.venue.sessionLapsed} tone="info" />
+          <View style={styles.stateCard}>
+            <Text style={styles.stateBody}>{COPY.venue.sessionLapsedBody}</Text>
+            <Button
+              label={COPY.venue.reselectDestination}
+              onPress={changeDestination}
+              testID="venue-reselect-destination"
+            />
+            <Button
+              label={COPY.venue.changeCountry}
+              variant="secondary"
+              onPress={changeCountry}
+              testID="venue-session-change-country"
+            />
+          </View>
+        </View>
+      ) : problem === 'provider' ? (
+        /* E-02. What was typed is still here, so retrying costs one tap —
+           and nothing of Google's is on screen, so no attribution renders. */
+        <View style={styles.stateBlock} testID="venue-problem">
+          <Notice message={COPY.venue.unavailable} tone="error" />
+          <View style={styles.stateCard}>
+            <Text style={styles.stateBody}>{COPY.venue.providerRetryBody}</Text>
+            <Button label={COPY.common.retry} onPress={retrySearch} testID="venue-retry" />
+          </View>
+        </View>
+      ) : !longEnough(query) ? (
         <Caption testID="venue-prompt">{prompt}</Caption>
       ) : results === null ? (
         loading ? (
           <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="venue-loading" />
         ) : null
       ) : results.length === 0 ? (
-        problem ? null : <EmptyState message={noResults} testID="venue-no-results" />
+        destination && mode === 'stay' ? (
+          /* E-01. Not an error but a doorway: beach clubs and named beaches
+             live in the unrestricted search, and this is where somebody finds
+             that out. */
+          <View style={styles.stateBlock} testID="venue-no-results">
+            <Notice message={COPY.venue.stayNoResults} tone="info" />
+            <View style={styles.stateCard}>
+              <Text style={styles.stateBody}>{COPY.venue.stayNoResultsBody}</Text>
+              <Button
+                label={COPY.venue.broadenButton}
+                onPress={() => setMode('all')}
+                testID="venue-broaden-search"
+              />
+            </View>
+          </View>
+        ) : destination ? (
+          <EmptyState message={COPY.venue.venueNoResults} testID="venue-no-results" />
+        ) : (
+          /* E-04. The thing worth questioning here is the country, and the
+             list that answers it runs on the device — no request, no spend. */
+          <View style={styles.stateBlock} testID="venue-no-results">
+            <Notice message={COPY.venue.destinationNoResultsIn(country.name)} tone="info" />
+            <View style={styles.stateCard}>
+              <Text style={styles.stateBody}>{COPY.venue.destinationNoResultsBody}</Text>
+              <Button
+                label={COPY.venue.changeCountry}
+                variant="secondary"
+                onPress={changeCountry}
+                testID="venue-empty-change-country"
+              />
+            </View>
+          </View>
+        )
       ) : (
         <>
-          {results.map((hit, index) => (
+          {results.map((hit, index) =>
+            pendingChoice && pendingChoice.selectionToken === hit.selectionToken ? (
+              /* The same row, opened. Same token, same single use — this is a
+                 presentation change, not a change to what gets committed. */
+              <View
+                key={hit.selectionToken}
+                style={styles.confirmCard}
+                testID="venue-picker-confirmation"
+              >
+                <Text style={styles.confirmName}>{pendingChoice.name}</Text>
+                <Text style={styles.confirmBody}>{COPY.venue.confirmTitle}</Text>
+                <Button
+                  label={COPY.venue.confirmButton}
+                  onPress={() =>
+                    onChosen(
+                      pendingChoice.selectionToken,
+                      pendingChoice.mode,
+                      pendingChoice.name,
+                    )
+                  }
+                  disabled={busy}
+                  testID="confirm-venue-selection"
+                />
+                <Button
+                  label={COPY.venue.backToHotelSearch}
+                  variant="secondary"
+                  /* Clears the pending choice and nothing else: the results are
+                     still in state, so no second Google request is made. */
+                  onPress={() => setPendingChoice(null)}
+                  disabled={busy}
+                  testID="cancel-venue-selection"
+                />
+              </View>
+            ) : (
             <Pressable
               key={hit.selectionToken}
               accessibilityRole="button"
               accessibilityLabel={hit.detail ? `${hit.name}. ${hit.detail}` : hit.name}
               accessibilityState={{ disabled: busy || committing }}
               disabled={busy || committing}
-              onPress={() =>
-                destination ? onChosen(hit.selectionToken, mode, hit.name) : chooseDestination(hit)
-              }
+              onPress={() => {
+                if (!destination) {
+                  void chooseDestination(hit);
+                  return;
+                }
+                const choice = {
+                  selectionToken: hit.selectionToken,
+                  mode,
+                  name: hit.name,
+                };
+                if (confirmSelection) setPendingChoice(choice);
+                else onChosen(choice.selectionToken, choice.mode, choice.name);
+              }}
               style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
               testID={`${step}-option-${index}`}
             >
               <Text style={styles.rowName}>{hit.name}</Text>
               {hit.detail ? <Text style={styles.rowDetail}>{hit.detail}</Text> : null}
             </Pressable>
-          ))}
+            ),
+          )}
           {/* Google's policies require the attribution wherever its data is
               shown. It stands with the list, which is where the data is. */}
           <Caption testID="venue-attribution">{COPY.venue.attribution}</Caption>
@@ -320,10 +634,74 @@ export function VenuePicker({
 const styles = StyleSheet.create({
   heading: {
     fontFamily: fontFamily.display,
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 24,
+    lineHeight: 30,
     color: color.ink,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  /** The hairline, and the words under it. */
+  progressBar: { flexDirection: 'row', gap: 4 },
+  progressSegment: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: color.accentSoft,
+  },
+  progressSegmentDone: { backgroundColor: color.accent },
+  progressLabel: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: 11,
+    color: color.inkMuted,
+  },
+  /** One line: where the search currently is, and the way to move it. */
+  scopeLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: color.accentWash,
+    borderRadius: radius.pill,
+    paddingHorizontal: 14,
+    minHeight: MIN_TOUCH,
+  },
+  scopeText: {
+    flex: 1,
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: 13,
+    color: color.ink,
+  },
+  scopeAction: { minHeight: MIN_TOUCH, justifyContent: 'center' },
+  progress: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: spacing.md,
+  },
+  progressStep: {
+    flex: 1,
+    minHeight: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.rule,
+    backgroundColor: color.surface,
+    paddingHorizontal: spacing.xs,
+  },
+  progressStepActive: {
+    borderColor: color.accent,
+    backgroundColor: color.accentSoft,
+  },
+  progressStepComplete: {
+    borderColor: color.accentSoft,
+    backgroundColor: color.accentWash,
+  },
+  progressText: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: 11,
+    color: color.inkMuted,
+  },
+  progressTextSelected: {
+    fontFamily: fontFamily.bodySemi,
+    color: color.accentDeep,
   },
   hint: {
     fontFamily: fontFamily.body,
@@ -332,21 +710,98 @@ const styles = StyleSheet.create({
     color: color.inkMuted,
     marginBottom: spacing.sm,
   },
+  sectionLabel: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 11,
+    letterSpacing: 1,
+    color: color.inkMuted,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  /** E-01…E-04: the card under the notice, holding the words and the way out. */
+  stateBlock: { gap: spacing.sm },
+  stateCard: {
+    backgroundColor: color.surface,
+    borderWidth: 1,
+    borderColor: color.rule,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  stateBody: {
+    fontFamily: fontFamily.body,
+    fontSize: 13,
+    lineHeight: 19,
+    color: color.ink,
+  },
+  countryCode: {
+    fontFamily: fontFamily.body,
+    fontSize: 12,
+    lineHeight: 17,
+    color: color.inkMuted,
+    marginTop: 2,
+  },
+  contextCard: {
+    minHeight: MIN_TOUCH,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: color.rule,
+    backgroundColor: color.surface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  contextRow: {
+    width: '100%',
+    minHeight: MIN_TOUCH,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  contextRowSeparated: {
+    borderTopWidth: 1,
+    borderTopColor: color.rule,
+  },
+  contextCardStack: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 0,
+  },
+  contextCopy: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  contextLabel: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 11,
+    lineHeight: 15,
+    color: color.inkMuted,
+  },
+  contextName: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 15,
+    lineHeight: 20,
+    color: color.ink,
+  },
+  contextAction: {
+    minHeight: MIN_TOUCH,
+    minWidth: MIN_TOUCH,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
   /**
    * "Change destination" is a real control — it throws away the destination you
    * picked and starts the search again — but it was a bare text row, measured
    * 350×16 on the running app. Everything else operable in this product is at
    * least 44 tall; a link that undoes a step should not be the exception.
    */
-  changeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: MIN_TOUCH,
-    gap: spacing.xs,
-    marginBottom: spacing.xs,
-  },
   changeText: {
-    fontFamily: fontFamily.body,
+    fontFamily: fontFamily.bodySemi,
     fontSize: 13,
     color: color.accentDeep,
   },
@@ -354,6 +809,49 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.xs,
     marginBottom: spacing.sm,
+    flexWrap: 'wrap',
+  },
+  scopeNote: {
+    borderRadius: radius.md,
+    backgroundColor: color.accentWash,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  scopeTitle: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 12,
+    lineHeight: 17,
+    color: color.ink,
+  },
+  scopeBody: {
+    fontFamily: fontFamily.body,
+    fontSize: 12,
+    lineHeight: 17,
+    color: color.inkMuted,
+    marginTop: 2,
+  },
+  confirmCard: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: color.rule,
+    backgroundColor: color.surface,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  confirmName: {
+    fontFamily: fontFamily.display,
+    fontSize: 22,
+    lineHeight: 28,
+    color: color.ink,
+    marginTop: spacing.xs,
+  },
+  confirmBody: {
+    fontFamily: fontFamily.body,
+    fontSize: 14,
+    lineHeight: 20,
+    color: color.inkMuted,
+    marginTop: spacing.sm,
   },
   row: {
     borderRadius: radius.md,
@@ -368,13 +866,15 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   rowName: {
-    fontFamily: fontFamily.body,
-    fontSize: 16,
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 15,
+    lineHeight: 20,
     color: color.ink,
   },
   rowDetail: {
     fontFamily: fontFamily.body,
-    fontSize: 13,
+    fontSize: 12,
+    lineHeight: 17,
     color: color.inkMuted,
     marginTop: 2,
   },

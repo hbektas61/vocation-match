@@ -124,7 +124,7 @@ Figma'da görülmüş olması sayılmaz.
 | ~~K-08~~ | ~~Keşfet bağlamları~~ | ✅ **kapandı** — D-01 (Tatilden Önce), D-02 (Oteldeyim), D-05 (Etkinliğe Gideceğim), D-06 (açık oda yok), NAV-02, NAV-05, NAV-07 yürütüldü, hepsi temiz |
 | ~~K-09~~ | ~~Otel detayı~~ | ✅ **kapandı** — buradan **R-016** çıktı ve kapatıldı: durum kartı + iki adlandırılmış eylem, gerçek Google mekânıyla yürütüldü |
 | ~~K-11~~ | ~~Sohbet — mesaj gönderilemedi / yeniden dene~~ | ✅ **kapandı, gerçek staging** — sunucunun reddettiği bir gönderim (42501) ve ardından üç ardışık yeniden deneme **tek satır** yazdı. Buradan iki gerçek hata çıktı: **S-001** (idempotence yoktu) ve **S-003** (kısmi indeks yüzünden düzeltmenin kendisi sessizce hiçbir şey yazmıyordu) |
-| K-10 | **Paywall placeholder** | Phase 4 — O-05 + O-09 bekliyor |
+| K-10 | **Paywall placeholder** | Phase 4 — **O-05** bekliyor |
 
 `ChooseHotel` ayrı bir ekran değil: `HotelScreen`'i yeniden kullanıyor ve o
 yürütüldü.
@@ -217,6 +217,66 @@ ediyordu. Bu script o cümleyi kapatıyor. Hiçbir secret istemiyor — okuduğu
 telefon doğrulamalı, yaptırım uygulanabilir kimlik" — bu şu an istemcide
 e-posta ekranı olmamasına dayanıyor. O-12 açık.
 
+
+## 1 Ağustos — Day 2'nin ikinci turu
+
+| ID | Bulgu | Sev | Fix |
+|---|---|---|---|
+| S-007 | **Rapor açıklaması filtreleniyordu.** Bir gün önce eklediğim yayın filtresi `reports.details`'i de kapsıyordu. Rapor açıklaması yayımlanan içerik değil, moderatöre verilen **özel kanıttır** — ve mağdurun aldığı hakareti aynen yazması gerekir. Filtre, tam da istismarın en ağır olduğu anda raporu reddediyordu: güvenlik özelliği mağduru susturuyordu | **P1** | `20260801000100` trigger'ı kaldırdı. Alanı güvenli kılan şey filtre değildi: 1000 karakter sınırı, tek RPC yazma yolu, saatlik limit ve yalnız raporlayanın okuyabilmesi. Yanlış olan **testi** de değiştirdim — bir assertion da kod kadar yanlış olabilir |
+| S-008 | **Telefon doğrulama kimliği veritabanında zorlanmıyordu.** `profiles_insert_own` yalnız `id = current_user_id()` istiyordu; herhangi bir oturum profil açıp keşfete girebilirdi. Apple 1.2 savunmasının çekirdeği buydu ve yalnız istemcide e-posta ekranı olmamasına dayanıyordu | **P0** | `app.current_user_has_verified_phone()` — `auth.users.phone_confirmed_at`'ten okur, **JWT'den veya user metadata'dan asla**, ikisi de kullanıcının yazabildiği alanlar. Insert-only: mevcut satırlar yeniden doğrulanmıyor |
+| S-009 | **Bildirim testleri boşa geçiyordu.** `queue_notification` token'ı olmayan alıcı için erken dönüyor ("no token, no push, no queue row"), fixture'larda token yoktu — yani "engellemeden sonra bildirim yok" iddiam sıfırı sıfırla karşılaştırıyordu | P2 | Testler önce push token kaydediyor ve **pozitif** durumu kanıtlıyor (engellenmemişken tam 1 satır), ancak ondan sonra yokluğu iddia ediyor |
+| S-010 | **`mark_match_read` var olmayan sıraya ileri okuma yapabiliyordu.** İşaretçi geri gitmediği için 999999 gönderen bir istemci o konuşmada bir daha asla okunmadı göremezdi | P2 | `20260801000400` sırayı konuşmanın gerçek son mesajına kırpıyor. E2E'nin başka bir şeyi test ederken 999999 göndermesi ve **bir sonraki assertion'ın sessizce yeşile dönmesi** sayesinde bulundu |
+| S-011 | **Test kabında `auth.users.phone` yoktu.** Yayınlanan Postgres imajının `auth` şeması GoTrue'nun telefon desteğinden eski; gerçek projede iki sütun da var | P2 | `auth-bootstrap.sql` — `storage-bootstrap.sql` ile aynı gerekçe ve aynı yer. Fixture'lar artık gerçek üye gibi: onaylanmış telefonla |
+
+### Okunmamış mesaj sistemi — yeni
+
+Sunucu-yetkili, `(match, okuyucu) → son okunan sıra`. Tek yazma yolu
+`mark_match_read`; okuyucuyu JWT'den türetir, **monoton** (geri gitmez) ve
+**kırpılmış** (ileri gitmez). Kendi mesajların hiç sayılmaz. Engellenen konuşma
+rozet bırakmaz — kapatmak için terk ettiğin bir konuşmaya dönmen gerekmez.
+
+İstemci: sohbet açılınca ve açıkken mesaj gelince işaretlenir; gelen kutusunda
+satır başına sayı, sekmede tek nokta (sayı değil — 44pt hedefte iki hane leke
+olur). Sayı ekran okuyucuya satırın adında ve sekmenin adında geçer.
+
+### CAPTCHA — dürüst durum
+
+`src/data/captcha.ts` yazıldı: public site key okuma, tek kullanımlık token
+tutucu (`CaptchaToken.take()` alır ve unutur), ve `requestPhoneOtp`
+**fail-closed** — site key varsa token yoksa istek gönderilmez, `CAPTCHA_REQUIRED`
+TR/EN mesajıyla döner.
+
+**Yazılmayan tek parça: WebView challenge bileşeni.** Turnstile'ın native SDK'sı
+yok; Cloudflare'ın mobil için desteklediği yol managed widget'ı WebView'da
+render etmek. Site key yok, hosted CAPTCHA kapalı — yani bileşeni yazsam **bir
+kez bile çalıştırıp doğru olduğunu göremezdim**. Hiç doğru olmamış kod yazmak
+yerine sözleşmeyi sabitleyip eksiği yazdım. Owner site key verdiğinde kalan iş
+tek bileşen.
+
+
+### 1 Ağustos, üçüncü tur — bağımsız incelemenin bulduğu dört açık
+
+| ID | Bulgu | Sev | Fix |
+|---|---|---|---|
+| S-012 | **CAPTCHA yarım bırakılmıştı.** `solveCaptcha` her koşulda hata atıyordu; PhoneStep ve OtpStep hâlâ token almadan `requestPhoneOtp` çağırıyordu. "Gerçek anahtar olmadan test edilemez" gerekçem geçersizdi — Cloudflare resmi dummy anahtar yayımlıyor | **P1** | `react-native-webview` (13.15.0, `expo install`) + `CaptchaChallenge` modalı + `useCaptchaGate`. Origin allowlist (yalnız kendi HTTPS sayfamız ve `challenges.cloudflare.com`), mesaj ayrıştırıcı payload'ı **güvenilmez** kabul eder, 45 sn timeout, iptal birinci sınıf sonuç, tek kullanımlık token, resend'de **taze** challenge. İki adım da gerçekten bu akışı kullanıyor |
+| S-013 | **Okunmamış rozeti yerelde bayat kalıyordu.** ChatScreen sunucuya okundu diyordu ama `appState.matches` — tab bar'ın çizdiği liste — eski sayıyı tutuyordu. Bütün SQL assertion'ları yeşildi ve nokta ekranda duruyordu | **P1** | Reducer'a `MATCH_READ`; **yalnız sunucu onayladıktan sonra** dispatch edilir — hata durumunda rozet kalır, sahte başarı gösterilmez. Yenileme üç ana bağlı: sekme odağı, sohbetten dönüş, foreground. Poll yok |
+| S-014 | **Bildirim testi false-green'di.** `count(*) >= 0` her sayı için doğrudur; `cam_arrival` oluşturulup hiç kullanılmamıştı | **P1** | Her negatif, aynı koşullarda alınmış bir pozitifle eşleştirildi: MESSAGE 1→+0, ROOM_NEW 1→0→1. Alıcı açıkça adlandırıldı (Bo), oda uygunluğu ayrıca doğrulandı, altı saatlik damper her ölçümden önce temizlendi — yoksa "bildirim yok" ile "henüz çok erken" ayırt edilemezdi. **Mutasyonla doğrulandı**: `notify_room_entry`'deki blok kontrolü kaldırılınca assertion 6 kırmızıya döner |
+| S-015 | **Telefon kapısı yalnız insert seviyesindeydi.** Profili zaten olan hesap swipe/check-in/oda işlemlerini yapmaya devam edebiliyordu; staging'de tam olarak öyle dokuz hesap var | **P0** | `20260801000500` — şart merkezi `app.require_user()`'a eklendi. `app.require_any_user()` dokunulmadı: **engelleme, raporlama, kendi sohbetlerini okuma ve hesap silme hiç kapılanmaz**. Birini kullanamadığı üründen çıkamaz hâle getirmek en kötü "güvenlik" okuması olurdu |
+
+### Staging'deki 9 telefonsuz hesap — sayılarla
+
+| | |
+|---|---|
+| Profil | 9 |
+| Swipe | 9 |
+| Aktif oda | 6 |
+| Eşleşme | **0** |
+| Mesaj | **0** |
+
+Eşleşmesi ve mesajı yok, yani kimseyle temas kurmamışlar. Ürün kapısı artık
+onları dışarıda tutuyor; **silmedim** ve "zararsız" demiyorum — 6'sı hâlâ bir
+odada duruyor. Güvenli plan owner kararı (O-14).
+
 ## Owner işlemleri (Hami) — engineering bunları yapamaz
 
 Bunların hiçbiri kodla kapanmaz; her biri açık bir kapıdır.
@@ -235,7 +295,9 @@ Bunların hiçbiri kodla kapanmaz; her biri açık bir kapıdır.
 | O-10 | Production deploy ve submission onayı | Day 6/7 | ⬜ |
 
 | O-11 | **Fotoğraf moderasyonu kararı** | Otomatik görsel sınıflandırma yeni bir ücretli üçüncü taraf ister — izinsiz eklenmedi. Ya (a) yalnız rapor üzerine inceleme, açıkça beyan edilerek, ya (b) sağlayıcı finanse edilir | 🔴 **P0 karar** |
-| O-12 | **Hosted auth sapması** | E-posta girişi kapatılmalı; CAPTCHA ya zorunlu kılınmalı ya da SMS sağlayıcısı kapatılmalı. Dashboard ayarı — hiçbir migration ulaşamaz | 🔴 **P0** |
+| O-12 | **Hosted auth sapması** | E-posta girişi kapatılmalı; CAPTCHA ya zorunlu kılınmalı ya da SMS sağlayıcısı kapatılmalı. Dashboard ayarı — hiçbir migration ulaşamaz. *Profil açma deliği kodla kapandı (S-008); ayarın kendisi hâlâ açık* | 🔴 **P0** |
+| O-13 | **Turnstile site key + secret + challenge sayfası** | **Mobil taraf bitti ve test edildi** (dummy anahtarlarla 15 test). Kalan: (1) public site key ve challenge sayfası URL'i `EXPO_PUBLIC_TURNSTILE_SITE_KEY` / `EXPO_PUBLIC_TURNSTILE_PAGE_URL` olarak, (2) **secret yalnız Supabase dashboard'a**, (3) sayfanın kendi HTTPS origin'inde yayımlanması | 🔴 **P0** |
+| O-14 | **Staging'de 9 telefonsuz profil** | Telefon-öncesi dönemden kalma. Kapı insert-only olduğu için zararsızlar, ama duruyorlar. Güvenli plan: listele → eşleşme/mesajı olmadığını doğrula → elle değil, hesap silme yoluyla kaldır. Yanlış silme geri alınamaz | 🟡 owner kararı |
 
 **O-09 kapandı (31 Temmuz).** Day 1 onaylandı; Day 2 açıldı. RevenueCat,
 paywall, production database, EAS ve store metadata **hâlâ başlatılmadı** —
@@ -246,9 +308,9 @@ onlar Day 4+ ve ayrı onay ister.
 | Phase | İş | Durum |
 |---|---|---|
 | 1 | Runtime UI + fonksiyonel hardening | 🟦 **devam ediyor** |
-| 2 | Release config (`app.json`, `eas.json`, profiller) | ⛔ O-03 + O-09 bekliyor |
-| 3 | Apple UGC 1.2 (filter, report, block, contact) | ⛔ O-09 bekliyor |
-| 4 | Paywall + RevenueCat istemcisi | ⛔ O-05 + O-09 bekliyor |
+| 2 | Release config (`app.json`, `eas.json`, profiller) | ⛔ **O-03** bekliyor (O-09 kapandı) |
+| 3 | Apple UGC 1.2 (filter, report, block, contact) | 🟡 **filter/report/block yapıldı**; contact **O-04**, fotoğraf **O-11** |
+| 4 | Paywall + RevenueCat istemcisi | ⛔ **O-05** bekliyor; başlatılmadı |
 | 5 | Server-authoritative entitlement | ⛔ Phase 4 bekliyor |
 | 6 | Production Supabase + store paketi | ⛔ O-10 bekliyor |
 | 7 | RC, TestFlight, submission | ⛔ O-01 + O-07 + O-10 bekliyor |

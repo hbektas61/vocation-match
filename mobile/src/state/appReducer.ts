@@ -83,6 +83,14 @@ export type AppAction =
   | { type: 'MATCHES_LOADED'; matches: MatchSummary[] }
   | { type: 'MATCH_UPSERTED'; match: MatchSummary }
   | { type: 'MATCH_UNMATCHED'; matchId: string; unmatchedAt: number }
+  /**
+   * The server has recorded this conversation as read up to here.
+   *
+   * Dispatched only *after* `markMatchRead` returns, never optimistically: the
+   * badge is a claim about what the server thinks, and showing zero while the
+   * server still says two is a lie the next refresh would contradict.
+   */
+  | { type: 'MATCH_READ'; matchId: string }
   | { type: 'CLEAR_LAST_MATCH' }
   | { type: 'BLOCKED_USERS_LOADED'; blockedUsers: BlockedUser[] }
   | { type: 'USER_BLOCKED'; blockedUser: BlockedUser }
@@ -204,6 +212,24 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 
     case 'MATCHES_LOADED':
       return { ...state, matches: action.matches };
+
+    case 'MATCH_READ': {
+      // The tab bar draws its mark from this list, so without this the badge
+      // outlives the reading of the conversation that cleared it — right up
+      // until something else happens to refetch. Reading a conversation and
+      // watching the dot stay put is the app telling you it did not notice.
+      const next = state.matches.map((match) =>
+        match.matchId === action.matchId && match.unreadCount !== 0
+          ? { ...match, unreadCount: 0 }
+          : match,
+      );
+      // Identity is preserved when nothing changed, so a re-read of an
+      // already-read conversation does not re-render every screen holding the
+      // list.
+      return next.some((match, i) => match !== state.matches[i])
+        ? { ...state, matches: next }
+        : state;
+    }
 
     case 'MATCH_UPSERTED': {
       const exists = state.matches.some((m) => m.matchId === action.match.matchId);

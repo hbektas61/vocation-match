@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  AppState,
   ActivityIndicator,
   Image,
   Pressable,
@@ -9,6 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { nowMs } from '../clock';
@@ -130,6 +132,49 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   }, [match, matchId, dispatch]);
 
   // History, plus a live subscription for anything sent after it loads.
+  /**
+   * Loading the conversation, and marking it read only while it is genuinely
+   * being looked at.
+   *
+   * Mounted is not the same as visible. A pushed screen stays mounted
+   * underneath whatever is opened on top of it, and a backgrounded app keeps
+   * its whole tree — so marking read on arrival meant a message that landed
+   * while the phone was in a pocket, or while the report screen was over this
+   * one, was silently counted as seen. Unread is a claim about what somebody
+   * has actually had a chance to read.
+   *
+   * `useIsFocused` answers the first question and `AppState` the second, and
+   * both have to be true.
+   */
+  const focused = useIsFocused();
+  // `!== 'background' && !== 'inactive'` rather than `=== 'active'`: the
+  // initial value is undefined until the platform reports one, and treating
+  // "not yet known" as backgrounded would leave a conversation that is plainly
+  // on screen marked unread. The states that must block a read are the two
+  // that actually mean nobody can see it.
+  const [appActive, setAppActive] = useState(
+    AppState.currentState !== 'background' && AppState.currentState !== 'inactive',
+  );
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (next) => {
+      setAppActive(next !== 'background' && next !== 'inactive');
+    });
+    return () => subscription.remove();
+  }, []);
+
+  const visible = focused && appActive;
+
+  const markRead = useCallback(async () => {
+    try {
+      await getApi().markMatchRead(matchId);
+      dispatch({ type: 'MATCH_READ', matchId });
+    } catch {
+      // Left unread on purpose. The next time this screen is genuinely
+      // visible it will try again; pretending it worked would not.
+    }
+  }, [matchId, dispatch]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -154,6 +199,34 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
       unsubscribe();
     };
   }, [matchId]);
+
+  /**
+   * The read itself, driven by visibility rather than by arrival.
+   *
+   * Runs when the screen becomes visible, and again whenever the messages it
+   * is showing change while it stays visible — which covers both "opened it"
+   * and "a message arrived while I was reading". Coming back to the
+   * foreground re-reads the conversation first, so what gets marked is what is
+   * actually on screen rather than what was there when the app was put down.
+   */
+  useEffect(() => {
+    if (!visible) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const history = await getApi().getMessages(matchId);
+        if (cancelled) return;
+        setMessages(history);
+      } catch {
+        // A failed refresh is not a reason to skip the mark: what is already
+        // on screen has still been seen.
+      }
+      if (!cancelled) await markRead();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [visible, matchId, markRead, messages?.length]);
 
   if (!match) {
     if (!checkedServer) {

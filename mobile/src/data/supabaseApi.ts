@@ -53,6 +53,7 @@ import {
   type CheckinEntitlement,
 } from './contracts';
 import type { BackendConfig } from './config';
+import { captchaRequired } from './captcha';
 import { isE164Phone, normalizePhone } from './phone';
 import {
   buildPhotoPath,
@@ -238,13 +239,26 @@ export class SupabaseApi implements VocationApi {
     });
   }
 
-  async requestPhoneOtp(phone: string): Promise<void> {
+  async requestPhoneOtp(phone: string, captchaToken?: string): Promise<void> {
     if (!isE164Phone(phone)) {
       throw new ApiError('INVALID_INPUT', 'Enter a phone number with its country code.');
     }
+    // Fails closed. A build that knows a site key is a build that expects the
+    // hosted project to demand a token, and sending the request without one
+    // would produce a refusal the person reading it cannot act on. Better to
+    // say what is missing here than to let the auth server say "captcha
+    // protection: request disallowed" to somebody trying to sign in.
+    if (captchaRequired() && !captchaToken) {
+      throw new ApiError('CAPTCHA_REQUIRED', 'The security check did not complete.');
+    }
     const { error } = await this.client.auth.signInWithOtp({
       phone: normalizePhone(phone),
-      options: { shouldCreateUser: true },
+      options: {
+        shouldCreateUser: true,
+        // The field Supabase's own SDK defines for this. Passing it when there
+        // is no token would send `undefined`, which GoTrue reads as absent.
+        ...(captchaToken ? { captchaToken } : {}),
+      },
     });
     if (error) {
       throw toApiError(error as PostgresLikeError, 'Could not send the verification code.');
@@ -653,17 +667,27 @@ export class SupabaseApi implements VocationApi {
     return {
       sessionId: data.sessionId as string,
       duplicate: data.duplicate === true,
-      places: (data.places as { selectionToken: string; name: string; detail: string | null }[])
+      places: (data.places as {
+        selectionToken: string;
+        name: string;
+        detail: string | null;
+        kind?: string | null;
+      }[])
         .map((place) => ({
           selectionToken: place.selectionToken,
           name: place.name,
           detail: place.detail ?? null,
+          kind: place.kind ?? null,
         })),
     };
   }
 
-  async searchDestinations(query: string, sessionId?: string): Promise<GooglePlaceAnswer | null> {
-    return this.askPlaces({ op: 'destination_search', query, sessionId });
+  async searchDestinations(
+    query: string,
+    countryCode: string,
+    sessionId?: string,
+  ): Promise<GooglePlaceAnswer | null> {
+    return this.askPlaces({ op: 'destination_search', query, countryCode, sessionId });
   }
 
   async chooseDestination(selectionToken: string): Promise<DestinationChoice | null> {
@@ -926,6 +950,13 @@ export class SupabaseApi implements VocationApi {
     return catalogue;
   }
 
+  async googleNearbyPlaces(
+    latitude: number,
+    longitude: number,
+  ): Promise<GooglePlaceAnswer | null> {
+    return this.askPlaces({ op: 'nearby_search', latitude, longitude });
+  }
+
   async recordCheckin(venueId: string, latitude: number, longitude: number): Promise<CheckinAnswer> {
     // Same shape as the presence check (D-005): the reading leaves the
     // device once, as an argument; the server stores a venue id and a
@@ -989,11 +1020,17 @@ export class SupabaseApi implements VocationApi {
     return {
       sessionId: data.sessionId as string,
       duplicate: data.duplicate === true,
-      places: (data.places as { selectionToken: string; name: string; detail: string | null }[])
+      places: (data.places as {
+        selectionToken: string;
+        name: string;
+        detail: string | null;
+        kind?: string | null;
+      }[])
         .map((place) => ({
           selectionToken: place.selectionToken,
           name: place.name,
           detail: place.detail ?? null,
+          kind: place.kind ?? null,
         })),
     };
   }
@@ -1341,7 +1378,15 @@ export class SupabaseApi implements VocationApi {
       unmatchedAt: row.unmatched_at ? Date.parse(row.unmatched_at) : null,
       lastMessageAt: row.last_message_at ? Date.parse(row.last_message_at) : null,
       lastMessageBody: row.last_message_body,
+      unreadCount: row.unread_count ?? 0,
     }));
+  }
+
+  async markMatchRead(matchId: string): Promise<void> {
+    const { error } = await this.client.rpc('mark_match_read', { p_match_id: matchId });
+    if (error) {
+      throw toApiError(error, 'Could not mark that conversation read.');
+    }
   }
 
   async unmatch(matchId: string): Promise<void> {
@@ -1576,6 +1621,7 @@ interface MatchRow {
   unmatched_at: string | null;
   last_message_at: string | null;
   last_message_body: string | null;
+  unread_count: number | null;
 }
 
 interface MessageRow {

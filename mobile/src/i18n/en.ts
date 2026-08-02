@@ -178,6 +178,8 @@ export const en = {
     destination: (maskedPhone: string) => `Code sent to ${maskedPhone}`,
     requestUncertain:
       'The request response did not arrive. If an SMS reaches you, enter its code here. Otherwise wait and send a new one.',
+    captchaTitle: 'Quick security check',
+    captchaBody: 'This keeps automated sign-ups from using up the SMS codes real people need.',
     previewCode: (code: string) => `Preview build code: ${code}`,
   },
 
@@ -366,19 +368,61 @@ export const en = {
   },
 
   venue: {
-    destinationTitle: 'Where are you going?',
-    destinationHint: 'Search for a city, island or holiday area',
+    stepCountry: 'Country',
+    stepDestination: 'City',
+    stepVenue: 'Hotel',
+    stepProgress: (current: number, total: number) => `Step ${current} of ${total}`,
+    countryTitle: 'Choose a country',
+    countryHint: 'Choose the country where your vacation place is.',
+    countryLabel: 'Search countries',
+    countryPlaceholder: 'Türkiye, United States, Spain…',
+    countryNoResults: 'No country by that name.',
+    countryLocalNote:
+      'The list is searched on your device; this step sends nothing to the provider and spends no allowance.',
+    countryPopular: 'Frequently chosen',
+    countryResults: 'Countries',
+    selectedCountry: 'Selected country',
+    selectedDestination: 'City or holiday area',
+    selectedHotel: 'Selected hotel',
+    change: 'Change',
+    countryChosen: (name: string) => `Destination in ${name}`,
+    changeCountry: 'Change country',
+    stayNoResults: 'No results by that name among “Hotels”.',
+    stayNoResultsBody:
+      'Beach clubs and named beaches do not appear under “Hotels”. The second search applies no type filter at all.',
+    broadenButton: 'Search all vacation places',
+    providerRetryBody: 'What you typed is still here. Retrying continues the same search.',
+    sessionLapsed: 'This search session has closed. Choose the city again to continue.',
+    sessionLapsedBody:
+      'Sessions are the provider’s billing unit; searching on an expired one counts as a new request. Re-choosing the city opens a clean session.',
+    reselectDestination: 'Choose the city again',
+    destinationNoResultsIn: (countryName: string) =>
+      `Nothing by that name inside ${countryName}.`,
+    destinationNoResultsBody:
+      'Check the spelling — or if the place is in another country, change the country. The country list runs on your device and sends no request.',
+    destinationTitle: 'City or holiday area',
+    destinationHint: (country: string) =>
+      `Search for a city, island or holiday area in ${country}.`,
     destinationLabel: 'Search destinations',
     destinationPlaceholder: 'Alaçatı, Çeşme, Mykonos…',
     destinationNoResults: 'No places match that search.',
     destinationChosen: (name: string) => `Where will you be in ${name}?`,
     changeDestination: 'Change destination',
+    venueTitle: (name: string) => `Find your hotel in ${name}`,
     venueLabel: 'Search places',
-    venuePlaceholder: 'Hotel, resort or beach',
+    venuePlaceholder: 'Hotel or resort name',
     venueNoResults: 'Nothing by that name in this area.',
-    venuePrompt: 'Type the name of the place you will stay at.',
-    chipAll: 'All',
-    chipStay: 'Stay',
+    venuePrompt: 'Type the name of your hotel.',
+    chipAll: 'All vacation places',
+    chipStay: 'Hotels',
+    broaderSearchTitle: 'TWO SEARCHES, TWO SCOPES',
+    broaderSearchBody:
+      '“Hotels” looks at places to stay. “All vacation places” applies no type filter at all — beach clubs, named beaches and resorts that are not classified as hotels appear there.',
+    confirmTitle: 'Is this your hotel?',
+    confirmBody: (destination: string) =>
+      `This selection will set the rooms for your trip to ${destination}.`,
+    confirmButton: 'Choose this hotel',
+    backToHotelSearch: 'Back to hotel search',
     minQuery: 'Type at least three letters.',
     /** The attribution Google's policies require wherever its data is drawn. */
     attribution: 'Powered by Google',
@@ -777,6 +821,8 @@ export const en = {
     googleUnavailable: "The extra search is unavailable right now. Pick from the list, or say you are here.",
     /** Google answered, and knows no such place — not the same as unavailable. */
     googleNoResults: 'Google knows no place by that name near here. Try another spelling, or say you are here.',
+    nearbyProviderUnavailable:
+      'Live place results are unavailable right now. The open-data list is still shown.',
     /** Required whenever Google's answer is on screen. */
     googleAttribution: 'Powered by Google',
     /** ODbL: the catalogue list is OpenStreetMap/Overture data, and says so. */
@@ -833,6 +879,8 @@ export const en = {
      * mistake rather than an attempt.
      */
     contentRefused: 'That cannot be posted here. Try saying it another way.',
+    captchaCancelled: 'The security check was closed, so no code was sent.',
+    captchaRequired: 'The security check did not finish. Try again in a moment.',
     invalidInput: 'Please check the details you entered.',
     notFound: 'We could not find that.',
     conflict: 'That account could not be opened.',
@@ -852,6 +900,7 @@ export const enFor = {
     hotelName ? `Rooms at ${hotelName}` : 'Rooms at your hotel',
   discoveryTitle: (hotelName: string) => `Discovery at ${hotelName}`,
   switchPrompt: (hotelName: string) => `Switch to ${hotelName}?`,
+  unreadMessages: (n: number) => (n === 1 ? '1 unread message' : `${n} unread messages`),
   daysAgo: (days: number) => `${days}d`,
   /** Beside a section heading: how many the provider returned. */
   eventCount: (count: number) => `${count} events`,

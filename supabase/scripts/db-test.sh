@@ -78,6 +78,11 @@ fi
 log "bootstrapping the storage schema (test harness only)"
 psql_admin < "$SUPA_DIR/scripts/storage-bootstrap.sql" >/dev/null
 
+# The published image's `auth` schema predates GoTrue's phone columns; a real
+# project has them. Same reason, same place as the storage bootstrap.
+log "aligning the auth schema with a real project (test harness only)"
+psql_admin < "$SUPA_DIR/scripts/auth-bootstrap.sql" >/dev/null
+
 log "applying migrations"
 psql_db -c "create schema if not exists app;
             create table if not exists app.schema_migrations (

@@ -14,6 +14,7 @@ import {
 } from '../../data';
 import { color, font, fontFamily, spacing } from '../../theme';
 import { OnboardingScaffold } from '../OnboardingScaffold';
+import { useCaptchaGate } from '../useCaptchaGate';
 import type { StepProps } from './types';
 
 /**
@@ -29,6 +30,7 @@ import type { StepProps } from './types';
  * than a second thing to keep in step.
  */
 export function PhoneStep({ step, total, draft, patch, go, onBack }: StepProps) {
+  const { challenge, solve } = useCaptchaGate();
   const [digits, setDigits] = useState(() => toNationalDigits(draft.phone));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +62,10 @@ export function PhoneStep({ step, total, draft, patch, go, onBack }: StepProps) 
       return;
     }
     try {
-      await getApi().requestPhoneOtp(normalized);
+      // The token is obtained *before* the request and never after: no SMS is
+      // asked for until the check has actually been solved.
+      const captchaToken = await solve();
+      await getApi().requestPhoneOtp(normalized, captchaToken);
       patch({
         phone: normalized,
         otpRequested: true,
@@ -69,6 +74,13 @@ export function PhoneStep({ step, total, draft, patch, go, onBack }: StepProps) 
       });
       go('otp');
     } catch (err) {
+      // Backing out of the security check is a decision, not a failure. Nothing
+      // was sent and nothing went wrong, so the screen says nothing — a red
+      // banner for closing a modal you opened is the app telling you off.
+      if (err instanceof ApiError && err.code === 'CAPTCHA_CANCELLED') {
+        setBusy(false);
+        return;
+      }
       // A timeout cannot tell us whether the provider accepted the SMS. Let
       // the person enter a code that may already be on its way instead of
       // forcing another paid request that the server will rate-limit.
@@ -89,6 +101,8 @@ export function PhoneStep({ step, total, draft, patch, go, onBack }: StepProps) 
   };
 
   return (
+    <>
+      {challenge}
     <OnboardingScaffold
       step={step}
       total={total}
@@ -132,6 +146,7 @@ export function PhoneStep({ step, total, draft, patch, go, onBack }: StepProps) 
         testID="auth-phone"
       />
     </OnboardingScaffold>
+    </>
   );
 }
 

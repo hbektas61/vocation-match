@@ -25,6 +25,8 @@ export interface FakeGooglePlace {
    * of them; they are here so the fake can answer the way Google would.
    */
   types: string[];
+  /** ISO country restriction used by the destination picker fake. */
+  countryCode: string;
   latitude: number;
   longitude: number;
   /** Set on a destination: the box the venue step is restricted to. */
@@ -58,6 +60,7 @@ export const GOOGLE_DESTINATIONS: FakeGooglePlace[] = [
     name: 'Alaçatı',
     detail: 'İzmir, Türkiye',
     types: ['sublocality', 'political'],
+    countryCode: 'TR',
     latitude: 38.2795,
     longitude: 26.3735,
     viewport: { lowLat: 38.259, lowLng: 26.353, highLat: 38.3, highLng: 26.394 },
@@ -67,6 +70,7 @@ export const GOOGLE_DESTINATIONS: FakeGooglePlace[] = [
     name: 'Çeşme',
     detail: 'İzmir, Türkiye',
     types: ['locality', 'political'],
+    countryCode: 'TR',
     latitude: 38.3235,
     longitude: 26.3055,
     viewport: { lowLat: 38.24, lowLng: 26.2, highLat: 38.4, highLng: 26.42 },
@@ -76,6 +80,7 @@ export const GOOGLE_DESTINATIONS: FakeGooglePlace[] = [
     name: 'Dubai Marina',
     detail: 'Dubai, Birleşik Arap Emirlikleri',
     types: ['neighborhood', 'political'],
+    countryCode: 'AE',
     latitude: 25.0805,
     longitude: 55.1403,
     viewport: { lowLat: 25.06, lowLng: 55.12, highLat: 25.1, highLng: 55.16 },
@@ -85,6 +90,7 @@ export const GOOGLE_DESTINATIONS: FakeGooglePlace[] = [
     name: 'Mykonos',
     detail: 'Ege Adaları, Yunanistan',
     types: ['locality', 'political'],
+    countryCode: 'GR',
     latitude: 37.4467,
     longitude: 25.3289,
     viewport: { lowLat: 37.4, lowLng: 25.27, highLat: 37.5, highLng: 25.4 },
@@ -94,6 +100,7 @@ export const GOOGLE_DESTINATIONS: FakeGooglePlace[] = [
     name: 'Marbella',
     detail: 'Málaga, İspanya',
     types: ['locality', 'political'],
+    countryCode: 'ES',
     latitude: 36.5101,
     longitude: -4.8824,
     viewport: { lowLat: 36.46, lowLng: -4.98, highLat: 36.56, highLng: -4.79 },
@@ -116,6 +123,7 @@ export const GOOGLE_VENUES: FakeGooglePlace[] = [
     name: 'Biblos Resort Alaçatı',
     detail: 'Alaçatı, Çeşme/İzmir',
     types: ['lodging', 'resort_hotel', 'establishment'],
+    countryCode: 'TR',
     latitude: 38.2712,
     longitude: 26.3688,
   },
@@ -124,6 +132,7 @@ export const GOOGLE_VENUES: FakeGooglePlace[] = [
     name: 'Before Sunset Beach',
     detail: 'Alaçatı, Çeşme/İzmir',
     types: ['bar', 'restaurant', 'establishment'],
+    countryCode: 'TR',
     latitude: 38.2661,
     longitude: 26.3799,
   },
@@ -132,6 +141,7 @@ export const GOOGLE_VENUES: FakeGooglePlace[] = [
     name: 'Alaçatı Marina Hotel',
     detail: 'Alaçatı, Çeşme/İzmir',
     types: ['lodging', 'hotel', 'establishment'],
+    countryCode: 'TR',
     latitude: 38.2769,
     longitude: 26.3651,
   },
@@ -140,6 +150,7 @@ export const GOOGLE_VENUES: FakeGooglePlace[] = [
     name: 'Ilıca Plajı',
     detail: 'Ilıca, Çeşme/İzmir',
     types: ['beach', 'natural_feature', 'tourist_attraction'],
+    countryCode: 'TR',
     latitude: 38.3057,
     longitude: 26.3611,
   },
@@ -148,6 +159,7 @@ export const GOOGLE_VENUES: FakeGooglePlace[] = [
     name: 'Biblos Resort',
     detail: 'Marbella, Málaga, İspanya',
     types: ['lodging', 'resort_hotel', 'establishment'],
+    countryCode: 'ES',
     latitude: 36.5183,
     longitude: -4.8901,
   },

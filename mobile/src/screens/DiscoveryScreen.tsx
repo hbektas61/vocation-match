@@ -503,6 +503,7 @@ export function DiscoveryScreen() {
             unmatchedAt: null,
             lastMessageAt: null,
             lastMessageBody: null,
+      unreadCount: 0,
           },
         });
       }

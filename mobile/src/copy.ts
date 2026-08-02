@@ -84,6 +84,10 @@ export function apiErrorMessage(code: ApiErrorCode): string {
       return COPY.errors.invalidInput;
     case 'CONTENT_REFUSED':
       return COPY.errors.contentRefused;
+    case 'CAPTCHA_REQUIRED':
+      return COPY.errors.captchaRequired;
+    case 'CAPTCHA_CANCELLED':
+      return COPY.errors.captchaCancelled;
     case 'NOT_FOUND':
       return COPY.errors.notFound;
     case 'CONFLICT':

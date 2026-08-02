@@ -499,6 +499,29 @@ client work; the server already allowed every one of them.
       `provider_event_counts` and `search_session_counts` — now that both are
       running against a real key.
 
+## 2026-08-01 — Core search P0
+
+- [x] S-001 Vacation selection requires country before destination; the
+      backend restricts Autocomplete to that country and fingerprints
+      country + query together.
+- [x] S-002 The explicit around-me action asks Google Nearby and the open
+      catalogue in parallel from one foreground reading, restricted to 500 m
+      and distance-ranked.
+- [x] S-003 The nearby text field filters only the bounded live list; it never
+      invokes the worldwide venue catalogue search. Live Google content wins
+      over a same-named stale catalogue row.
+- [x] S-004 Privacy/cost boundaries stay intact: no provider coordinate or
+      type list reaches the app or database, selection tokens stay single-use,
+      attribution is visible, OSM and “I’m here” remain fallbacks, and Nearby
+      has a separate hard monthly ceiling.
+
+Evidence: both halves of `scripts/check.sh` are green — TypeScript, zero-warning
+lint, `git diff --check`, web bundle, 58 Jest suites / 700 tests, 707 SQL
+assertions, concurrency, client↔database contract and migration replay. A live
+staging probe returned Alaçatı under `TR` and 20 distance-ranked Nearby rows;
+the client shape contained presentation kinds and attribution, and no
+coordinate or provider type list.
+
 ## Explicitly excluded
 
 - Reservation upload or reservation number.

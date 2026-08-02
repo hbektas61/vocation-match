@@ -330,7 +330,11 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           where the one catalogue box used to, and it is the only way a
           vacation venue is chosen. */}
       {picking ? (
-        <VenuePicker onChosen={requestActivation} busy={activating} />
+        <VenuePicker
+          onChosen={requestActivation}
+          busy={activating}
+          confirmSelection={!activeId}
+        />
       ) : null}
       {picking ? null : loadingActive || (activeId && !activeHotel) ? (
         // Either the answer is on its way, or the id is known and its card

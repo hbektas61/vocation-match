@@ -100,6 +100,23 @@ const GOOGLE_MIN_QUERY = 3;
 /** A ceiling high enough to be irrelevant until a test lowers it. */
 const GOOGLE_CEILING_DEFAULT = 9000;
 
+function googleKind(types: string[]): string | null {
+  if (types.some((type) => type === 'cafe' || type === 'coffee_shop')) return 'cafe';
+  if (types.some((type) => type === 'restaurant' || type.endsWith('_restaurant'))) {
+    return 'restaurant';
+  }
+  if (types.some((type) => ['bar', 'pub', 'night_club'].includes(type))) return 'bar';
+  if (
+    types.some((type) =>
+      ['lodging', 'hotel', 'resort_hotel', 'hostel', 'motel', 'bed_and_breakfast'].includes(type),
+    )
+  ) {
+    return 'hotel';
+  }
+  if (types.includes('beach')) return 'beach';
+  return types.includes('establishment') ? 'venue' : null;
+}
+
 interface FakeGoogleSession {
   userId: string;
   kind: 'destination' | 'venue';
@@ -190,7 +207,7 @@ export class FakeApi implements VocationApi {
     this.now = options.now ?? Date.now;
   }
 
-  async requestPhoneOtp(phone: string): Promise<void> {
+  async requestPhoneOtp(phone: string, _captchaToken?: string): Promise<void> {
     if (!isE164Phone(phone)) {
       throw new ApiError('INVALID_INPUT', 'Enter a phone number with its country code.');
     }
@@ -664,7 +681,12 @@ export class FakeApi implements VocationApi {
     return places.map((place) => {
       const token = `sel-${(this.googleSelectionSeq += 1)}`;
       this.placeSelections.set(token, { userId, sessionId, placeId: place.placeId, used: false });
-      return { selectionToken: token, name: place.name, detail: place.detail };
+      return {
+        selectionToken: token,
+        name: place.name,
+        detail: place.detail,
+        kind: googleKind(place.types),
+      };
     });
   }
 
@@ -676,9 +698,14 @@ export class FakeApi implements VocationApi {
     return { placeId: selection.placeId, sessionId: selection.sessionId };
   }
 
-  async searchDestinations(query: string, sessionId?: string): Promise<GooglePlaceAnswer | null> {
+  async searchDestinations(
+    query: string,
+    countryCode: string,
+    sessionId?: string,
+  ): Promise<GooglePlaceAnswer | null> {
     const userId = await this.requireUserId();
     if (query.trim().replace(/\s+/g, '').length < GOOGLE_MIN_QUERY) return null;
+    if (!/^[A-Z]{2}$/.test(countryCode)) return null;
 
     const existing = sessionId ? this.googleSessions.get(sessionId) : undefined;
     const live = existing && existing.userId === userId && existing.kind === 'destination'
@@ -696,7 +723,10 @@ export class FakeApi implements VocationApi {
     session.asked.add(fingerprint);
 
     const hits = GOOGLE_DESTINATIONS.filter(
-      (place) => isGeographic(place) && matchesQuery(place, query),
+      (place) =>
+        place.countryCode === countryCode &&
+        isGeographic(place) &&
+        matchesQuery(place, query),
     );
     return { sessionId: live, duplicate: false, places: this.mintSelections(userId, live, hits) };
   }
@@ -1079,6 +1109,18 @@ export class FakeApi implements VocationApi {
     _longitude: number,
     _sessionId?: string,
   ): Promise<GooglePlaceAnswer | null> {
+    await this.requireUserId();
+    return null;
+  }
+
+  async googleNearbyPlaces(
+    _latitude: number,
+    _longitude: number,
+  ): Promise<GooglePlaceAnswer | null> {
+    // The credential-free fake does not pretend to be Google's live nearby
+    // inventory. Screen tests that exercise the provider supply a deliberate
+    // override, while the ordinary fake continues to prove the open catalogue
+    // and the "I am here" fallback.
     await this.requireUserId();
     return null;
   }
@@ -1885,9 +1927,60 @@ export class FakeApi implements VocationApi {
           unmatchedAt: match.unmatchedAt,
           lastMessageAt: last?.createdAt ?? null,
           lastMessageBody: last?.body ?? null,
+          // Their messages after the point this reader last looked. Modelled
+          // the same way the server does it, or the fake would be a friendlier
+          // backend than the real one.
+          unreadCount: this.messages.filter(
+            (message) =>
+              message.matchId === match.matchId &&
+              message.senderId !== userId &&
+              message.createdAt > (this.reads.get(`${userId}:${match.matchId}`) ?? 0),
+          ).length,
         };
       })
       .sort((a, b) => (b.lastMessageAt ?? b.createdAt) - (a.lastMessageAt ?? a.createdAt));
+  }
+
+  /**
+   * How far each reader has read each conversation. The server keys on the
+   * message sequence; the fake has no sequence, so it keys on the timestamp of
+   * the newest message at the moment of reading — same shape, same monotonic
+   * rule.
+   */
+  private reads = new Map<string, number>();
+
+  /**
+   * The other person says something.
+   *
+   * Test-only, and on the fake only: there is no second signed-in session
+   * here, so this is the only way an *unread* message can exist. It writes
+   * through the same list `getMessages` reads and notifies the same listeners,
+   * so nothing downstream can tell it apart from a real arrival.
+   */
+  async receiveMessageForTest(matchId: string, body: string): Promise<ChatMessage> {
+    const match = this.matches.find((entry) => entry.matchId === matchId);
+    if (!match) throw new ApiError('NOT_FOUND', 'No such match.');
+    const message: ChatMessage = {
+      id: `msg-${this.nextId++}`,
+      matchId,
+      senderId: match.otherUserId,
+      body,
+      createdAt: this.now(),
+    };
+    this.messages.push(message);
+    this.messageListeners.get(matchId)?.forEach((listener) => listener(message));
+    return message;
+  }
+
+  async markMatchRead(matchId: string): Promise<void> {
+    const userId = await this.requireUserId();
+    await this.requireMatch(userId, matchId);
+    const newest = this.messages
+      .filter((message) => message.matchId === matchId)
+      .reduce((at, message) => Math.max(at, message.createdAt), 0);
+    const key = `${userId}:${matchId}`;
+    // Never backwards, for the same reason the server refuses to go backwards.
+    this.reads.set(key, Math.max(this.reads.get(key) ?? 0, newest));
   }
 
   async unmatch(matchId: string): Promise<void> {

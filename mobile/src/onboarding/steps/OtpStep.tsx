@@ -12,11 +12,13 @@ import {
 } from '../../data';
 import { useAppStore } from '../../state/AppStore';
 import { OnboardingScaffold } from '../OnboardingScaffold';
+import { useCaptchaGate } from '../useCaptchaGate';
 import type { StepProps } from './types';
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
 export function OtpStep({ step, total, draft, patch, onBack }: StepProps) {
+  const { challenge, solve } = useCaptchaGate();
   const { dispatch } = useAppStore();
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -56,6 +58,13 @@ export function OtpStep({ step, total, draft, patch, onBack }: StepProps) {
         profile: null,
       });
     } catch (err) {
+      // Backing out of the security check is a decision, not a failure. Nothing
+      // was sent and nothing went wrong, so the screen says nothing — a red
+      // banner for closing a modal you opened is the app telling you off.
+      if (err instanceof ApiError && err.code === 'CAPTCHA_CANCELLED') {
+        setBusy(false);
+        return;
+      }
       setError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
     } finally {
       setBusy(false);
@@ -68,13 +77,22 @@ export function OtpStep({ step, total, draft, patch, onBack }: StepProps) {
     setResent(false);
     setError(null);
     try {
-      await getApi().requestPhoneOtp(draft.phone);
+      // A *fresh* token. Cloudflare refuses one it has already seen, and the
+      // refusal would reach the person as "the code did not send".
+      const captchaToken = await solve();
+      await getApi().requestPhoneOtp(draft.phone, captchaToken);
       setResent(true);
       const requestedAt = Date.now();
       setNow(requestedAt);
       setResendAvailableAt(requestedAt + RESEND_COOLDOWN_SECONDS * 1_000);
       patch({ otpRequestedAt: requestedAt, otpRequestUncertain: false });
     } catch (err) {
+      // Same rule on the resend: closing the check sent nothing, so it says
+      // nothing.
+      if (err instanceof ApiError && err.code === 'CAPTCHA_CANCELLED') {
+        setResending(false);
+        return;
+      }
       // As with the first send, a timeout may happen after the provider accepts
       // the SMS. Treat that as a possibly-successful send and start a fresh
       // cooldown, otherwise the button invites an immediate duplicate charge.
@@ -92,6 +110,8 @@ export function OtpStep({ step, total, draft, patch, onBack }: StepProps) {
   };
 
   return (
+    <>
+      {challenge}
     <OnboardingScaffold
       step={step}
       total={total}
@@ -145,5 +165,6 @@ export function OtpStep({ step, total, draft, patch, onBack }: StepProps) {
         <Caption>{COPY.phoneAuth.previewCode(FAKE_PHONE_OTP)}</Caption>
       ) : null}
     </OnboardingScaffold>
+    </>
   );
 }

@@ -364,7 +364,15 @@ describe('D-057 closed decisions — N-07 and E-21', () => {
     expect(summary.limit).toBeGreaterThan(0);
     expect(summary.used).toBe(0);
     expect(summary.remaining).toBe(summary.limit);
-    expect(summary.resetsAt).toBeGreaterThan(Date.now());
+    // Against the *injected* clock, not the wall clock. This compared to
+    // `Date.now()` and passed for six days: the fake's month starts on
+    // 2026-07-25 and the machine's did too, right up to 1 August, when a test
+    // that had never been about the calendar failed on the calendar.
+    expect(summary.resetsAt).toBeGreaterThan(FIXED);
+    // And pinned outright, because "later than the clock" is true of a great
+    // many wrong answers. The allowance is monthly, so it resets at the top of
+    // the next UTC month.
+    expect(summary.resetsAt).toBe(Date.parse('2026-08-01T00:00:00Z'));
     expect(typeof summary.isPremium).toBe('boolean');
   });
 

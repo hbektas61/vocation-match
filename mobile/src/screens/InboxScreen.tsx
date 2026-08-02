@@ -35,6 +35,9 @@ function inboxRowLabel(match: MatchSummary): string {
   // came from — the row is otherwise identical whether you met at a hotel,
   // a café or a concert.
   parts.push(roomPlate(match.room));
+  if (match.unreadCount > 0) {
+    parts.push(COPY_FOR.unreadMessages(match.unreadCount));
+  }
   parts.push(COPY.inbox.openChatHint);
   return parts.join('. ');
 }
@@ -53,11 +56,23 @@ export function InboxScreen() {
   const photoPaths = useMemo(() => (matches ?? []).map((m) => m.photoPath), [matches]);
   const photoUrls = usePhotoUrls(photoPaths);
 
+  /**
+   * When the list is re-read, and deliberately not more often than that.
+   *
+   * Two moments here, both the same focus event: opening the tab, and coming
+   * back to it from a conversation. The third — returning to the foreground —
+   * is handled once for the whole app in `useForegroundMatches`, because a
+   * listener that only exists while the inbox is focused cannot refresh a
+   * badge for somebody who backgrounded the app on the discovery deck.
+   *
+   * No interval and no per-render fetch: unread is not urgent enough to poll
+   * for, and a badge that costs a request every render costs battery all day.
+   */
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
       setError(null);
-      (async () => {
+      const load = async () => {
         try {
           const fetched = await getApi().getMatches();
           if (!cancelled) {
@@ -69,7 +84,8 @@ export function InboxScreen() {
             setError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
           }
         }
-      })();
+      };
+      void load();
       return () => {
         cancelled = true;
       };
@@ -230,9 +246,25 @@ export function InboxScreen() {
                     {roomPlate(match.room)}
                   </Text>
                 </View>
-                {match.lastMessageAt !== null ? (
-                  <Text style={styles.rowWhen}>{formatWhen(match.lastMessageAt)}</Text>
-                ) : null}
+                <View style={styles.rowRight}>
+                  {match.lastMessageAt !== null ? (
+                    <Text style={styles.rowWhen}>{formatWhen(match.lastMessageAt)}</Text>
+                  ) : null}
+                  {match.unreadCount > 0 ? (
+                    /* Here the number is worth showing: the row has the space,
+                       and "three waiting" is different from "one". The count is
+                       already in the row's accessible name, so this is hidden
+                       rather than read out twice. */
+                    <View
+                      style={styles.unreadPill}
+                      accessibilityElementsHidden
+                      importantForAccessibility="no"
+                      testID={`inbox-unread-${match.matchId}`}
+                    >
+                      <Text style={styles.unreadPillText}>{match.unreadCount}</Text>
+                    </View>
+                  ) : null}
+                </View>
               </View>
             </Pressable>
           ))}
@@ -385,6 +417,23 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.body,
     fontSize: 12,
     color: color.inkMuted,
+  },
+  rowRight: { alignItems: 'flex-end', gap: 4 },
+  /** The count, in the brand fill with navy on it — the same pairing every
+      other coral surface uses. */
+  unreadPill: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    backgroundColor: color.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unreadPillText: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 11,
+    color: color.onAccent,
   },
   rowWhen: {
     fontFamily: fontFamily.body,

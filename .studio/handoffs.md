@@ -3752,3 +3752,42 @@ Belgium and Britain. That event is missing from the geo index.
 
 No parameter combination recovers Paris, Ibiza or the Mykonos club scene.
 Whatever is decided, it is not a query change.
+
+## 2026-08-01 — D-059 core search scope fixed
+
+The owner's two runtime failures are closed in the working tree.
+
+- Vacation selection is now country → destination → venue. Country is
+  mandatory in the client and in `places-google`; destination Autocomplete is
+  restricted with `includedRegionCodes`, and country + query is the server
+  session fingerprint.
+- The explicit Çevremde locate action now runs Google Nearby Search (New) and
+  the open catalogue in parallel from one foreground reading. Google is
+  restricted to 500 m and distance-ranked. Its coordinate and provider type
+  vocabulary never leave the edge response and are never stored.
+- Live Google rows lead the list and replace same-named stale catalogue rows.
+  The text field filters only this bounded list. The former call to the
+  worldwide `searchVenues` endpoint is gone from `CheckinScreen`.
+- Forum İstanbul has a regression test: Esslab appears, Lunchbox appears once
+  as a restaurant rather than the stale hotel row, and typing `esslab` makes
+  zero global catalogue calls.
+
+Verification: both halves of `scripts/check.sh` pass. Mobile is 58 suites /
+700 tests, typecheck, zero-warning lint, web bundle and harness exclusion.
+Database is 707 SQL assertions plus concurrency/performance, client↔database
+contract, fresh-vs-stepped migration replay and storage drain. `git diff
+--check` is clean.
+
+`places-google` version 13 is active on staging project
+`ftdqkhkeluokpdghzubp`. No migration, profile, room, match or message was
+changed by this deployment. The mobile working tree is deliberately not
+committed: it already contained the owner's unfinished Day 2 changes, including
+overlapping files, so an isolated commit would have claimed unrelated work.
+
+The post-deploy live probe used the guarded staging OTP identity. Alaçatı with
+`countryCode=TR` returned three destinations including Alaçatı; Nearby at the
+Galata reading returned 20 rows across venue/restaurant/hotel/café kinds with
+the Google attribution. The app-facing rows contained no `location`,
+`latitude`, `longitude` or provider `types`. This incurred one destination
+Autocomplete and one Nearby request and changed only the normal metering/search
+session records those calls are designed to write.

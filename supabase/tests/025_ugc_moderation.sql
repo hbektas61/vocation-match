@@ -147,16 +147,59 @@ select is(
 
 -- --------------------------------------------------------------- report details
 
-select throws_ok(
-  $$select public.report_user('00000000-0000-0000-0000-0000000000b1', 'HARASSMENT', 'preteen')$$,
-  'PC001',
-  null,
-  'a report is a write of user text too, and is gated the same way'
-);
+-- This file used to assert the opposite, and the assertion was wrong.
+--
+-- A report's details box is where somebody types what was said to them. Its
+-- value is that it quotes the thing that was wrong, so filtering it refuses
+-- the report exactly when the abuse was worst — the victim is silenced by the
+-- safety feature. `20260801000100` removed that trigger; these are the tests
+-- for what should have been true all along.
 
 select lives_ok(
-  $$select public.report_user('00000000-0000-0000-0000-0000000000b1', 'HARASSMENT', 'Sent me something I did not ask for.')$$,
-  'an ordinary report goes through'
+  $$select public.report_user('00000000-0000-0000-0000-0000000000b1', 'HARASSMENT', 'He asked me for preteen photos. I have not replied.')$$,
+  'a report may quote the abuse it is reporting, verbatim'
+);
+
+select is(
+  (select r.details from public.reports r
+    where r.reporter_id = '00000000-0000-0000-0000-0000000000a1'
+      and r.reported_id = '00000000-0000-0000-0000-0000000000b1'),
+  'He asked me for preteen photos. I have not replied.',
+  'and it is stored exactly as typed, because a moderator has to read what was said'
+);
+
+select ok(
+  (select count(*) from public.blocks
+    where blocker_id = '00000000-0000-0000-0000-0000000000a1'
+      and blocked_id = '00000000-0000-0000-0000-0000000000b1') = 1,
+  'report + block completes even when the details quote banned content'
+);
+
+-- Private, which is what makes quoting safe. The reported person cannot see
+-- that a report exists, let alone read it.
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
+
+select is(
+  (select count(*)::int from public.reports),
+  0,
+  'the reported person sees no report at all — not the row, not the details'
+);
+
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
+
+select is(
+  (select count(*)::int from public.reports),
+  1,
+  'and the reporter sees exactly the one they filed'
+);
+
+-- The publication filter is still on everything a member shows a member.
+select throws_ok(
+  $$update public.profiles set bio = 'preteen'
+     where id = '00000000-0000-0000-0000-0000000000a1'$$,
+  'PC001',
+  null,
+  'removing the report gate did not loosen the bio gate'
 );
 
 -- ------------------------------------------------------- the maintenance path

@@ -272,15 +272,32 @@ async function main() {
   const bRow = bMatches?.find((m) => m.other_user_id === A.userId);
   check("9. B's inbox carries the conversation and its latest message", Boolean(bRow?.last_message_at) && Boolean(bRow?.last_message_body));
 
-  // Unread state is not asserted because it does not exist. There is no
-  // read receipt, no last-read marker and no unread count anywhere in the
-  // schema, and the client says so in as many words ("no unread dot on the
-  // inbox tab (no read-state exists)"). Asserting it here would either fail
-  // for the wrong reason or, worse, be quietly written to pass. It is on the
-  // board as an owner question instead.
-  const readState = Object.keys(bRow ?? {}).some((k) => /read|unread|seen/.test(k));
-  check('9. read state is absent from the inbox contract, as the code says it is', !readState,
-    'no read/unread field — recorded as an owner question, not asserted as working');
+  // Unread, which the product gained on 2026-08-01. The day before, this was
+  // recorded as "does not exist" rather than asserted as working.
+  check('9. and B sees it as unread', bRow?.unread_count === 1, `unread_count=${bRow?.unread_count}`);
+  const aRowSelf = (await rpc(A.client, 'my_matches', {}))?.find((m) => m.other_user_id === B.userId);
+  check('9. while A does not — your own message is read by definition', aRowSelf?.unread_count === 0,
+    `unread_count=${aRowSelf?.unread_count}`);
+  check('9. and the tab total agrees with the row', (await rpc(B.client, 'unread_total', {})) === 1);
+
+  // Opening the conversation is what marks it read.
+  await rpc(B.client, 'mark_match_read', { p_match_id: match.id });
+  const bAfterRead = (await rpc(B.client, 'my_matches', {}))?.find((m) => m.other_user_id === A.userId);
+  check('9. opening it clears the count', bAfterRead?.unread_count === 0, `unread_count=${bAfterRead?.unread_count}`);
+  check('9. and clears the tab mark', (await rpc(B.client, 'unread_total', {})) === 0);
+
+  // Reading is monotonic: a late, lower sequence must not make it unread again.
+  await rpc(B.client, 'mark_match_read', { p_match_id: match.id, p_seq: 1 });
+  check('9. a late, lower read marker does not resurrect the badge',
+    (await rpc(B.client, 'unread_total', {})) === 0);
+
+  // Reading far ahead is not a way to silence a conversation: the marker is
+  // clamped to what the conversation actually contains. (A stranger being
+  // refused outright is asserted in 026 with a real third account; A is a
+  // participant here, so using A for it would have proved nothing — and did
+  // exactly that until this run caught it.)
+  const ahead = await rpc(B.client, 'mark_match_read', { p_match_id: match.id, p_seq: 999999 });
+  check('9. a read marker cannot be pushed past the last message', Number(ahead) < 999999, `clamped to ${ahead}`);
 
   // 10 — B replies; the two messages come back in the order they were sent.
   const bodyB = `e2e-b-${Date.now()}`;
@@ -289,6 +306,8 @@ async function main() {
   check('10. the reply lands after the first message, in order', thread?.length >= 2 && thread[thread.length - 1].sender_id === B.userId, `${thread?.length} message(s)`);
   const bInbox = (await rpc(B.client, 'my_matches', {}))?.find((m) => m.other_user_id === A.userId);
   check("10. and the inbox's latest message moves with it", Date.parse(bInbox?.last_message_at) >= Date.parse(bRow?.last_message_at));
+  const aAfterReply = (await rpc(A.client, 'my_matches', {}))?.find((m) => m.other_user_id === B.userId);
+  check('10. the reply is unread on the other side', aAfterReply?.unread_count === 1, `unread_count=${aAfterReply?.unread_count}`);
 
   // 11 — the same composed message, sent four times at once. This is the
   //      dropped-response case: the client cannot tell a failure from a lost

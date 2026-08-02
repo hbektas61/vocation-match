@@ -270,8 +270,9 @@ export function CheckinScreen({
   const [checkin, setCheckin] = useState<ActiveCheckin | null | undefined>(undefined);
   const [reading, setReading] = useState<{ latitude: number; longitude: number } | null>(null);
   const [nearby, setNearby] = useState<HotelCard[] | null>(null);
+  /** Live Google results for the current reading; never persisted. */
+  const [nearbyGoogle, setNearbyGoogle] = useState<GooglePlaceHit[]>([]);
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<HotelCard[]>([]);
   const [busy, setBusy] = useState(false);
   /**
    * N-07: the allowance, as the server reports it. Never derived here — a
@@ -280,7 +281,6 @@ export function CheckinScreen({
    */
   const [entitlement, setEntitlement] = useState<CheckinEntitlement | null>(null);
   const [notice, setNotice] = useState<{ message: string; tone: 'error' | 'info' } | null>(null);
-  const searchSeq = useRef(0);
   /**
    * D-052/D-053: what Google has been asked, keyed by the same normalized query
    * the backend fingerprints. Three states per key, and the distinctions matter:
@@ -384,26 +384,6 @@ export function CheckinScreen({
     };
   }, [checkin?.googlePlaceId]);
 
-  useEffect(() => {
-    const trimmed = query.trim();
-    if (trimmed.length < 2) {
-      setResults([]);
-      return;
-    }
-    const seq = ++searchSeq.current;
-    const timer = setTimeout(async () => {
-      try {
-        // D-051: this asks "what is this place I am in", not "where am I
-        // staying" — so it may answer with a café, a bar, a stadium.
-        const found = await getApi().searchVenues(trimmed);
-        if (searchSeq.current === seq) setResults(found);
-      } catch {
-        if (searchSeq.current === seq) setResults([]);
-      }
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [query]);
-
   /** One reading serves both the list and every check-in made from it. */
   const lookAround = async (source: ForegroundLocationReader) => {
     setBusy(true);
@@ -429,20 +409,32 @@ export function CheckinScreen({
     // here-anchor reachable.
     setReading({ latitude: read.latitude, longitude: read.longitude });
     setNearby([]);
+    setNearbyGoogle([]);
     // A new reading is a new place: the old predictions were restricted to a
     // circle around a point we no longer stand on.
     forgetGoogle();
-    try {
-      const found = await getApi().nearbyVenues(read.latitude, read.longitude);
-      setNearby(found);
-    } catch (err) {
+    const api = getApi();
+    const [catalogueResult, googleResult] = await Promise.allSettled([
+      api.nearbyVenues(read.latitude, read.longitude),
+      api.googleNearbyPlaces(read.latitude, read.longitude),
+    ]);
+    if (catalogueResult.status === 'fulfilled') {
+      setNearby(catalogueResult.value);
+    }
+    if (googleResult.status === 'fulfilled' && googleResult.value) {
+      setNearbyGoogle(googleResult.value.places);
+    }
+    if (
+      catalogueResult.status === 'rejected' &&
+      (googleResult.status === 'rejected' || googleResult.value === null)
+    ) {
+      const error = catalogueResult.reason;
       setNotice({
-        message: err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown,
+        message: error instanceof ApiError ? apiErrorMessage(error.code) : COPY.errors.unknown,
         tone: 'error',
       });
-    } finally {
-      setBusy(false);
     }
+    setBusy(false);
   };
 
   const checkInAt = async (venue: HotelCard) => {
@@ -467,9 +459,9 @@ export function CheckinScreen({
         lastSeenExpiry = active.expiresAt;
         setCheckin(active);
         setNearby(null);
+        setNearbyGoogle([]);
         setReading(null);
         setQuery('');
-        setResults([]);
       }
     } catch (err) {
       setNotice({
@@ -501,9 +493,9 @@ export function CheckinScreen({
         lastSeenExpiry = active.expiresAt;
         setCheckin(active);
         setNearby(null);
+        setNearbyGoogle([]);
         setReading(null);
         setQuery('');
-        setResults([]);
       }
     } catch (err) {
       setNotice({
@@ -601,9 +593,9 @@ export function CheckinScreen({
         lastSeenExpiry = active.expiresAt;
         setCheckin(active);
         setNearby(null);
+        setNearbyGoogle([]);
         setReading(null);
         setQuery('');
-        setResults([]);
         forgetGoogle();
       }
     } catch (err) {
@@ -648,11 +640,12 @@ export function CheckinScreen({
 
   const venueRow = (venue: HotelCard, keyPrefix: string) => {
     const meta = kindMeta(venue.kind);
+    const detail = venue.address ?? venue.city;
     return (
       <Pressable
         key={`${keyPrefix}-${venue.id}`}
         accessibilityRole="button"
-        accessibilityLabel={`${venue.name}, ${venue.city}`}
+        accessibilityLabel={`${venue.name}, ${detail}`}
         onPress={() => checkInAt(venue)}
         disabled={busy}
         style={({ pressed }) => [styles.venueRow, pressed && styles.pressed]}
@@ -665,8 +658,37 @@ export function CheckinScreen({
           <Text style={styles.venueName} numberOfLines={1}>{venue.name}</Text>
           <View style={styles.venuePlace}>
             <PinIcon tone={color.inkMuted} size={11} />
-            <Text style={styles.venueCity} numberOfLines={1}>{venue.city}</Text>
+            <Text style={styles.venueCity} numberOfLines={1}>{detail}</Text>
           </View>
+        </View>
+        <View style={[styles.kindChip, { backgroundColor: meta.tint }]}>
+          <Text style={[styles.kindChipText, { color: meta.tone }]}>{meta.label()}</Text>
+        </View>
+        <Text style={styles.chevron}>›</Text>
+      </Pressable>
+    );
+  };
+
+  const googleVenueRow = (place: GooglePlaceHit, keyPrefix: string) => {
+    const meta = kindMeta(place.kind);
+    return (
+      <Pressable
+        key={`${keyPrefix}-${place.selectionToken}`}
+        accessibilityRole="button"
+        accessibilityLabel={place.detail ? `${place.name}, ${place.detail}` : place.name}
+        disabled={busy}
+        onPress={() => checkInAtGoogle(place)}
+        style={({ pressed }) => [styles.venueRow, pressed && styles.pressed]}
+        testID={`checkin-google-${place.selectionToken}`}
+      >
+        <View style={[styles.venueDisc, { backgroundColor: meta.tint }]}>
+          <KindArt kind={place.kind} tone={meta.tone} />
+        </View>
+        <View style={styles.venueWords}>
+          <Text style={styles.venueName} numberOfLines={1}>{place.name}</Text>
+          {place.detail ? (
+            <Text style={styles.venueCity} numberOfLines={1}>{place.detail}</Text>
+          ) : null}
         </View>
         <View style={[styles.kindChip, { backgroundColor: meta.tint }]}>
           <Text style={[styles.kindChipText, { color: meta.tone }]}>{meta.label()}</Text>
@@ -794,7 +816,19 @@ export function CheckinScreen({
   /* --------------------------------------------------- 1: around-you list */
   if (nearby !== null) {
     const searching = query.trim().length >= 2;
-    const shown = searching ? results : nearby;
+    const matches = (parts: (string | null | undefined)[]) =>
+      !searching || normalizeQuery(parts.filter(Boolean).join(' ')).includes(fingerprint);
+    const liveShown = nearbyGoogle.filter((place) => matches([place.name, place.detail]));
+    // Live Google wins when both providers describe the same named place. That
+    // prevents a stale catalogue row (including an old/wrong kind) from
+    // sitting beside the current provider answer.
+    const liveNames = new Set(nearbyGoogle.map((place) => normalizeQuery(place.name)));
+    const catalogueShown = nearby.filter(
+      (venue) =>
+        !liveNames.has(normalizeQuery(venue.name)) &&
+        matches([venue.name, venue.address, venue.city, venue.country]),
+    );
+    const shownCount = liveShown.length + catalogueShown.length;
     return (
       <Screen safeTop testID="screen-checkin">
         <View style={styles.headRow}>
@@ -837,10 +871,18 @@ export function CheckinScreen({
         {busy ? (
           <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="checkin-looking" />
         ) : null}
-        {shown.length === 0 && !busy ? (
+        {shownCount === 0 && !busy ? (
           <EmptyState message={COPY.checkin.noVenues} testID="checkin-no-venues" />
         ) : (
-          shown.map((venue) => venueRow(venue, searching ? 'found' : 'near'))
+          <>
+            {liveShown.length > 0 ? (
+              <View testID="checkin-live-google-list">
+                {liveShown.map((place) => googleVenueRow(place, 'live'))}
+                <Text style={styles.attribution}>{COPY.checkin.googleAttribution}</Text>
+              </View>
+            ) : null}
+            {catalogueShown.map((venue) => venueRow(venue, searching ? 'found' : 'near'))}
+          </>
         )}
 
         {/* Step three (D-052): opened by hand, after our own catalogue and the
@@ -849,34 +891,11 @@ export function CheckinScreen({
         {googlePlaces && googlePlaces.length > 0 ? (
           <View style={styles.googleBlock} testID="checkin-google-list">
             <Text style={styles.attribution}>{COPY.checkin.googleAttribution}</Text>
-            {googlePlaces.map((place) => (
-              <Pressable
-                key={place.selectionToken}
-                accessibilityRole="button"
-                accessibilityLabel={
-                  place.detail ? `${place.name}, ${place.detail}` : place.name
-                }
-                disabled={busy}
-                onPress={() => checkInAtGoogle(place)}
-                style={({ pressed }) => [styles.venueRow, pressed && styles.pressed]}
-                testID={`checkin-google-${place.selectionToken}`}
-              >
-                <View style={[styles.venueDisc, { backgroundColor: color.accentSoft }]}>
-                  <PinIcon tone={DEEP} size={18} />
-                </View>
-                <View style={styles.venueWords}>
-                  <Text style={styles.venueName} numberOfLines={1}>{place.name}</Text>
-                  {place.detail ? (
-                    <Text style={styles.venueCity} numberOfLines={1}>{place.detail}</Text>
-                  ) : null}
-                </View>
-                <Text style={styles.chevron}>›</Text>
-              </Pressable>
-            ))}
+            {googlePlaces.map((place) => googleVenueRow(place, 'advanced'))}
           </View>
         ) : googleAsked.has(fingerprint) ||
           queryWeight(query) < MIN_QUERY_WEIGHT ||
-          shown.length > 0 ? null : (
+          shownCount > 0 ? null : (
           /* D-053's order, exactly: this appears only once a name has been
              typed *and* our own catalogue came up empty — "kullanıcı
              bulamazsa". A button that cannot do anything yet is a button that
@@ -919,13 +938,13 @@ export function CheckinScreen({
           disabled={!reading || busy}
           onPress={checkInHere}
           style={({ pressed }) => [
-            shown.length === 0 ? styles.bigFilled : styles.bigOutline,
+            shownCount === 0 ? styles.bigFilled : styles.bigOutline,
             pressed && styles.pressed,
           ]}
           testID="checkin-here"
         >
-          <PinIcon tone={shown.length === 0 ? color.onAccent : color.ink} size={16} />
-          <Text style={shown.length === 0 ? styles.bigFilledLabel : styles.bigOutlineLabel}>
+          <PinIcon tone={shownCount === 0 ? color.onAccent : color.ink} size={16} />
+          <Text style={shownCount === 0 ? styles.bigFilledLabel : styles.bigOutlineLabel}>
             {COPY.checkin.hereCta}
           </Text>
         </Pressable>

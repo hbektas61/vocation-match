@@ -24,8 +24,16 @@ insert with an RLS policy, so anything holding a session can write a row.
 
 `20260731001000_ugc_text_moderation.sql` puts the filter where the write is —
 BEFORE INSERT/UPDATE triggers on `public.messages` and `public.profiles`
-(display name and bio), and on `public.reports.details`. Removing the client
-check changes nothing, which is the test.
+(display name and bio). Removing the client check changes nothing, which is
+the test.
+
+It also covered `reports.details` for one day, and that was a mistake worth
+recording. A report's free text is where somebody types what was said to them;
+filtering it refuses the report exactly when the abuse was worst, and silences
+the person the feature exists for. `20260801000100` removed that trigger. What
+keeps the field safe is not a filter: it is the 1000-character bound, the
+single RPC write path, the rate limit, and the fact that only the reporter can
+ever read it.
 
 **Evasion is the part worth describing.** A filter that only catches the word
 typed plainly catches nobody who is trying, so submissions are normalised
@@ -81,8 +89,12 @@ is **no verified support address or domain in this repository**, and inventing
 one would be worse than leaving it blank: a support address that bounces is a
 rejection with extra steps.
 
-Settings has the place for it — the entry sits beside the existing account and
-safety rows — and it stays unwired until there is something true to put in it.
+**There is no support row in Settings today.** An earlier draft of this page
+said its place was ready, which was not true — nothing was added. Adding a row
+that opens nothing, or that opens an address which bounces, is worse than the
+gap: it turns "we have not done this yet" into "we did this badly". The row
+goes in when there is an address to put behind it, and it is one screen's work
+once there is.
 
 **What Hami has to supply (O-04):**
 
@@ -140,12 +152,25 @@ Worth stating for Review Notes, without overclaiming:
 - Everybody in a room shares a real-world context: the same vacation venue with
   overlapping dates, the same neighbourhood check-in, or the same event.
 
-⚠️ One caveat belongs with that list, because it is currently untrue in
-practice: the *database* does not enforce the phone-verified part. `profiles`
-may be created by any authenticated user, and the hosted staging project
-currently accepts email sign-in — so the identity guarantee rests on the client
-having no email screen. `scripts/verify-hosted-auth.mjs` reports this, and it is
-a P0 on the release board.
+The first of those is now enforced by the database rather than asserted.
+`20260801000200` added `app.current_user_has_verified_phone()`, read from
+`auth.users.phone_confirmed_at` — never from the JWT or user metadata, both of
+which the user can write — and a profile cannot be created without it.
+
+⚠️ Two things remain true and belong here rather than in a footnote:
+
+- The gate is on **creating** a profile. Existing rows are not revalidated,
+  because locking real people out of accounts they already have is not a
+  migration's decision. Staging carries **9 profiles whose account never proved
+  a phone**, from before phone-only sign-in. They are inert with respect to new
+  signups and they are still there. The safe cleanup is: list them, confirm
+  none has a match or a message, and delete the accounts through
+  `delete_my_account` semantics rather than by hand — an owner decision,
+  because a wrong deletion is not reversible.
+- The hosted project still accepts **email sign-in**, so a session without a
+  phone is still obtainable. It can no longer become a profile, which was the
+  hole that mattered, but the setting should still be off.
+  `scripts/verify-hosted-auth.mjs` reports it and O-12 stays open.
 
 ## Draft for App Store Review Notes
 

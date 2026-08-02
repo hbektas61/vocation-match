@@ -11,6 +11,7 @@ import {
   type AppAction,
   type AppState,
 } from './appReducer';
+import { useForegroundMatches } from './useForegroundMatches';
 import { useSessionWatch } from './useSessionWatch';
 
 interface AppStoreValue {
@@ -123,6 +124,9 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   // A session can lapse, or its account be deleted from another device, while
   // the app sits in the background trusting the answer it got at start-up.
   useSessionWatch(state.session !== null, dispatch);
+  // One listener for the whole app, so the tab badge is right wherever
+  // somebody happened to be when they put the phone down.
+  useForegroundMatches(state.session !== null, dispatch);
 
   const value = useMemo(() => ({ state, dispatch, chooseLocale }), [state, chooseLocale]);
   return <AppStoreContext.Provider value={value}>{children}</AppStoreContext.Provider>;

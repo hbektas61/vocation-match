@@ -7,9 +7,10 @@
  * to an old query never lands on a new one, a failure is recoverable — because
  * those were never facts about the catalogue. They were facts about a search.
  *
- * What is new is the shape the brief specifies: a destination first, then a
- * venue inside it, with the default mode deliberately unrestricted so a beach
- * club Google files under `bar` is still findable.
+ * What is new is the shape the brief specifies: country first, then a
+ * destination inside it, then a venue. Lodging is the useful default; an
+ * explicit broader search keeps a beach club Google files under `bar`
+ * findable without making every hotel query global or untyped.
  */
 import { act, fireEvent, screen } from '@testing-library/react-native';
 
@@ -33,10 +34,11 @@ async function settle(ms = 500): Promise<void> {
   });
 }
 
-async function openPicker(phone: string): Promise<void> {
+async function openPicker(phone: string, countryCode = 'TR'): Promise<void> {
   await onboard('Deniz', phone);
   await press(await screen.findByTestId('tab-Vacation'));
   await press(await screen.findByTestId('venue-open-picker'));
+  await press(await screen.findByTestId(`country-option-${countryCode}`));
   await screen.findByTestId('destination-search');
 }
 
@@ -70,7 +72,7 @@ describe('choosing a destination', () => {
   });
 
   it('accepts a neighbourhood too, so Dubai Marina is reachable', async () => {
-    await openPicker('+905551118002');
+    await openPicker('+905551118002', 'AE');
     await typeInto('destination-search', 'Dubai Marina');
 
     expect(await screen.findByText('Dubai Marina')).toBeTruthy();
@@ -104,8 +106,8 @@ describe('choosing a destination', () => {
     await openPicker('+905551118005');
     const api = getApi();
     const real = api.searchDestinations.bind(api);
-    jest.spyOn(api, 'searchDestinations').mockImplementation(async (query, session) => {
-      const answer = await real(query, session);
+    jest.spyOn(api, 'searchDestinations').mockImplementation(async (query, country, session) => {
+      const answer = await real(query, country, session);
       if (query === 'Ala') await new Promise((resolve) => setTimeout(resolve, 900));
       return answer;
     });
@@ -151,8 +153,10 @@ describe('choosing a venue inside that destination', () => {
   });
 
   it('finds the beach club Google files under `bar`', async () => {
-    // §8.6 and §8.9 together: this is the case a lodging-only default loses.
+    // §8.6 and §8.9 together: this is the case the explicit broader fallback
+    // exists for.
     await pickAlacati('+905551118011');
+    await press(screen.getByTestId('venue-chip-all'));
     await typeInto('venue-search', 'Before Sunset');
 
     expect(await screen.findByText('Before Sunset Beach')).toBeTruthy();
@@ -165,6 +169,7 @@ describe('choosing a venue inside that destination', () => {
     await typeInto('destination-search', 'Çeşme');
     await press(await screen.findByTestId('destination-option-0'));
     await screen.findByTestId('venue-search');
+    await press(screen.getByTestId('venue-chip-all'));
     await typeInto('venue-search', 'Ilıca');
 
     expect(await screen.findByText('Ilıca Plajı')).toBeTruthy();
@@ -180,17 +185,45 @@ describe('choosing a venue inside that destination', () => {
     expect(screen.queryByText('Marbella, Málaga, İspanya')).toBeNull();
   });
 
-  it('keeps the beach club out of the lodging chip, and back in under Tümü', async () => {
-    // The chips refine; the default does not. Proving both directions is what
-    // shows the default is genuinely unrestricted rather than accidentally so.
+  it('starts with hotels, then brings the beach club back under all vacation places', async () => {
+    // D-060: hotel is the primary task. The broader option remains honest and
+    // reachable for beach clubs and named beaches.
     await pickAlacati('+905551118014');
-    await press(screen.getByTestId('venue-chip-stay'));
+    expect(screen.getByTestId('venue-chip-stay').props.accessibilityState).toMatchObject({
+      selected: true,
+    });
     await typeInto('venue-search', 'Before Sunset');
     expect(await screen.findByTestId('venue-no-results')).toBeTruthy();
 
     await press(screen.getByTestId('venue-chip-all'));
     await settle();
     expect(await screen.findByText('Before Sunset Beach')).toBeTruthy();
+  });
+
+  it('shows all three steps and reviews a first hotel before activation', async () => {
+    await pickAlacati('+905551118018');
+    // The step indicator is a progressbar with a hairline, not three labelled
+    // chips: the chips cost 44pt on every screen and truncated at 320px. What
+    // a screen reader is told is the part that has to keep working, and that
+    // is the accessible value rather than the pixels.
+    const progress = screen.getByTestId('venue-picker-progress');
+    expect(progress.props.accessibilityValue).toMatchObject({ min: 1, max: 3, now: 3 });
+    expect(progress.props.accessibilityLabel).toContain('3');
+    // Each step still has its own node, so a test can point at one.
+    for (const key of ['country', 'destination', 'venue']) {
+      expect(screen.getByTestId(`venue-step-${key}`, { includeHiddenElements: true })).toBeTruthy();
+    }
+
+    await typeInto('venue-search', 'Biblos');
+    await press(await screen.findByTestId('venue-option-0'));
+
+    expect(await screen.findByTestId('venue-picker-confirmation')).toBeTruthy();
+    expect(screen.getByText('Biblos Resort Alaçatı')).toBeTruthy();
+    expect(await getApi().getActiveHotel()).toBeNull();
+
+    await press(screen.getByTestId('confirm-venue-selection'));
+    await settle();
+    expect(await getApi().getActiveHotel()).not.toBeNull();
   });
 
   it('offers no chip that would hide what it is named after', async () => {
@@ -241,7 +274,8 @@ describe('the venue identity behind a Place ID', () => {
     await fake.requestPhoneOtp(phone);
     await fake.verifyPhoneOtp(phone, FAKE_PHONE_OTP);
     await fake.saveOwnProfile({ displayName: 'Deniz', birthdate: '1994-03-01' });
-    const destinations = await fake.searchDestinations(destinationQuery);
+    const countryCode = destinationQuery === 'Marbella' ? 'ES' : 'TR';
+    const destinations = await fake.searchDestinations(destinationQuery, countryCode);
     const chosen = await fake.chooseDestination(destinations!.places[0].selectionToken);
     const venues = await fake.searchVacationVenues(venueQuery, chosen!.sessionId, 'all');
     await fake.activateGoogleVenue(venues!.places[0].selectionToken, 'all');
@@ -273,12 +307,12 @@ describe('the venue identity behind a Place ID', () => {
     // In the database this is settled by `unique (provider, provider_place_id)`
     // inside one statement; here the same property is asserted of the id.
     await onboard('Deniz', '+905551118022');
-    const session = await fake.searchDestinations('Alaçatı');
+    const session = await fake.searchDestinations('Alaçatı', 'TR');
     const chosen = await fake.chooseDestination(session!.places[0].selectionToken);
     const venues = await fake.searchVacationVenues('Biblos', chosen!.sessionId, 'all');
     const first = await fake.activateGoogleVenue(venues!.places[0].selectionToken, 'all');
 
-    const again = await fake.searchDestinations('Alaçatı');
+    const again = await fake.searchDestinations('Alaçatı', 'TR');
     const chosenAgain = await fake.chooseDestination(again!.places[0].selectionToken);
     const venuesAgain = await fake.searchVacationVenues('Biblos', chosenAgain!.sessionId, 'all');
     const second = await fake.activateGoogleVenue(venuesAgain!.places[0].selectionToken, 'all');
@@ -461,7 +495,7 @@ describe('what it costs', () => {
     fake.setGoogleCeiling(0);
     const before = fake.googleCallCount();
 
-    expect(await fake.searchDestinations('Alaçatı')).toBeNull();
+    expect(await fake.searchDestinations('Alaçatı', 'TR')).toBeNull();
     expect(fake.googleCallCount()).toBe(before);
   });
 
@@ -472,7 +506,7 @@ describe('what it costs', () => {
 
     fake.setGoogleCeiling(0);
 
-    expect(await fake.searchDestinations('Çeşme')).toBeNull();
+    expect(await fake.searchDestinations('Çeşme', 'TR')).toBeNull();
     expect(await fake.getUpcomingStay()).toEqual(stay);
     expect(
       (await fake.getRooms()).find((room) => room.room === 'UPCOMING')?.eligible,
@@ -495,7 +529,7 @@ describe('the trip tab before anything is chosen', () => {
   it('can be backed out of without choosing anything', async () => {
     await onboard('Deniz', '+905551118061');
     await press(await screen.findByTestId('vacation-choose-for-upcoming'));
-    await screen.findByTestId('destination-search');
+    await screen.findByTestId('venue-picker-country');
 
     // A screen you cannot leave without picking is how default selections get
     // made.

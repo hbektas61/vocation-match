@@ -107,6 +107,7 @@ describe('appReducer auth lifecycle', () => {
         unmatchedAt: null,
         lastMessageAt: null,
         lastMessageBody: null,
+      unreadCount: 0,
       },
     });
     expect(state.matches).toHaveLength(1);
@@ -170,6 +171,7 @@ describe('appReducer matches', () => {
     unmatchedAt: null,
     lastMessageAt: null,
     lastMessageBody: null,
+      unreadCount: 0,
   };
 
   it('upserting a new match adds it and sets it as the last match', () => {
@@ -216,6 +218,7 @@ describe('appReducer blocking', () => {
         unmatchedAt: null,
         lastMessageAt: null,
         lastMessageBody: null,
+      unreadCount: 0,
       },
     });
     state = appReducer(state, { type: 'USER_BLOCKED', blockedUser });

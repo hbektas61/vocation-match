@@ -19,6 +19,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
+import { COPY_FOR } from '../copy';
+import { useAppStore } from '../state/AppStore';
+
 import { color, elevation, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
 
 function iconFor(routeName: string, active: boolean) {
@@ -84,6 +87,10 @@ function iconFor(routeName: string, active: boolean) {
 
 export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  // Read from the store the inbox already fills, rather than polled here: the
+  // bar is drawn on every screen and must not become a request every screen.
+  const { state: appState } = useAppStore();
+  const unread = appState.matches.reduce((total, match) => total + (match.unreadCount ?? 0), 0);
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
       <View style={styles.row}>
@@ -96,7 +103,13 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
               key={route.key}
               accessibilityRole="button"
               accessibilityState={active ? { selected: true } : {}}
-              accessibilityLabel={options.tabBarAccessibilityLabel ?? label}
+              // The dot is decoration; the count has to reach a screen reader
+              // some other way, so it goes in the tab's own name.
+              accessibilityLabel={
+                route.name === 'Inbox' && unread > 0
+                  ? `${options.tabBarAccessibilityLabel ?? label}. ${COPY_FOR.unreadMessages(unread)}`
+                  : options.tabBarAccessibilityLabel ?? label
+              }
               onPress={() => {
                 const event = navigation.emit({
                   type: 'tabPress',
@@ -112,6 +125,17 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
             >
               <View style={[styles.iconSeat, active && styles.iconSeatActive]}>
                 {iconFor(route.name, active)}
+                {route.name === 'Inbox' && unread > 0 ? (
+                  /* A mark, not a number. The count is on the row inside;
+                     out here the only question is "is there anything?" — and
+                     a two-digit badge on a 44pt target is a smudge. */
+                  <View
+                    style={styles.unreadDot}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no"
+                    testID="tab-Inbox-unread"
+                  />
+                ) : null}
               </View>
               <Text
                 numberOfLines={1}
@@ -133,6 +157,18 @@ const styles = StyleSheet.create({
    * top is the only edge — the same quiet `color.rule` a card uses — and
    * `elevation.nav` lifts it off whatever scrolls underneath.
    */
+  /** The waiting mark: coral, on the seat's top-right corner. */
+  unreadDot: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: color.accent,
+    borderWidth: 2,
+    borderColor: color.surface,
+  },
   bar: {
     backgroundColor: color.surface,
     borderTopWidth: 1,

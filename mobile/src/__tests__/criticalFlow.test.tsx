@@ -131,7 +131,11 @@ describe('rooms and hotel switching', () => {
     // D-054: switching means choosing again, destination first. Confirming is
     // still its own step, because the previous venue's discovery closes the
     // moment this lands (D-004).
-    await chooseGoogleVenue({ destinationQuery: 'Çeşme', venueQuery: 'Ilıca' });
+    await chooseGoogleVenue({
+      destinationQuery: 'Çeşme',
+      venueQuery: 'Ilıca',
+      chip: 'all',
+    });
     await press(await screen.findByTestId('confirm-switch'));
 
     // Choosing lands on the rooms now, where the consequence of the switch

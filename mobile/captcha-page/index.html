@@ -1,0 +1,125 @@
+<!doctype html>
+<!--
+  The Turnstile challenge page.
+
+  Deploy this one file to an HTTPS origin you control, and point
+  EXPO_PUBLIC_TURNSTILE_PAGE_URL at it. The app loads it in a WebView, waits for
+  it to post a result, and closes.
+
+  What is NOT here, and must never be:
+
+    * The Turnstile **secret**. It is exchanged server-side, by Supabase's auth
+      server, against Cloudflare. It belongs in the Supabase dashboard and
+      nowhere else — not in this file, not in the app, not in an EXPO_PUBLIC_
+      variable, not in the repository.
+    * Anything about the person signing in. This page never sees a phone
+      number; it renders a widget and reports a token.
+
+  The site key arrives as a query parameter rather than being written in, so
+  staging and production can run the same file with different keys, and so the
+  dummy keys Cloudflare publishes for testing work without editing anything.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Security check</title>
+    <!--
+      No `integrity` here, and that is deliberate rather than an oversight.
+      Cloudflare ships this script continuously and documents that it must be
+      loaded unpinned; an SRI hash would break the widget the first time they
+      change a byte, and a CAPTCHA that fails closed on every user is worse
+      than the risk it was added for. The trust boundary that matters is the
+      one the app enforces: this page may talk to the bridge, Cloudflare's
+      iframe may not, and the token is worthless without the secret the auth
+      server holds.
+    -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+    <style>
+      html, body {
+        margin: 0;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff9f5;
+        font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+        color: #101a3a;
+      }
+      #widget { min-height: 65px; }
+      #fallback { display: none; font-size: 14px; padding: 0 24px; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <div id="widget"></div>
+    <p id="fallback">The security check could not load.</p>
+
+    <script>
+      (function () {
+        'use strict';
+
+        // The one channel back to the app. Everything this page reports goes
+        // through here, tagged so the native side can recognise it — and the
+        // native side checks *where the message came from* as well, because
+        // this tag is something any document could write.
+        function report(payload) {
+          var bridge = window.ReactNativeWebView;
+          if (!bridge || typeof bridge.postMessage !== 'function') return;
+          bridge.postMessage(JSON.stringify(Object.assign({ source: 'vocation-turnstile' }, payload)));
+        }
+
+        function siteKey() {
+          try {
+            var key = new URL(window.location.href).searchParams.get('sitekey');
+            // Turnstile keys are short and alphanumeric. Refusing anything else
+            // keeps a malformed query string from becoming markup.
+            return key && /^[A-Za-z0-9_-]{8,64}$/.test(key) ? key : null;
+          } catch (e) {
+            return null;
+          }
+        }
+
+        function start() {
+          var key = siteKey();
+          if (!key || !window.turnstile) {
+            document.getElementById('fallback').style.display = 'block';
+            report({ kind: 'error', code: key ? 'script-failed' : 'no-sitekey' });
+            return;
+          }
+          window.turnstile.render('#widget', {
+            sitekey: key,
+            // The three outcomes the app knows how to act on. `expired` is
+            // separate from `error` on purpose: one is worth retrying by
+            // itself, the other is not.
+            callback: function (token) { report({ kind: 'success', token: token }); },
+            'error-callback': function (code) { report({ kind: 'error', code: String(code || 'unknown') }); },
+            'expired-callback': function () { report({ kind: 'expired' }); },
+            // Managed: Cloudflare decides whether a person has to do anything,
+            // which for most people is nothing at all.
+            appearance: 'always',
+            theme: 'light'
+          });
+        }
+
+        // `onload` for the async script, plus a timer for the case where it
+        // never arrives — a page that renders nothing and says nothing is
+        // indistinguishable from a hung app.
+        window.onloadTurnstileCallback = start;
+        if (window.turnstile) {
+          start();
+        } else {
+          window.addEventListener('load', function () {
+            setTimeout(function () {
+              if (!window.turnstile) {
+                document.getElementById('fallback').style.display = 'block';
+                report({ kind: 'error', code: 'script-unavailable' });
+              } else {
+                start();
+              }
+            }, 4000);
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>

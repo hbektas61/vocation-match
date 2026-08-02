@@ -28,17 +28,13 @@ const code = source
   .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 
 describe('the Google endpoint', () => {
-  it('is Autocomplete (New), and nothing else', () => {
+  it('uses Autocomplete for typed names and Nearby only for the explicit locate action', () => {
     expect(source).toContain('https://places.googleapis.com/v1/places:autocomplete');
+    expect(source).toContain('https://places.googleapis.com/v1/places:searchNearby');
   });
 
-  it.each([
-    ['Text Search', 'places:searchText'],
-    ['Nearby Search', 'places:searchNearby'],
-  ])('never reaches for %s', (_label, endpoint) => {
-    // Both are dearer SKUs and neither answers this screen's question. Checked
-    // against the code rather than the prose, which names them on purpose.
-    expect(code).not.toContain(endpoint);
+  it('never reaches for Text Search', () => {
+    expect(code).not.toContain('places:searchText');
   });
 
   it('restricts rather than biases, so a distant answer cannot slip in', () => {
@@ -48,6 +44,12 @@ describe('the Google endpoint', () => {
 
   it('sends one session token per session, so Google bills a session', () => {
     expect(source).toContain('sessionToken');
+  });
+
+  it('keeps around-me inside 500 m and asks Google to rank by distance', () => {
+    expect(source).toMatch(/GOOGLE_NEARBY_RADIUS_METERS"\)\s*\?\?\s*"500"/);
+    expect(source).toContain('rankPreference: "DISTANCE"');
+    expect(source).toContain('includedTypes: NEARBY_TYPES');
   });
 });
 
@@ -78,6 +80,8 @@ describe('the ceilings', () => {
     expect(source).toContain('google_place_details');
     expect(source).toContain('GOOGLE_AUTOCOMPLETE_MONTHLY_ALLOWANCE');
     expect(source).toContain('GOOGLE_DETAILS_MONTHLY_ALLOWANCE');
+    expect(source).toContain('google_nearby');
+    expect(source).toContain('GOOGLE_NEARBY_MONTHLY_ALLOWANCE');
   });
 
   it('carries the approved pilot defaults', () => {
@@ -127,9 +131,15 @@ describe('the destination and venue steps', () => {
     expect(code).not.toContain('(cities)');
   });
 
-  it('sends no type restriction at all on the default venue search', () => {
-    // `all` is the default mode, and its entry must stay null. A list here
-    // would be the exact regression the brief forbids.
+  it('restricts destinations to the country selected by the user', () => {
+    expect(source).toContain('includedRegionCodes: [countryCode.toLowerCase()]');
+    expect(source).toContain('error: "country_required"');
+    expect(source).toContain('sessionQuery: `${countryCode}:${query}`');
+  });
+
+  it('keeps the broader venue mode genuinely unrestricted', () => {
+    // The client now starts with lodging, but its explicit broader fallback is
+    // still `all`. A list here would silently hide beach clubs again.
     expect(source).toMatch(/const VENUE_TYPES[\s\S]*?all:\s*null/);
   });
 
@@ -156,13 +166,12 @@ describe('the destination and venue steps', () => {
   });
 
   it('deduplicates predictions before minting a token for each', () => {
-    // Every place a token is minted must have deduplicated first, so counting
-    // the guards against the mint sites is the assertion — a new operation
-    // that forgot would drop the count.
+    // Typed predictions and live nearby rows use different response shapes,
+    // and both must deduplicate before tokens are minted.
     const mints = source.match(/record_place_selections/g) ?? [];
-    const guards = source.match(/\.add\(prediction\.placeId!\)/g) ?? [];
-    expect(mints.length).toBeGreaterThanOrEqual(2);
-    expect(guards).toHaveLength(mints.length);
+    expect(mints.length).toBeGreaterThanOrEqual(3);
+    expect(source.match(/\.add\(prediction\.placeId!\)/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(source).toContain('seen.add(place.id!)');
   });
 
   it('asks Place Details only for a search area, and only for a position', () => {

@@ -180,6 +180,8 @@ export const tr: Copy = {
     destination: (maskedPhone: string) => `Kod şu numaraya gönderildi: ${maskedPhone}`,
     requestUncertain:
       'İsteğin cevabı gelmedi. Sana bir SMS ulaşırsa kodunu buraya gir; ulaşmazsa biraz bekleyip yeni kod iste.',
+    captchaTitle: 'Kısa güvenlik kontrolü',
+    captchaBody: 'Bu kontrol, otomatik kayıtların gerçek kişilerin ihtiyaç duyduğu SMS kodlarını tüketmesini engeller.',
     previewCode: (code: string) => `Önizleme kodu: ${code}`,
   },
 
@@ -343,19 +345,66 @@ export const tr: Copy = {
   },
 
   venue: {
-    destinationTitle: 'Nereye gidiyorsun?',
-    destinationHint: 'Şehir, ada veya tatil bölgesi ara',
+    stepCountry: 'Ülke',
+    stepDestination: 'Şehir',
+    stepVenue: 'Otel',
+    stepProgress: (current: number, total: number) => `${total} adımın ${current}. adımı`,
+    countryTitle: 'Ülkeni seç',
+    countryHint: 'Tatil mekânının bulunduğu ülkeyi seç.',
+    countryLabel: 'Ülke ara',
+    countryPlaceholder: 'Türkiye, Amerika, İspanya…',
+    countryNoResults: 'Bu adla bir ülke yok.',
+    /** E-05: söylenmeye değer, çünkü diğer iki adımın aksine bedava. */
+    countryLocalNote:
+      'Liste cihazında aranır; bu adımda sağlayıcıya hiçbir istek gitmez ve hiçbir hak harcanmaz.',
+    countryPopular: 'Sık seçilenler',
+    countryResults: 'Ülkeler',
+    selectedCountry: 'Seçilen ülke',
+    selectedDestination: 'Şehir veya tatil bölgesi',
+    selectedHotel: 'Seçtiğin otel',
+    change: 'Değiştir',
+    countryChosen: (name: string) => `${name} içinde destinasyon`,
+    changeCountry: 'Ülkeyi değiştir',
+    /** E-01: sonuçsuzluk bir hata değil, ikinci aramaya açılan kapı. */
+    stayNoResults: '“Oteller” aramasında bu adla bir sonuç yok.',
+    stayNoResultsBody:
+      'Beach club ve adı olan plajlar “Oteller”de görünmez. İkinci arama hiçbir tür süzgeci uygulamaz.',
+    broadenButton: 'Tüm tatil yerlerinde ara',
+    /** E-02: yazılan duruyor, tekrar denemek tek dokunuş. */
+    providerRetryBody: 'Yazdığın duruyor. Tekrar denediğinde aynı aramayla devam edersin.',
+    /** E-03: oturum sağlayıcının faturalandırma birimi; eskisiyle arama yeni istektir. */
+    sessionLapsed: 'Bu arama oturumu kapandı. Devam etmek için şehri yeniden seç.',
+    sessionLapsedBody:
+      'Oturumlar sağlayıcının faturalandırma birimidir; süresi dolan bir oturumla arama yapmak yeni bir istek sayılır. Şehri yeniden seçmek oturumu temiz açar.',
+    reselectDestination: 'Şehri yeniden seç',
+    /** E-04: burada sorgulanacak şey ülkedir. */
+    destinationNoResultsIn: (countryName: string) =>
+      `${countryName} içinde bu adla bir yer bulunamadı.`,
+    destinationNoResultsBody:
+      'Yazımı kontrol et — ya da mekân başka bir ülkedeyse ülkeyi değiştir. Ülke listesi cihazında çalışır, istek göndermez.',
+    destinationTitle: 'Şehir veya tatil bölgesi',
+    destinationHint: (country: string) =>
+      `${country} içinde şehir, ada veya tatil bölgesi ara.`,
     destinationLabel: 'Destinasyon ara',
     destinationPlaceholder: 'Alaçatı, Çeşme, Mykonos…',
     destinationNoResults: 'Bu aramayla eşleşen yer yok.',
     destinationChosen: (name: string) => `${name}'da nerede olacaksın?`,
     changeDestination: 'Destinasyonu değiştir',
+    venueTitle: (name: string) => `${name}'da otelini bul`,
     venueLabel: 'Mekân ara',
-    venuePlaceholder: 'Otel, resort veya plaj ara',
+    venuePlaceholder: 'Otel veya resort adı',
     venueNoResults: 'Bu bölgede bu adla bir yer yok.',
-    venuePrompt: 'Kalacağın yerin adını yaz.',
-    chipAll: 'Tümü',
-    chipStay: 'Konaklama',
+    venuePrompt: 'Kalacağın otelin adını yaz.',
+    chipAll: 'Tüm tatil yerleri',
+    chipStay: 'Oteller',
+    broaderSearchTitle: 'İKİ ARAMA, İKİ KAPSAM',
+    broaderSearchBody:
+      '“Oteller” yalnız konaklamayı arar. “Tüm tatil yerleri” hiçbir tür süzgeci uygulamaz — beach club, adı olan plaj ve otel sayılmayan resortlar orada çıkar.',
+    confirmTitle: 'Bu otel mi?',
+    confirmBody: (destination: string) =>
+      `Bu seçim ${destination} tatilindeki odalarını belirleyecek.`,
+    confirmButton: 'Bu oteli seç',
+    backToHotelSearch: 'Otel aramasına dön',
     minQuery: 'En az üç harf yaz.',
     attribution: 'Powered by Google',
     unavailable: 'Mekân araması şu anda kullanılamıyor. Sonra tekrar dene.',
@@ -678,6 +727,8 @@ export const tr: Copy = {
     googleUnavailable: 'Şu an ek arama yapılamıyor. Listeden seçebilir ya da buradayım diyebilirsin.',
     /** Google answered, and knows no such place — not the same as unavailable. */
     googleNoResults: 'Google da buralarda bu adda bir mekân bilmiyor. Başka bir yazım deneyebilir ya da buradayım diyebilirsin.',
+    nearbyProviderUnavailable:
+      'Canlı mekân sonuçları şu an alınamıyor. Açık veri listesi gösterilmeye devam ediyor.',
     /** Required whenever Google's answer is on screen. */
     googleAttribution: 'Google tarafından sağlanır',
     /** ODbL: katalog listesi OpenStreetMap/Overture verisidir ve bunu söyler. */
@@ -728,6 +779,8 @@ export const tr: Copy = {
     forbidden: 'Bunu yapma iznin yok.',
     underAge: 'Vacation Match yalnız 18 yaş ve üzeri içindir.',
     contentRefused: 'Bu burada paylaşılamaz. Başka türlü ifade etmeyi dene.',
+    captchaCancelled: 'Güvenlik kontrolü kapatıldı, bu yüzden kod gönderilmedi.',
+    captchaRequired: 'Güvenlik kontrolü tamamlanamadı. Birazdan tekrar dene.',
     invalidInput: 'Girdiğin bilgileri kontrol et.',
     notFound: 'Bunu bulamadık.',
     conflict: 'Bu hesap açılamadı.',
@@ -746,6 +799,7 @@ export const trFor: CopyFor = {
     hotelName ? `${hotelName} odaları` : 'Otelinin odaları',
   discoveryTitle: (hotelName: string) => `${hotelName} keşfi`,
   switchPrompt: (hotelName: string) => `${hotelName} oteline geçilsin mi?`,
+  unreadMessages: (n: number) => `${n} okunmamış mesaj`,
   daysAgo: (days: number) => `${days} gün`,
   /** Bölüm başlığının yanında: sağlayıcı kaç tane döndürdü. */
   eventCount: (count: number) => `${count} etkinlik`,

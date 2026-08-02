@@ -15,9 +15,19 @@ as $$
 declare
   v_id uuid := coalesce(p_id, gen_random_uuid());
 begin
-  insert into auth.users (id, instance_id, aud, role, email, created_at, updated_at)
+  -- A phone, confirmed, because that is what a real member is since the
+  -- identity gate landed. Derived from the id so fixtures stay unique, and set
+  -- here rather than in each test so the difference between "a member" and "an
+  -- account with no phone" has to be stated deliberately — see 026, which
+  -- creates the email-only case on purpose.
+  insert into auth.users (id, instance_id, aud, role, email, phone, phone_confirmed_at, created_at, updated_at)
   values (v_id, '00000000-0000-0000-0000-000000000000',
-          'authenticated', 'authenticated', p_email, now(), now());
+          'authenticated', 'authenticated', p_email,
+          -- Hashed over the whole id, not sliced off the front: the fixture
+          -- uuids are hand-written and mostly zeros, so a prefix collides
+          -- immediately.
+          '+9' || lpad((abs(hashtext(v_id::text)) % 10000000000)::text, 10, '0'),
+          now(), now(), now());
   return v_id;
 end;
 $$;

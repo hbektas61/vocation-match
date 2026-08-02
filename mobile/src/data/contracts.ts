@@ -20,6 +20,10 @@ export type ApiErrorCode =
   | 'INVALID_INPUT'
   /** The server refused the text itself (Apple 1.2). Never says which word. */
   | 'CONTENT_REFUSED'
+  /** The bot check did not produce a usable token, so no SMS was requested. */
+  | 'CAPTCHA_REQUIRED'
+  /** The person backed out of the check. Not a failure; nothing was sent. */
+  | 'CAPTCHA_CANCELLED'
   | 'NOT_FOUND'
   | 'CONFLICT'
   | 'RATE_LIMITED'
@@ -448,6 +452,12 @@ export interface GooglePlaceHit {
   name: string;
   /** The secondary line that tells two branches of a chain apart, if any. */
   detail: string | null;
+  /**
+   * App-owned presentation category. Nearby Search derives it from Google's
+   * live type response and never stores either value. Autocomplete predictions
+   * may not carry enough type information, so null is an honest possibility.
+   */
+  kind: string | null;
 }
 
 /**
@@ -547,7 +557,12 @@ export interface VocationApi {
    * Phone numbers cross the auth boundary only; profiles and discovery never
    * expose them.
    */
-  requestPhoneOtp(phone: string): Promise<void>;
+  /**
+   * `captchaToken` is a single-use token from the bot check. Required whenever
+   * the build carries a CAPTCHA site key; a resend needs a fresh one, because
+   * the provider will not accept the same token twice.
+   */
+  requestPhoneOtp(phone: string, captchaToken?: string): Promise<void>;
   /** Verifies the six-digit SMS code and creates/restores the session. */
   verifyPhoneOtp(phone: string, code: string): Promise<AuthSession>;
   signOut(): Promise<void>;
@@ -623,11 +638,16 @@ export interface VocationApi {
 
   /* vacation venue, destination-first (D-054) */
   /**
-   * Step A. A city, island, district or resort area — worldwide, and never a
-   * business. Null means the step is unavailable (no key, a ceiling, a rate
-   * limit, an unwell provider); it never means "no such place".
+   * Step A. A city, island, district or resort area inside the country the
+   * person selected, and never a business. Null means the step is unavailable
+   * (no key, a ceiling, a rate limit, an unwell provider); it never means "no
+   * such place".
    */
-  searchDestinations(query: string, sessionId?: string): Promise<GooglePlaceAnswer | null>;
+  searchDestinations(
+    query: string,
+    countryCode: string,
+    sessionId?: string,
+  ): Promise<GooglePlaceAnswer | null>;
   /**
    * Commits step A. Spends the prediction's selection token and opens the
    * venue session scoped to that destination. Null when the choice could not
@@ -726,6 +746,16 @@ export interface VocationApi {
    * and discarded; nothing about the caller is stored.
    */
   nearbyVenues(latitude: number, longitude: number): Promise<HotelCard[]>;
+  /**
+   * Live Google results for the explicit "find places around me" action.
+   * Results are restricted and distance-ranked on the backend. Names, types,
+   * addresses and coordinates live only in the response; selection still uses
+   * a short-lived opaque token.
+   */
+  googleNearbyPlaces(
+    latitude: number,
+    longitude: number,
+  ): Promise<GooglePlaceAnswer | null>;
   /**
    * Checks in to a venue after a one-time foreground reading verifies the
    * caller is within 500 m of it. Out of range answers false and stores
@@ -834,6 +864,12 @@ export interface VocationApi {
   /* matching */
   swipe(targetUserId: string, room: RoomKey, direction: SwipeDirection): Promise<SwipeResult>;
   getMatches(): Promise<MatchSummary[]>;
+  /**
+   * Marks a conversation read up to its latest message. Monotonic on the
+   * server, so calling it twice — or late, from a second device — is a no-op
+   * rather than something that can turn a read conversation unread.
+   */
+  markMatchRead(matchId: string): Promise<void>;
   unmatch(matchId: string): Promise<void>;
 
   /* chat */
@@ -862,6 +898,13 @@ export interface SwipeResult {
 }
 
 export interface MatchSummary {
+  /**
+   * How many of the other person's messages are waiting.
+   *
+   * Their messages only: your own are read by definition, and counting them
+   * would make every conversation you spoke in look unanswered.
+   */
+  unreadCount: number;
   matchId: string;
   otherUserId: string;
   displayName: string;

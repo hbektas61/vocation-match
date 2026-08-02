@@ -69,6 +69,7 @@ start_container() { # start_container <name> <port>
     exit 1
   fi
   psql_as "$container" supabase_admin < "$SUPA_DIR/scripts/storage-bootstrap.sql" >/dev/null
+  psql_as "$container" supabase_admin < "$SUPA_DIR/scripts/auth-bootstrap.sql" >/dev/null
   psql_as "$container" postgres -c "create schema if not exists app;" >/dev/null
 }
 

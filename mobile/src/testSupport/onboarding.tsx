@@ -134,12 +134,14 @@ export async function activateHotel(hotelId = PILOT_HOTEL): Promise<void> {
  * point — neither does the app.
  */
 export async function chooseGoogleVenue({
+  countryCode = 'TR',
   destinationQuery = 'Alaçatı',
   venueQuery = 'Biblos',
   destinationIndex = 0,
   venueIndex = 0,
   chip,
 }: {
+  countryCode?: string;
   destinationQuery?: string;
   venueQuery?: string;
   destinationIndex?: number;
@@ -148,11 +150,17 @@ export async function chooseGoogleVenue({
 } = {}): Promise<void> {
   await press('tab-Vacation');
   await press('venue-open-picker');
+  await press(`country-option-${countryCode}`);
   await type('destination-search', destinationQuery);
   await press(`destination-option-${destinationIndex}`);
   if (chip) await press(`venue-chip-${chip}`);
   await type('venue-search', venueQuery);
   await press(`venue-option-${venueIndex}`);
+  // First-time selection has a review step. Replacing an active venue skips
+  // this because HotelScreen owns the stronger destructive confirmation.
+  if (screen.queryByTestId('confirm-venue-selection')) {
+    await press('confirm-venue-selection');
+  }
 }
 
 /**

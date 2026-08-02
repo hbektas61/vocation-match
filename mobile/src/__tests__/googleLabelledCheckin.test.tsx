@@ -114,7 +114,12 @@ it('refuses a label that is not a plausible place reference', async () => {
   // The server-side check is a length window; the fake mirrors the contract
   // by simply carrying whatever it is given, so this test documents the
   // boundary the migration enforces rather than duplicating it.
-  const stub: GooglePlaceHit = { selectionToken: 'tok_ok', name: 'Esslab', detail: null };
+  const stub: GooglePlaceHit = {
+    selectionToken: 'tok_ok',
+    name: 'Esslab',
+    detail: null,
+    kind: 'cafe',
+  };
   await api.checkinHere(SPOT.latitude, SPOT.longitude, stub.selectionToken);
   expect((await api.getCheckin())?.googlePlaceId).toBe('tok_ok');
 });

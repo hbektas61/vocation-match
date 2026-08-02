@@ -313,7 +313,7 @@ class ScriptedGoogleApi extends FakeApi {
 }
 
 function hit(name: string, token: string): GooglePlaceHit {
-  return { selectionToken: token, name, detail: 'Budapest' };
+  return { selectionToken: token, name, detail: 'Budapest', kind: null };
 }
 
 /** Gets the screen to the state where the advanced find is legitimately offered. */

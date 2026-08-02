@@ -2,24 +2,29 @@
  * The one door Google is allowed through (D-052, corrected by D-053, widened
  * by D-054).
  *
- * Six operations, and deliberately no others:
+ * Seven operations, and deliberately no others:
  *
  *   search  — Autocomplete (New). A *typed* name, restricted to 1,500 m around
  *             the caller, inside a session that bills as one session. Neither
- *             Nearby Search nor Text Search is used: by the time this is
- *             reached the user has typed a name, and Autocomplete is both the
- *             right tool and the cheaper SKU. The response carries an opaque
+ *             Text Search is not used: by the time this is reached the user
+ *             has typed a name, and Autocomplete is the right tool. The
+ *             response carries an opaque
  *             selection token per prediction rather than a bare Place ID.
  *             This is D-053's check-in find and is unchanged.
  *   resolve — a Place ID back into a name for a screen about to draw it. This
  *             is how a Google label is displayed without our storing Google's
  *             name anywhere.
+ *   nearby_search — Nearby Search (New), only after the user explicitly asks
+ *             what is around the foreground reading. It is restricted to the
+ *             check-in radius, ranked by distance and returned as short-lived
+ *             selection tokens. Display content and coordinates are discarded
+ *             with the response.
  *
  * D-054 adds the destination-first vacation venue flow:
  *
- *   destination_search — Autocomplete (New), worldwide, geocoding results only,
- *             so "Alaçatı" and "Dubai Marina" both answer and no business ever
- *             does.
+ *   destination_search — Autocomplete (New), restricted to the country the
+ *             person selected, geocoding results only, so "Alaçatı" and
+ *             "Dubai Marina" both answer and no business ever does.
  *   destination_choose — spends the destination's selection token, resolves the
  *             one thing the next step needs (a viewport), and holds it on a
  *             *venue* session. The box lives on the session and dies with it;
@@ -48,11 +53,9 @@
  */
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-/**
- * Autocomplete (New). Deliberately not `places:searchText` and not
- * `places:searchNearby`; a static contract test fails if either reappears.
- */
+/** Typed lookups use Autocomplete; the explicit around-me action uses Nearby. */
 const PLACES_AUTOCOMPLETE = "https://places.googleapis.com/v1/places:autocomplete";
+const PLACES_NEARBY = "https://places.googleapis.com/v1/places:searchNearby";
 const PLACES_DETAILS = "https://places.googleapis.com/v1/places";
 
 /**
@@ -66,8 +69,13 @@ const AUTOCOMPLETE_ALLOWANCE = Number(
 const DETAILS_ALLOWANCE = Number(
   Deno.env.get("GOOGLE_DETAILS_MONTHLY_ALLOWANCE") ?? "4500",
 );
+const NEARBY_ALLOWANCE = Number(
+  Deno.env.get("GOOGLE_NEARBY_MONTHLY_ALLOWANCE") ?? "4500",
+);
 /** Restriction, not bias: a result outside the area is not an answer here. */
 const RESTRICT_METERS = Number(Deno.env.get("GOOGLE_SEARCH_RADIUS_METERS") ?? "1500");
+/** The visible list never offers a place the 500 m check could not accept. */
+const NEARBY_RADIUS_METERS = Number(Deno.env.get("GOOGLE_NEARBY_RADIUS_METERS") ?? "500");
 /** Below this there is nothing to search for (D-053 §3, D-054 §6). */
 const MIN_QUERY = 3;
 
@@ -81,7 +89,42 @@ const PREDICTION_MASK = [
   "suggestions.placePrediction.placeId",
   "suggestions.placePrediction.structuredFormat.mainText.text",
   "suggestions.placePrediction.structuredFormat.secondaryText.text",
+  "suggestions.placePrediction.distanceMeters",
 ].join(",");
+
+/**
+ * Gathering places, not every shop, office and transit stop around a mall.
+ * `includedTypes` matches any of a place's returned types; generic families
+ * such as `restaurant` therefore keep their specialised children findable.
+ */
+const NEARBY_TYPES = [
+  "cafe",
+  "coffee_shop",
+  "restaurant",
+  "food_court",
+  "bar",
+  "pub",
+  "night_club",
+  "lodging",
+  "hotel",
+  "resort_hotel",
+  "hostel",
+  "motel",
+  "bed_and_breakfast",
+  "guest_house",
+  "beach",
+  "park",
+  "tourist_attraction",
+  "shopping_mall",
+  "movie_theater",
+  "performing_arts_theater",
+  "concert_hall",
+  "event_venue",
+  "museum",
+  "art_gallery",
+  "casino",
+  "stadium",
+];
 
 /**
  * Google's own collection for "geocoding results, not businesses". This is
@@ -206,10 +249,54 @@ function claimOf(authorization: string, field: string): string | null {
 
 interface PlacePrediction {
   placeId?: string;
+  distanceMeters?: number;
   structuredFormat?: {
     mainText?: { text?: string };
     secondaryText?: { text?: string };
   };
+}
+
+interface GoogleNearbyPlace {
+  id?: string;
+  displayName?: { text?: string };
+  shortFormattedAddress?: string;
+  primaryType?: string;
+  types?: string[];
+  location?: { latitude?: number; longitude?: number };
+}
+
+function nearbyKind(types: string[] = [], primaryType?: string): string {
+  const all = new Set(primaryType ? [primaryType, ...types] : types);
+  if (all.has("cafe") || all.has("coffee_shop")) return "cafe";
+  if (all.has("restaurant") || all.has("food_court") ||
+      [...all].some((type) => type.endsWith("_restaurant"))) return "restaurant";
+  if (
+    all.has("bar") || all.has("pub") || all.has("night_club") ||
+    all.has("cocktail_bar") || all.has("wine_bar")
+  ) return "bar";
+  if (
+    all.has("lodging") || all.has("hotel") || all.has("resort_hotel") ||
+    all.has("hostel") || all.has("motel") || all.has("bed_and_breakfast") ||
+    all.has("guest_house")
+  ) return "hotel";
+  if (all.has("beach")) return "beach";
+  return "venue";
+}
+
+function metresBetween(
+  a: { latitude: number; longitude: number },
+  b: { latitude: number; longitude: number },
+): number {
+  const toRadians = (value: number) => value * Math.PI / 180;
+  const earth = 6_371_000;
+  const dLat = toRadians(b.latitude - a.latitude);
+  const dLng = toRadians(b.longitude - a.longitude);
+  const lat1 = toRadians(a.latitude);
+  const lat2 = toRadians(b.latitude);
+  const haversine =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * earth * Math.asin(Math.sqrt(haversine));
 }
 
 Deno.serve(async (req) => {
@@ -313,6 +400,7 @@ Deno.serve(async (req) => {
       p_user: userId,
       p_session: sessionIn,
       p_query: query,
+      p_kind: "checkin",
     });
     if (sessionError) {
       return Response.json({ error: "Could not start a search." }, { status: 503 });
@@ -358,11 +446,7 @@ Deno.serve(async (req) => {
         // The narrowest mask the picker can work from: an id, the name, and the
         // secondary line that tells two branches of a chain apart. No
         // coordinate is requested — the anchor is the caller's own cell.
-        "X-Goog-FieldMask": [
-          "suggestions.placePrediction.placeId",
-          "suggestions.placePrediction.structuredFormat.mainText.text",
-          "suggestions.placePrediction.structuredFormat.secondaryText.text",
-        ].join(","),
+        "X-Goog-FieldMask": PREDICTION_MASK,
       },
       body: JSON.stringify({
         input: query,
@@ -374,6 +458,9 @@ Deno.serve(async (req) => {
         locationRestriction: {
           circle: { center: { latitude, longitude }, radius: RESTRICT_METERS },
         },
+        // Gives each prediction a distance from the same reading. Google may
+        // otherwise return a textually stronger but farther branch first.
+        origin: { latitude, longitude },
       }),
       signal: AbortSignal.timeout(8_000),
     });
@@ -399,7 +486,11 @@ Deno.serve(async (req) => {
         if (seenHere.has(prediction.placeId!)) return false;
         seenHere.add(prediction.placeId!);
         return true;
-      });
+      })
+      .sort((left, right) =>
+        (left.distanceMeters ?? Number.POSITIVE_INFINITY) -
+        (right.distanceMeters ?? Number.POSITIVE_INFINITY)
+      );
 
     // Provenance. The backend records what Google actually returned and hands
     // back one single-use token per prediction, so the client never learns a
@@ -426,6 +517,7 @@ Deno.serve(async (req) => {
         selectionToken: tokenByPlace.get(prediction.placeId!) ?? null,
         name: prediction.structuredFormat!.mainText!.text!,
         detail: prediction.structuredFormat?.secondaryText?.text ?? null,
+        kind: null,
       }))
       .filter((place) => place.selectionToken !== null);
 
@@ -436,6 +528,160 @@ Deno.serve(async (req) => {
       await closeSession(session.session_id, "empty");
     } else {
       await measure("google_autocomplete", "ok", session.session_id);
+    }
+
+    return Response.json({
+      places,
+      duplicate: false,
+      sessionId: session.session_id,
+      remaining: allowance.remaining,
+      attribution: "Powered by Google",
+    });
+  }
+
+  /**
+   * The first-class around-me list. This is the only untitled Google lookup:
+   * the person explicitly pressed the locate action, and the request is a
+   * strict circle around that one foreground reading. The server rechecks the
+   * distance and returns neither Google's coordinate nor its type vocabulary.
+   */
+  if (operation === "nearby_search") {
+    const latitude = Number(body.latitude);
+    const longitude = Number(body.longitude);
+    if (
+      !Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+      Math.abs(latitude) > 90 || Math.abs(longitude) > 180
+    ) {
+      return Response.json({ error: "That location reading is not usable." }, { status: 400 });
+    }
+
+    const { data: sessionRows, error: sessionError } = await admin.rpc("open_search_session", {
+      p_user: userId,
+      p_session: null,
+      p_query: null,
+      p_kind: "checkin",
+    });
+    const session = (sessionRows ?? [])[0] as
+      | {
+        allowed?: boolean;
+        session_id?: string;
+        reason?: string;
+      }
+      | undefined;
+    if (sessionError) {
+      return Response.json({ error: "Could not start a search." }, { status: 503 });
+    }
+    if (!session?.allowed || !session.session_id) {
+      await measure("google_nearby", "refused_session", session?.session_id);
+      return Response.json({ error: session?.reason ?? "search_unavailable" }, { status: 429 });
+    }
+
+    const allowance = await claim("google_nearby", NEARBY_ALLOWANCE);
+    if (!allowance.allowed) {
+      await measure("google_nearby", "refused_ceiling", session.session_id);
+      await closeSession(session.session_id, "failed");
+      return Response.json({ error: "allowance_spent", remaining: 0 }, { status: 429 });
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(PLACES_NEARBY, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": key,
+          "X-Goog-FieldMask": [
+            "places.id",
+            "places.displayName",
+            "places.shortFormattedAddress",
+            "places.primaryType",
+            "places.types",
+            "places.location",
+          ].join(","),
+        },
+        body: JSON.stringify({
+          includedTypes: NEARBY_TYPES,
+          maxResultCount: 20,
+          rankPreference: "DISTANCE",
+          locationRestriction: {
+            circle: {
+              center: { latitude, longitude },
+              radius: NEARBY_RADIUS_METERS,
+            },
+          },
+        }),
+        signal: AbortSignal.timeout(8_000),
+      });
+    } catch {
+      await measure("google_nearby", "error", session.session_id);
+      await closeSession(session.session_id, "failed");
+      return Response.json({ error: "Could not search just now." }, { status: 503 });
+    }
+    if (!response.ok) {
+      await measure("google_nearby", "error", session.session_id);
+      await closeSession(session.session_id, "failed");
+      return Response.json({ error: "Could not search just now." }, { status: 503 });
+    }
+
+    const parsed = (await response.json()) as { places?: GoogleNearbyPlace[] };
+    const seen = new Set<string>();
+    const found = (parsed.places ?? [])
+      .map((place) => {
+        const placeLatitude = place.location?.latitude;
+        const placeLongitude = place.location?.longitude;
+        if (
+          !place.id || !place.displayName?.text ||
+          typeof placeLatitude !== "number" || typeof placeLongitude !== "number"
+        ) return null;
+        const distance = metresBetween(
+          { latitude, longitude },
+          { latitude: placeLatitude, longitude: placeLongitude },
+        );
+        // Do not trust an upstream ranking bug to widen our product promise.
+        if (distance > NEARBY_RADIUS_METERS) return null;
+        return { place, distance };
+      })
+      .filter((entry): entry is { place: GoogleNearbyPlace; distance: number } =>
+        entry !== null
+      )
+      .sort((left, right) => left.distance - right.distance)
+      .filter(({ place }) => {
+        if (seen.has(place.id!)) return false;
+        seen.add(place.id!);
+        return true;
+      });
+
+    const { data: selections, error: selectionError } = await admin.rpc(
+      "record_place_selections",
+      {
+        p_user: userId,
+        p_session: session.session_id,
+        p_place_ids: found.map(({ place }) => place.id!),
+      },
+    );
+    if (selectionError) {
+      await measure("google_nearby", "error", session.session_id);
+      await closeSession(session.session_id, "failed");
+      return Response.json({ error: "Could not hold that search." }, { status: 503 });
+    }
+    const tokenByPlace = new Map<string, string>();
+    for (const row of (selections ?? []) as { token: string; google_place_id: string }[]) {
+      tokenByPlace.set(row.google_place_id, row.token);
+    }
+    const places = found
+      .map(({ place }) => ({
+        selectionToken: tokenByPlace.get(place.id!) ?? null,
+        name: place.displayName!.text!,
+        detail: place.shortFormattedAddress ?? null,
+        kind: nearbyKind(place.types, place.primaryType),
+      }))
+      .filter((place) => place.selectionToken !== null);
+
+    if (places.length === 0) {
+      await measure("google_nearby", "empty", session.session_id);
+      await closeSession(session.session_id, "empty");
+    } else {
+      await measure("google_nearby", "ok", session.session_id);
     }
 
     return Response.json({
@@ -492,14 +738,17 @@ Deno.serve(async (req) => {
   const autocomplete = async (options: {
     kind: "destination" | "venue";
     query: string;
+    sessionQuery: string | null;
     sessionIn: string | null;
     restriction: Record<string, unknown> | null;
     includedPrimaryTypes: string[] | null;
+    includedRegionCodes: string[] | null;
+    origin: { latitude: number; longitude: number } | null;
   }): Promise<Response> => {
     const { data: sessionRows, error: sessionError } = await admin.rpc("open_search_session", {
       p_user: userId,
       p_session: options.sessionIn,
-      p_query: options.query,
+      p_query: options.sessionQuery ?? options.query,
       p_kind: options.kind,
     });
     if (sessionError) {
@@ -546,6 +795,11 @@ Deno.serve(async (req) => {
     };
     if (options.restriction) request.locationRestriction = options.restriction;
     if (options.includedPrimaryTypes) request.includedPrimaryTypes = options.includedPrimaryTypes;
+    if (options.includedRegionCodes) {
+      request.includedRegionCodes = options.includedRegionCodes;
+      request.regionCode = options.includedRegionCodes[0];
+    }
+    if (options.origin) request.origin = options.origin;
 
     let response: Response;
     try {
@@ -583,7 +837,11 @@ Deno.serve(async (req) => {
         if (seen.has(prediction.placeId!)) return false;
         seen.add(prediction.placeId!);
         return true;
-      });
+      })
+      .sort((left, right) =>
+        (left.distanceMeters ?? Number.POSITIVE_INFINITY) -
+        (right.distanceMeters ?? Number.POSITIVE_INFINITY)
+      );
 
     const { data: selections, error: selectionError } = await admin.rpc(
       "record_place_selections",
@@ -607,6 +865,7 @@ Deno.serve(async (req) => {
         selectionToken: tokenByPlace.get(prediction.placeId!) ?? null,
         name: prediction.structuredFormat!.mainText!.text!,
         detail: prediction.structuredFormat?.secondaryText?.text ?? null,
+        kind: null,
       }))
       .filter((place) => place.selectionToken !== null);
 
@@ -625,22 +884,27 @@ Deno.serve(async (req) => {
     });
   };
 
-  /** Step A: where are you going? Worldwide, and never a business. */
+  /** Step A: where are you going? Inside the chosen country, never a business. */
   if (operation === "destination_search") {
     const query = String(body.query ?? "").trim();
+    const countryCode = String(body.countryCode ?? "").trim().toUpperCase();
     if (query.replace(/\s+/g, "").length < MIN_QUERY) {
       return Response.json({ error: "query_too_short", minimum: MIN_QUERY }, { status: 400 });
+    }
+    if (!/^[A-Z]{2}$/.test(countryCode)) {
+      return Response.json({ error: "country_required" }, { status: 400 });
     }
     return await autocomplete({
       kind: "destination",
       query,
+      sessionQuery: `${countryCode}:${query}`,
       sessionIn: typeof body.sessionId === "string" && body.sessionId.length > 0
         ? body.sessionId
         : null,
-      // Deliberately unbounded: the destination lives in the query, never in
-      // where the phone happens to be (the D-047 reasoning, unchanged).
       restriction: null,
       includedPrimaryTypes: DESTINATION_TYPES,
+      includedRegionCodes: [countryCode.toLowerCase()],
+      origin: null,
     });
   }
 
@@ -809,6 +1073,7 @@ Deno.serve(async (req) => {
     return await autocomplete({
       kind: "venue",
       query,
+      sessionQuery: null,
       sessionIn,
       restriction: {
         rectangle: {
@@ -817,6 +1082,8 @@ Deno.serve(async (req) => {
         },
       },
       includedPrimaryTypes: VENUE_TYPES[mode],
+      includedRegionCodes: null,
+      origin: null,
     });
   }
 
