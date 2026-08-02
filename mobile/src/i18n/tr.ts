@@ -700,6 +700,7 @@ export const tr: Copy = {
     chooseFirst: 'Önce mekân seç',
     premiumTag: 'Premium',
     freeTag: 'Ücretsiz',
+    whereWillYouBe: 'Nerede olacaksın?',
     discoverCta: 'Kişileri keşfet',
     changeHotel: 'Tatil mekânını değiştir',
   },

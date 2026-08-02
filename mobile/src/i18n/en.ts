@@ -787,6 +787,7 @@ export const en = {
     chooseFirst: 'Choose a place first',
     premiumTag: 'Premium',
     freeTag: 'Free',
+    whereWillYouBe: 'Where will you be?',
     discoverCta: 'Discover people',
     changeHotel: 'Change vacation place',
   },

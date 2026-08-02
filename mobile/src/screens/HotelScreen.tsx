@@ -336,6 +336,15 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         // is still being resolved. Neither is "no hotel chosen".
         <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="hotel-loading" />
       ) : activeHotel ? (
+        <>
+        {stay ? (
+          <View style={styles.stayPill} testID="active-stay-pill">
+            <PinSmallIcon />
+            <Text style={styles.stayPillText} numberOfLines={1}>
+              {[activeHotel.city, formatStayRange(stay)].filter(Boolean).join(' · ')}
+            </Text>
+          </View>
+        ) : null}
         /* The Figma active card (10:117): the photo band, the name, one line
            of place and dates, and the selected pill. The whole card is the
            way to the hotel's details. */
@@ -406,6 +415,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
             ) : null}
           </View>
         </Pressable>
+        </>
       ) : (
         /* The Figma nothing-chosen card (10:79): the little hotel in its disc,
            the invitation beside it, and the requirement worn as a quiet badge
@@ -453,11 +463,13 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       ) : null}
 
       {activeId && !picking && !onActivated ? (
-        /* D-040 in the Figma card shape (10:124, 10:131): the two features
-           right under the hotel they belong to. When Upcoming is live its
-           button becomes the deck, and updating the dates steps back to a
-           quiet second action. */
+        /* D-040, in T-01's geometry: the drawn heading, then the two rooms
+           side by side. When Upcoming is live its button becomes the deck,
+           and updating the dates steps back to a quiet second action. */
         <>
+          <Text style={styles.roomsHeading}>{COPY.vacation.whereWillYouBe}</Text>
+          <View style={styles.roomsGrid}>
+          <View style={styles.roomsCell}>
           <VacationFeatureCard
             room="UPCOMING"
             status={upcomingStatus}
@@ -484,6 +496,8 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
             testID="room-upcoming"
             buttonTestID={upcomingOpen ? 'vacation-discover-upcoming' : 'open-upcoming'}
           />
+          </View>
+          <View style={styles.roomsCell}>
           <VacationFeatureCard
             room="HERE_NOW"
             status={hereNowStatus}
@@ -507,6 +521,8 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
             testID="room-here-now"
             buttonTestID="open-here-now"
           />
+          </View>
+          </View>
         </>
       ) : null}
       {/* The way into the picker, and the way back out of it. Choosing is a
@@ -609,6 +625,35 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...elevation.card,
   },
+  /** T-01: the pill naming the trip, above the hero. */
+  stayPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: color.surface,
+    borderWidth: 1,
+    borderColor: color.rule,
+    borderRadius: radius.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: spacing.sm,
+  },
+  stayPillText: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: 13,
+    color: color.accentDeep,
+  },
+  /** T-01: the question over the two rooms. */
+  roomsHeading: {
+    fontFamily: fontFamily.display,
+    fontSize: 19,
+    lineHeight: 24,
+    color: color.ink,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  roomsGrid: { flexDirection: 'row', gap: 12, alignItems: 'stretch' },
+  roomsCell: { flex: 1 },
   /** T-01: the white plate floating on the hero's foot. */
   heroPlate: {
     position: 'absolute',
