@@ -29,6 +29,7 @@ import {
   EmptyState,
   Field,
   Notice,
+  PhotoScrim,
   Screen,
   ScreenHeader,
 } from '../components/ui';
@@ -282,18 +283,31 @@ export function EventsScreen({
             <View style={styles.badgeOnImage}>
               <StatusBadge label={badge} bad={bad} />
             </View>
+            {/* E-01: the words move onto the artwork, over the same scrim
+                every on-photo text in the app uses. */}
+            <PhotoScrim />
+            <View style={styles.heroText}>
+              <Text style={styles.heroName} numberOfLines={2}>
+                {event.name}
+              </Text>
+              <Text style={styles.heroMeta} numberOfLines={2}>
+                {`${whenLabel(event)} · ${place}`}
+              </Text>
+              <Text style={styles.heroAttribution}>{COPY.events.attribution}</Text>
+            </View>
           </View>
-        ) : null}
-        <View style={styles.cardBody}>
-          {showImage ? null : <StatusBadge label={badge} bad={bad} />}
-          <Text style={styles.cardName} numberOfLines={2}>
-            {event.name}
-          </Text>
-          <Text style={styles.cardMeta} numberOfLines={2}>
-            {`${place} · ${whenLabel(event)}`}
-          </Text>
-          <Text style={styles.cardAttribution}>{COPY.events.attribution}</Text>
-        </View>
+        ) : (
+          <View style={styles.cardBody}>
+            <StatusBadge label={badge} bad={bad} />
+            <Text style={styles.cardName} numberOfLines={2}>
+              {event.name}
+            </Text>
+            <Text style={styles.cardMeta} numberOfLines={2}>
+              {`${place} · ${whenLabel(event)}`}
+            </Text>
+            <Text style={styles.cardAttribution}>{COPY.events.attribution}</Text>
+          </View>
+        )}
       </Pressable>
     );
   };
@@ -581,7 +595,7 @@ const styles = StyleSheet.create({
   dimmed: { opacity: 0.45 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
   card: {
-    borderRadius: radius.lg,
+    borderRadius: 24,
     borderWidth: 1,
     borderColor: color.rule,
     backgroundColor: color.surface,
@@ -590,7 +604,17 @@ const styles = StyleSheet.create({
     ...elevation.card,
   },
   cardPressed: { opacity: 0.7 },
-  cardImage: { width: '100%', height: 120, backgroundColor: color.veil },
+  cardImage: { width: '100%', height: 300, backgroundColor: color.veil },
+  /** E-01: the words on the artwork. */
+  heroText: { position: 'absolute', left: 18, right: 18, bottom: 14, gap: 3 },
+  heroName: {
+    fontFamily: fontFamily.display,
+    fontSize: 24,
+    lineHeight: 28,
+    color: color.onPhoto,
+  },
+  heroMeta: { fontFamily: fontFamily.bodyMedium, fontSize: 13, color: color.onPhoto },
+  heroAttribution: { fontFamily: fontFamily.body, fontSize: 10, color: color.onPhoto },
   cardBody: { paddingVertical: 11, paddingHorizontal: 14, gap: 4 },
   cardName: { fontFamily: fontFamily.bodySemi, fontSize: 16, color: color.ink },
   cardMeta: { fontFamily: fontFamily.body, fontSize: 12, color: color.inkMuted },
