@@ -2,22 +2,21 @@ import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useNavigation, type NavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 
-import { Body, Button, Caption, Card, Heading, Notice, PhotoScrim, Screen } from '../components/ui';
+import { Body, Button, Card, Heading, Notice, PhotoScrim, Screen } from '../components/ui';
 import { nowMs } from '../clock';
-import { formatDayMonth } from '../domain/dates';
+import { formatStayRangeLabel } from '../domain/dates';
 import { earliestRoomExpiry } from '../state/roomSchedule';
-import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation, upperCase } from '../copy';
+import { apiErrorMessage, COPY, COPY_FOR, upperCase } from '../copy';
 import {
   ApiError,
   getApi,
   readBackendConfig,
   type ActiveVenue,
   type HotelCard,
-  type RoomHeadcount,
   type RoomStatus,
   type UpcomingStay,
   type VenueSearchMode,
@@ -30,9 +29,9 @@ import { useAppStore } from '../state/AppStore';
 import { color, elevation, fontFamily, radius, spacing } from '../theme';
 
 
-/** "12 Ağu – 17 Ağu" in the app's language — dates, never documents. */
+/** "12–17 Ağustos" in the app's language — dates, never documents. */
 function formatStayRange(stay: UpcomingStay): string {
-  return `${formatDayMonth(stay.startDate)} – ${formatDayMonth(stay.endDate)}`;
+  return formatStayRangeLabel(stay.startDate, stay.endDate);
 }
 
 const InfoIcon = () => (
@@ -48,6 +47,57 @@ const PinSmallIcon = () => (
     <Circle cx={12} cy={10} r={3} />
   </Svg>
 );
+
+/** 131:87 — the drawn stand-ins for the frame's suitcase and bed emojis. */
+const SuitcaseIcon = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Rect x={4} y={7} width={16} height={13} rx={2.5} />
+    <Path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M9 11v5M15 11v5" />
+  </Svg>
+);
+
+const BedIcon = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M3 5v14" />
+    <Path d="M3 15h18v4" />
+    <Path d="M3 11h13a4 4 0 0 1 4 4" />
+  </Svg>
+);
+
+/** 131:86/92 — the drawn room teaser: a disc, a word, a sentence, an arrow. */
+function RoomTeaser({
+  icon,
+  title,
+  body,
+  onPress,
+  testID,
+  extra,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  body: string;
+  onPress: () => void;
+  testID: string;
+  extra?: React.ReactNode;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${title}. ${body}`}
+      onPress={onPress}
+      style={({ pressed }) => [styles.teaser, pressed && styles.resultPressed]}
+      testID={testID}
+    >
+      <View style={styles.teaserDisc}>{icon}</View>
+      <Text style={styles.teaserTitle}>{title}</Text>
+      <Text style={styles.teaserBody}>{body}</Text>
+      <Text style={styles.teaserArrow} accessibilityElementsHidden importantForAccessibility="no">
+        {'→'}
+      </Text>
+      {extra}
+    </Pressable>
+  );
+}
 
 /**
  * A photo served by our own hotel-photo function needs the platform's JWT
@@ -101,12 +151,6 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
   const [activateError, setActivateError] = useState<string | null>(null);
   /** For the state words on the two feature cards. */
   const [roomStates, setRoomStates] = useState<RoomStatus[] | null>(null);
-  /**
-   * Thresholded headcounts (D-032). A null entry renders as nothing — no
-   * "quiet room" wording — because below five people even "somebody is
-   * here" points at a person.
-   */
-  const [roomCounts, setRoomCounts] = useState<RoomHeadcount[] | null>(null);
   /** The declared window, shown on the active card (D-040). */
   const [stay, setStay] = useState<UpcomingStay | null>(null);
 
@@ -151,12 +195,6 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         dispatch({ type: 'ACTIVE_HOTEL_LOADED', activeHotel: active });
         if (active) {
           watchRooms();
-          api
-            .getRoomCounts()
-            .then((counts) => {
-              if (!cancelled) setRoomCounts(counts);
-            })
-            .catch(() => undefined);
           api
             .getUpcomingStay()
             .then((current) => {
@@ -232,10 +270,6 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         .then(setRoomStates)
         .catch(() => undefined);
       api
-        .getRoomCounts()
-        .then(setRoomCounts)
-        .catch(() => undefined);
-      api
         .getUpcomingStay()
         .then(setStay)
         .catch(() => setStay(null));
@@ -282,24 +316,6 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
   const upcomingOpen = upcomingStatus?.eligible === true;
   const hereNowStatus = roomStates?.find((r) => r.room === 'HERE_NOW') ?? null;
   const hereNowOpen = hereNowStatus?.eligible === true;
-
-  // The live card's one line (10:128): the declared window and what it opens.
-  const upcomingBody = upcomingOpen
-    ? stay
-      ? COPY_FOR.upcomingWindow(formatStayRange(stay))
-      : roomStatusExplanation('UPCOMING', upcomingStatus as RoomStatus)
-    : COPY.vacation.upcomingFeatureBody;
-  // The server's reason a room is shut stays on the card (D-002/D-007): the
-  // chip says closed, this says why, and the server is the one saying it.
-  const upcomingNote =
-    upcomingStatus && !upcomingOpen ? roomStatusExplanation('UPCOMING', upcomingStatus) : undefined;
-  const hereNowNote = hereNowStatus ? roomStatusExplanation('HERE_NOW', hereNowStatus) : undefined;
-
-  const countFor = (room: RoomStatus['room']) => {
-    const entry = roomCounts?.find((candidate) => candidate.room === room);
-    if (entry?.headcount == null) return null;
-    return <Caption testID={`room-count-${room}`}>{COPY_FOR.roomHeadcount(entry.headcount)}</Caption>;
-  };
 
   return (
     // As a tab there is no header over this screen, so it takes the top inset
@@ -395,14 +411,15 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
                 "Powered by Google" behind a location pin as though that were
                 where the place is. */}
             {activeVenue?.provider !== 'google' || stay ? (
-              <View style={styles.placeRow}>
-                <PinSmallIcon />
-                <Text style={styles.metaText} testID="active-hotel-dates">
-                  {activeVenue?.provider === 'google'
-                    ? formatStayRange(stay!)
-                    : `${activeHotel.city}, ${activeHotel.country}${stay ? `   ·   ${formatStayRange(stay)}` : ''}`}
-                </Text>
-              </View>
+              /* 131:83: "Alaçatı, İzmir · 12–17 Ağustos" — one quiet line,
+                 no pin, the dot as the only punctuation between facts. */
+              <Text style={styles.heroPlateMeta} numberOfLines={1} testID="active-hotel-dates">
+                {activeVenue?.provider === 'google'
+                  ? formatStayRange(stay!)
+                  : [`${activeHotel.city}, ${activeHotel.country}`, stay ? formatStayRange(stay) : null]
+                      .filter(Boolean)
+                      .join(' · ')}
+              </Text>
             ) : null}
             {/* The attribution is a credit, not an address: its own quiet line,
                 and present whenever the name on this card came from Google —
@@ -467,60 +484,58 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
            and updating the dates steps back to a quiet second action. */
         <>
           <Text style={styles.roomsHeading}>{COPY.vacation.whereWillYouBe}</Text>
+          {/* 131:85, exactly as drawn: two quiet teasers — a disc, a word, a
+              sentence, an arrow. The state chips, server notes and headcounts
+              this grid used to carry live on in the rooms themselves; the tab
+              only points. */}
           <View style={styles.roomsGrid}>
-          <View style={styles.roomsCell}>
-          <VacationFeatureCard
-            room="UPCOMING"
-            status={upcomingStatus}
-            lead={COPY.rooms.upcomingLead}
-            body={upcomingBody}
-            note={upcomingNote}
-            counts={countFor('UPCOMING')}
-            buttonLabel={upcomingOpen ? COPY.vacation.discoverCta : COPY.upcoming.saveButton}
-            onOpen={
-              upcomingOpen
-                ? () => tabNavigation.navigate('Discovery', { source: 'UPCOMING' })
-                : () => stackNavigation.navigate('Upcoming')
-            }
-            extra={
-              upcomingOpen ? (
-                <Button
-                  label={COPY.upcoming.updateButton}
-                  variant="secondary"
-                  onPress={() => stackNavigation.navigate('Upcoming')}
-                  testID="open-upcoming"
-                />
-              ) : null
-            }
-            testID="room-upcoming"
-            buttonTestID={upcomingOpen ? 'vacation-discover-upcoming' : 'open-upcoming'}
-          />
-          </View>
-          <View style={styles.roomsCell}>
-          <VacationFeatureCard
-            room="HERE_NOW"
-            status={hereNowStatus}
-            lead={COPY.rooms.hereNowLead}
-            body={COPY.vacation.hereNowFeatureBody}
-            note={hereNowNote}
-            tag={state.profile?.isPremium ? undefined : COPY.vacation.premiumTag}
-            counts={countFor('HERE_NOW')}
-            buttonLabel={COPY.hereNow.checkButton}
-            onOpen={() => stackNavigation.navigate('HereNow')}
-            extra={
-              hereNowOpen ? (
-                <Button
-                  label={COPY.vacation.discoverCta}
-                  variant="secondary"
-                  onPress={() => tabNavigation.navigate('Discovery', { source: 'HERE_NOW' })}
-                  testID="vacation-discover-here-now"
-                />
-              ) : null
-            }
-            testID="room-here-now"
-            buttonTestID="open-here-now"
-          />
-          </View>
+            <RoomTeaser
+              icon={<SuitcaseIcon />}
+              title={COPY.vacation.upcomingCardTitle}
+              body={COPY.vacation.upcomingCardBody}
+              onPress={
+                upcomingOpen
+                  ? () => tabNavigation.navigate('Discovery', { source: 'UPCOMING' })
+                  : () => stackNavigation.navigate('Upcoming')
+              }
+              testID={upcomingOpen ? 'vacation-discover-upcoming' : 'open-upcoming'}
+              extra={
+                upcomingOpen ? (
+                  /* The dates stay editable once the room is live — the card's
+                     own press has become the deck, so updating steps down to
+                     this quiet line. */
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={COPY.upcoming.updateButton}
+                    onPress={() => stackNavigation.navigate('Upcoming')}
+                    style={({ pressed }) => [styles.teaserExtra, pressed && styles.resultPressed]}
+                    testID="open-upcoming"
+                  >
+                    <Text style={styles.teaserExtraText}>{COPY.upcoming.updateButton}</Text>
+                  </Pressable>
+                ) : null
+              }
+            />
+            <RoomTeaser
+              icon={<BedIcon />}
+              title={COPY.vacation.hereNowCardTitle}
+              body={COPY.vacation.hereNowCardBody}
+              onPress={() => stackNavigation.navigate('HereNow')}
+              testID="open-here-now"
+              extra={
+                hereNowOpen ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={COPY.vacation.discoverCta}
+                    onPress={() => tabNavigation.navigate('Discovery', { source: 'HERE_NOW' })}
+                    style={({ pressed }) => [styles.teaserExtra, pressed && styles.resultPressed]}
+                    testID="vacation-discover-here-now"
+                  >
+                    <Text style={styles.teaserExtraText}>{COPY.vacation.discoverCta}</Text>
+                  </Pressable>
+                ) : null
+              }
+            />
           </View>
         </>
       ) : null}
@@ -652,18 +667,44 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   roomsGrid: { flexDirection: 'row', gap: 12, alignItems: 'stretch' },
-  roomsCell: { flex: 1 },
+  /** 131:86: the teaser card itself. */
+  teaser: {
+    flex: 1,
+    backgroundColor: color.surface,
+    borderWidth: 1,
+    borderColor: color.rule,
+    borderRadius: 20,
+    paddingTop: 18,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    gap: 8,
+    alignItems: 'flex-start',
+  },
+  teaserDisc: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: color.accentWash,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  teaserTitle: { fontFamily: fontFamily.bodySemi, fontSize: 15, lineHeight: 21, color: color.ink },
+  teaserBody: { fontFamily: fontFamily.body, fontSize: 12, lineHeight: 17, color: color.inkMuted },
+  teaserArrow: { fontFamily: fontFamily.bodySemi, fontSize: 16, lineHeight: 22, color: color.accentDeep },
+  /** The quiet second action a live room earns. */
+  teaserExtra: { minHeight: 32, justifyContent: 'center' },
+  teaserExtraText: { fontFamily: fontFamily.bodySemi, fontSize: 12, color: color.accentDeep },
   /** T-01: the white plate floating on the hero's foot. */
   heroPlate: {
     position: 'absolute',
     left: 14,
     right: 14,
-    bottom: 14,
+    bottom: 12,
     backgroundColor: color.surface,
     borderRadius: 18,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 3,
+    gap: 4,
   },
   heroPlateLabel: {
     fontFamily: fontFamily.bodySemi,
@@ -684,8 +725,8 @@ const styles = StyleSheet.create({
     color: color.inkMuted,
   },
   /** The stand-in band for a hotel the catalogue holds no photo of. */
-  hotelCardBand: { height: 300, backgroundColor: color.veil },
-  hotelPhoto: { width: '100%', height: 300, backgroundColor: color.veil },
+  hotelCardBand: { height: 340, backgroundColor: color.veil },
+  hotelPhoto: { width: '100%', height: 340, backgroundColor: color.veil },
   /** The licence's half of the bargain, on the photo it pays for — the
       PhotoScrim above it is what keeps this legible on any image. */
   photoCredit: {
@@ -708,16 +749,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: color.ink,
   },
-  placeRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   /** The provider credit: quiet, and never wearing a location pin. */
   venueAttribution: {
     fontFamily: fontFamily.bodyMedium,
     fontSize: 10,
-    color: color.inkMuted,
-  },
-  metaText: {
-    fontFamily: fontFamily.body,
-    fontSize: 12,
     color: color.inkMuted,
   },
   selectedPill: {

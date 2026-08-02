@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import React from 'react';
 
 import App from '../../App';
@@ -108,24 +108,25 @@ describe('critical flow', () => {
 });
 
 describe('rooms and hotel switching', () => {
-  it('shows the server-decided reason a room is still closed', async () => {
+  it('keeps closed rooms pointing at their unlock steps (T-01)', async () => {
     await onboardAndActivateHotel();
 
+    // T-01 removed the state words from the tab: a closed room now reads as
+    // which door the card offers. Closed Upcoming presses into declaring
+    // dates, closed Here Now into the presence check — and neither card
+    // offers its deck, because there is no deck to offer.
     await press(screen.getByTestId('tab-Vacation'));
-    expect(
-      await screen.findByText('Closed — declare your stay dates to enter.'),
-    ).toBeTruthy();
-    expect(
-      await screen.findByText('Closed — run a presence check to enter.'),
-    ).toBeTruthy();
+    expect(await screen.findByTestId('open-upcoming')).toBeTruthy();
+    expect(await screen.findByTestId('open-here-now')).toBeTruthy();
+    expect(screen.queryByTestId('vacation-discover-upcoming')).toBeNull();
+    expect(screen.queryByTestId('vacation-discover-here-now')).toBeNull();
   });
 
   it('switching hotels closes Here Now at the previous hotel (D-004)', async () => {
     await onboardAndActivateHotel();
     await checkInAtHotel();
-    expect(
-      await screen.findByText('Open — a recent check found you at the hotel.'),
-    ).toBeTruthy();
+    // The open room's mark on the tab is the way into its deck (T-01).
+    expect(await screen.findByTestId('vacation-discover-here-now')).toBeTruthy();
 
     await press(screen.getByTestId('tab-Vacation'));
     // D-054: switching means choosing again, destination first. Confirming is
@@ -139,18 +140,16 @@ describe('rooms and hotel switching', () => {
     await press(await screen.findByTestId('confirm-switch'));
 
     // Choosing lands on the rooms now, where the consequence of the switch
-    // is visible as the state itself: the new hotel's Here Now is closed.
-    expect(
-      await screen.findByText('Closed — run a presence check to enter.'),
-    ).toBeTruthy();
+    // is visible as the state itself: the new hotel's Here Now is closed, so
+    // its deck door is gone and the card presses into the check instead.
+    await waitFor(() => expect(screen.queryByTestId('vacation-discover-here-now')).toBeNull());
+    expect(await screen.findByTestId('open-here-now')).toBeTruthy();
   });
 
   it('closes a Here Now room on its own once it expires, without a navigation (R-003)', async () => {
     await onboardAndActivateHotel();
     await checkInAtHotel();
-    expect(
-      await screen.findByText('Open — a recent check found you at the hotel.'),
-    ).toBeTruthy();
+    expect(await screen.findByTestId('vacation-discover-here-now')).toBeTruthy();
 
     // Replace the next two `getRooms` answers with one that expires in
     // ~200 real ms, then the server's own closed answer — proving the
@@ -173,13 +172,15 @@ describe('rooms and hotel switching', () => {
     // hop to another tab and back.
     await press(await screen.findByTestId('tab-Inbox'));
     await press(screen.getByTestId('tab-Vacation'));
-    expect(
-      await screen.findByText('Open — a recent check found you at the hotel.'),
-    ).toBeTruthy();
+    expect(await screen.findByTestId('vacation-discover-here-now')).toBeTruthy();
 
-    expect(
-      await screen.findByText('Closed — run a presence check to enter.'),
-    ).toBeTruthy();
+    // …and at `validUntil` the screen's own timer takes the deck door away,
+    // with nobody navigating: the card is back to offering the check.
+    await waitFor(
+      () => expect(screen.queryByTestId('vacation-discover-here-now')).toBeNull(),
+      { timeout: 5000 },
+    );
+    expect(await screen.findByTestId('open-here-now')).toBeTruthy();
   });
 });
 

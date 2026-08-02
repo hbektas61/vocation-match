@@ -11,7 +11,7 @@ import { BigActionButton } from '../components/BigActionButton';
 import { RadarEmpty } from '../components/RadarEmpty';
 import { ContextSelector, CONTEXT_ORDER, type ContextRow } from '../components/ContextSelector';
 import { nowMs } from '../clock';
-import { formatDayMonth } from '../domain/dates';
+import { formatStayRangeLabel } from '../domain/dates';
 import { apiErrorMessage, COPY, COPY_FOR, upperCase, roomPlate, roomStatusExplanation } from '../copy';
 import { ApiError, getApi, type CandidateCard, type MyEvent, type RoomKey, type RoomStatus } from '../data';
 import { resolveDeckLabels } from '../data/venueLabels';
@@ -63,9 +63,9 @@ const PinTinyIcon = () => (
   </Svg>
 );
 
-/** "12 Ağu – 17 Ağu" — the plan, in dates. */
+/** "12–17 Ağustos" — the plan, in dates, said the way T-01 says it. */
 function formatStayRange(startIso: string, endIso: string): string {
-  return `${formatDayMonth(startIso)} – ${formatDayMonth(endIso)}`;
+  return formatStayRangeLabel(startIso, endIso);
 }
 
 /**

@@ -709,6 +709,11 @@ export const tr: Copy = {
     premiumTag: 'Premium',
     freeTag: 'Ücretsiz',
     whereWillYouBe: 'Nerede olacaksın?',
+    /** T-01 (131:85): the two rooms as drawn — a word, a sentence, an arrow. */
+    upcomingCardTitle: 'Gidecekler',
+    upcomingCardBody: 'Tatile gidecek kişilerle tanış.',
+    hereNowCardTitle: 'Oteldeyim',
+    hereNowCardBody: 'Otelde olan kişilerle tanış.',
     discoverCta: 'Kişileri keşfet',
     changeHotel: 'Tatil mekânını değiştir',
   },

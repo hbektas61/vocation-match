@@ -796,6 +796,11 @@ export const en = {
     premiumTag: 'Premium',
     freeTag: 'Free',
     whereWillYouBe: 'Where will you be?',
+    /** T-01 (131:85): the two rooms as drawn — a word, a sentence, an arrow. */
+    upcomingCardTitle: 'Going',
+    upcomingCardBody: 'Meet people going on this vacation.',
+    hereNowCardTitle: 'At the hotel',
+    hereNowCardBody: 'Meet people at the hotel right now.',
     discoverCta: 'Discover people',
     changeHotel: 'Change vacation place',
   },

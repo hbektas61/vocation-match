@@ -71,3 +71,20 @@ export function formatLongDate(iso: string): string {
   const name = LONG_MONTHS[getLocale()][month - 1] ?? '';
   return getLocale() === 'tr' ? `${day} ${name} ${year}` : `${name} ${day}, ${year}`;
 }
+
+/**
+ * "12–17 Ağustos" / "August 12–17" — a stay, said the way T-01 draws it:
+ * one month named once when the whole stay lives inside it, and two short
+ * dates joined by a dash when it does not.
+ */
+export function formatStayRangeLabel(startIso: string, endIso: string): string {
+  const a = parts(startIso);
+  const b = parts(endIso);
+  if (a.year === b.year && a.month === b.month) {
+    const name = LONG_MONTHS[getLocale()][a.month - 1] ?? '';
+    return getLocale() === 'tr'
+      ? `${a.day}–${b.day} ${name}`
+      : `${name} ${a.day}–${b.day}`;
+  }
+  return `${formatDayMonth(startIso)} – ${formatDayMonth(endIso)}`;
+}

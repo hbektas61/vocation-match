@@ -180,10 +180,10 @@ async function pickDate(testID: string, iso: string): Promise<void> {
     expect(names).not.toContain('Nur');
 
     // And the hotel card must know: it refreshes on focus now, because the
-    // owner declared a stay elsewhere and came back to a card still calling
-    // the room closed.
+    // owner declared a stay elsewhere and came back to a card still offering
+    // the declare step. Open reads as the deck door existing (T-01).
     await press(screen.getByTestId('tab-Vacation'));
-    expect(await screen.findAllByText('Open')).toBeTruthy();
+    expect(await screen.findByTestId('vacation-discover-upcoming')).toBeTruthy();
   });
 
   it('shows what you declared when you come back to it', async () => {
