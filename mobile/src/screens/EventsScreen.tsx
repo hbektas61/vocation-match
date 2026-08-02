@@ -323,7 +323,9 @@ export function EventsScreen({
               <Text style={styles.heroName} numberOfLines={2}>
                 {event.name}
               </Text>
-              <Text style={styles.heroMeta} numberOfLines={2}>
+              {/* D-062: the facts are one dotted line, as drawn — a name too
+                  long for it ends in an ellipsis rather than a second row. */}
+              <Text style={styles.heroMeta} numberOfLines={1}>
                 {`${whenLabel(event)} · ${place}`}
               </Text>
               <Text style={styles.heroAttribution}>{COPY.events.attribution}</Text>
@@ -335,7 +337,7 @@ export function EventsScreen({
             <Text style={styles.cardName} numberOfLines={2}>
               {event.name}
             </Text>
-            <Text style={styles.cardMeta} numberOfLines={2}>
+            <Text style={styles.cardMeta} numberOfLines={1}>
               {`${place} · ${whenLabel(event)}`}
             </Text>
             <Text style={styles.cardAttribution}>{COPY.events.attribution}</Text>

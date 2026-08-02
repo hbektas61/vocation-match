@@ -250,7 +250,8 @@ export function EventDetailScreen({
               {name}
             </Text>
             {meta ? (
-              <Text style={styles.heroMeta} numberOfLines={2}>
+              /* One dotted line, as drawn (ED-02) — never a second row. */
+              <Text style={styles.heroMeta} numberOfLines={1}>
                 {meta}
               </Text>
             ) : null}
@@ -264,7 +265,11 @@ export function EventDetailScreen({
            facts a person decides on, as plain text (E-21). */
         <View style={styles.plainHead}>
           <Text style={styles.plainName}>{name}</Text>
-          {meta ? <Text style={styles.plainMeta}>{meta}</Text> : null}
+          {meta ? (
+            <Text style={styles.plainMeta} numberOfLines={1}>
+              {meta}
+            </Text>
+          ) : null}
         </View>
       )}
 
