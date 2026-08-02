@@ -9,7 +9,7 @@ import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { Body, Button, Caption, Card, Heading, Notice, PhotoScrim, Screen } from '../components/ui';
 import { nowMs } from '../clock';
 import { earliestRoomExpiry } from '../state/roomSchedule';
-import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation } from '../copy';
+import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation, upperCase } from '../copy';
 import {
   ApiError,
   getApi,
@@ -40,12 +40,6 @@ const InfoIcon = () => (
   <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2.2} strokeLinecap="round">
     <Circle cx={12} cy={12} r={9} />
     <Path d="M12 16v-4M12 8h.01" />
-  </Svg>
-);
-
-const CheckIcon = () => (
-  <Svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-    <Path d="M4 12.5l5.5 5.5L20 6.5" />
   </Svg>
 );
 
@@ -379,10 +373,11 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
               </>
             ) : null}
           </View>
-          <View style={styles.hotelCardBody}>
+          <View style={styles.heroPlate}>
+            <Text style={styles.heroPlateLabel}>{upperCase(COPY.hotel.activePlate)}</Text>
             {/* D-054: for a Google venue this is a name resolved a moment ago
                 and held in memory, never a stored one. */}
-            <Text style={styles.hotelName} testID="active-hotel-name">
+            <Text style={styles.heroPlateName} testID="active-hotel-name">
               {activeName ?? activeHotel.name}
             </Text>
             {/* A Google venue has no city or country of ours to print — they
@@ -401,10 +396,6 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
                 </Text>
               </View>
             ) : null}
-            <View style={styles.selectedPill}>
-              <CheckIcon />
-              <Text style={styles.selectedPillText}>{COPY.hotel.selectedActive}</Text>
-            </View>
             {/* The attribution is a credit, not an address: its own quiet line,
                 and present whenever the name on this card came from Google —
                 including once dates exist, when the old code dropped it. */}
@@ -614,13 +605,43 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface,
     borderWidth: 1,
     borderColor: color.rule,
-    borderRadius: radius.lg,
+    borderRadius: 24,
     overflow: 'hidden',
     ...elevation.card,
   },
+  /** T-01: the white plate floating on the hero's foot. */
+  heroPlate: {
+    position: 'absolute',
+    left: 14,
+    right: 14,
+    bottom: 14,
+    backgroundColor: color.surface,
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 3,
+  },
+  heroPlateLabel: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 10,
+    letterSpacing: 1,
+    color: color.accentDeep,
+  },
+  heroPlateName: {
+    fontFamily: fontFamily.display,
+    fontSize: 20,
+    lineHeight: 24,
+    color: color.ink,
+  },
+  heroPlateMeta: {
+    fontFamily: fontFamily.body,
+    fontSize: 12,
+    lineHeight: 17,
+    color: color.inkMuted,
+  },
   /** The stand-in band for a hotel the catalogue holds no photo of. */
-  hotelCardBand: { height: 140, backgroundColor: color.veil },
-  hotelPhoto: { width: '100%', height: 140, backgroundColor: color.veil },
+  hotelCardBand: { height: 300, backgroundColor: color.veil },
+  hotelPhoto: { width: '100%', height: 300, backgroundColor: color.veil },
   /** The licence's half of the bargain, on the photo it pays for — the
       PhotoScrim above it is what keeps this legible on any image. */
   photoCredit: {
