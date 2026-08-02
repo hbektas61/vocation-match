@@ -20,7 +20,16 @@ export type RootStackParamList = {
    * a bare name, so the two facts that decide whether somebody is going were
    * on the list they came from and nowhere else.
    */
-  EventDetail: { selectionToken: string; name: string; when?: string; where?: string };
+  EventDetail: {
+    selectionToken: string;
+    name: string;
+    when?: string;
+    where?: string;
+    /** The leased artwork URL, for the D-062 hero. Ephemeral like the name. */
+    imageUrl?: string | null;
+    /** The list's status word for the badge on the hero — "Bugün", "Yaklaşan". */
+    badge?: string;
+  };
   Match: { matchId: string };
   Chat: { matchId: string };
   ReportBlock: { userId: string; displayName?: string; matchId?: string };

@@ -18,6 +18,7 @@
  */
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -26,7 +27,6 @@ import {
   Caption,
   Chip,
   ContextRibbon,
-  EmptyState,
   Field,
   Notice,
   PhotoScrim,
@@ -46,6 +46,34 @@ import {
 } from '../data';
 import type { RootStackParamList } from '../navigation/types';
 import { color, elevation, fontFamily, overlay, radius, spacing, tokens, MIN_TOUCH } from '../theme';
+
+/** The shared outline recipe every drawn icon in this product uses (D-058). */
+const iconStroke = (tone: string, size = 20) => ({
+  width: size,
+  height: size,
+  viewBox: '0 0 24 24',
+  fill: 'none' as const,
+  stroke: tone,
+  strokeWidth: 2,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+});
+
+/** ED-01: the search pill says it is a search before a word is typed. */
+const MagnifierIcon = () => (
+  <Svg {...iconStroke(color.inkMuted, 18)}>
+    <Circle cx={11} cy={11} r={7} />
+    <Path d="m20 20-3.5-3.5" />
+  </Svg>
+);
+
+/** ED-01's empty-state mark: a pennant — an event, not a hotel, not a pin. */
+const PennantIcon = () => (
+  <Svg {...iconStroke(color.accentDeep, 26)}>
+    <Path d="M6 21V3" />
+    <Path d="M6 4h11l-2.5 3.5L17 11H6" />
+  </Svg>
+);
 
 const CHIPS: { key: EventCategory; label: () => string }[] = [
   { key: 'all', label: () => COPY.events.chipAll },
@@ -195,7 +223,7 @@ export function EventsScreen({
     if (area) await look(area, chip, true);
   };
 
-  const openEvent = async (card: EventCard) => {
+  const openEvent = async (card: EventCard, badge: string) => {
     setBusy(true);
     try {
       const opened = await getApi().openEvent(card.selectionToken);
@@ -212,6 +240,11 @@ export function EventsScreen({
         where: [opened.event.venueName ?? COPY.venue.nameUnavailable, opened.event.city]
           .filter(Boolean)
           .join(' · '),
+        // D-062: the detail hero draws the same leased artwork and the same
+        // status word the list card carried — passed, like the name, for
+        // exactly as long as the lease lives, and stored nowhere.
+        imageUrl: opened.event.imageUrl,
+        badge,
       });
     } finally {
       setBusy(false);
@@ -265,7 +298,7 @@ export function EventsScreen({
         accessibilityRole="button"
         accessibilityLabel={[event.name, badge, whenLabel(event), place].filter(Boolean).join('. ')}
         disabled={busy}
-        onPress={() => openEvent(event)}
+        onPress={() => openEvent(event, badge)}
         style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
         testID={testID}
       >
@@ -364,13 +397,15 @@ export function EventsScreen({
             label={COPY.events.areaLabel}
             hideLabel
             pill
+            prefix={<MagnifierIcon />}
             value={areaDraft}
             onChangeText={setAreaDraft}
             placeholder={COPY.events.areaPlaceholder}
             onSubmitEditing={chooseCity}
             testID="events-area-input"
           />
-          <Button label={COPY.events.chooseArea} onPress={chooseCity} testID="events-area-confirm" />
+          {/* ED-01: the heading asks the question; the button says the deed. */}
+          <Button label={COPY.events.showEvents} onPress={chooseCity} testID="events-area-confirm" />
           <Button
             label={COPY.events.useMyLocation}
             variant="secondary"
@@ -502,7 +537,15 @@ export function EventsScreen({
           ))}
         </View>
       ) : area ? null : (
-        <EmptyState message={COPY.events.emptyBody} testID="events-empty" />
+        /* ED-01: the empty state as its own drawing — a pennant in the warm
+           disc, the fact as a heading, and the way forward as one sentence. */
+        <View style={styles.emptyWrap} accessibilityRole="text" testID="events-empty">
+          <View style={styles.emptyDisc}>
+            <PennantIcon />
+          </View>
+          <Text style={styles.emptyTitle}>{COPY.events.emptyTitle}</Text>
+          <Text style={styles.emptyBody}>{COPY.events.emptyBody}</Text>
+        </View>
       )}
 
       <Caption>{COPY.events.noTicketClaim}</Caption>
@@ -620,4 +663,28 @@ const styles = StyleSheet.create({
   cardMeta: { fontFamily: fontFamily.body, fontSize: 12, color: color.inkMuted },
   /** Required wherever the provider's answer is on screen. */
   cardAttribution: { fontFamily: fontFamily.bodyMedium, fontSize: 10, color: color.inkMuted },
+  /** ED-01's empty state. */
+  emptyWrap: { alignItems: 'center', gap: 10, paddingTop: 56 },
+  emptyDisc: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: color.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    fontFamily: fontFamily.display,
+    fontSize: 18,
+    lineHeight: 24,
+    color: color.ink,
+  },
+  emptyBody: {
+    fontFamily: fontFamily.body,
+    fontSize: 13,
+    lineHeight: 19,
+    color: color.inkMuted,
+    textAlign: 'center',
+    maxWidth: 270,
+  },
 });

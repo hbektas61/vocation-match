@@ -290,6 +290,8 @@ export const tr: Copy = {
     useMyLocation: 'Mevcut konumumu kullan',
     chooseArea: 'Nereye bakalım?',
     areaPlaceholder: 'İstanbul, Londra, Las Vegas…',
+    /** D-062 (ED-01): aramanın kendi fiili — başlık soruyu sorar, buton işi söyler. */
+    showEvents: 'Etkinlikleri göster',
     /** D-057: kart üstündeki kısa rozetler; başlıklar uzun kalır. */
     badgeToday: 'Bugün',
     badgeUpcoming: 'Yaklaşan',
@@ -309,6 +311,12 @@ export const tr: Copy = {
     permissionDenied: 'Çevrende aramak için konum izni gerekli.',
     joinUpcoming: 'Etkinliğe Gideceğim',
     joinHereNow: 'Şu An Etkinlikteyim',
+    /** D-062 (ED-02): iki bağımsız beyanın kart alt satırları. */
+    joinUpcomingSub: 'Gideceğini beyan et; gidenler odası açılır. Bilet sorulmaz.',
+    joinHereNowSub: 'Tek seferlik konum kontrolüyle canlı odaya gir.',
+    /** D-062 (ED-03): oda kartlarının başlıkları — buton değil, odanın adı. */
+    upcomingRoomTitle: 'Etkinliğe Gidecekler',
+    liveRoomTitle: 'Şu An Etkinlikte',
     joining: 'Kaydediliyor…',
     checkingLive: 'Kontrol ediliyor…',
     roomChoiceTitle: 'Bu etkinlikte nasıl katılmak istiyorsun?',

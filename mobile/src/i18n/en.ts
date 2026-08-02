@@ -299,6 +299,8 @@ export const en = {
     useMyLocation: 'Use my current location',
     chooseArea: 'Choose where to look',
     areaPlaceholder: 'İstanbul, London, Las Vegas…',
+    /** D-062 (ED-01): the search's own verb — the heading asks, the button does. */
+    showEvents: 'Show events',
     /** D-057: short badges for a card; the headings stay longer. */
     badgeToday: 'Today',
     badgeUpcoming: 'Upcoming',
@@ -323,6 +325,12 @@ export const en = {
     permissionDenied: 'Location permission is needed to search around you.',
     joinUpcoming: 'I am going',
     joinHereNow: 'I am at the event now',
+    /** D-062 (ED-02): the two independent declarations, each with its own line. */
+    joinUpcomingSub: 'Declare you are going; the goers room opens. No ticket asked for.',
+    joinHereNowSub: 'Enter the live room with a one-time location check.',
+    /** D-062 (ED-03): the room cards' headings — the room's name, not the button's. */
+    upcomingRoomTitle: 'Going to the event',
+    liveRoomTitle: 'At the event now',
     joining: 'Saving…',
     checkingLive: 'Checking…',
     roomChoiceTitle: 'How do you want to join this event?',

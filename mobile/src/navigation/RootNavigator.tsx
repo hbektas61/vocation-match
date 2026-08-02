@@ -169,7 +169,9 @@ export function RootNavigator() {
       <Stack.Screen
         name="EventDetail"
         component={EventDetailScreen}
-        options={{ title: COPY.events.title }}
+        // D-062: the screen draws its own back pill over the hero artwork; a
+        // native bar would put a second title above the photograph.
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="HereNow"
