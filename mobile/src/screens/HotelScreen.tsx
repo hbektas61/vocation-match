@@ -345,9 +345,9 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
             </Text>
           </View>
         ) : null}
-        /* The Figma active card (10:117): the photo band, the name, one line
-           of place and dates, and the selected pill. The whole card is the
-           way to the hotel's details. */
+        {/* The Figma active card (10:117): the photo band, the name, one line
+            of place and dates, and the selected pill. The whole card is the
+            way to the hotel's details. */}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`${activeName ?? activeHotel.name}. ${COPY.hotel.detailsCta}`}
