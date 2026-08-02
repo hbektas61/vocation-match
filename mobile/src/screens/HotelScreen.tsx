@@ -8,6 +8,7 @@ import type { RootStackParamList, TabParamList } from '../navigation/types';
 
 import { Body, Button, Caption, Card, Heading, Notice, PhotoScrim, Screen } from '../components/ui';
 import { nowMs } from '../clock';
+import { formatDayMonth } from '../domain/dates';
 import { earliestRoomExpiry } from '../state/roomSchedule';
 import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation, upperCase } from '../copy';
 import {
@@ -29,11 +30,9 @@ import { useAppStore } from '../state/AppStore';
 import { color, elevation, fontFamily, radius, spacing } from '../theme';
 
 
-/** "12 Ağu – 17 Ağu" in the device's language — dates, never documents. */
+/** "12 Ağu – 17 Ağu" in the app's language — dates, never documents. */
 function formatStayRange(stay: UpcomingStay): string {
-  const part = (iso: string) =>
-    new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
-  return `${part(stay.startDate)} – ${part(stay.endDate)}`;
+  return `${formatDayMonth(stay.startDate)} – ${formatDayMonth(stay.endDate)}`;
 }
 
 const InfoIcon = () => (

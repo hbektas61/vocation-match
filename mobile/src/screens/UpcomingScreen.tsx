@@ -8,6 +8,7 @@ import { Button, Field, Notice, Screen } from '../components/ui';
 import { todayIsoDate } from '../clock';
 import { apiErrorMessage, COPY, upperCase } from '../copy';
 import { ApiError, getApi, type UpcomingStay } from '../data';
+import { formatLongDate } from '../domain/dates';
 import { validateStayDates } from '../domain/upcoming';
 import type { RootScreenProps } from '../navigation/types';
 import { color, elevation, fontFamily, radius } from '../theme';
@@ -37,11 +38,7 @@ function fromIso(value: string): Date {
 
 /** "12 Ağustos 2026", the way the sheet prints a date (13:117). */
 function longDate(value: string): string {
-  return fromIso(value).toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  return formatLongDate(value);
 }
 
 /**

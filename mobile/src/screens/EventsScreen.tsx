@@ -44,6 +44,7 @@ import {
   type ForegroundLocationReader,
   type MyEvent,
 } from '../data';
+import { formatDayMonth } from '../domain/dates';
 import type { RootStackParamList } from '../navigation/types';
 import { color, elevation, fontFamily, overlay, radius, spacing, tokens, MIN_TOUCH } from '../theme';
 
@@ -100,10 +101,7 @@ function StatusBadge({ label, bad }: { label: string; bad: boolean }) {
 /** "12 Ağu · 21:00" in the reader's own language, from the provider's local time. */
 function whenLabel(event: EventCard): string {
   if (event.dateTbd || !event.localDate) return COPY.events.dateTbd;
-  const day = new Date(`${event.localDate}T12:00:00`).toLocaleDateString(undefined, {
-    day: 'numeric',
-    month: 'short',
-  });
+  const day = formatDayMonth(event.localDate);
   const time = event.localTime ? event.localTime.slice(0, 5) : null;
   return time ? `${day} · ${time}` : day;
 }
@@ -635,7 +633,8 @@ const styles = StyleSheet.create({
   badgeGlyph: { fontFamily: fontFamily.bodySemi, fontSize: 9, color: color.onInverse },
   badgeText: { fontFamily: fontFamily.bodySemi, fontSize: 10, color: color.onInverse },
   badgeTextBad: { color: color.danger },
-  badgeOnImage: { position: 'absolute', left: 11, bottom: 9 },
+  /** Top-left, as ED-02 draws it — the bottom corner belongs to the words. */
+  badgeOnImage: { position: 'absolute', left: 11, top: 11 },
   /** A cancelled or postponed event is dimmed as well as labelled. */
   dimmed: { opacity: 0.45 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
