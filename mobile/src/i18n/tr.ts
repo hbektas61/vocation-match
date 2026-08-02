@@ -348,15 +348,19 @@ export const tr: Copy = {
     stepCountry: 'Ülke',
     stepDestination: 'Şehir',
     stepVenue: 'Otel',
+    /** Görünen kısa biçim; erişilebilirlik cümlesi stepProgress'te kalır. */
+    stepShort: (current: number, total: number) => `ADIM ${current}/${total}`,
     stepProgress: (current: number, total: number) => `${total} adımın ${current}. adımı`,
     countryTitle: 'Ülkeni seç',
-    countryHint: 'Tatil mekânının bulunduğu ülkeyi seç.',
+    countryHint: 'Tatil mekânının bulunduğu ülke. Sonraki iki adım bu ülkenin içinde kalır.',
     countryLabel: 'Ülke ara',
-    countryPlaceholder: 'Türkiye, Amerika, İspanya…',
+    countryPlaceholder: 'Türkiye, İspanya, Yunanistan…',
     countryNoResults: 'Bu adla bir ülke yok.',
     /** E-05: söylenmeye değer, çünkü diğer iki adımın aksine bedava. */
     countryLocalNote:
       'Liste cihazında aranır; bu adımda sağlayıcıya hiçbir istek gitmez ve hiçbir hak harcanmaz.',
+    /** W-01: yalnız bu oturumda hatırlanır. */
+    lastUsedHere: 'en son buradaydın',
     countryPopular: 'Sık seçilenler',
     countryResults: 'Ülkeler',
     selectedCountry: 'Seçilen ülke',
@@ -382,29 +386,29 @@ export const tr: Copy = {
       `${countryName} içinde bu adla bir yer bulunamadı.`,
     destinationNoResultsBody:
       'Yazımı kontrol et — ya da mekân başka bir ülkedeyse ülkeyi değiştir. Ülke listesi cihazında çalışır, istek göndermez.',
-    destinationTitle: 'Şehir veya tatil bölgesi',
+    destinationTitle: 'Şehir veya bölge',
     destinationHint: (country: string) =>
       `${country} içinde şehir, ada veya tatil bölgesi ara.`,
     destinationLabel: 'Destinasyon ara',
-    destinationPlaceholder: 'Alaçatı, Çeşme, Mykonos…',
+    destinationPlaceholder: 'Alaçatı, Çeşme, Bodrum…',
     destinationNoResults: 'Bu aramayla eşleşen yer yok.',
     destinationChosen: (name: string) => `${name}'da nerede olacaksın?`,
     changeDestination: 'Destinasyonu değiştir',
-    venueTitle: (name: string) => `${name}'da otelini bul`,
+    venueTitle: (name: string) => `${name}’da mekânın`,
     venueLabel: 'Mekân ara',
-    venuePlaceholder: 'Otel veya resort adı',
+    venuePlaceholder: 'Mekân adı yaz',
     venueNoResults: 'Bu bölgede bu adla bir yer yok.',
     venuePrompt: 'Kalacağın otelin adını yaz.',
     chipAll: 'Tüm tatil yerleri',
     chipStay: 'Oteller',
-    broaderSearchTitle: 'İKİ ARAMA, İKİ KAPSAM',
     broaderSearchBody:
-      '“Oteller” yalnız konaklamayı arar. “Tüm tatil yerleri” hiçbir tür süzgeci uygulamaz — beach club, adı olan plaj ve otel sayılmayan resortlar orada çıkar.',
-    confirmTitle: 'Bu otel mi?',
-    confirmBody: (destination: string) =>
-      `Bu seçim ${destination} tatilindeki odalarını belirleyecek.`,
-    confirmButton: 'Bu oteli seç',
-    backToHotelSearch: 'Otel aramasına dön',
+      'Beach club, adı olan plaj ve Google’ın otel saymadığı resortlar “Tüm tatil yerleri”nde çıkar — orada hiçbir tür süzgeci yok.',
+    /** W-04'ün sözü — büyük harfe render'da çevrilir. */
+    confirmPromiseTitle: 'Aynı mekân = aynı oda',
+    confirmPromiseBody:
+      'Burayı seçen herkes aynı tatil odasında buluşur. Rezervasyon, belge ya da oda numarası istenmez.',
+    confirmButton: 'Tatil mekânım olarak seç',
+    backToHotelSearch: 'Aramaya dön',
     minQuery: 'En az üç harf yaz.',
     attribution: 'Powered by Google',
     unavailable: 'Mekân araması şu anda kullanılamıyor. Sonra tekrar dene.',

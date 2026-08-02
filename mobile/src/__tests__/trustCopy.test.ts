@@ -65,6 +65,10 @@ const MAY_DENY = new Set([
   // reservation for the same reason the others do — to say neither person
   // was asked for one.
   'match.bodyUpcoming',
+  // W-04's promise box (D-060): names the booking, the document and the room
+  // number only to deny ever asking for them — the same denial the declare
+  // screen makes, said at the moment the venue is chosen.
+  'venue.confirmPromiseBody',
 ]);
 const DENIAL = /\b(nobody|no one|never|not|without|no)\b/i;
 
@@ -161,6 +165,10 @@ const TR_MAY_DENY = new Set([
   'deleteAccount.whatStays',
   // D-057: "Kimseden rezervasyon istenmedi." — a denial, in the match moment.
   'match.bodyUpcoming',
+  // W-04's promise box (D-060): names the booking, the document and the room
+  // number only to deny ever asking for them — the same denial the declare
+  // screen makes, said at the moment the venue is chosen.
+  'venue.confirmPromiseBody',
 ]);
 const TR_DENIAL = /\b(kimse|asla|hiç|yok|istenmez|istemez|değil)/i;
 

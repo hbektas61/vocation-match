@@ -332,6 +332,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       {picking ? (
         <VenuePicker
           onChosen={requestActivation}
+          onClose={() => setPicking(false)}
           busy={activating}
           confirmSelection={!activeId}
         />

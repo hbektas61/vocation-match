@@ -22,10 +22,9 @@
  * that survives a selection is the opaque token the backend issued.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { Button, Caption, Chip, EmptyState, Field, Notice } from './ui';
+import { Button, Caption, Chip, EmptyState, Notice } from './ui';
 import { COPY, getLocale, upperCase } from '../copy';
 import { ApiError, getApi, type GooglePlaceHit, type VenueSearchMode } from '../data';
 import {
@@ -40,15 +39,6 @@ import { color, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
 export const VENUE_MIN_QUERY = 3;
 /** Long enough that a word typed at speed is one request, not eight. */
 export const VENUE_DEBOUNCE_MS = 350;
-
-const MagnifierIcon = () => (
-  <View style={{ marginRight: spacing.sm }}>
-    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={color.inkMuted} strokeWidth={2.2} strokeLinecap="round">
-      <Circle cx={11} cy={11} r={7} />
-      <Path d="M21 21l-4.5-4.5" />
-    </Svg>
-  </View>
-);
 
 const CHIPS: { mode: VenueSearchMode; label: () => string }[] = [
   { mode: 'stay', label: () => COPY.venue.chipStay },
@@ -104,11 +94,50 @@ function WizardProgress({ step }: { step: PickerStep }) {
         accessibilityElementsHidden
         importantForAccessibility="no"
       >
-        {COPY.venue.stepProgress(current + 1, steps.length)} · {steps[current]?.label}
+        {COPY.venue.stepShort(current + 1, steps.length)} · {steps[current]?.label}
       </Text>
     </View>
   );
 }
+
+/**
+ * The badge under a result row, in the app's own vocabulary.
+ *
+ * The design draws OTEL / RESORT / PLAJ KULÜBÜ; the data has one shared kind
+ * set ('hotel', 'beach', …) that check-in already localises, and Google's own
+ * types are never shown or stored (D-054). So the badge renders exactly what
+ * the vocabulary can honestly say, and nothing when the answer is null —
+ * autocomplete predictions legitimately may not carry a type.
+ */
+function kindBadge(kind: string | null): string | null {
+  switch (kind) {
+    case 'hotel':
+      return COPY.checkin.kindHotel;
+    case 'beach':
+      return COPY.checkin.kindBeach;
+    case 'cafe':
+      return COPY.checkin.kindCafe;
+    case 'restaurant':
+      return COPY.checkin.kindRestaurant;
+    case 'bar':
+      return COPY.checkin.kindBar;
+    case 'venue':
+      return COPY.checkin.kindVenue;
+    case 'area':
+      return COPY.checkin.kindArea;
+    default:
+      return null;
+  }
+}
+
+/**
+ * The country chosen last, for W-01's "en son buradaydın" sub-line.
+ *
+ * Module-level on purpose: it survives the picker unmounting but not the app
+ * restarting. Persisting it would be a new stored fact about the person, and
+ * the design only ever promises "last time", not "forever".
+ */
+let lastCountryCode: string | null = null;
 
 /** Enough characters to be a search rather than a letter. */
 export function longEnough(text: string): boolean {
@@ -117,9 +146,17 @@ export function longEnough(text: string): boolean {
 
 export function VenuePicker({
   onChosen,
+  onClose,
   busy = false,
   confirmSelection = true,
 }: {
+  /**
+   * The way out of the wizard's first step. The chevron on the later steps
+   * walks back within the wizard; the country step has no earlier step, so
+   * without this the picker was a room with no door — opening it on the trip
+   * tab left no way to leave without choosing.
+   */
+  onClose?: () => void;
   /** A single-use token, and the chip it was found under. */
   onChosen: (selectionToken: string, mode: VenueSearchMode, name: string) => void;
   busy?: boolean;
@@ -159,6 +196,9 @@ export function VenuePicker({
     selectionToken: string;
     mode: VenueSearchMode;
     name: string;
+    /** Carried so the opened row keeps saying what the closed row said. */
+    detail: string | null;
+    kind: string | null;
   } | null>(null);
 
   /** The destination step's own session, so Google bills one per search. */
@@ -318,6 +358,7 @@ export function VenuePicker({
   };
 
   const chooseCountry = (next: CountryOption) => {
+    lastCountryCode = next.code;
     resetSearch();
     destinationSession.current = undefined;
     setCountry(next);
@@ -340,19 +381,32 @@ export function VenuePicker({
   if (!country) {
     return (
       <View testID="venue-picker-country">
-        <Text accessibilityRole="header" style={styles.heading}>
-          {COPY.venue.countryTitle}
-        </Text>
+        <View style={styles.headerRow}>
+          {onClose ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={COPY.common.back}
+              onPress={onClose}
+              style={styles.headerBack}
+              testID="venue-picker-close"
+            >
+              <Text style={styles.headerChevron}>‹</Text>
+            </Pressable>
+          ) : null}
+          <Text accessibilityRole="header" style={[styles.heading, styles.headingInRow]}>
+            {COPY.venue.countryTitle}
+          </Text>
+        </View>
         <WizardProgress step="country" />
         <Text style={styles.hint}>{COPY.venue.countryHint}</Text>
-        <Field
-          label={COPY.venue.countryLabel}
-          hideLabel
-          pill
+        <TextInput
+          accessibilityLabel={COPY.venue.countryLabel}
           value={countryQuery}
           onChangeText={setCountryQuery}
           placeholder={COPY.venue.countryPlaceholder}
-          prefix={<MagnifierIcon />}
+          placeholderTextColor={color.inkMuted}
+          autoCorrect={false}
+          style={[styles.searchBox, countryQuery.trim() !== '' && styles.searchBoxActive]}
           testID="country-search"
         />
         <Text style={styles.sectionLabel}>
@@ -380,7 +434,11 @@ export function VenuePicker({
                 testID={`country-option-${option.code}`}
               >
                 <Text style={styles.rowName}>{option.name}</Text>
-                <Text style={styles.countryCode}>{option.code}</Text>
+                <Text style={styles.countryCode}>
+                  {option.code === lastCountryCode
+                    ? `${option.code} · ${COPY.venue.lastUsedHere}`
+                    : option.code}
+                </Text>
               </Pressable>
             ))}
           </>
@@ -426,9 +484,23 @@ export function VenuePicker({
    */
   return (
     <View testID={`venue-picker-${step}`}>
-      <Text accessibilityRole="header" style={styles.heading}>
-        {heading}
-      </Text>
+      {/* The drawn header: a 44pt chevron that walks one step back, beside the
+          title. The country step has no chevron (W-01) — there is no earlier
+          step to walk to; leaving the picker stays the host screen's job. */}
+      <View style={styles.headerRow}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={COPY.common.back}
+          onPress={destination ? changeDestination : changeCountry}
+          style={styles.headerBack}
+          testID="venue-picker-back"
+        >
+          <Text style={styles.headerChevron}>‹</Text>
+        </Pressable>
+        <Text accessibilityRole="header" style={[styles.heading, styles.headingInRow]}>
+          {heading}
+        </Text>
+      </View>
       <WizardProgress step={step} />
       {/*
         Where you are, in one line.
@@ -456,16 +528,16 @@ export function VenuePicker({
         <Text style={styles.hint}>{COPY.venue.destinationHint(country.name)}</Text>
       )}
 
-      <Field
-        label={destination ? COPY.venue.venueLabel : COPY.venue.destinationLabel}
-        hideLabel
-        pill
+      <TextInput
+        accessibilityLabel={destination ? COPY.venue.venueLabel : COPY.venue.destinationLabel}
         value={query}
         onChangeText={changeQuery}
         placeholder={
           destination ? COPY.venue.venuePlaceholder : COPY.venue.destinationPlaceholder
         }
-        prefix={<MagnifierIcon />}
+        placeholderTextColor={color.inkMuted}
+        autoCorrect={false}
+        style={[styles.searchBox, query.trim() !== '' && styles.searchBoxActive]}
         testID={destination ? 'venue-search' : 'destination-search'}
       />
 
@@ -482,10 +554,9 @@ export function VenuePicker({
               />
             ))}
           </View>
-          <View style={styles.scopeNote} testID="venue-search-scope-note">
-            <Text style={styles.scopeTitle}>{COPY.venue.broaderSearchTitle}</Text>
-            <Text style={styles.scopeBody}>{COPY.venue.broaderSearchBody}</Text>
-          </View>
+          <Text style={styles.modeNote} testID="venue-search-scope-note">
+            {COPY.venue.broaderSearchBody}
+          </Text>
         </View>
       ) : null}
 
@@ -571,7 +642,19 @@ export function VenuePicker({
                 testID="venue-picker-confirmation"
               >
                 <Text style={styles.confirmName}>{pendingChoice.name}</Text>
-                <Text style={styles.confirmBody}>{COPY.venue.confirmTitle}</Text>
+                {pendingChoice.detail || kindBadge(pendingChoice.kind) ? (
+                  <Text style={styles.confirmDetail}>
+                    {[pendingChoice.detail, kindBadge(pendingChoice.kind)]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </Text>
+                ) : null}
+                <View style={styles.promiseBox}>
+                  <Text style={styles.promiseTitle}>
+                    {upperCase(COPY.venue.confirmPromiseTitle)}
+                  </Text>
+                  <Text style={styles.promiseBody}>{COPY.venue.confirmPromiseBody}</Text>
+                </View>
                 <Button
                   label={COPY.venue.confirmButton}
                   onPress={() =>
@@ -610,6 +693,8 @@ export function VenuePicker({
                   selectionToken: hit.selectionToken,
                   mode,
                   name: hit.name,
+                  detail: hit.detail,
+                  kind: hit.kind,
                 };
                 if (confirmSelection) setPendingChoice(choice);
                 else onChosen(choice.selectionToken, choice.mode, choice.name);
@@ -619,6 +704,9 @@ export function VenuePicker({
             >
               <Text style={styles.rowName}>{hit.name}</Text>
               {hit.detail ? <Text style={styles.rowDetail}>{hit.detail}</Text> : null}
+              {kindBadge(hit.kind) ? (
+                <Text style={styles.rowKind}>{upperCase(kindBadge(hit.kind) ?? '')}</Text>
+              ) : null}
             </Pressable>
             ),
           )}
@@ -638,6 +726,56 @@ const styles = StyleSheet.create({
     lineHeight: 30,
     color: color.ink,
     marginBottom: spacing.sm,
+  },
+  /** W-02…W-04: the 44pt chevron beside the title, one row. */
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headerBack: {
+    width: MIN_TOUCH,
+    height: MIN_TOUCH,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerChevron: {
+    fontFamily: fontFamily.body,
+    fontSize: 24,
+    lineHeight: 34,
+    color: color.ink,
+  },
+  /** Inside the row the heading's own bottom margin would misalign the pair. */
+  headingInRow: { flex: 1, marginBottom: 0 },
+  /**
+   * The drawn search box: no label, no icon, a plain 14-radius field whose
+   * edge turns coral once something is typed — the border carries "this is
+   * the live search", the way the design draws it.
+   */
+  searchBox: {
+    backgroundColor: color.surface,
+    borderWidth: 1,
+    borderColor: color.rule,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    fontFamily: fontFamily.body,
+    fontSize: 15,
+    lineHeight: 22,
+    color: color.ink,
+  },
+  searchBoxActive: { borderWidth: 2, borderColor: color.accent },
+  /** W-03's note: one quiet line, not a titled card. */
+  modeNote: {
+    fontFamily: fontFamily.body,
+    fontSize: 12,
+    lineHeight: 18,
+    color: color.inkMuted,
+  },
+  /** The type badge under a result: 10pt tracked capitals in the brand ink. */
+  rowKind: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 10,
+    lineHeight: 15,
+    letterSpacing: 0.8,
+    color: color.accentDeep,
+    marginTop: 3,
   },
   /** The hairline, and the words under it. */
   progressBar: { flexDirection: 'row', gap: 4 },
@@ -670,9 +808,15 @@ const styles = StyleSheet.create({
     color: color.ink,
   },
   scopeAction: { minHeight: MIN_TOUCH, justifyContent: 'center' },
+  /**
+   * A column: the hairline row above, the caption below. This still carried
+   * the old chip row's flexDirection: 'row', which put the bar beside the
+   * caption — and a row gives its flex:1 segments no width to share on
+   * native, so on a phone the bars rendered zero-wide and invisible while
+   * web quietly padded them. Found from a device screenshot.
+   */
   progress: {
-    flexDirection: 'row',
-    gap: 6,
+    gap: 8,
     marginBottom: spacing.md,
   },
   progressStep: {
@@ -832,19 +976,45 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   confirmCard: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: color.rule,
     backgroundColor: color.surface,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
+    borderWidth: 2,
+    borderColor: color.accent,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    gap: 10,
+    marginBottom: spacing.xs,
   },
   confirmName: {
-    fontFamily: fontFamily.display,
-    fontSize: 22,
-    lineHeight: 28,
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 17,
+    lineHeight: 22,
     color: color.ink,
-    marginTop: spacing.xs,
+  },
+  confirmDetail: {
+    fontFamily: fontFamily.body,
+    fontSize: 12,
+    lineHeight: 17,
+    color: color.inkMuted,
+  },
+  /** The promise, in the wash — AYNI MEKÂN = AYNI ODA. */
+  promiseBox: {
+    backgroundColor: color.accentWash,
+    borderRadius: 14,
+    padding: 12,
+    gap: 6,
+  },
+  promiseTitle: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 11,
+    lineHeight: 16,
+    letterSpacing: 0.8,
+    color: color.accentDeep,
+  },
+  promiseBody: {
+    fontFamily: fontFamily.body,
+    fontSize: 12,
+    lineHeight: 17,
+    color: color.inkMuted,
   },
   confirmBody: {
     fontFamily: fontFamily.body,
@@ -854,12 +1024,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   row: {
-    borderRadius: radius.md,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: color.rule,
     backgroundColor: color.surface,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
     marginBottom: spacing.xs,
   },
   rowPressed: {

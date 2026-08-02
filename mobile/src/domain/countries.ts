@@ -7,6 +7,7 @@
  * still works and shows the code rather than blocking the core flow.
  */
 import type { Locale } from '../copy';
+import { COUNTRY_NAMES } from './countryNames';
 import { normalizeQuery } from './searchQuery';
 
 export interface CountryOption {
@@ -53,11 +54,19 @@ function displayNames(locale: Locale): DisplayNamesLike | null {
 }
 
 export function countryOptions(locale: Locale): CountryOption[] {
+  // The generated table is the source of truth: Hermes has no
+  // Intl.DisplayNames, and the runtime fallback showed "TR / TR" on a real
+  // phone while every V8 environment looked fine. Intl still gets the last
+  // word when it exists, so future locale-data fixes flow in for free.
+  const table = COUNTRY_NAMES[locale];
   const names = displayNames(locale);
-  return COUNTRY_CODES.map((code) => ({
-    code,
-    name: names?.of(code) ?? code,
-  })).sort((a, b) =>
+  return COUNTRY_CODES.map((code) => {
+    const fromIntl = names?.of(code);
+    return {
+      code,
+      name: fromIntl && fromIntl !== code ? fromIntl : table[code] ?? code,
+    };
+  }).sort((a, b) =>
     a.name.localeCompare(b.name, locale === 'tr' ? 'tr-TR' : 'en-US'),
   );
 }
