@@ -755,6 +755,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 13,
+    // Whatever follows — the mode chips, a result list — stands off the box
+    // rather than touching its edge (owner screenshot, 2026-08-03).
+    marginBottom: spacing.sm,
     fontFamily: fontFamily.body,
     fontSize: 15,
     lineHeight: 22,
