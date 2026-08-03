@@ -691,9 +691,7 @@ export function CheckinScreen({
             <ProfileRing testID="checkin-list-profile-ring" />
           </View>
         </View>
-        <Text style={styles.subtitleSm}>
-          {COPY.checkin.listSubtitle} <Text style={styles.subtitleHeart}>♥</Text>
-        </Text>
+        <Text style={styles.subtitleSm}>{COPY.checkin.listSubtitle}</Text>
 
         {/* N-02 (153:75), D-048: the anchor that always exists — where you
             are standing — first, in its wash card, never only under an
@@ -713,17 +711,7 @@ export function CheckinScreen({
           </Pressable>
         </View>
 
-        <View style={styles.searchPill}>
-          <MagnifierIcon />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder={COPY.checkin.searchPlaceholder}
-            placeholderTextColor={color.inkMuted}
-            style={styles.searchInput}
-            testID="checkin-search"
-          />
-        </View>
+        <Text style={styles.kicker}>{upperCase(COPY.checkin.aroundYou)}</Text>
 
         {busy ? (
           <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="checkin-looking" />
@@ -741,6 +729,20 @@ export function CheckinScreen({
             {catalogueShown.map((venue) => venueRow(venue, searching ? 'found' : 'near'))}
           </>
         )}
+
+        {/* 153:100: the written search sits under the list — the fallback for
+            a place the reading did not surface, not the way in. */}
+        <View style={styles.searchPill}>
+          <MagnifierIcon />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder={COPY.checkin.searchPlaceholder}
+            placeholderTextColor={color.inkMuted}
+            style={styles.searchInput}
+            testID="checkin-search"
+          />
+        </View>
 
         {/* Step three (D-052): opened by hand, after our own catalogue and the
             written search have both had their turn. Google's answers stay in
@@ -778,11 +780,11 @@ export function CheckinScreen({
         {/* N-07: what pressing that button costs, before it is pressed. The
             server counts; this only reads. */}
         {entitlement ? (
-          <Caption testID="checkin-entitlement">
+          <Text style={styles.entitlementText} testID="checkin-entitlement">
             {entitlement.remaining > 0
               ? COPY.checkin.entitlementLeft(entitlement.remaining, entitlement.limit)
               : COPY.checkin.entitlementNone}
-          </Caption>
+          </Text>
         ) : null}
 
         {notice ? (
@@ -792,7 +794,6 @@ export function CheckinScreen({
             testID="checkin-notice"
           />
         ) : null}
-        <Caption>{COPY.trust.noExactLocation}</Caption>
         {/* ODbL. The catalogue under this list is OpenStreetMap/Overture data
             and had no credit on screen at all — only Google's answers did,
             which is the wrong way round given whose data is shown by default. */}
@@ -971,7 +972,6 @@ const styles = StyleSheet.create({
     lineHeight: 13 * 1.5,
     color: color.inkMuted,
   },
-  subtitleHeart: { color: color.accentDeep },
   /** The corner badge (1:5): the panel disc with the 1.5 control edge. */
   pressed: { opacity: 0.8 },
 
@@ -993,15 +993,17 @@ const styles = StyleSheet.create({
     color: color.ink,
     paddingVertical: 12,
   },
+  /** 153:80: the row is the name and its kind — 16 corners, 13/14 seat. */
   venueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
     backgroundColor: color.surface,
     borderWidth: 1,
     borderColor: color.rule,
-    borderRadius: 18,
-    padding: 12,
+    borderRadius: 16,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
     ...elevation.card,
   },
   venueDisc: {
@@ -1011,7 +1013,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  venueWords: { flex: 1, gap: 2 },
+  venueWords: { flex: 1, gap: 3 },
   venueName: {
     fontFamily: fontFamily.bodySemi,
     fontSize: 14,
@@ -1326,7 +1328,20 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   /** N-02 (153:75): the standing-here anchor, first and in its wash. */
-  hereCard: { gap: 10, borderRadius: 18, backgroundColor: color.accentWash, padding: 14 },
+  hereCard: {
+    gap: 10,
+    borderRadius: 18,
+    backgroundColor: color.accentWash,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  entitlementText: {
+    fontFamily: fontFamily.body,
+    fontSize: 10,
+    lineHeight: 14,
+    color: color.inkMuted,
+    textAlign: 'center',
+  },
   hereLabel: {
     fontFamily: fontFamily.bodySemi,
     fontSize: 10,
