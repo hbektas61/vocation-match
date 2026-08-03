@@ -304,6 +304,8 @@ export const en = {
     /** The pinned country over the city search, and its one-press change. */
     changeCountry: 'Change country',
     changeArea: 'Change location',
+    /** The standing header's name for a here-kind area (2026-08-04). */
+    hereArea: 'Around your location',
     useMyLocation: 'Use my current location',
     chooseArea: 'Choose where to look',
     areaPlaceholder: 'İstanbul, London, Las Vegas…',

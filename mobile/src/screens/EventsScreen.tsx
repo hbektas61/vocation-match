@@ -35,7 +35,6 @@ import {
   Button,
   Caption,
   Chip,
-  ContextRibbon,
   Field,
   Notice,
   PhotoScrim,
@@ -258,7 +257,8 @@ export function EventsScreen({
       kind: 'here',
       latitude: reading.latitude,
       longitude: reading.longitude,
-      label: COPY.events.useMyLocation,
+      // The standing header needs a place's name, not the button's verb.
+      label: COPY.events.hereArea,
     };
     setArea(next);
     setChoosingArea(false);
@@ -575,20 +575,22 @@ export function EventsScreen({
            the ribbon's single `accessibilityLabel`. */
         <View style={styles.areaBlock}>
           <Text style={styles.areaKicker}>{upperCase(COPY.events.areaLabel)}</Text>
-          <View style={styles.areaRow}>
-            <ContextRibbon label={area.label} glyph="•" testID="events-area-label" />
+          {/* The same wash pill the pinned country wears (owner, 2026-08-04):
+              the area's name on the left, the one-press change on the right —
+              not a navy plate with a red link crowding its shoulder. */}
+          <View style={styles.countryScope}>
+            <Text style={styles.countryScopeName} numberOfLines={1} testID="events-area-label">
+              {area.label}
+            </Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={COPY.events.changeArea}
               onPress={() => setChoosingArea(true)}
-              // It was 95×15 with an 8pt hitSlop — 31 effective, still short of
-              // the 44 everything else operable in this product meets. The slop
-              // stays; the row now carries the height itself.
-              style={styles.changeAreaRow}
               hitSlop={8}
+              style={styles.countryScopeChange}
               testID="events-change-area"
             >
-              <Text style={styles.changeArea}>{COPY.events.changeArea}</Text>
+              <Text style={styles.countryScopeChangeText}>{COPY.events.changeArea}</Text>
             </Pressable>
           </View>
         </View>

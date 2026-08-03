@@ -295,6 +295,8 @@ export const tr: Copy = {
     /** The pinned country over the city search, and its one-press change. */
     changeCountry: 'Ülkeyi değiştir',
     changeArea: 'Konumu değiştir',
+    /** The standing header's name for a here-kind area (2026-08-04). */
+    hereArea: 'Konumunun çevresi',
     useMyLocation: 'Mevcut konumumu kullan',
     chooseArea: 'Nereye bakalım?',
     areaPlaceholder: 'İstanbul, Londra, Las Vegas…',
