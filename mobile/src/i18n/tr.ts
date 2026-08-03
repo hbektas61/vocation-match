@@ -717,6 +717,8 @@ export const tr: Copy = {
     freeTag: 'Ücretsiz',
     whereWillYouBe: 'Nerede olacaksın?',
     /** T-01 (131:85): the two rooms as drawn — a word, a sentence, an arrow. */
+    /** The green word a live room's teaser carries. */
+    cardOpen: 'Oda açık',
     upcomingCardTitle: 'Gidecekler',
     upcomingCardBody: 'Tatile gidecek kişilerle tanış.',
     hereNowCardTitle: 'Oteldeyim',

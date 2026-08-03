@@ -804,6 +804,8 @@ export const en = {
     freeTag: 'Free',
     whereWillYouBe: 'Where will you be?',
     /** T-01 (131:85): the two rooms as drawn — a word, a sentence, an arrow. */
+    /** The green word a live room's teaser carries. */
+    cardOpen: 'Room open',
     upcomingCardTitle: 'Going',
     upcomingCardBody: 'Meet people going on this vacation.',
     hereNowCardTitle: 'At the hotel',

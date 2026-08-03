@@ -60,13 +60,26 @@ describe('the field mask', () => {
     expect(source).toContain('suggestions.placePrediction.structuredFormat.secondaryText.text');
   });
 
-  it.each(['photos', 'reviews', 'rating', 'regularOpeningHours', 'nationalPhoneNumber', 'websiteUri'])(
+  it.each(['reviews', 'rating', 'regularOpeningHours', 'nationalPhoneNumber', 'websiteUri'])(
     'never asks for %s',
     (field) => {
       // Any of these moves the call into a dearer tier, and none is used.
       expect(code).not.toContain(field);
     },
   );
+
+  it('asks for photos only where the owner priced it: the resolve mask', () => {
+    // Owner decision (2026-08-03): the active venue's screen draws one live
+    // photo beside the live name — resolved at view time, stored never
+    // (D-054). That is one details call and one photo-media call, both
+    // measured. The search paths stay in the cheap tier: neither mask below
+    // may grow a photos field.
+    expect(code).toContain('"id,displayName,photos"');
+    expect(code).toContain('skipHttpRedirect=true');
+    expect(code).not.toContain('suggestions.placePrediction.photos');
+    const nearbyMask = code.match(/searchNearby[\s\S]{0,600}?X-Goog-FieldMask[^\n]*/)?.[0] ?? '';
+    expect(nearbyMask).not.toContain('photos');
+  });
 
   it('never asks Autocomplete for a coordinate, because the anchor is ours', () => {
     expect(code).not.toContain('placePrediction.location');

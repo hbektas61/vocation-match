@@ -87,10 +87,11 @@ export async function resolveDeckLabels(
       attempt = getApi()
         .resolveGooglePlace(placeId)
         .catch(() => null)
-        .then((name) => {
-          resolved.set(placeId, name ?? null);
+        .then((identity) => {
+          const name = identity?.name ?? null;
+          resolved.set(placeId, name);
           pending.delete(placeId);
-          return name ?? null;
+          return name;
         });
       pending.set(placeId, attempt);
     }

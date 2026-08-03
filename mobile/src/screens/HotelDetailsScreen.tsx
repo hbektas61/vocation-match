@@ -55,7 +55,7 @@ export function HotelDetailsScreen({ route, navigation }: RootScreenProps<'Hotel
         if (!cancelled) setGoogleName(false);
         return;
       }
-      const name = await api.resolveGooglePlace(placeId).catch(() => null);
+      const name = (await api.resolveGooglePlace(placeId).catch(() => null))?.name ?? null;
       if (!cancelled) setGoogleName(name ?? false);
     })();
     return () => {

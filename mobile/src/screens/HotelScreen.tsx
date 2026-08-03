@@ -69,6 +69,7 @@ function RoomTeaser({
   icon,
   title,
   body,
+  open = false,
   onPress,
   testID,
   extra,
@@ -76,6 +77,8 @@ function RoomTeaser({
   icon: React.ReactNode;
   title: string;
   body: string;
+  /** The room is live: the card says so with the shared green mark. */
+  open?: boolean;
   onPress: () => void;
   testID: string;
   extra?: React.ReactNode;
@@ -83,13 +86,21 @@ function RoomTeaser({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${title}. ${body}`}
+      accessibilityLabel={`${title}. ${open ? `${COPY.vacation.cardOpen}. ` : ''}${body}`}
       onPress={onPress}
       style={({ pressed }) => [styles.teaser, pressed && styles.resultPressed]}
       testID={testID}
     >
       <View style={styles.teaserDisc}>{icon}</View>
       <Text style={styles.teaserTitle}>{title}</Text>
+      {open ? (
+        /* The declared stay reads back from the card itself — pressing in is
+           no longer the only proof the declaration landed. */
+        <View style={styles.teaserOpenRow}>
+          <View style={styles.teaserOpenDot} />
+          <Text style={styles.teaserOpenText}>{COPY.vacation.cardOpen}</Text>
+        </View>
+      ) : null}
       <Text style={styles.teaserBody}>{body}</Text>
       <Text style={styles.teaserArrow} accessibilityElementsHidden importantForAccessibility="no">
         {'→'}
@@ -142,6 +153,8 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
    * than inventing a name.
    */
   const [googleName, setGoogleName] = useState<string | null | false>(null);
+  /** The venue's one live photo, held exactly like the name is (D-054). */
+  const [googlePhoto, setGooglePhoto] = useState<string | null>(null);
   const [loadingActive, setLoadingActive] = useState(true);
   const [pendingSwitch, setPendingSwitch] = useState<
     { selectionToken: string; mode: VenueSearchMode; name: string } | null
@@ -219,13 +232,18 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           if (venue?.provider === 'google' && venue.googlePlaceId) {
             setGoogleName(null);
             const resolved = await api.resolveGooglePlace(venue.googlePlaceId).catch(() => null);
-            if (!cancelled) setGoogleName(resolved ?? false);
+            if (!cancelled) {
+              setGoogleName(resolved?.name ?? false);
+              setGooglePhoto(resolved?.photoUri ?? null);
+            }
           } else {
             setGoogleName(null);
+            setGooglePhoto(null);
           }
         } else {
           setActiveVenue(null);
           setGoogleName(null);
+          setGooglePhoto(null);
         }
       } finally {
         if (!cancelled) setLoadingActive(false);
@@ -356,7 +374,14 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           <View style={styles.stayPill} testID="active-stay-pill">
             <PinSmallIcon />
             <Text style={styles.stayPillText} numberOfLines={1}>
-              {[activeHotel.city, formatStayRange(stay)].filter(Boolean).join(' · ')}
+              {/* A Google venue has no city of ours to print (D-054): the
+                  pill carries the dates alone rather than the stub. */}
+              {[
+                activeHotel.provider === 'google' ? null : activeHotel.city,
+                formatStayRange(stay),
+              ]
+                .filter(Boolean)
+                .join(' · ')}
             </Text>
           </View>
         ) : null}
@@ -374,6 +399,17 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
             {activeHotel.photoUrl ? (
               <Image
                 source={photoSource(activeHotel.photoUrl)}
+                style={styles.hotelPhoto}
+                resizeMode="cover"
+                accessibilityIgnoresInvertColors
+                testID="active-hotel-photo"
+              />
+            ) : googlePhoto ? (
+              /* A Google venue's photo, resolved a moment ago beside its
+                 name and kept nowhere — the "Powered by Google" line on the
+                 plate below credits both (D-054). */
+              <Image
+                source={{ uri: googlePhoto }}
                 style={styles.hotelPhoto}
                 resizeMode="cover"
                 accessibilityIgnoresInvertColors
@@ -493,6 +529,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
               icon={<SuitcaseIcon />}
               title={COPY.vacation.upcomingCardTitle}
               body={COPY.vacation.upcomingCardBody}
+              open={upcomingOpen}
               onPress={
                 upcomingOpen
                   ? () => tabNavigation.navigate('Discovery', { source: 'UPCOMING' })
@@ -520,6 +557,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
               icon={<BedIcon />}
               title={COPY.vacation.hereNowCardTitle}
               body={COPY.vacation.hereNowCardBody}
+              open={hereNowOpen}
               onPress={() => stackNavigation.navigate('HereNow')}
               testID="open-here-now"
               extra={
@@ -690,6 +728,9 @@ const styles = StyleSheet.create({
   },
   teaserTitle: { fontFamily: fontFamily.bodySemi, fontSize: 15, lineHeight: 21, color: color.ink },
   teaserBody: { fontFamily: fontFamily.body, fontSize: 12, lineHeight: 17, color: color.inkMuted },
+  teaserOpenRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  teaserOpenDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: color.successMark },
+  teaserOpenText: { fontFamily: fontFamily.bodySemi, fontSize: 11, color: color.success },
   teaserArrow: { fontFamily: fontFamily.bodySemi, fontSize: 16, lineHeight: 22, color: color.accentDeep },
   /** The quiet second action a live room earns. */
   teaserExtra: { minHeight: 32, justifyContent: 'center' },

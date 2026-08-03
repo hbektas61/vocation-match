@@ -708,8 +708,9 @@ Deno.serve(async (req) => {
     const response = await fetch(`${PLACES_DETAILS}/${encodeURIComponent(placeId)}`, {
       headers: {
         "X-Goog-Api-Key": key,
-        // The cheapest possible ask: the name, and nothing around it.
-        "X-Goog-FieldMask": "id,displayName",
+        // The name, and the photo references beside it — both are drawn live
+        // and stored nowhere, exactly like the name always was (D-054).
+        "X-Goog-FieldMask": "id,displayName,photos",
       },
       signal: AbortSignal.timeout(8_000),
     });
@@ -718,10 +719,37 @@ Deno.serve(async (req) => {
       return Response.json({ error: "Could not read that place." }, { status: 503 });
     }
     await measure("google_place_details", "ok");
-    const place = (await response.json()) as { displayName?: { text?: string } };
+    const place = (await response.json()) as {
+      displayName?: { text?: string };
+      photos?: { name?: string }[];
+    };
+    // One photo, resolved to a keyless googleusercontent URI the phone can
+    // draw directly. `skipHttpRedirect` makes Google answer with JSON instead
+    // of the image itself, so no image bytes pass through this function and
+    // nothing needs proxying. Failing the photo never fails the name.
+    let photoUri: string | null = null;
+    const photoName = place.photos?.[0]?.name;
+    if (typeof photoName === "string" && photoName.length > 0) {
+      try {
+        const media = await fetch(
+          `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=1000&skipHttpRedirect=true`,
+          { headers: { "X-Goog-Api-Key": key }, signal: AbortSignal.timeout(8_000) },
+        );
+        if (media.ok) {
+          const payload = (await media.json()) as { photoUri?: string };
+          if (typeof payload.photoUri === "string") photoUri = payload.photoUri;
+          await measure("google_place_photo", "ok");
+        } else {
+          await measure("google_place_photo", "error");
+        }
+      } catch {
+        await measure("google_place_photo", "error");
+      }
+    }
     return Response.json({
       placeId,
       name: place.displayName?.text ?? null,
+      photoUri,
       attribution: "Powered by Google",
     });
   }

@@ -227,6 +227,17 @@ export interface ActivationResult {
  * result, a cancellation, a provider failure and a failed check-in all cost
  * nothing.
  */
+/**
+ * What a Place ID resolves to at view time: the name, and one photo the
+ * screen may draw while it is up. Both are Google's content — held in
+ * memory for exactly as long as the screen shows them, written down never
+ * (D-054).
+ */
+export interface GooglePlaceIdentity {
+  name: string | null;
+  photoUri: string | null;
+}
+
 export interface CheckinEntitlement {
   /** The ceiling for this account's plan — 3 free, 10 premium (D-053). */
   limit: number;
@@ -806,7 +817,7 @@ export interface VocationApi {
    */
   googleCheckinEntitlement(): Promise<CheckinEntitlement>;
   /** A Place ID back into a name, for drawing it. Null when unavailable. */
-  resolveGooglePlace(placeId: string): Promise<string | null>;
+  resolveGooglePlace(placeId: string): Promise<GooglePlaceIdentity | null>;
   clearCheckin(): Promise<void>;
   getCheckin(): Promise<ActiveCheckin | null>;
 

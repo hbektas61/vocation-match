@@ -79,6 +79,7 @@ import {
   type VenueSearchMode,
   GOOGLE_VENUE_KIND,
   type EventArea,
+  type GooglePlaceIdentity,
   type EventBucket,
   type EventCard,
   type EventCategory,
@@ -1156,13 +1157,14 @@ export class FakeApi implements VocationApi {
    * rather than inventing a name (§4). D-053's check-in labels are the tokens
    * the fake carries as ids and have no fixture, so they answer null too.
    */
-  async resolveGooglePlace(placeId: string): Promise<string | null> {
+  async resolveGooglePlace(placeId: string): Promise<GooglePlaceIdentity | null> {
     await this.requireUserId();
     if (this.googleResolutionBroken || !this.spendGoogleCall()) return null;
     const place = [...GOOGLE_VENUES, ...GOOGLE_DESTINATIONS].find(
       (candidate) => candidate.placeId === placeId,
     );
-    return place?.name ?? null;
+    if (!place) return null;
+    return { name: place.name, photoUri: null };
   }
 
   async clearCheckin(): Promise<void> {

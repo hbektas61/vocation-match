@@ -43,6 +43,7 @@ import {
   type VenueSearchMode,
   GOOGLE_VENUE_KIND,
   type EventArea,
+  type GooglePlaceIdentity,
   type EventBucket,
   type EventCard,
   type EventCategory,
@@ -1059,12 +1060,15 @@ export class SupabaseApi implements VocationApi {
     };
   }
 
-  async resolveGooglePlace(placeId: string): Promise<string | null> {
+  async resolveGooglePlace(placeId: string): Promise<GooglePlaceIdentity | null> {
     const { data, error } = await this.client.functions.invoke('places-google', {
       body: { op: 'resolve', placeId },
     });
     if (error || typeof data?.name !== 'string') return null;
-    return data.name;
+    return {
+      name: data.name,
+      photoUri: typeof data.photoUri === 'string' ? data.photoUri : null,
+    };
   }
 
   async clearCheckin(): Promise<void> {

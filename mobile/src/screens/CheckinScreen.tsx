@@ -263,7 +263,8 @@ export function CheckinScreen({
     let cancelled = false;
     getApi()
       .resolveGooglePlace(placeId)
-      .then((name) => {
+      .then((identity) => {
+        const name = identity?.name;
         if (cancelled || !name) return;
         resolvedNames.current.set(placeId, name);
         setActiveLabel(name);
