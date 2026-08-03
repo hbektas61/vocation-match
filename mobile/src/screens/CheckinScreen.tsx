@@ -936,16 +936,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  /** D-063: one head across all three states — Lora 30 on a 42 line. */
   title: {
     fontFamily: fontFamily.display,
-    fontSize: 40,
+    fontSize: 30,
+    lineHeight: 42,
     color: color.ink,
   },
-  /** The list and active sheets' head (11:75/11:147): a size down from the intro. */
   titleSm: {
     fontFamily: fontFamily.display,
-    fontSize: 34,
-    lineHeight: 34 * 1.15,
+    fontSize: 30,
+    lineHeight: 42,
     color: color.ink,
   },
   /** The corner ring (11:76): the empty frame, an operable control's edge. */
@@ -968,8 +969,8 @@ const styles = StyleSheet.create({
   /** The line under the list/active heads (11:77/11:149): 13, muted. */
   subtitleSm: {
     fontFamily: fontFamily.body,
-    fontSize: 13,
-    lineHeight: 13 * 1.5,
+    fontSize: 14,
+    lineHeight: 20,
     color: color.inkMuted,
   },
   /** The corner badge (1:5): the panel disc with the 1.5 control edge. */
