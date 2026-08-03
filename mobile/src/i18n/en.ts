@@ -559,6 +559,9 @@ export const en = {
     overlapHereNow:
       'You are both at this hotel right now. Neither of you can see where the other is.',
     /** The card's top-right chip: the one bond this product can print. */
+    /** K-01: the green-dot line — said only when it is live-true. */
+    liveAtVenue: 'At the venue now',
+    liveAtEvent: 'At the event now',
     sameHotel: 'Same hotel',
     nearby: 'nearby',
     overlapUpcoming:
@@ -599,6 +602,8 @@ export const en = {
     bothAtPlate: 'You are both at',
     likedEachOther: (name: string) => `You and ${name} liked each other.`,
     sayHelloCta: (name: string) => `Say hello to ${name}`,
+    /** M-01 (132:106): the primary CTA's own word. */
+    sendMessageCta: 'Send a message',
     selfFallback: 'You',
     title: "It's a match!",
     /**

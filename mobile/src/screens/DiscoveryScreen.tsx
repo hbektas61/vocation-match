@@ -4,15 +4,16 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import Svg, { Path, Rect } from 'react-native-svg';
 
-import { Body, Button, ContextRibbon, Notice, RoomRibbon, Screen, ScreenHeader } from '../components/ui';
+import { Body, Button, Notice, Screen, ScreenHeader } from '../components/ui';
+import { ProfileRing } from '../components/ProfileRing';
 import { BigActionButton } from '../components/BigActionButton';
 import { RadarEmpty } from '../components/RadarEmpty';
 import { ContextSelector, CONTEXT_ORDER, type ContextRow } from '../components/ContextSelector';
 import { nowMs } from '../clock';
 import { formatStayRangeLabel } from '../domain/dates';
-import { apiErrorMessage, COPY, COPY_FOR, upperCase, roomPlate, roomStatusExplanation } from '../copy';
+import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation } from '../copy';
 import { ApiError, getApi, type CandidateCard, type MyEvent, type RoomKey, type RoomStatus } from '../data';
 import { resolveDeckLabels } from '../data/venueLabels';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
@@ -56,10 +57,10 @@ const BuildingTinyIcon = () => (
   </Svg>
 );
 
-const PinTinyIcon = () => (
-  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={color.onPhoto} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-    <Path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-    <Circle cx={12} cy={10} r={3} />
+/** The small filled heart in K-01's glass pill (132:75). */
+const HeartTinyIcon = () => (
+  <Svg width={14} height={14} viewBox="0 0 24 24" fill={color.accentDeep}>
+    <Path d="M12 8c0-4.5-7.2-4.5-7.2 0 0 4 4.7 6.8 7.2 8.7 2.5-1.9 7.2-4.7 7.2-8.7 0-4.5-7.2-4.5-7.2 0z" />
   </Svg>
 );
 
@@ -105,6 +106,8 @@ function contextLine(
 
 export function DiscoveryScreen() {
   const { state, dispatch } = useAppStore();
+  /** K-01's heart pill: the standing matches, the number a heart can honestly wear. */
+  const matchCount = state.matches.filter((m) => !m.unmatchedAt).length;
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   // A second, honestly-typed handle for jumping to a sibling tab.
   const tabNavigation = useNavigation<NavigationProp<TabParamList>>();
@@ -519,16 +522,18 @@ export function DiscoveryScreen() {
       {/* D-057: the head and the context selector sit above the card. Which
           room you are browsing is a real choice, and it is now stated rather
           than inferred — including when the answer is "none of them yet". */}
-      <View style={styles.deckHead}>
-        <ScreenHeader title={COPY.tabs.discovery} ringTestID="discovery-profile-ring" />
-        <ContextSelector
-          rows={contextRows}
-          current={room}
-          onChange={chooseRoom}
-          now={nowMs()}
-          testID="discovery-context"
-        />
-      </View>
+      {candidate ? null : (
+        <View style={styles.deckHead}>
+          <ScreenHeader title={COPY.tabs.discovery} ringTestID="discovery-profile-ring" />
+          <ContextSelector
+            rows={contextRows}
+            current={room}
+            onChange={chooseRoom}
+            now={nowMs()}
+            testID="discovery-context"
+          />
+        </View>
+      )}
 
       {deckError ? <Notice message={deckError} tone="error" testID="discovery-error" /> : null}
       {actionError ? (
@@ -579,39 +584,23 @@ export function DiscoveryScreen() {
             </>
           ) : null}
 
-          {/* The two chips of the reference: the room, on its own deep-navy
-              plate over the photo, and the bond — same venue, or the
-              neighbour's venue by name (D-038): the label is what keeps the
-              region pool honest. D-058: the room chip is the shared
-              `<RoomRibbon>` for the two hotel rooms, so this card gets the
-              same filled/hollow-dot distinction the rest of the app already
-              draws between Here Now and Upcoming; Çevremde and the two event
-              rooms fall back to the generic `<ContextRibbon>` plate, since
-              `RoomRibbon` only speaks the hotel rooms' vocabulary. */}
-          <View style={styles.chipRowTop} pointerEvents="none">
-            {room === 'UPCOMING' || room === 'HERE_NOW' ? (
-              <RoomRibbon room={room} hotelName={null} onPhoto testID="candidate-room" />
-            ) : (
-              <ContextRibbon label={upperCase(roomPlate(room))} testID="candidate-room" />
-            )}
-            <View
-              style={styles.sameHotelChip}
-              testID={candidate.sameVenue ? 'card-bond-same' : 'card-bond-nearby'}
-            >
-              <BuildingTinyIcon />
-              <Text style={styles.sameHotelText} numberOfLines={1}>
-                {candidate.sameVenue
-                  ? (room === 'NEARBY' ? checkinName : hotelName) ?? COPY.discovery.sameHotel
-                  : (candidate.venueName
-                      ?? (candidate.venuePlaceId ? venueLabels.get(candidate.venuePlaceId) : null))
-                    ? `${candidate.venueName ?? venueLabels.get(candidate.venuePlaceId!)} · ${COPY.discovery.nearby}`
-                    // The safe fallback (V-011): a ceiling, a provider failure
-                    // or the fourth distinct venue all land here. "Nearby" is
-                    // true and costs nothing; naming the wrong place would be
-                    // neither.
-                    : COPY.discovery.nearby}
-              </Text>
+          {/* K-01 (132:72/74): the two floating glass controls — the ring
+              to yourself top-left, and the matches count top-right, which is
+              the one heart-number this product honestly has. */}
+          <View style={styles.floatTop} pointerEvents="box-none">
+            <View style={styles.glassRing}>
+              <ProfileRing testID="discovery-profile-ring" />
             </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={COPY.tabs.messages}
+              onPress={() => tabNavigation.navigate('Inbox')}
+              style={styles.likesPill}
+              testID="discovery-matches-pill"
+            >
+              <HeartTinyIcon />
+              <Text style={styles.likesCount}>{matchCount}</Text>
+            </Pressable>
           </View>
 
           {/* Identity on the photo's foot, on its own scrim: name and age,
@@ -624,21 +613,50 @@ export function DiscoveryScreen() {
             style={styles.cardScrim}
             pointerEvents="none"
           />
-          <View style={styles.cardBottom} pointerEvents="none">
+          <View style={styles.cardBottom} pointerEvents="box-none">
             <Text style={styles.cardName}>
               {candidate.displayName}
               <Text style={styles.cardAge}>{`, ${candidate.age}`}</Text>
             </Text>
             {candidate.bio ? (
-              <Text style={styles.cardBio} numberOfLines={2}>
+              <Text style={styles.cardBio} numberOfLines={1}>
                 {candidate.bio}
               </Text>
             ) : null}
-            {hotelName ? (
-              <View style={styles.hotelChip}>
-                <PinTinyIcon />
-                <Text style={styles.hotelChipText} numberOfLines={1}>
-                  {hotel?.city ? `${hotelName}, ${hotel.city}` : hotelName}
+            {/* K-01's navy context pill (132:79) is the room selector itself:
+                it names the room — and the event, when the room is one — and
+                pressing it opens the sheet, exactly as D-057 requires. */}
+            <ContextSelector
+              rows={contextRows}
+              current={room}
+              onChange={chooseRoom}
+              now={nowMs()}
+              testID="discovery-context"
+            />
+            {/* The bond — same venue, or the neighbour's venue by name
+                (D-038): the label is what keeps the region pool honest. */}
+            <View
+              style={styles.sameHotelChip}
+              testID={candidate.sameVenue ? 'card-bond-same' : 'card-bond-nearby'}
+            >
+              <BuildingTinyIcon />
+              <Text style={styles.sameHotelText} numberOfLines={1}>
+                {candidate.sameVenue
+                  ? (room === 'NEARBY' ? checkinName : hotelName) ?? COPY.discovery.sameHotel
+                  : (candidate.venueName
+                      ?? (candidate.venuePlaceId ? venueLabels.get(candidate.venuePlaceId) : null))
+                    ? `${candidate.venueName ?? venueLabels.get(candidate.venuePlaceId!)} · ${COPY.discovery.nearby}`
+                    : COPY.discovery.nearby}
+              </Text>
+            </View>
+            {/* K-01's green-dot line (132:82) — said only when it is
+                live-true: these two rooms exist because a location check
+                passed minutes ago, and no other room may borrow the dot. */}
+            {room === 'HERE_NOW' || room === 'EVENT_HERE_NOW' ? (
+              <View style={styles.liveRow}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>
+                  {room === 'HERE_NOW' ? COPY.discovery.liveAtVenue : COPY.discovery.liveAtEvent}
                 </Text>
               </View>
             ) : null}
@@ -695,7 +713,7 @@ export function DiscoveryScreen() {
                 displayName: candidate.displayName,
               })
             }
-            style={styles.actionCircle}
+            style={styles.actionSmall}
             testID="discovery-report-block"
           >
             <FlagIcon />
@@ -823,7 +841,8 @@ const styles = StyleSheet.create({
     backgroundColor: color.veil,
   },
   cardPhoto: { ...StyleSheet.absoluteFillObject },
-  chipRowTop: {
+  /** K-01: the floating glass controls over the photo's head. */
+  floatTop: {
     position: 'absolute',
     top: spacing.md,
     left: spacing.md,
@@ -832,6 +851,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  glassRing: {
+    borderRadius: radius.pill,
+    backgroundColor: overlay.glass,
+    padding: 3,
+  },
+  likesPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    minHeight: 36,
+    borderRadius: radius.pill,
+    backgroundColor: overlay.glass,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  likesCount: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.ink },
   /**
    * The bond chip — same venue, or a neighbour's by name. A deep navy plate
    * over the photo, matching the room ribbon it sits beside.
@@ -839,6 +874,7 @@ const styles = StyleSheet.create({
   sameHotelChip: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
     gap: 6,
     backgroundColor: overlay.plate,
     borderRadius: radius.pill,
@@ -865,14 +901,16 @@ const styles = StyleSheet.create({
     bottom: 104,
     gap: spacing.sm,
   },
+  /** 132:78: "Deniz, 28" — one voice, name and age together. */
   cardName: {
     fontFamily: fontFamily.display,
-    fontSize: 36,
+    fontSize: 32,
+    lineHeight: 35,
     color: color.onPhoto,
   },
   cardAge: {
-    fontFamily: fontFamily.body,
-    fontSize: 34,
+    fontFamily: fontFamily.display,
+    fontSize: 32,
     color: color.onPhoto,
   },
   cardBio: {
@@ -881,20 +919,17 @@ const styles = StyleSheet.create({
     lineHeight: font.body * 1.4,
     color: color.onPhoto,
   },
-  /** A deep navy plate, matching the ribbon and the bond chip above it. */
-  hotelChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-    backgroundColor: overlay.plate,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm + 6,
-    paddingVertical: 8,
+  /** 132:82: the live line — a green mark and the words beside it. */
+  liveRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: color.successMark,
   },
-  hotelChipText: {
+  liveText: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: font.caption,
+    fontSize: 13,
     color: color.onPhoto,
   },
   /** Under the card, as the reference draws them. */
@@ -938,9 +973,9 @@ const styles = StyleSheet.create({
   /** Like: a flat coral fill — never a gradient, per D-058. */
   actionHeart: {
     overflow: 'hidden',
-    width: 84,
-    height: 84,
-    borderRadius: 42,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: color.accent,
     alignItems: 'center',
     justifyContent: 'center',
@@ -949,6 +984,17 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
+  },
+  /** 132:89: the small glass circle at the right edge of the pair's row. */
+  actionSmall: {
+    position: 'absolute',
+    right: spacing.md + 8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: overlay.glass,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardNoPhoto: {
     ...StyleSheet.absoluteFillObject,

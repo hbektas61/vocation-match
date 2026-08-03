@@ -515,6 +515,9 @@ export const tr: Copy = {
     overlapLabel: 'Nerede kesişiyorsunuz',
     overlapHereNow:
       'İkiniz de şu an bu oteldesiniz. Hiçbiriniz diğerinin nerede olduğunu göremez.',
+    /** K-01: the green-dot line — said only when it is live-true. */
+    liveAtVenue: 'Şu an mekânda',
+    liveAtEvent: 'Şu an etkinlikte',
     sameHotel: 'Aynı otelde',
     nearby: 'çevrede',
     overlapUpcoming:
@@ -549,6 +552,8 @@ export const tr: Copy = {
     bothAtPlate: 'İkiniz de buradasınız',
     likedEachOther: (name: string) => `${name} ile birbirinizi beğendiniz.`,
     sayHelloCta: (name: string) => `${name} için merhaba de`,
+    /** M-01 (132:106): the primary CTA's own word. */
+    sendMessageCta: 'Mesaj gönder',
     selfFallback: 'Sen',
     title: 'Eşleştiniz!',
     /** D-057: eşleşme anı hangi odadan geldiğini söyler. */

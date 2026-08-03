@@ -153,6 +153,8 @@ export const tokens = {
     photoDeep: 'rgba(16, 26, 58, 0.82)',
     /** A ribbon or plate over a photograph. */
     plate: 'rgba(16, 26, 58, 0.88)',
+    /** K-01's floating controls: near-white glass over a photograph. */
+    glass: 'rgba(255, 255, 255, 0.85)',
     /** Behind a modal or a sheet. */
     backdrop: 'rgba(16, 26, 58, 0.45)',
     /** A pressed state on a light surface, and a disabled fill. */
@@ -169,7 +171,8 @@ export const tokens = {
  * 3.7. The supporting sentence lower down sits on the pale end in navy.
  */
 export const gradient = {
-  match: ['#E94F54', '#FF7E7A', '#FFC7BC'],
+  /** M-01 (132:92): coral to pale peach, two stops, as drawn. */
+  match: ['#E94F52', '#FFC7BC'],
   /** A photograph's foot, so a name and a ribbon stay readable on any image. */
   photoScrim: ['rgba(16, 26, 58, 0)', 'rgba(16, 26, 58, 0.82)'],
 } as const;
