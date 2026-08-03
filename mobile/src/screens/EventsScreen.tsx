@@ -17,7 +17,16 @@
  * state while the list is on screen and is written down nowhere.
  */
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -122,6 +131,14 @@ export function EventsScreen({
   const [mineNames, setMineNames] = useState<Record<string, string | null>>({});
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** E-01 (131:132): which card each bucket's carousel rests on. */
+  const [pageIndex, setPageIndex] = useState<{ today: number; upcoming: number }>({
+    today: 0,
+    upcoming: 0,
+  });
+  // One card fills the view between the Screen's 20pt gutters.
+  const { width } = useWindowDimensions();
+  const cardWidth = width - 40;
   /** Provider image URLs that failed to load — a lease can lapse mid-list. */
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 
@@ -355,13 +372,43 @@ export function EventsScreen({
   ) => {
     if (result === null) return null;
     if (result.kind === 'ok') {
+      // E-01 (131:127/132): one card at a time, swiped sideways, with the
+      // dots underneath — never a column of cards stacked down the screen.
       return (
         <View testID={testID} style={styles.section}>
           <View style={styles.sectionHead}>
             <Text style={styles.heading}>{upperCase(heading)}</Text>
             <Text style={styles.sectionCount}>{COPY_FOR.eventCount(result.events.length)}</Text>
           </View>
-          {result.events.map((event, index) => card(event, bucket, `${testID}-option-${index}`))}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            decelerationRate="fast"
+            snapToInterval={cardWidth + 12}
+            snapToAlignment="start"
+            disableIntervalMomentum
+            onMomentumScrollEnd={(e) => {
+              const page = Math.round(e.nativeEvent.contentOffset.x / (cardWidth + 12));
+              setPageIndex((current) => ({ ...current, [bucket]: page }));
+            }}
+            contentContainerStyle={styles.carousel}
+          >
+            {result.events.map((event, index) => (
+              <View key={event.selectionToken} style={{ width: cardWidth }}>
+                {card(event, bucket, `${testID}-option-${index}`)}
+              </View>
+            ))}
+          </ScrollView>
+          {result.events.length > 1 ? (
+            <View style={styles.dots} testID={`${testID}-dots`}>
+              {result.events.map((event, index) => (
+                <View
+                  key={event.selectionToken}
+                  style={[styles.dot, index === pageIndex[bucket] && styles.dotActive]}
+                />
+              ))}
+            </View>
+          ) : null}
         </View>
       );
     }
@@ -604,6 +651,11 @@ const styles = StyleSheet.create({
   },
   busyText: { fontFamily: fontFamily.bodySemi, fontSize: 11, color: color.ink },
   section: { gap: spacing.xs },
+  carousel: { gap: 12 },
+  /** 131:132: the page dots — the resting one stretched into a coral pill. */
+  dots: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.xs },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: color.rule },
+  dotActive: { width: 18, backgroundColor: color.accent },
   sectionHead: {
     flexDirection: 'row',
     alignItems: 'center',
