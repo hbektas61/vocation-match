@@ -295,6 +295,8 @@ export const en = {
     todayHeading: 'Today',
     upcomingHeading: 'Upcoming events',
     areaLabel: 'Event area',
+    /** The pinned country over the city search, and its one-press change. */
+    changeCountry: 'Change country',
     changeArea: 'Change location',
     useMyLocation: 'Use my current location',
     chooseArea: 'Choose where to look',

@@ -42,7 +42,7 @@ import {
   Screen,
   ScreenHeader,
 } from '../components/ui';
-import { COPY, COPY_FOR, upperCase } from '../copy';
+import { COPY, COPY_FOR, getLocale, upperCase } from '../copy';
 import {
   deviceLocation,
   getApi,
@@ -53,6 +53,12 @@ import {
   type ForegroundLocationReader,
   type MyEvent,
 } from '../data';
+import {
+  countryOptions,
+  filterCountries,
+  suggestedCountries,
+  type CountryOption,
+} from '../domain/countries';
 import { formatDayMonthLong } from '../domain/dates';
 import type { RootStackParamList } from '../navigation/types';
 import { color, elevation, fontFamily, overlay, radius, spacing, tokens, MIN_TOUCH } from '../theme';
@@ -131,6 +137,18 @@ export function EventsScreen({
   const [area, setArea] = useState<EventArea | null>(null);
   const [areaDraft, setAreaDraft] = useState('');
   const [choosingArea, setChoosingArea] = useState(true);
+  /**
+   * The country the city search is pinned to. Typed alone, "Paris" is an
+   * ambiguity and "Las Vegas" a spelling test; picked from a local list it
+   * costs no request and cannot be misspelt. Türkiye starts as the pin
+   * because that is where the product launches — one press changes it.
+   */
+  const [areaCountry, setAreaCountry] = useState<CountryOption>(() => {
+    const options = countryOptions(getLocale());
+    return options.find((option) => option.code === 'TR') ?? options[0];
+  });
+  const [pickingCountry, setPickingCountry] = useState(false);
+  const [countryQuery, setCountryQuery] = useState('');
   const [category, setCategory] = useState<EventCategory>('all');
   const [today, setToday] = useState<EventSearchResult | null>(null);
   const [upcoming, setUpcoming] = useState<EventSearchResult | null>(null);
@@ -214,7 +232,12 @@ export function EventsScreen({
   const chooseCity = async () => {
     const city = areaDraft.trim();
     if (city.length < 2) return;
-    const next: EventArea = { kind: 'city', city, label: city };
+    const next: EventArea = {
+      kind: 'city',
+      city,
+      countryCode: areaCountry.code,
+      label: city,
+    };
     setArea(next);
     setChoosingArea(false);
     setPermissionDenied(false);
@@ -451,6 +474,62 @@ export function EventsScreen({
            14pt apart rather than touching (owner screenshot, 2026-08-03). */
         <View style={styles.areaPicker} testID="events-area-picker">
           <Text style={styles.heading}>{upperCase(COPY.events.chooseArea)}</Text>
+          {pickingCountry ? (
+            /* The wizard's country step, borrowed whole (D-060): a local,
+               free, unmisspellable list — search above, the usual suspects
+               underneath. */
+            <>
+              <Field
+                label={COPY.venue.countryLabel}
+                hideLabel
+                pill
+                prefix={<MagnifierIcon />}
+                value={countryQuery}
+                onChangeText={setCountryQuery}
+                placeholder={COPY.venue.countryPlaceholder}
+                testID="events-country-input"
+              />
+              {countryQuery.trim() === '' ? (
+                <Text style={styles.heading}>{upperCase(COPY.venue.countryPopular)}</Text>
+              ) : null}
+              {(countryQuery.trim()
+                ? filterCountries(countryOptions(getLocale()), countryQuery)
+                : suggestedCountries(getLocale())
+              ).map((option) => (
+                <Pressable
+                  key={option.code}
+                  accessibilityRole="button"
+                  accessibilityLabel={option.name}
+                  onPress={() => {
+                    setAreaCountry(option);
+                    setPickingCountry(false);
+                    setCountryQuery('');
+                  }}
+                  style={({ pressed }) => [styles.countryRow, pressed && styles.cardPressed]}
+                  testID={`events-country-${option.code}`}
+                >
+                  <Text style={styles.countryName}>{option.name}</Text>
+                  <Text style={styles.countryCode}>{option.code}</Text>
+                </Pressable>
+              ))}
+            </>
+          ) : (
+            <>
+          <View style={styles.countryScope}>
+            <Text style={styles.countryScopeName} testID="events-country-scope">
+              {areaCountry.name}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={COPY.events.changeCountry}
+              onPress={() => setPickingCountry(true)}
+              hitSlop={8}
+              style={styles.countryScopeChange}
+              testID="events-change-country"
+            >
+              <Text style={styles.countryScopeChangeText}>{COPY.events.changeCountry}</Text>
+            </Pressable>
+          </View>
           <Field
             label={COPY.events.areaLabel}
             hideLabel
@@ -482,6 +561,8 @@ export function EventsScreen({
               testID="events-permission-denied"
             />
           ) : null}
+            </>
+          )}
         </View>
       ) : (
         /* E-05: the chosen area is a standing header, not a line that
@@ -678,6 +759,38 @@ const styles = StyleSheet.create({
   },
   busyText: { fontFamily: fontFamily.bodySemi, fontSize: 11, color: color.ink },
   section: { gap: spacing.xs },
+  /** The pinned country over the city box, and the way to change it. */
+  countryScope: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: radius.pill,
+    backgroundColor: color.accentWash,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  countryScopeName: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.ink },
+  countryScopeChange: { minHeight: 28, justifyContent: 'center' },
+  countryScopeChangeText: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 12,
+    color: color.accentDeep,
+  },
+  /** A country row: the name, and the code as its quiet proof. */
+  countryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: MIN_TOUCH,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: color.rule,
+    backgroundColor: color.surface,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  countryName: { fontFamily: fontFamily.bodyMedium, fontSize: 14, color: color.ink },
+  countryCode: { fontFamily: fontFamily.bodySemi, fontSize: 11, color: color.inkMuted },
   /** 138:81: the white location pill, its pin and its 15pt seat. */
   hereButton: {
     flexDirection: 'row',

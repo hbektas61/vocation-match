@@ -286,6 +286,8 @@ export const tr: Copy = {
     todayHeading: 'Bugün',
     upcomingHeading: 'Yaklaşan Etkinlikler',
     areaLabel: 'Etkinlik bölgesi',
+    /** The pinned country over the city search, and its one-press change. */
+    changeCountry: 'Ülkeyi değiştir',
     changeArea: 'Konumu değiştir',
     useMyLocation: 'Mevcut konumumu kullan',
     chooseArea: 'Nereye bakalım?',
