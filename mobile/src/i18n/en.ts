@@ -951,6 +951,8 @@ export const enFor = {
   remainingTime: (hours: number, minutes: number) =>
     hours > 0 ? `Time left: ${hours} h ${minutes} min` : `Time left: ${minutes} min`,
   /** The deck ribbon's plain sentence (2026-08-03): who, where, when. */
+  /** The event deck's sentence (2026-08-04): which event, and who. */
+  eventDeckLine: (name: string) => `${name} — going to the same event as you`,
   upcomingDeckLine: (name: string) => `${name} — going on your dates`,
   untilTime: (time: string) => `until ${time}`,
   checkinUntil: (venueName: string, time: string) => `${venueName} — until ${time}`,

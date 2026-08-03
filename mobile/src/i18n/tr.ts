@@ -846,6 +846,8 @@ export const trFor: CopyFor = {
   remainingTime: (hours: number, minutes: number) =>
     hours > 0 ? `Kalan süre: ${hours} sa ${minutes} dk` : `Kalan süre: ${minutes} dk`,
   /** Keşfet şeridinin anlaşılır cümlesi (2026-08-03): kim, nereye, ne zaman. */
+  /** Etkinlik destesinin cümlesi (2026-08-04): hangi etkinlik, kimler. */
+  eventDeckLine: (name: string) => `${name} — seninle aynı etkinliğe gidecekler`,
   upcomingDeckLine: (name: string) => `${name} — seninle aynı tarihlerde gidecekler`,
   untilTime: (time: string) => `${time}'e kadar`,
   checkinUntil: (venueName: string, time: string) => `${venueName} — ${time}'e kadar`,

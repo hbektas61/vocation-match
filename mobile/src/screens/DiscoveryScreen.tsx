@@ -98,7 +98,9 @@ function contextLine(
   // the provider's lease has lapsed the name is gone and the app's own label
   // stands in — never a stale copy we kept.
   if (room === 'EVENT_UPCOMING') {
-    return eventName ?? COPY.events.pastEvent;
+    // Named, as a sentence (owner, 2026-08-04): which event, and who the
+    // deck is — the people going to it with you.
+    return eventName ? COPY_FOR.eventDeckLine(eventName) : COPY.events.pastEvent;
   }
   if (room === 'EVENT_HERE_NOW') {
     return [eventName ?? COPY.events.pastEvent, left].filter(Boolean).join(' · ');
@@ -205,9 +207,16 @@ export function DiscoveryScreen() {
            * room was told "açık odan yok" while standing in it. They are built
            * the same way, from the memberships the account already has.
            */
-          const focusedEvent = mine.find((e) => e.focused) ?? mine[0] ?? null;
-          const upcomingEvent = mine.find((e) => e.upcomingOpen) ?? null;
-          const liveEvent = mine.find((e) => e.hereNowOpen) ?? null;
+          // A membership whose live window has closed is a past event
+          // (owner, 2026-08-04): its rooms leave the selector instead of
+          // sitting there promising a deck for a night already over. A null
+          // close is an unconfirmed time, which is not the same as over.
+          const currentEvents = mine.filter(
+            (e) => e.liveClosesAt === null || e.liveClosesAt > nowMs(),
+          );
+          const focusedEvent = currentEvents.find((e) => e.focused) ?? currentEvents[0] ?? null;
+          const upcomingEvent = currentEvents.find((e) => e.upcomingOpen) ?? null;
+          const liveEvent = currentEvents.find((e) => e.hereNowOpen) ?? null;
           const withEvents: RoomStatus[] = [...withNearby];
           if (upcomingEvent) {
             withEvents.push({
