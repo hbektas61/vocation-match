@@ -243,12 +243,20 @@ Deno.serve(async (req) => {
   };
 
   /** One upstream request, with a timeout, and the breaker told either way. */
-  const ask = async (path: string, params: URLSearchParams): Promise<unknown | null> => {
+  const ask = async (path: string, params: URLSearchParams, isRetry = false): Promise<unknown | null> => {
     params.set("apikey", key!);
     try {
       const response = await fetch(`${DISCOVERY}${path}?${params.toString()}`, {
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
+      if (response.status === 429 && !isRetry) {
+        // The limiter refusing a burst is not the provider being down. One
+        // short pause and one retry keeps a same-second pair of searches
+        // from printing "unavailable" under a heading whose sibling worked.
+        await measure("provider_rate_limited");
+        await new Promise((resolve) => setTimeout(resolve, 700));
+        return ask(path, params, true);
+      }
       if (!response.ok) {
         await admin.rpc("provider_breaker", { p_service: "ticketmaster", p_outcome: "fail" });
         await measure(response.status === 429 ? "provider_rate_limited" : "provider_error");

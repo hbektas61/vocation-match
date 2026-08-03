@@ -196,13 +196,14 @@ export function EventsScreen({
     }
     try {
       const api = getApi();
-      // Two buckets, two requests — and each is cached server-side on an area
-      // key rather than on the person asking, so the second person to look at
-      // İstanbul today costs nothing.
-      const [todayResult, upcomingResult] = await Promise.all([
-        api.searchEvents(next, 'today', chip),
-        api.searchEvents(next, 'upcoming', chip),
-      ]);
+      // Two buckets, two requests — asked one after the other, not as
+      // concurrent twins: the provider's rate limiter was refusing the
+      // second of a simultaneous pair, which put "unavailable" under one
+      // heading while the other showed cards (owner screenshot, 2026-08-03).
+      // Each answer is cached server-side on an area key, so the second
+      // person to look at İstanbul today still costs nothing.
+      const todayResult = await api.searchEvents(next, 'today', chip);
+      const upcomingResult = await api.searchEvents(next, 'upcoming', chip);
       setToday(todayResult);
       setUpcoming(upcomingResult);
     } finally {
@@ -512,7 +513,14 @@ export function EventsScreen({
       )}
 
       {area && !choosingArea ? (
-        <View style={styles.chipRow}>
+        /* E-01 (131:118): one row of chips that scrolls off the edge —
+           wrapping to a second line was spending a card's worth of screen. */
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipRow}
+          style={styles.chipStrip}
+        >
           {CHIPS.map((chip) => {
             const selected = chip.key === category;
             return (
@@ -525,7 +533,7 @@ export function EventsScreen({
               />
             );
           })}
-        </View>
+        </ScrollView>
       ) : null}
 
       {/* E-06: while results are already up, busy is a quiet line rather than
@@ -724,7 +732,8 @@ const styles = StyleSheet.create({
   badgeOnImage: { position: 'absolute', left: 11, top: 11 },
   /** A cancelled or postponed event is dimmed as well as labelled. */
   dimmed: { opacity: 0.45 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
+  chipStrip: { flexGrow: 0, marginBottom: spacing.sm },
+  chipRow: { flexDirection: 'row', gap: spacing.xs },
   card: {
     borderRadius: 24,
     borderWidth: 1,
