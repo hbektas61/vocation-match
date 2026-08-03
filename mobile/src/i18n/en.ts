@@ -276,6 +276,12 @@ export const en = {
     noResults: 'No hotels match that search.',
     loadError: 'Could not load hotels. Try again.',
     activatedNote: 'This is your active vacation place.',
+    /** Leaving is not switching (2026-08-03): the exit gets its own door. */
+    leaveCta: 'Leave this place',
+    leaveConfirmTitle: 'Leave this place?',
+    leaveConfirmBody:
+      'Your vacation place is removed and its rooms close; the dates you declared are deleted. Existing matches and chats pause; you can choose a new place any time.',
+    leaveYes: 'Yes, leave',
     switchedNotice: 'Switched hotels. Your previous hotel’s rooms are now closed.',
     activateError: 'Could not activate that hotel. Try again.',
     keepCurrent: 'Keep current hotel',
@@ -944,6 +950,8 @@ export const enFor = {
   /** N-03: "Time left: 2 h 41 min" — the check-in's live remainder. */
   remainingTime: (hours: number, minutes: number) =>
     hours > 0 ? `Time left: ${hours} h ${minutes} min` : `Time left: ${minutes} min`,
+  /** The deck ribbon's plain sentence (2026-08-03): who, where, when. */
+  upcomingDeckLine: (name: string) => `${name} — going on your dates`,
   untilTime: (time: string) => `until ${time}`,
   checkinUntil: (venueName: string, time: string) => `${venueName} — until ${time}`,
   /** The live Upcoming line (10:128): the declared window, and what it opens. */

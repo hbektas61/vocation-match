@@ -1071,6 +1071,13 @@ export class SupabaseApi implements VocationApi {
     };
   }
 
+  async leaveActiveVenue(): Promise<void> {
+    const { error } = await this.client.rpc('leave_active_venue');
+    if (error) {
+      throw toApiError(error, 'Could not leave this place.');
+    }
+  }
+
   async clearCheckin(): Promise<void> {
     const { error } = await this.client.rpc('clear_checkin');
     if (error) {

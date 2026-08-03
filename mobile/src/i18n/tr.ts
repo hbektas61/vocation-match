@@ -274,6 +274,12 @@ export const tr: Copy = {
     noResults: 'Bu aramayla eşleşen otel yok.',
     loadError: 'Oteller yüklenemedi. Tekrar dene.',
     activatedNote: 'Bu senin aktif tatil mekânın.',
+    /** Ayrılmak değiştirmek değildir (2026-08-03): çıkışın kendi kapısı. */
+    leaveCta: 'Bu mekândan ayrıl',
+    leaveConfirmTitle: 'Mekândan ayrılıyor musun?',
+    leaveConfirmBody:
+      'Tatil mekânın kaldırılır ve odaların kapanır; beyan ettiğin tarihler silinir. Mevcut eşleşmelerin ve sohbetlerin durur; istediğin zaman yeni bir mekân seçebilirsin.',
+    leaveYes: 'Evet, ayrıl',
     switchedNotice: 'Tatil mekânı değiştirildi. Önceki mekânının odaları artık kapalı.',
     activateError: 'Bu otel etkinleştirilemedi. Tekrar dene.',
     keepCurrent: 'Mevcut mekânı koru',
@@ -839,6 +845,8 @@ export const trFor: CopyFor = {
   /** N-03: "Kalan süre: 2 sa 41 dk" — the check-in's live remainder. */
   remainingTime: (hours: number, minutes: number) =>
     hours > 0 ? `Kalan süre: ${hours} sa ${minutes} dk` : `Kalan süre: ${minutes} dk`,
+  /** Keşfet şeridinin anlaşılır cümlesi (2026-08-03): kim, nereye, ne zaman. */
+  upcomingDeckLine: (name: string) => `${name} — seninle aynı tarihlerde gidecekler`,
   untilTime: (time: string) => `${time}'e kadar`,
   checkinUntil: (venueName: string, time: string) => `${venueName} — ${time}'e kadar`,
   roomHeadcount: (count: number) => `${count} kişi`,

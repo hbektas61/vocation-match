@@ -15,7 +15,7 @@ import { nowMs } from '../clock';
 import { formatStayRangeLabel } from '../domain/dates';
 import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation } from '../copy';
 import { ApiError, getApi, type CandidateCard, type MyEvent, type RoomKey, type RoomStatus } from '../data';
-import { resolveDeckLabels } from '../data/venueLabels';
+import { resolveDeckLabels, resolveOwnVenueLabel } from '../data/venueLabels';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { color, elevation, font, fontFamily, gradient, overlay, radius, spacing } from '../theme';
 import { earliestRoomExpiry } from '../state/roomSchedule';
@@ -87,7 +87,9 @@ function contextLine(
     validUntil != null ? Math.max(1, Math.round((validUntil - nowMs()) / 60000)) : null;
   const left = minutesLeft != null ? COPY_FOR.timeLeft(minutesLeft) : null;
   if (room === 'UPCOMING') {
-    return [hotelName, stayRange].filter(Boolean).join(' · ');
+    // The plain sentence (owner, 2026-08-03): who this deck is — the people
+    // going where you are going, when you are going.
+    return hotelName ? COPY_FOR.upcomingDeckLine(hotelName) : stayRange ?? '';
   }
   if (room === 'HERE_NOW') {
     return [hotelName, left].filter(Boolean).join(' · ');
@@ -144,7 +146,29 @@ export function DiscoveryScreen() {
   // Same as Rooms: whether there is an active hotel comes from the server, and
   // the cached card only ever supplies its name.
   const hotel = state.hotels.find((h) => h.id === state.activeHotel?.hotelId) ?? null;
-  const hotelName = hotel?.name ?? null;
+  /**
+   * A Google venue's stored name is the '(google)' stub (D-054): the real
+   * one is resolved live, from the same session cache the deck labels use,
+   * and until it lands the screen says nothing rather than the stub.
+   */
+  const [ownVenueName, setOwnVenueName] = useState<string | null>(null);
+  useEffect(() => {
+    if (hotel?.provider !== 'google') {
+      setOwnVenueName(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const venue = await getApi().getActiveVenue().catch(() => null);
+      if (cancelled || !venue?.googlePlaceId) return;
+      const name = await resolveOwnVenueLabel(venue.googlePlaceId);
+      if (!cancelled) setOwnVenueName(name);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hotel?.provider, hotel?.id]);
+  const hotelName = hotel?.provider === 'google' ? ownVenueName : hotel?.name ?? null;
   const hasHotel = state.activeHotel !== null;
 
   // Room eligibility can change from another tab, so refresh it on focus,

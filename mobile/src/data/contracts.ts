@@ -818,6 +818,12 @@ export interface VocationApi {
   googleCheckinEntitlement(): Promise<CheckinEntitlement>;
   /** A Place ID back into a name, for drawing it. Null when unavailable. */
   resolveGooglePlace(placeId: string): Promise<GooglePlaceIdentity | null>;
+  /**
+   * Deactivates the active venue and replaces it with nothing: rooms close
+   * (D-004), presence clears, the declared stay goes with the trip it
+   * described. Leaving with nothing active is not an error.
+   */
+  leaveActiveVenue(): Promise<void>;
   clearCheckin(): Promise<void>;
   getCheckin(): Promise<ActiveCheckin | null>;
 

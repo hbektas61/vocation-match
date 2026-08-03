@@ -63,6 +63,29 @@ export function knownVenueLabel(placeId: string): string | null {
  * throws: a provider that cannot answer produces a generic card, not an error
  * screen.
  */
+/**
+ * The caller's own venue's live name, from the same cache the deck labels
+ * use — one details call per session per place, shared across screens, and
+ * exempt from the deck's label budget because it is not a deck label.
+ */
+export async function resolveOwnVenueLabel(placeId: string): Promise<string | null> {
+  if (resolved.has(placeId)) return resolved.get(placeId) ?? null;
+  let attempt = pending.get(placeId);
+  if (!attempt) {
+    attempt = getApi()
+      .resolveGooglePlace(placeId)
+      .catch(() => null)
+      .then((identity) => {
+        const name = identity?.name ?? null;
+        resolved.set(placeId, name);
+        pending.delete(placeId);
+        return name;
+      });
+    pending.set(placeId, attempt);
+  }
+  return attempt;
+}
+
 export async function resolveDeckLabels(
   placeIds: readonly (string | null | undefined)[],
   /** The caller's own venue, which is never worth a paid call. */

@@ -633,6 +633,16 @@ export class FakeApi implements VocationApi {
     return { hotelId, previousHotelId, presenceCleared: presenceCleared === true };
   }
 
+  async leaveActiveVenue(): Promise<void> {
+    const userId = await this.requireUserId();
+    // The switch's teardown, with nothing put in the old venue's place.
+    this.activeHotels.delete(userId);
+    this.presence.delete(userId);
+    for (const key of [...this.stays.keys()]) {
+      if (key.startsWith(`${userId}|`)) this.stays.delete(key);
+    }
+  }
+
   /* ------------------------------------------- vacation venue, D-054 */
 
   /**

@@ -122,6 +122,25 @@ describe('rooms and hotel switching', () => {
     expect(screen.queryByTestId('vacation-discover-here-now')).toBeNull();
   });
 
+  it('leaving the venue needs no replacement, and asks first (owner, 2026-08-03)', async () => {
+    await onboardAndActivateHotel();
+
+    // The exit lives on the venue's own details screen.
+    await press(await screen.findByTestId('active-hotel-card'));
+    await press(await screen.findByTestId('hotel-leave'));
+
+    // Backing out leaves everything exactly as it was.
+    await press(await screen.findByTestId('hotel-leave-cancel'));
+    expect(await getApi().getActiveHotel()).not.toBeNull();
+
+    await press(await screen.findByTestId('hotel-leave'));
+    await press(await screen.findByTestId('hotel-leave-confirm'));
+
+    // No venue, and the tab says so rather than showing a stale card.
+    expect(await screen.findByTestId('hotel-empty-state')).toBeTruthy();
+    expect(await getApi().getActiveHotel()).toBeNull();
+  });
+
   it('switching hotels closes Here Now at the previous hotel (D-004)', async () => {
     await onboardAndActivateHotel();
     await checkInAtHotel();
