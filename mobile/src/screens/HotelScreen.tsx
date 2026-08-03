@@ -166,6 +166,9 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
   const [roomStates, setRoomStates] = useState<RoomStatus[] | null>(null);
   /** The declared window, shown on the active card (D-040). */
   const [stay, setStay] = useState<UpcomingStay | null>(null);
+  /** The exit, on the tab itself (owner, 2026-08-03): it asks before it acts. */
+  const [confirmingLeave, setConfirmingLeave] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
   // The one question every branch of this screen asks — "is a hotel
   // chosen" — is answered by the id the store hydrated, never by whether
@@ -600,6 +603,57 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         />
       )}
 
+      {/* The exit lives where the choice does (owner, 2026-08-03): the tab
+          itself, not only the details screen behind the card. Same question,
+          same teardown — leaving is a switch that puts nothing in its place. */}
+      {activeId && !picking && !onActivated ? (
+        confirmingLeave ? (
+          <Card testID="hotel-leave-home-question">
+            <Heading>{COPY.hotel.leaveConfirmTitle}</Heading>
+            <Body>{COPY.hotel.leaveConfirmBody}</Body>
+            <Button
+              label={COPY.hotel.leaveYes}
+              variant="danger"
+              disabled={leaving}
+              busy={leaving}
+              onPress={async () => {
+                setLeaving(true);
+                try {
+                  await getApi().leaveActiveVenue();
+                  dispatch({ type: 'ACTIVE_HOTEL_LOADED', activeHotel: null });
+                  setConfirmingLeave(false);
+                  setStay(null);
+                  setRoomStates(null);
+                  setActiveVenue(null);
+                  setGoogleName(null);
+                  setGooglePhoto(null);
+                } finally {
+                  setLeaving(false);
+                }
+              }}
+              testID="hotel-leave-home-confirm"
+            />
+            <Button
+              label={COPY.common.cancel}
+              variant="secondary"
+              disabled={leaving}
+              onPress={() => setConfirmingLeave(false)}
+              testID="hotel-leave-home-cancel"
+            />
+          </Card>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={COPY.hotel.leaveCta}
+            onPress={() => setConfirmingLeave(true)}
+            style={({ pressed }) => [styles.leaveRow, pressed && styles.resultPressed]}
+            testID="hotel-leave-home"
+          >
+            <Text style={styles.leaveText}>{COPY.hotel.leaveCta}</Text>
+          </Pressable>
+        )
+      ) : null}
+
       {/* Idle on the not-yet-chosen screen is one card (10:86): the feature
           that exists before any venue does, honestly shut behind the one
           thing it needs. */}
@@ -732,6 +786,9 @@ const styles = StyleSheet.create({
   teaserOpenDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: color.successMark },
   teaserOpenText: { fontFamily: fontFamily.bodySemi, fontSize: 11, color: color.success },
   teaserArrow: { fontFamily: fontFamily.bodySemi, fontSize: 16, lineHeight: 22, color: color.accentDeep },
+  /** The tab's quiet exit, under the change button. */
+  leaveRow: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  leaveText: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.accentDeep },
   /** The quiet second action a live room earns. */
   teaserExtra: { minHeight: 32, justifyContent: 'center' },
   teaserExtraText: { fontFamily: fontFamily.bodySemi, fontSize: 12, color: color.accentDeep },

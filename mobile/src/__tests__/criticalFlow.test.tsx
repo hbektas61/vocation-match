@@ -125,11 +125,14 @@ describe('rooms and hotel switching', () => {
   it('leaving the venue needs no replacement, and asks first (owner, 2026-08-03)', async () => {
     await onboardAndActivateHotel();
 
-    // The exit lives on the venue's own details screen.
+    // The exit is on the tab itself — not only behind the details card.
+    await press(await screen.findByTestId('hotel-leave-home'));
+    await press(await screen.findByTestId('hotel-leave-home-cancel'));
+    expect(await getApi().getActiveHotel()).not.toBeNull();
+
+    // The details screen carries the same door.
     await press(await screen.findByTestId('active-hotel-card'));
     await press(await screen.findByTestId('hotel-leave'));
-
-    // Backing out leaves everything exactly as it was.
     await press(await screen.findByTestId('hotel-leave-cancel'));
     expect(await getApi().getActiveHotel()).not.toBeNull();
 
