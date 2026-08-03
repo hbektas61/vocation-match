@@ -438,8 +438,8 @@ export function EventsScreen({
       <Text style={styles.subtitle}>{COPY.events.subtitle}</Text>
 
       {choosingArea || !area ? (
-        {/* ED-01's vertical rhythm: the pill, the two buttons, each standing
-            14pt apart rather than touching (owner screenshot, 2026-08-03). */}
+        /* ED-01's vertical rhythm: the pill, the two buttons, each standing
+           14pt apart rather than touching (owner screenshot, 2026-08-03). */
         <View style={styles.areaPicker} testID="events-area-picker">
           <Text style={styles.heading}>{upperCase(COPY.events.chooseArea)}</Text>
           <Field
