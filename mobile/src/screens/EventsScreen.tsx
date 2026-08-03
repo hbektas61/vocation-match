@@ -77,6 +77,14 @@ const MagnifierIcon = () => (
   </Svg>
 );
 
+/** 138:82: the pin before "use my current location". */
+const PinIcon = () => (
+  <Svg {...iconStroke(color.ink, 16)}>
+    <Path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+    <Circle cx={12} cy={10} r={3} />
+  </Svg>
+);
+
 /** ED-01's empty-state mark: a pennant — an event, not a hotel, not a pin. */
 const PennantIcon = () => (
   <Svg {...iconStroke(color.accentDeep, 26)}>
@@ -455,12 +463,17 @@ export function EventsScreen({
           />
           {/* ED-01: the heading asks the question; the button says the deed. */}
           <Button label={COPY.events.showEvents} onPress={chooseCity} testID="events-area-confirm" />
-          <Button
-            label={COPY.events.useMyLocation}
-            variant="secondary"
+          {/* 138:81: the white pill with the pin standing before the words. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={COPY.events.useMyLocation}
             onPress={chooseHere}
+            style={({ pressed }) => [styles.hereButton, pressed && styles.cardPressed]}
             testID="events-area-here"
-          />
+          >
+            <PinIcon />
+            <Text style={styles.hereButtonText}>{COPY.events.useMyLocation}</Text>
+          </Pressable>
           {permissionDenied ? (
             <Notice
               message={COPY.events.permissionDenied}
@@ -597,7 +610,11 @@ export function EventsScreen({
         </View>
       )}
 
-      <Caption>{COPY.events.noTicketClaim}</Caption>
+      {/* ED-01 keeps the first open clean: the no-ticket sentence stands
+          only once something checkable — results or memberships — is up. */}
+      {today || upcoming || mine.length > 0 ? (
+        <Caption>{COPY.events.noTicketClaim}</Caption>
+      ) : null}
     </Screen>
   );
 }
@@ -653,6 +670,20 @@ const styles = StyleSheet.create({
   },
   busyText: { fontFamily: fontFamily.bodySemi, fontSize: 11, color: color.ink },
   section: { gap: spacing.xs },
+  /** 138:81: the white location pill, its pin and its 15pt seat. */
+  hereButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: MIN_TOUCH,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.rule,
+    backgroundColor: color.surface,
+    paddingVertical: 15,
+  },
+  hereButtonText: { fontFamily: fontFamily.bodySemi, fontSize: 14, color: color.ink },
   /** ED-01 (137:72): 14 between the search pill and each button under it. */
   areaPicker: { gap: 14 },
   carousel: { gap: 12 },
