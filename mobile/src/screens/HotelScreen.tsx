@@ -6,7 +6,7 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 
-import { Body, Button, Card, ConfirmDialog, Heading, Notice, PhotoScrim, Screen } from '../components/ui';
+import { Button, ConfirmDialog, Notice, PhotoScrim, Screen } from '../components/ui';
 import { nowMs } from '../clock';
 import { formatStayRangeLabel } from '../domain/dates';
 import { earliestRoomExpiry } from '../state/roomSchedule';
@@ -509,25 +509,24 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       {switchedNotice ? <Notice message={COPY.hotel.switchedNotice} testID="hotel-switched" /> : null}
       {activateError ? <Notice message={activateError} tone="error" testID="hotel-activate-error" /> : null}
 
-      {pendingSwitch ? (
-        <Card>
-          <Heading>{COPY_FOR.switchPrompt(pendingSwitch.name)}</Heading>
-          <Body>{COPY.trust.switchWarning}</Body>
-          <Button
-            label={COPY.hotel.switchButton}
-            onPress={() => activate(pendingSwitch)}
-            disabled={activating}
-            testID="confirm-switch"
-          />
-          <Button
-            label={COPY.hotel.keepCurrent}
-            variant="secondary"
-            onPress={() => setPendingSwitch(null)}
-            disabled={activating}
-            testID="cancel-switch"
-          />
-        </Card>
-      ) : null}
+      {/* The switch question pops like the leave question does (owner,
+          2026-08-03): a blocking card over a dimmed screen, not a card the
+          keyboard half-covers at the foot of the list. */}
+      <ConfirmDialog
+        visible={pendingSwitch !== null}
+        title={pendingSwitch ? COPY_FOR.switchPrompt(pendingSwitch.name) : ''}
+        body={COPY.trust.switchWarning}
+        confirmLabel={COPY.hotel.switchButton}
+        cancelLabel={COPY.hotel.keepCurrent}
+        busy={activating}
+        onCancel={() => setPendingSwitch(null)}
+        onConfirm={() => {
+          if (pendingSwitch) void activate(pendingSwitch);
+        }}
+        testID="hotel-switch-question"
+        confirmTestID="confirm-switch"
+        cancelTestID="cancel-switch"
+      />
 
       {activeId && !picking && !onActivated ? (
         /* D-040, in T-01's geometry: the drawn heading, then the two rooms
