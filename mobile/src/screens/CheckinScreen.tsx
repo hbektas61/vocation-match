@@ -162,6 +162,8 @@ export function CheckinScreen({
   const [nearby, setNearby] = useState<HotelCard[] | null>(null);
   /** Live Google results for the current reading; never persisted. */
   const [nearbyGoogle, setNearbyGoogle] = useState<GooglePlaceHit[]>([]);
+  /** The live provider had no answer — the one case the catalogue steps in. */
+  const [googleDown, setGoogleDown] = useState(false);
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(false);
   /**
@@ -315,6 +317,7 @@ export function CheckinScreen({
     if (googleResult.status === 'fulfilled' && googleResult.value) {
       setNearbyGoogle(googleResult.value.places);
     }
+    setGoogleDown(googleResult.status === 'rejected' || googleResult.value === null);
     if (
       catalogueResult.status === 'rejected' &&
       (googleResult.status === 'rejected' || googleResult.value === null)
@@ -659,15 +662,13 @@ export function CheckinScreen({
     const matches = (parts: (string | null | undefined)[]) =>
       !searching || normalizeQuery(parts.filter(Boolean).join(' ')).includes(fingerprint);
     const liveShown = nearbyGoogle.filter((place) => matches([place.name, place.detail]));
-    // Live Google wins when both providers describe the same named place. That
-    // prevents a stale catalogue row (including an old/wrong kind) from
-    // sitting beside the current provider answer.
-    const liveNames = new Set(nearbyGoogle.map((place) => normalizeQuery(place.name)));
-    const catalogueShown = nearby.filter(
-      (venue) =>
-        !liveNames.has(normalizeQuery(venue.name)) &&
-        matches([venue.name, venue.address, venue.city, venue.country]),
-    );
+    // Owner decision (2026-08-03): when the live provider answered, its list
+    // IS the list. The open-data catalogue's kinds proved too wrong to stand
+    // beside it — apartments as hotels, coffee brands as lodging — so it
+    // steps in only when Google had no answer at all, and says so.
+    const catalogueShown = nearbyGoogle.length > 0
+      ? []
+      : nearby.filter((venue) => matches([venue.name, venue.address, venue.city, venue.country]));
     const shownCount = liveShown.length + catalogueShown.length;
     return (
       <Screen safeTop testID="screen-checkin">
@@ -712,27 +713,8 @@ export function CheckinScreen({
           </Pressable>
         </View>
 
-        <Text style={styles.kicker}>{upperCase(COPY.checkin.aroundYou)}</Text>
-
-        {busy ? (
-          <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="checkin-looking" />
-        ) : null}
-        {shownCount === 0 && !busy ? (
-          <EmptyState message={COPY.checkin.noVenues} testID="checkin-no-venues" />
-        ) : (
-          <>
-            {liveShown.length > 0 ? (
-              <View testID="checkin-live-google-list">
-                {liveShown.map((place) => googleVenueRow(place, 'live'))}
-                <Text style={styles.attribution}>{COPY.checkin.googleAttribution}</Text>
-              </View>
-            ) : null}
-            {catalogueShown.map((venue) => venueRow(venue, searching ? 'found' : 'near'))}
-          </>
-        )}
-
-        {/* 153:100: the written search sits under the list — the fallback for
-            a place the reading did not surface, not the way in. */}
+        {/* The written search stands over the list it filters (owner,
+            2026-08-03) — at the foot of a long list it was unfindable. */}
         <View style={styles.searchPill}>
           <MagnifierIcon />
           <TextInput
@@ -745,11 +727,38 @@ export function CheckinScreen({
           />
         </View>
 
+        <Text style={styles.kicker}>{upperCase(COPY.checkin.aroundYou)}</Text>
+
+        {busy ? (
+          <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="checkin-looking" />
+        ) : null}
+        {shownCount === 0 && !busy ? (
+          <EmptyState message={COPY.checkin.noVenues} testID="checkin-no-venues" />
+        ) : (
+          <>
+            {liveShown.length > 0 ? (
+              <View style={styles.rowList} testID="checkin-live-google-list">
+                {liveShown.map((place) => googleVenueRow(place, 'live'))}
+                <Text style={styles.attribution}>{COPY.checkin.googleAttribution}</Text>
+              </View>
+            ) : null}
+            {catalogueShown.length > 0 && googleDown ? (
+              <Notice message={COPY.checkin.nearbyProviderUnavailable} testID="checkin-live-down" />
+            ) : null}
+            {catalogueShown.length > 0 ? (
+              <View style={styles.rowList}>
+                {catalogueShown.map((venue) => venueRow(venue, searching ? 'found' : 'near'))}
+              </View>
+            ) : null}
+          </>
+        )}
+
+
         {/* Step three (D-052): opened by hand, after our own catalogue and the
             written search have both had their turn. Google's answers stay in
             their own list, credited, and nothing about them is stored. */}
         {googlePlaces && googlePlaces.length > 0 ? (
-          <View style={styles.googleBlock} testID="checkin-google-list">
+          <View style={[styles.googleBlock, styles.rowList]} testID="checkin-google-list">
             <Text style={styles.attribution}>{COPY.checkin.googleAttribution}</Text>
             {googlePlaces.map((place) => googleVenueRow(place, 'advanced'))}
           </View>
@@ -1329,6 +1338,8 @@ const styles = StyleSheet.create({
     backgroundColor: color.accent,
     paddingVertical: 14,
   },
+  /** Rows inside a section stand 14 apart, like the screen's own rhythm. */
+  rowList: { gap: 14 },
   /** N-02 (153:75): the standing-here anchor, first and in its wash. */
   hereCard: {
     gap: 10,
