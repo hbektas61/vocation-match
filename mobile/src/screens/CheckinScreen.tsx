@@ -22,9 +22,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import { Caption, EmptyState, Notice, PhotoScrim, Screen, StateChip } from '../components/ui';
+import { Caption, EmptyState, Notice, PhotoScrim, Screen } from '../components/ui';
 import { ProfileRing } from '../components/ProfileRing';
-import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
+import { apiErrorMessage, COPY, COPY_FOR, upperCase } from '../copy';
 import {
   ApiError,
   deniedLocation,
@@ -32,7 +32,6 @@ import {
   fixedLocation,
   getApi,
   isFakeApiEnabled,
-  readBackendConfig,
   type ActiveCheckin,
   type ForegroundLocationReader,
   type GooglePlaceHit,
@@ -74,63 +73,6 @@ const PinIcon = ({ tone = DEEP, size = 22 }: { tone?: string; size?: number }) =
   <Svg {...stroke(tone, size)}>
     <Path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
     <Circle cx={12} cy={10} r={3} />
-  </Svg>
-);
-
-/** The list's "Mahalle" icon: a pin standing on a folded map. */
-const AreaIcon = ({ tone = DEEP }: { tone?: string }) => (
-  <Svg {...stroke(tone)}>
-    <Path d="M3 20l5-2 4 2 5-2 4 2V8l-4-2" />
-    <Path d="M12 12c2-2 4-4.2 4-6.5A4 4 0 0 0 8 5.5C8 7.8 10 10 12 12Z" />
-  </Svg>
-);
-
-const BuildingIcon = ({ tone = DEEP }: { tone?: string }) => (
-  <Svg {...stroke(tone)}>
-    <Path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" />
-    <Path d="M4 21h16M10 8h1m2 0h1m-4 4h1m2 0h1m-4 4h1m2 0h1" />
-  </Svg>
-);
-
-const CoffeeIcon = ({ tone = color.premium }: { tone?: string }) => (
-  <Svg {...stroke(tone)}>
-    <Path d="M4 11h12v4a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z" />
-    <Path d="M16 12h1.5a2.5 2.5 0 0 1 0 5H16" />
-    <Path d="M8 8c0-1 .8-1.2.8-2.2M11.5 8c0-1 .8-1.2.8-2.2" strokeWidth={1.6} />
-  </Svg>
-);
-
-const CutleryIcon = ({ tone = color.accentDeep }: { tone?: string }) => (
-  <Svg {...stroke(tone)}>
-    <Path d="M8 3v7a2 2 0 0 1-2 2v9M6 3v5M10 3v5" />
-    <Path d="M16 3c-1.5 1.5-2 4-2 6 0 1.5 1 3 2 3v9" />
-  </Svg>
-);
-
-const BedIcon = ({ tone = DEEP }: { tone?: string }) => (
-  <Svg {...stroke(tone)}>
-    <Path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18v2m18-2v2M3 15h18" />
-    <Path d="M7 10V8.5A1.5 1.5 0 0 1 8.5 7h2A1.5 1.5 0 0 1 12 8.5V10" />
-  </Svg>
-);
-
-const CocktailIcon = ({ tone = DEEP }: { tone?: string }) => (
-  <Svg {...stroke(tone)}>
-    <Path d="M5 4h14l-7 8zM12 12v7m-4 1h8" />
-  </Svg>
-);
-
-const WavesIcon = ({ tone = color.success }: { tone?: string }) => (
-  <Svg {...stroke(tone)}>
-    <Path d="M3 10c2-2 4-2 6 0s4 2 6 0 4-2 6 0M3 16c2-2 4-2 6 0s4 2 6 0 4-2 6 0" />
-  </Svg>
-);
-
-/** A crowd's place (D-049): a stage under its arch. */
-const StageIcon = ({ tone = DEEP }: { tone?: string }) => (
-  <Svg {...stroke(tone)}>
-    <Path d="M3 21h18M5 21V10l7-5 7 5v11" />
-    <Path d="M9 21v-5h6v5" />
   </Svg>
 );
 
@@ -178,28 +120,6 @@ const ShieldPlusIcon = ({ tone = DEEP, size = 18 }: { tone?: string; size?: numb
   </Svg>
 );
 
-const PeopleIcon = ({ tone = DEEP, size = 20 }: { tone?: string; size?: number }) => (
-  <Svg {...stroke(tone, size)}>
-    <Circle cx={9} cy={8} r={3.2} />
-    <Path d="M3.5 20c0-3 2.5-5 5.5-5s5.5 2 5.5 5" />
-    <Path d="M16 5.5a3.2 3.2 0 0 1 0 5M18 15.2c1.6.8 2.5 2.3 2.5 4.8" />
-  </Svg>
-);
-
-const RefreshIcon = ({ tone = DEEP, size = 20 }: { tone?: string; size?: number }) => (
-  <Svg {...stroke(tone, size)}>
-    <Path d="M20 11a8 8 0 0 0-14.9-3M4 13a8 8 0 0 0 14.9 3" />
-    <Path d="M20 4v4h-4M4 20v-4h4" />
-  </Svg>
-);
-
-const StopIcon = ({ tone = DEEP, size = 20 }: { tone?: string; size?: number }) => (
-  <Svg {...stroke(tone, size)}>
-    <Circle cx={12} cy={12} r={9} />
-    <Rect x={9} y={9} width={6} height={6} rx={1} fill={tone} />
-  </Svg>
-);
-
 /* ------------------------------------------------------- category styling */
 
 /**
@@ -229,36 +149,6 @@ function kindMeta(kind: string | null) {
       tone: color.accentDeep,
     }
   );
-}
-
-function KindArt({ kind, tone }: { kind: string | null; tone: string }) {
-  switch (kind) {
-    case 'area':
-      return <AreaIcon tone={tone} />;
-    case 'cafe':
-      return <CoffeeIcon tone={tone} />;
-    case 'restaurant':
-      return <CutleryIcon tone={tone} />;
-    case 'bar':
-      return <CocktailIcon tone={tone} />;
-    case 'beach':
-      return <WavesIcon tone={tone} />;
-    case 'hotel':
-      return <BuildingIcon tone={tone} />;
-    case 'venue':
-      return <StageIcon tone={tone} />;
-    default:
-      return <PinIcon tone={tone} />;
-  }
-}
-
-function photoSource(url: string) {
-  const config = readBackendConfig();
-  if (config && url.includes('/functions/v1/hotel-photo')) {
-    // Only the apikey header: the gateway accepts the publishable key there.
-    return { uri: `${url}&w=800`, headers: { apikey: config.anonKey } };
-  }
-  return { uri: url };
 }
 
 /* ------------------------------------------------------------------ screen */
@@ -651,18 +541,12 @@ export function CheckinScreen({
         style={({ pressed }) => [styles.venueRow, pressed && styles.pressed]}
         testID={`checkin-venue-${venue.id}`}
       >
-        <View style={[styles.venueDisc, { backgroundColor: meta.tint }]}>
-          <KindArt kind={venue.kind} tone={meta.tone} />
-        </View>
+        {/* N-02 (153:85): the name, and the kind as its tracked word under
+            it. The address stays in the accessible label, where two same-name
+            places still need telling apart. */}
         <View style={styles.venueWords}>
           <Text style={styles.venueName} numberOfLines={1}>{venue.name}</Text>
-          <View style={styles.venuePlace}>
-            <PinIcon tone={color.inkMuted} size={11} />
-            <Text style={styles.venueCity} numberOfLines={1}>{detail}</Text>
-          </View>
-        </View>
-        <View style={[styles.kindChip, { backgroundColor: meta.tint }]}>
-          <Text style={[styles.kindChipText, { color: meta.tone }]}>{meta.label()}</Text>
+          <Text style={styles.venueKind}>{upperCase(meta.label())}</Text>
         </View>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
@@ -681,17 +565,9 @@ export function CheckinScreen({
         style={({ pressed }) => [styles.venueRow, pressed && styles.pressed]}
         testID={`checkin-google-${place.selectionToken}`}
       >
-        <View style={[styles.venueDisc, { backgroundColor: meta.tint }]}>
-          <KindArt kind={place.kind} tone={meta.tone} />
-        </View>
         <View style={styles.venueWords}>
           <Text style={styles.venueName} numberOfLines={1}>{place.name}</Text>
-          {place.detail ? (
-            <Text style={styles.venueCity} numberOfLines={1}>{place.detail}</Text>
-          ) : null}
-        </View>
-        <View style={[styles.kindChip, { backgroundColor: meta.tint }]}>
-          <Text style={[styles.kindChipText, { color: meta.tone }]}>{meta.label()}</Text>
+          <Text style={styles.venueKind}>{upperCase(meta.label())}</Text>
         </View>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
@@ -701,10 +577,10 @@ export function CheckinScreen({
   /* ---------------------------------------------------- 3: active check-in */
   if (checkin) {
     const meta = kindMeta(checkin.kind);
-    const hhmm = new Date(checkin.expiresAt).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    // The live remainder, from the same clock the expiry watcher reads.
+    const remainingMs = Math.max(0, checkin.expiresAt - Date.now());
+    const remainH = Math.floor(remainingMs / 3_600_000);
+    const remainM = Math.floor((remainingMs % 3_600_000) / 60_000);
     return (
       <Screen safeTop testID="screen-checkin">
         <View style={styles.headRow}>
@@ -713,94 +589,57 @@ export function CheckinScreen({
         </View>
         <Text style={styles.subtitleSm}>{COPY.checkin.activeSubtitle}</Text>
 
+        {/* N-03 (153:111): the state is one card — the green line, the
+            place's name, its kind and validity, the live remainder, and the
+            three ways out stacked inside. */}
         <View style={styles.activeCard} testID="checkin-active">
-          {checkin.photoUrl ? (
-            <View>
-              <Image
-                source={photoSource(checkin.photoUrl)}
-                style={styles.activePhoto}
-                resizeMode="cover"
-                accessibilityIgnoresInvertColors
-                testID="checkin-active-photo"
-              />
-              {checkin.photoAttribution ? (
-                <>
-                  {/* Mandatory under any text on a photograph — the credit is
-                      real text sitting on real photos of any brightness. */}
-                  <PhotoScrim />
-                  <Text style={styles.photoCredit} numberOfLines={1}>{checkin.photoAttribution}</Text>
-                </>
-              ) : null}
-            </View>
-          ) : (
-            /* No photo yet: the same inert well a thumbnail uses elsewhere. */
-            <View style={styles.activePhotoBand} />
-          )}
-          <View style={styles.activeBody}>
-            <View style={[styles.activeDisc, { backgroundColor: meta.tint }]}>
-              {checkin.kind === 'hotel' ? (
-                <BedIcon tone={meta.tone} />
-              ) : (
-                <KindArt kind={checkin.kind} tone={meta.tone} />
-              )}
-            </View>
-            <View style={styles.activeWords}>
-              <Text style={styles.activeName}>
-                {checkin.venueName ?? activeLabel ?? COPY.checkin.hereLabel}
-              </Text>
-              {/* Google's terms ask for the credit wherever its answer shows. */}
-              {checkin.googlePlaceId && activeLabel ? (
-                <Text style={styles.attribution}>{COPY.checkin.googleAttribution}</Text>
-              ) : null}
-              <StateChip open label={COPY.checkin.activeChip} />
-              <View style={styles.untilRow}>
-                <ClockIcon tone={color.inkMuted} size={14} />
-                <Text style={styles.untilText}>{COPY_FOR.untilTime(hhmm)}</Text>
-              </View>
-            </View>
+          <View style={styles.livePill}>
+            <Text style={styles.livePillDot}>{'●'}</Text>
+            <Text style={styles.livePillText}>{COPY.checkin.activeChip}</Text>
           </View>
+          <Text style={styles.activeName}>
+            {checkin.venueName ?? activeLabel ?? COPY.checkin.hereLabel}
+          </Text>
+          {/* Google's terms ask for the credit wherever its answer shows. */}
+          {checkin.googlePlaceId && activeLabel ? (
+            <Text style={styles.attribution}>{COPY.checkin.googleAttribution}</Text>
+          ) : null}
+          <Text style={styles.activeKindLine}>
+            {`${upperCase(meta.label())} · ${COPY.checkin.validFor}`}
+          </Text>
+          <View style={styles.remainRow}>
+            <ClockIcon tone={DEEP} size={13} />
+            <Text style={styles.remainText}>{COPY_FOR.remainingTime(remainH, remainM)}</Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => tabNavigation.navigate('Discovery', { source: 'NEARBY' })}
+            style={({ pressed }) => [styles.bigFilled, pressed && styles.pressed]}
+            testID="checkin-see-nearby"
+          >
+            <Text style={styles.bigFilledLabel}>{COPY.checkin.seeNearby}</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setCheckin(null)}
+            disabled={busy}
+            style={({ pressed }) => [styles.bigOutline, pressed && styles.pressed]}
+            testID="checkin-change"
+          >
+            <Text style={styles.bigOutlineLabel}>{COPY.checkin.changeCheckin}</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={COPY.checkin.checkOut}
+            onPress={endCheckin}
+            disabled={busy}
+            style={({ pressed }) => [styles.checkOutRow, pressed && styles.pressed]}
+            testID="checkin-clear"
+          >
+            <Text style={styles.checkOutText}>{COPY.checkin.checkOut}</Text>
+          </Pressable>
         </View>
-
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => tabNavigation.navigate('Discovery', { source: 'NEARBY' })}
-          style={({ pressed }) => [styles.bigFilled, pressed && styles.pressed]}
-          testID="checkin-see-nearby"
-        >
-          <PeopleIcon tone={color.onAccent} size={18} />
-          <Text style={styles.bigFilledLabel}>{COPY.checkin.seeNearby}</Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => setCheckin(null)}
-          disabled={busy}
-          style={({ pressed }) => [styles.bigOutline, pressed && styles.pressed]}
-          testID="checkin-change"
-        >
-          <RefreshIcon tone={color.ink} size={16} />
-          <Text style={styles.bigOutlineLabel}>{COPY.checkin.changeCheckin}</Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          onPress={endCheckin}
-          disabled={busy}
-          style={({ pressed }) => [styles.bigOutline, pressed && styles.pressed]}
-          testID="checkin-clear"
-        >
-          <StopIcon tone={color.ink} size={16} />
-          <Text style={styles.bigOutlineLabel}>{COPY.checkin.checkOut}</Text>
-        </Pressable>
-
-        {/* The sheet's safety card (11:166): a white card, 18 corners, the 44 well. */}
-        <View style={styles.safeCard}>
-          <View style={styles.safeDisc}>
-            <ShieldLockIcon size={22} />
-          </View>
-          <View style={styles.infoWords}>
-            <Text style={styles.safeTitle}>{COPY.checkin.safeTitle}</Text>
-            <Text style={styles.infoBody}>{COPY.checkin.cardBody}</Text>
-          </View>
-        </View>
+        <Caption>{COPY.checkin.safeCheck}</Caption>
 
         {notice ? (
           <Notice
@@ -855,6 +694,24 @@ export function CheckinScreen({
         <Text style={styles.subtitleSm}>
           {COPY.checkin.listSubtitle} <Text style={styles.subtitleHeart}>♥</Text>
         </Text>
+
+        {/* N-02 (153:75), D-048: the anchor that always exists — where you
+            are standing — first, in its wash card, never only under an
+            emptiness. */}
+        <View style={styles.hereCard}>
+          <Text style={styles.hereLabel}>{upperCase(COPY.checkin.hereLabel)}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={COPY.checkin.hereCta}
+            accessibilityState={{ disabled: !reading || busy }}
+            disabled={!reading || busy}
+            onPress={checkInHere}
+            style={({ pressed }) => [styles.bigFilled, pressed && styles.pressed]}
+            testID="checkin-here"
+          >
+            <Text style={styles.bigFilledLabel}>{COPY.checkin.hereCta}</Text>
+          </Pressable>
+        </View>
 
         <View style={styles.searchPill}>
           <MagnifierIcon />
@@ -911,11 +768,10 @@ export function CheckinScreen({
             accessibilityState={{ disabled: busy }}
             disabled={busy}
             onPress={askGoogle}
-            style={({ pressed }) => [styles.bigOutline, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.googleMoreRow, pressed && styles.pressed]}
             testID="checkin-google-more"
           >
-            <MagnifierIcon />
-            <Text style={styles.bigOutlineLabel}>{COPY.checkin.googleMore}</Text>
+            <Text style={styles.googleMoreText}>{COPY.checkin.googleMore}</Text>
           </Pressable>
         )}
 
@@ -928,26 +784,6 @@ export function CheckinScreen({
               : COPY.checkin.entitlementNone}
           </Caption>
         ) : null}
-
-        {/* Always here, never only under an emptiness: the map missing the
-            place you are standing in is the ordinary case (D-048). */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={COPY.checkin.hereCta}
-          accessibilityState={{ disabled: !reading || busy }}
-          disabled={!reading || busy}
-          onPress={checkInHere}
-          style={({ pressed }) => [
-            shownCount === 0 ? styles.bigFilled : styles.bigOutline,
-            pressed && styles.pressed,
-          ]}
-          testID="checkin-here"
-        >
-          <PinIcon tone={shownCount === 0 ? color.onAccent : color.ink} size={16} />
-          <Text style={shownCount === 0 ? styles.bigFilledLabel : styles.bigOutlineLabel}>
-            {COPY.checkin.hereCta}
-          </Text>
-        </Pressable>
 
         {notice ? (
           <Notice
@@ -976,44 +812,58 @@ export function CheckinScreen({
       </View>
       <Text style={styles.subtitle}>{COPY.checkin.idleSubtitle}</Text>
 
-      <View style={styles.heroCard}>
-        <View style={styles.heroColumns}>
-          <View style={styles.heroWords}>
-            <Text style={styles.heroTitle}>{COPY.checkin.introTitle}</Text>
-            <Text style={styles.heroBody}>{COPY.checkin.introBody}</Text>
-            <Text style={styles.howTitle}>{COPY.checkin.howTitle}</Text>
-            {[
-              { icon: <PinIcon tone={DEEP} size={16} />, text: COPY.checkin.howLocation },
-              { icon: <SparkleIcon size={16} />, text: COPY.checkin.howFree },
-              { icon: <ClockIcon size={16} />, text: COPY.checkin.howDuration },
-              { icon: <ShieldPlusIcon size={16} />, text: COPY.checkin.howPrivacy },
-            ].map((rowItem, index) => (
-              <View key={index} style={styles.howRow}>
-                <View style={styles.howDisc}>{rowItem.icon}</View>
-                <Text style={styles.howText}>{rowItem.text}</Text>
+      {/* N-01 (152:75): the photo as a full-width band with the claim on
+          its scrim — not a tall column beside a hole of empty space. */}
+      <View style={styles.heroBand}>
+        <Image
+          source={HERO}
+          style={styles.heroBandPhoto}
+          resizeMode="cover"
+          accessibilityIgnoresInvertColors
+        />
+        <PhotoScrim />
+        <View style={styles.heroBandText}>
+          <Text style={styles.heroBandTitle}>{COPY.checkin.introTitle}</Text>
+          <Text style={styles.heroBandBody}>{COPY.checkin.introShort}</Text>
+        </View>
+      </View>
+
+      {/* N-01 (152:80): the four facts as a 2×2 grid, not a column. */}
+      <Text style={styles.kicker}>{upperCase(COPY.checkin.howTitle)}</Text>
+      <View style={styles.factsGrid}>
+        {[
+          [
+            { icon: <PinIcon tone={DEEP} size={14} />, text: COPY.checkin.howLocation },
+            { icon: <SparkleIcon size={14} />, text: COPY.checkin.howFree },
+          ],
+          [
+            { icon: <ClockIcon size={14} />, text: COPY.checkin.howDuration },
+            { icon: <ShieldPlusIcon size={14} />, text: COPY.checkin.howPrivacy },
+          ],
+        ].map((rowItems, rowIndex) => (
+          <View key={rowIndex} style={styles.factsRow}>
+            {rowItems.map((fact, index) => (
+              <View key={index} style={styles.factCell}>
+                <View style={styles.factDisc}>{fact.icon}</View>
+                <Text style={styles.factText}>{fact.text}</Text>
               </View>
             ))}
           </View>
-          <Image
-            source={HERO}
-            style={styles.heroPhoto}
-            resizeMode="cover"
-            accessibilityIgnoresInvertColors
-          />
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => lookAround(reader)}
-          disabled={busy}
-          style={({ pressed }) => [styles.findButton, pressed && styles.pressed]}
-          testID="checkin-look-around"
-        >
-          <Text style={styles.findButtonLabel}>{COPY.checkin.findVenues}</Text>
-        </Pressable>
-        {busy ? (
-          <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="checkin-looking" />
-        ) : null}
+        ))}
       </View>
+
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => lookAround(reader)}
+        disabled={busy}
+        style={({ pressed }) => [styles.findButton, pressed && styles.pressed]}
+        testID="checkin-look-around"
+      >
+        <Text style={styles.findButtonLabel}>{COPY.checkin.findVenues}</Text>
+      </Pressable>
+      {busy ? (
+        <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="checkin-looking" />
+      ) : null}
 
       {previewShore ? (
         <View style={styles.previewRow}>
@@ -1039,32 +889,33 @@ export function CheckinScreen({
       ) : null}
 
       {expiredRecently ? (
+        /* N-04 (154:72): the ended check-in gets a card of its own — the
+           clock in its disc, the fact, and the way back as its foot. The
+           whole card is the press. */
         <Pressable
           accessibilityRole="button"
           onPress={() => lookAround(reader)}
           disabled={busy}
-          style={({ pressed }) => [styles.infoCard, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.expiredCard, pressed && styles.pressed]}
           testID="checkin-expired"
         >
-          <View style={styles.infoDisc}>
-            <ClockIcon size={26} />
+          <View style={styles.expiredDisc}>
+            <ClockIcon size={24} />
           </View>
-          <View style={styles.infoWords}>
-            <Text style={styles.infoTitle}>{COPY.checkin.expiredTitle}</Text>
-            <Text style={styles.infoBody}>{COPY.checkin.expiredBody}</Text>
+          <Text style={styles.expiredTitle}>{COPY.checkin.expiredTitle}</Text>
+          <Text style={styles.expiredBody}>{COPY.checkin.expiredBody}</Text>
+          <View style={styles.expiredCta}>
+            <Text style={styles.findButtonLabel}>{COPY.checkin.findVenues}</Text>
           </View>
-          <Text style={styles.chevron}>›</Text>
         </Pressable>
       ) : null}
 
-      <View style={styles.infoCard}>
-        <View style={styles.infoDisc}>
+      {/* N-01 (152:101): the privacy sentence in one quiet row. */}
+      <View style={styles.privacyRow}>
+        <View style={styles.privacyDisc}>
           <ShieldLockIcon />
         </View>
-        <View style={styles.infoWords}>
-          <Text style={styles.infoTitle}>{COPY.rooms.privacyTitle}</Text>
-          <Text style={styles.infoBody}>{COPY.checkin.privacyCardBody}</Text>
-        </View>
+        <Text style={styles.privacyText}>{COPY.checkin.privacyCardBody}</Text>
       </View>
 
       {notice ? (
@@ -1302,12 +1153,14 @@ const styles = StyleSheet.create({
     color: color.inkMuted,
   },
   /* active — the sheet's card (11:150), buttons (11:160-164), safety (11:166). */
+  /** N-03 (153:111): the one card the active state is. */
   activeCard: {
     backgroundColor: color.surface,
     borderWidth: 1,
     borderColor: color.rule,
-    borderRadius: 22,
-    overflow: 'hidden',
+    borderRadius: 24,
+    padding: 18,
+    gap: 12,
     ...elevation.card,
   },
   activePhoto: { width: '100%', height: 170 },
@@ -1339,10 +1192,156 @@ const styles = StyleSheet.create({
   },
   activeWords: { flex: 1, gap: 5 },
   activeName: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 17,
+    fontFamily: fontFamily.display,
+    fontSize: 24,
+    lineHeight: 30,
     color: color.ink,
   },
+  activeKindLine: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    color: color.accentDeep,
+  },
+  livePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    borderRadius: radius.pill,
+    backgroundColor: color.successSoft,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  livePillDot: { fontFamily: fontFamily.bodySemi, fontSize: 9, color: color.successMark },
+  livePillText: { fontFamily: fontFamily.bodySemi, fontSize: 11, color: color.success },
+  remainRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 14,
+    backgroundColor: color.accentWash,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    alignSelf: 'stretch',
+  },
+  remainText: { fontFamily: fontFamily.bodyMedium, fontSize: 13, lineHeight: 18, color: color.ink },
+  checkOutRow: { minHeight: MIN_TOUCH, alignItems: 'center', justifyContent: 'center' },
+  checkOutText: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.accentDeep },
+  /** N-01 (152:75): the photo as a band, the claim on its scrim. */
+  heroBand: { borderRadius: 24, overflow: 'hidden' },
+  heroBandPhoto: { width: '100%', height: 200, backgroundColor: color.veil },
+  heroBandText: { position: 'absolute', left: 18, right: 18, bottom: 14, gap: 4 },
+  heroBandTitle: {
+    fontFamily: fontFamily.display,
+    fontSize: 22,
+    lineHeight: 27,
+    color: color.onPhoto,
+  },
+  heroBandBody: { fontFamily: fontFamily.bodyMedium, fontSize: 12, lineHeight: 17, color: color.onPhoto },
+  kicker: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 12,
+    letterSpacing: 1.2,
+    color: color.inkMuted,
+  },
+  /** N-01 (152:80): four facts, two by two. */
+  factsGrid: { gap: 10 },
+  factsRow: { flexDirection: 'row', gap: 10 },
+  factCell: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: color.rule,
+    backgroundColor: color.surface,
+    padding: 10,
+  },
+  factDisc: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: color.accentWash,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  factText: { flex: 1, fontFamily: fontFamily.bodyMedium, fontSize: 11, lineHeight: 15, color: color.ink },
+  /** N-01 (152:101): the privacy sentence in one row. */
+  privacyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: color.rule,
+    backgroundColor: color.surface,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  privacyDisc: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: color.accentWash,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  privacyText: { flex: 1, fontFamily: fontFamily.body, fontSize: 12, lineHeight: 17, color: color.inkMuted },
+  /** N-04 (154:72): the ended check-in's own card. */
+  expiredCard: {
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: color.rule,
+    backgroundColor: color.surface,
+    paddingVertical: 22,
+    paddingHorizontal: 18,
+  },
+  expiredDisc: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: color.accentWash,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  expiredTitle: { fontFamily: fontFamily.display, fontSize: 19, lineHeight: 25, color: color.ink },
+  expiredBody: {
+    fontFamily: fontFamily.body,
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: color.inkMuted,
+    textAlign: 'center',
+    maxWidth: 280,
+  },
+  expiredCta: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.pill,
+    backgroundColor: color.accent,
+    paddingVertical: 14,
+  },
+  /** N-02 (153:75): the standing-here anchor, first and in its wash. */
+  hereCard: { gap: 10, borderRadius: 18, backgroundColor: color.accentWash, padding: 14 },
+  hereLabel: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 10,
+    letterSpacing: 1,
+    color: color.accentDeep,
+  },
+  /** N-02: the kind as the tracked word under the name. */
+  venueKind: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: 9,
+    letterSpacing: 0.8,
+    color: color.accentDeep,
+  },
+  googleMoreRow: { minHeight: MIN_TOUCH, alignItems: 'center', justifyContent: 'center' },
+  googleMoreText: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.accentDeep },
   untilRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   untilText: {
     fontFamily: fontFamily.body,

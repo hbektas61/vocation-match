@@ -98,10 +98,12 @@ describe('the location-bound nearby list', () => {
 
     expect(await screen.findByText('Esslab')).toBeTruthy();
     // The live restaurant replaces the same-named stale "hotel" catalogue row.
+    // N-02 draws the kind as a tracked uppercase word, and moved the address
+    // into the row's accessible label — so that is where each is asserted.
     expect(screen.getAllByText('Lunchbox')).toHaveLength(1);
-    expect(screen.getByText('Restaurant')).toBeTruthy();
-    expect(screen.queryByText('Hotel')).toBeNull();
-    expect(screen.getAllByText('Forum İstanbul, Bayrampaşa')).toHaveLength(2);
+    expect(screen.getByText('RESTAURANT')).toBeTruthy();
+    expect(screen.queryByText('HOTEL')).toBeNull();
+    expect(screen.getAllByLabelText(/Forum İstanbul, Bayrampaşa/)).toHaveLength(2);
 
     await act(async () => {
       fireEvent.changeText(screen.getByTestId('checkin-search'), 'esslab');

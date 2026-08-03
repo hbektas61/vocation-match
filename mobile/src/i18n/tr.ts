@@ -762,6 +762,8 @@ export const tr: Copy = {
     listSubtitle: 'Sana yakın mekânları keşfet, aynı yerde olan insanlarla tanış.',
     idleSubtitle: 'Yakınındaki tatilcilerle tanış, aynı mekânda anlık bağ kur.',
     introTitle: 'Aynı mekânda, aramasız keşfet.',
+    /** N-01: the hero's one line on the photo — introBody said in a breath. */
+    introShort: 'Tek bir mekân seç, check-in yap, çevrendekileri gör.',
     introBody:
       'Tek bir mekân seç, check-in yap ve çevrendeki tatilcileri gör. Yalnızca mekânda ve 3 saat boyunca aktif olursun.',
     howTitle: 'Nasıl çalışır?',
@@ -776,6 +778,8 @@ export const tr: Copy = {
       'Yalnız seçtiğin mekânın adı görünür — tam konumun asla. Sen de check-in\'liyken görünürsün.',
     activeSubtitle: 'Check-in aktif olduğun sürece seçtiğin mekândaki kullanıcılara görünürsün.',
     activeChip: 'Check-in aktif',
+    /** N-03: the tracked line under the place's name. */
+    validFor: '3 saat geçerli',
     safeTitle: 'Güvende ve ücretsiz',
     safeCheck: 'Tam konumlar ve anlık mesafeler kimseye gösterilmez.',
     kindHotel: 'Otel',
@@ -830,6 +834,9 @@ export const trFor: CopyFor = {
   eventCount: (count: number) => `${count} etkinlik`,
   timeLeft: (minutes: number) =>
     minutes >= 60 ? `${Math.floor(minutes / 60)} sa ${minutes % 60} dk kaldı` : `${minutes} dk kaldı`,
+  /** N-03: "Kalan süre: 2 sa 41 dk" — the check-in's live remainder. */
+  remainingTime: (hours: number, minutes: number) =>
+    hours > 0 ? `Kalan süre: ${hours} sa ${minutes} dk` : `Kalan süre: ${minutes} dk`,
   untilTime: (time: string) => `${time}'e kadar`,
   checkinUntil: (venueName: string, time: string) => `${venueName} — ${time}'e kadar`,
   roomHeadcount: (count: number) => `${count} kişi`,

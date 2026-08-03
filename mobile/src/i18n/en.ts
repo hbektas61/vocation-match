@@ -853,6 +853,8 @@ export const en = {
     listSubtitle: 'Discover the places near you and meet the people who are there.',
     idleSubtitle: 'Meet the holidaymakers near you — an instant bond at the same place.',
     introTitle: 'Same place, no searching.',
+    /** N-01: the hero's one line on the photo — introBody said in a breath. */
+    introShort: 'Pick one place, check in, see who is around.',
     introBody:
       'Pick one place, check in, and see the holidaymakers around you. You are active only at that place, and only for 3 hours.',
     howTitle: 'How does it work?',
@@ -867,6 +869,8 @@ export const en = {
       'Only the name of the place you chose is shown — never your exact location. And you are visible only while you also have a check-in.',
     activeSubtitle: 'While your check-in is active, you are visible to the people at your chosen place.',
     activeChip: 'Check-in active',
+    /** N-03: the tracked line under the place's name. */
+    validFor: 'valid for 3 hours',
     safeTitle: 'Safe and free',
     safeCheck: 'Exact locations and live distances are never shown to anyone.',
     kindHotel: 'Hotel',
@@ -935,6 +939,9 @@ export const enFor = {
   /** The active check-in line: the venue, and when it lapses. */
   timeLeft: (minutes: number) =>
     minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m left` : `${minutes}m left`,
+  /** N-03: "Time left: 2 h 41 min" — the check-in's live remainder. */
+  remainingTime: (hours: number, minutes: number) =>
+    hours > 0 ? `Time left: ${hours} h ${minutes} min` : `Time left: ${minutes} min`,
   untilTime: (time: string) => `until ${time}`,
   checkinUntil: (venueName: string, time: string) => `${venueName} — until ${time}`,
   /** The live Upcoming line (10:128): the declared window, and what it opens. */
