@@ -438,7 +438,9 @@ export function EventsScreen({
       <Text style={styles.subtitle}>{COPY.events.subtitle}</Text>
 
       {choosingArea || !area ? (
-        <View testID="events-area-picker">
+        {/* ED-01's vertical rhythm: the pill, the two buttons, each standing
+            14pt apart rather than touching (owner screenshot, 2026-08-03). */}
+        <View style={styles.areaPicker} testID="events-area-picker">
           <Text style={styles.heading}>{upperCase(COPY.events.chooseArea)}</Text>
           <Field
             label={COPY.events.areaLabel}
@@ -651,6 +653,8 @@ const styles = StyleSheet.create({
   },
   busyText: { fontFamily: fontFamily.bodySemi, fontSize: 11, color: color.ink },
   section: { gap: spacing.xs },
+  /** ED-01 (137:72): 14 between the search pill and each button under it. */
+  areaPicker: { gap: 14 },
   carousel: { gap: 12 },
   /** 131:132: the page dots — the resting one stretched into a coral pill. */
   dots: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.xs },
