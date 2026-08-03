@@ -53,7 +53,7 @@ import {
   type ForegroundLocationReader,
   type MyEvent,
 } from '../data';
-import { formatDayMonth } from '../domain/dates';
+import { formatDayMonthLong } from '../domain/dates';
 import type { RootStackParamList } from '../navigation/types';
 import { color, elevation, fontFamily, overlay, radius, spacing, tokens, MIN_TOUCH } from '../theme';
 
@@ -115,10 +115,10 @@ function StatusBadge({ label, bad }: { label: string; bad: boolean }) {
   );
 }
 
-/** "12 Ağu · 21:00" in the reader's own language, from the provider's local time. */
+/** "19 Ağustos · 21:00" — the full month, as E-01 and ED-02 both say it. */
 function whenLabel(event: EventCard): string {
   if (event.dateTbd || !event.localDate) return COPY.events.dateTbd;
-  const day = formatDayMonth(event.localDate);
+  const day = formatDayMonthLong(event.localDate);
   const time = event.localTime ? event.localTime.slice(0, 5) : null;
   return time ? `${day} · ${time}` : day;
 }

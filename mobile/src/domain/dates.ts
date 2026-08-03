@@ -65,6 +65,13 @@ export function formatDayMonth(iso: string): string {
   return getLocale() === 'tr' ? `${day} ${name}` : `${name} ${day}`;
 }
 
+/** "19 Ağustos" / "August 19" — the month said in full, as the event cards say it. */
+export function formatDayMonthLong(iso: string): string {
+  const { month, day } = parts(iso);
+  const name = LONG_MONTHS[getLocale()][month - 1] ?? '';
+  return getLocale() === 'tr' ? `${day} ${name}` : `${name} ${day}`;
+}
+
 /** "12 Ağustos 2026" / "August 12, 2026" — the sheet's full date. */
 export function formatLongDate(iso: string): string {
   const { year, month, day } = parts(iso);

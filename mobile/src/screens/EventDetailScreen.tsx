@@ -421,7 +421,6 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.sm,
   },
   backChevron: {
     fontFamily: fontFamily.bodySemi,
@@ -432,7 +431,6 @@ const styles = StyleSheet.create({
   hero: {
     borderRadius: 24,
     overflow: 'hidden',
-    marginBottom: spacing.sm,
   },
   heroImage: { width: '100%', height: 300, backgroundColor: color.veil },
   heroBadge: {
@@ -460,7 +458,7 @@ const styles = StyleSheet.create({
   },
   heroMeta: { fontFamily: fontFamily.bodyMedium, fontSize: 13, lineHeight: 18, color: color.onPhoto },
   heroAttribution: { fontFamily: fontFamily.body, fontSize: 10, color: color.onPhoto },
-  plainHead: { gap: 4, marginBottom: spacing.sm },
+  plainHead: { gap: 4 },
   plainName: {
     fontFamily: fontFamily.display,
     fontSize: 22,
@@ -479,7 +477,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     color: color.inkMuted,
-    marginBottom: spacing.xs,
   },
   /** ED-02's declaration rows. */
   choice: {
@@ -492,7 +489,6 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface,
     paddingVertical: 15,
     paddingHorizontal: 14,
-    marginBottom: spacing.xs,
   },
   chip: {
     width: 44,
@@ -550,7 +546,6 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface,
     padding: spacing.md,
     gap: 12,
-    marginBottom: spacing.xs,
   },
   roomHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   roomTitle: { fontFamily: fontFamily.bodySemi, fontSize: 15, lineHeight: 20, color: color.ink },
@@ -588,7 +583,6 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     paddingHorizontal: spacing.md,
     gap: 12,
-    marginBottom: spacing.xs,
   },
   confirmTitle: {
     fontFamily: fontFamily.display,
