@@ -12,6 +12,18 @@ export const HOTELS: Hotel[] = [
     longitude: 30.7995,
   },
   {
+    /** Çevremde fixture (2026-08-03): a non-hotel inside the 500 m sweep of
+        the shore point, because hotels no longer appear in that list and a
+        "full but wrong" list needs something honest to be full of. */
+    id: 'venue-lara-beach-bar',
+    kind: 'bar',
+    name: 'Sahil Kahve Lara',
+    city: 'Antalya',
+    country: 'Türkiye',
+    latitude: 36.8551,
+    longitude: 30.8003,
+  },
+  {
     /** D-039 fixture: ~600 m from Lara Shore — the same street. */
     id: 'hotel-lara-marina',
     kind: 'bar',

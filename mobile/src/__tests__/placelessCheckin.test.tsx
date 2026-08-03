@@ -129,9 +129,11 @@ describe('the screen offers the here-anchor beside the list, not only under an e
     });
 
     // The premise of the owner's Espressolab report: the list has places in
-    // it, and the one you are standing in is not among them.
-    const rows = await screen.findByTestId('checkin-venue-hotel-lara-shore');
-    expect(rows).toBeTruthy();
+    // it, and the one you are standing in is not among them. Hotels left this
+    // list on 2026-08-03, so the fullness is a bar — and the hotel that
+    // used to stand here is pinned absent beside it.
+    expect(await screen.findByTestId('checkin-venue-venue-lara-beach-bar')).toBeTruthy();
+    expect(screen.queryByTestId('checkin-venue-hotel-lara-shore')).toBeNull();
 
     // The escape hatch is present anyway — that is the whole point.
     const here = await screen.findByTestId('checkin-here');

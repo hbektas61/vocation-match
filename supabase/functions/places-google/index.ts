@@ -97,6 +97,10 @@ const PREDICTION_MASK = [
  * `includedTypes` matches any of a place's returned types; generic families
  * such as `restaurant` therefore keep their specialised children findable.
  */
+// No lodging types here on purpose (owner, 2026-08-03): hotels are the trip
+// tab's whole subject, and a nearby list half-full of them said nothing the
+// active venue had not already said. Excluding them upstream also means the
+// call never pays for rows the screen would drop.
 const NEARBY_TYPES = [
   "cafe",
   "coffee_shop",
@@ -105,13 +109,6 @@ const NEARBY_TYPES = [
   "bar",
   "pub",
   "night_club",
-  "lodging",
-  "hotel",
-  "resort_hotel",
-  "hostel",
-  "motel",
-  "bed_and_breakfast",
-  "guest_house",
   "beach",
   "park",
   "tourist_attraction",

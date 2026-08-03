@@ -668,7 +668,14 @@ export function CheckinScreen({
     // steps in only when Google had no answer at all, and says so.
     const catalogueShown = nearbyGoogle.length > 0
       ? []
-      : nearby.filter((venue) => matches([venue.name, venue.address, venue.city, venue.country]));
+      : nearby.filter(
+          (venue) =>
+            // Hotels stay out of Çevremde (owner, 2026-08-03) — they are the
+            // trip tab's subject, and here they drowned the places that are
+            // actually around.
+            venue.kind !== 'hotel' &&
+            matches([venue.name, venue.address, venue.city, venue.country]),
+        );
     const shownCount = liveShown.length + catalogueShown.length;
     return (
       <Screen safeTop testID="screen-checkin">
