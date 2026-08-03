@@ -59,6 +59,7 @@ import {
   suggestedCountries,
   type CountryOption,
 } from '../domain/countries';
+import { nowMs } from '../clock';
 import { formatDayMonthLong } from '../domain/dates';
 import type { RootStackParamList } from '../navigation/types';
 import { color, elevation, fontFamily, overlay, radius, spacing, tokens, MIN_TOUCH } from '../theme';
@@ -650,10 +651,19 @@ export function EventsScreen({
         </>
       ) : null}
 
-      {mine.length > 0 ? (
+      {(() => {
+        /* A membership whose lease no longer names it and whose live window
+           has closed is a past event (owner, 2026-08-04): its room said what
+           it had to say, and a list of "Geçmiş etkinlik" rows says nothing. */
+        const mineShown = mine.filter(
+          (event) =>
+            (mineNames[event.eventId] ?? null) !== null ||
+            (event.liveClosesAt !== null && event.liveClosesAt > nowMs()),
+        );
+        return mineShown.length > 0 ? (
         <View testID="events-mine">
           <Text style={styles.heading}>{upperCase(COPY.events.myEvents)}</Text>
-          {mine.map((event) => (
+          {mineShown.map((event) => (
             <Pressable
               key={event.eventId}
               accessibilityRole="button"
@@ -687,17 +697,18 @@ export function EventsScreen({
             </Pressable>
           ))}
         </View>
-      ) : area ? null : (
-        /* ED-01: the empty state as its own drawing — a pennant in the warm
-           disc, the fact as a heading, and the way forward as one sentence. */
-        <View style={styles.emptyWrap} accessibilityRole="text" testID="events-empty">
-          <View style={styles.emptyDisc}>
-            <PennantIcon />
+        ) : area ? null : (
+          /* ED-01: the empty state as its own drawing — a pennant in the warm
+             disc, the fact as a heading, and the way forward as one sentence. */
+          <View style={styles.emptyWrap} accessibilityRole="text" testID="events-empty">
+            <View style={styles.emptyDisc}>
+              <PennantIcon />
+            </View>
+            <Text style={styles.emptyTitle}>{COPY.events.emptyTitle}</Text>
+            <Text style={styles.emptyBody}>{COPY.events.emptyBody}</Text>
           </View>
-          <Text style={styles.emptyTitle}>{COPY.events.emptyTitle}</Text>
-          <Text style={styles.emptyBody}>{COPY.events.emptyBody}</Text>
-        </View>
-      )}
+        );
+      })()}
 
       {/* ED-01 keeps the first open clean: the no-ticket sentence stands
           only once something checkable — results or memberships — is up. */}
