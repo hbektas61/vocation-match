@@ -6,7 +6,7 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 
-import { Body, Button, Card, Heading, Notice, PhotoScrim, Screen } from '../components/ui';
+import { Body, Button, Card, ConfirmDialog, Heading, Notice, PhotoScrim, Screen } from '../components/ui';
 import { nowMs } from '../clock';
 import { formatStayRangeLabel } from '../domain/dates';
 import { earliestRoomExpiry } from '../state/roomSchedule';
@@ -607,41 +607,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           itself, not only the details screen behind the card. Same question,
           same teardown — leaving is a switch that puts nothing in its place. */}
       {activeId && !picking && !onActivated ? (
-        confirmingLeave ? (
-          <Card testID="hotel-leave-home-question">
-            <Heading>{COPY.hotel.leaveConfirmTitle}</Heading>
-            <Body>{COPY.hotel.leaveConfirmBody}</Body>
-            <Button
-              label={COPY.hotel.leaveYes}
-              variant="danger"
-              disabled={leaving}
-              busy={leaving}
-              onPress={async () => {
-                setLeaving(true);
-                try {
-                  await getApi().leaveActiveVenue();
-                  dispatch({ type: 'ACTIVE_HOTEL_LOADED', activeHotel: null });
-                  setConfirmingLeave(false);
-                  setStay(null);
-                  setRoomStates(null);
-                  setActiveVenue(null);
-                  setGoogleName(null);
-                  setGooglePhoto(null);
-                } finally {
-                  setLeaving(false);
-                }
-              }}
-              testID="hotel-leave-home-confirm"
-            />
-            <Button
-              label={COPY.common.cancel}
-              variant="secondary"
-              disabled={leaving}
-              onPress={() => setConfirmingLeave(false)}
-              testID="hotel-leave-home-cancel"
-            />
-          </Card>
-        ) : (
+        <>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={COPY.hotel.leaveCta}
@@ -651,7 +617,34 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           >
             <Text style={styles.leaveText}>{COPY.hotel.leaveCta}</Text>
           </Pressable>
-        )
+          <ConfirmDialog
+            visible={confirmingLeave}
+            title={COPY.hotel.leaveConfirmTitle}
+            body={COPY.hotel.leaveConfirmBody}
+            confirmLabel={COPY.hotel.leaveYes}
+            cancelLabel={COPY.common.cancel}
+            busy={leaving}
+            onCancel={() => setConfirmingLeave(false)}
+            onConfirm={async () => {
+              setLeaving(true);
+              try {
+                await getApi().leaveActiveVenue();
+                dispatch({ type: 'ACTIVE_HOTEL_LOADED', activeHotel: null });
+                setConfirmingLeave(false);
+                setStay(null);
+                setRoomStates(null);
+                setActiveVenue(null);
+                setGoogleName(null);
+                setGooglePhoto(null);
+              } finally {
+                setLeaving(false);
+              }
+            }}
+            testID="hotel-leave-home-question"
+            confirmTestID="hotel-leave-home-confirm"
+            cancelTestID="hotel-leave-home-cancel"
+          />
+        </>
       ) : null}
 
       {/* Idle on the not-yet-chosen screen is one card (10:86): the feature

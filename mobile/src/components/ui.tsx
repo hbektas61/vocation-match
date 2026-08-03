@@ -4,6 +4,7 @@ import {
   AccessibilityInfo,
   ActivityIndicator,
   Image,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -874,6 +875,72 @@ export function EmptyState({
  * and a pale red panel are close enough in value that the fill alone is not a
  * signal for everybody.
  */
+/**
+ * A blocking question over a dimmed screen (owner, 2026-08-03): destructive
+ * confirmations pop rather than growing under the button that opened them —
+ * an inline card below the fold was a question half the screen never saw.
+ * The scrim press and the hardware back both mean "no".
+ */
+export function ConfirmDialog({
+  visible,
+  title,
+  body,
+  confirmLabel,
+  cancelLabel,
+  busy = false,
+  onConfirm,
+  onCancel,
+  testID,
+  confirmTestID,
+  cancelTestID,
+}: {
+  visible: boolean;
+  title: string;
+  body: string;
+  confirmLabel: string;
+  cancelLabel: string;
+  busy?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+  testID?: string;
+  confirmTestID?: string;
+  cancelTestID?: string;
+}) {
+  return (
+    <Modal transparent visible={visible} animationType="fade" onRequestClose={onCancel}>
+      <Pressable
+        style={styles.dialogScrim}
+        onPress={busy ? undefined : onCancel}
+        accessibilityRole="button"
+        accessibilityLabel={cancelLabel}
+      >
+        {/* The card swallows the press so only the scrim cancels. */}
+        <Pressable style={styles.dialogCard} onPress={() => {}} testID={testID}>
+          <Text accessibilityRole="header" style={styles.dialogTitle}>
+            {title}
+          </Text>
+          <Text style={styles.dialogBody}>{body}</Text>
+          <Button
+            label={confirmLabel}
+            variant="danger"
+            busy={busy}
+            disabled={busy}
+            onPress={onConfirm}
+            testID={confirmTestID}
+          />
+          <Button
+            label={cancelLabel}
+            variant="secondary"
+            disabled={busy}
+            onPress={onCancel}
+            testID={cancelTestID}
+          />
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
 export function Notice({
   message,
   tone = 'info',
@@ -959,6 +1026,32 @@ const styles = StyleSheet.create({
   screenSheet: { backgroundColor: color.surface },
   /** The screen shell: 20 aside, 24 above, 16 below, 14 between. */
   screenContent: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: spacing.md, gap: 14 },
+  /** The dimmed ground under a blocking question. */
+  dialogScrim: {
+    flex: 1,
+    backgroundColor: overlay.photo,
+    alignItems: 'stretch',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  dialogCard: {
+    backgroundColor: color.surface,
+    borderRadius: 20,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  dialogTitle: {
+    fontFamily: fontFamily.display,
+    fontSize: 19,
+    lineHeight: 25,
+    color: color.ink,
+  },
+  dialogBody: {
+    fontFamily: fontFamily.body,
+    fontSize: 13,
+    lineHeight: 19,
+    color: color.inkMuted,
+  },
   screenBleed: { paddingBottom: spacing.xl, gap: 14 },
   /** `fill`: at least the height of the scroll view, never less than content. */
   screenFill: { flexGrow: 1 },

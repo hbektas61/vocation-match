@@ -10,7 +10,7 @@ import React, { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { Body, Button, Caption, Card, Heading, PhotoScrim, Screen, SuccessBadge, Title } from '../components/ui';
+import { Body, Button, Caption, Card, ConfirmDialog, PhotoScrim, Screen, SuccessBadge, Title } from '../components/ui';
 import { HotelBuilding } from '../components/HotelIllustrations';
 import { COPY, upperCase } from '../copy';
 import { getApi, readBackendConfig } from '../data';
@@ -164,46 +164,37 @@ export function HotelDetailsScreen({ route, navigation }: RootScreenProps<'Hotel
           {/* Leaving is not switching: cancelling the trip needs its own door
               (owner, 2026-08-03), and it asks first because it shuts rooms the
               same way a switch does (D-004). */}
-          {confirmingLeave ? (
-            <Card testID="hotel-leave-question">
-              <Heading>{COPY.hotel.leaveConfirmTitle}</Heading>
-              <Body>{COPY.hotel.leaveConfirmBody}</Body>
-              <Button
-                label={COPY.hotel.leaveYes}
-                variant="danger"
-                disabled={leaving}
-                busy={leaving}
-                onPress={async () => {
-                  setLeaving(true);
-                  try {
-                    await getApi().leaveActiveVenue();
-                    dispatch({ type: 'ACTIVE_HOTEL_LOADED', activeHotel: null });
-                    navigation.goBack();
-                  } finally {
-                    setLeaving(false);
-                  }
-                }}
-                testID="hotel-leave-confirm"
-              />
-              <Button
-                label={COPY.common.cancel}
-                variant="secondary"
-                disabled={leaving}
-                onPress={() => setConfirmingLeave(false)}
-                testID="hotel-leave-cancel"
-              />
-            </Card>
-          ) : (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={COPY.hotel.leaveCta}
-              onPress={() => setConfirmingLeave(true)}
-              style={({ pressed }) => [styles.leaveRow, pressed && { opacity: 0.7 }]}
-              testID="hotel-leave"
-            >
-              <Text style={styles.leaveText}>{COPY.hotel.leaveCta}</Text>
-            </Pressable>
-          )}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={COPY.hotel.leaveCta}
+            onPress={() => setConfirmingLeave(true)}
+            style={({ pressed }) => [styles.leaveRow, pressed && { opacity: 0.7 }]}
+            testID="hotel-leave"
+          >
+            <Text style={styles.leaveText}>{COPY.hotel.leaveCta}</Text>
+          </Pressable>
+          <ConfirmDialog
+            visible={confirmingLeave}
+            title={COPY.hotel.leaveConfirmTitle}
+            body={COPY.hotel.leaveConfirmBody}
+            confirmLabel={COPY.hotel.leaveYes}
+            cancelLabel={COPY.common.cancel}
+            busy={leaving}
+            onCancel={() => setConfirmingLeave(false)}
+            onConfirm={async () => {
+              setLeaving(true);
+              try {
+                await getApi().leaveActiveVenue();
+                dispatch({ type: 'ACTIVE_HOTEL_LOADED', activeHotel: null });
+                navigation.goBack();
+              } finally {
+                setLeaving(false);
+              }
+            }}
+            testID="hotel-leave-question"
+            confirmTestID="hotel-leave-confirm"
+            cancelTestID="hotel-leave-cancel"
+          />
         </>
       ) : null}
     </Screen>
