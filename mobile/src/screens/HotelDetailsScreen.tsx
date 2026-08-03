@@ -7,7 +7,7 @@
  * would be lying about a business.
  */
 import React, { useEffect, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Body, Button, Caption, Card, ConfirmDialog, PhotoScrim, Screen, SuccessBadge, Title } from '../components/ui';
@@ -164,15 +164,12 @@ export function HotelDetailsScreen({ route, navigation }: RootScreenProps<'Hotel
           {/* Leaving is not switching: cancelling the trip needs its own door
               (owner, 2026-08-03), and it asks first because it shuts rooms the
               same way a switch does (D-004). */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={COPY.hotel.leaveCta}
+          <Button
+            label={COPY.hotel.leaveCta}
+            variant="danger"
             onPress={() => setConfirmingLeave(true)}
-            style={({ pressed }) => [styles.leaveRow, pressed && { opacity: 0.7 }]}
             testID="hotel-leave"
-          >
-            <Text style={styles.leaveText}>{COPY.hotel.leaveCta}</Text>
-          </Pressable>
+          />
           <ConfirmDialog
             visible={confirmingLeave}
             title={COPY.hotel.leaveConfirmTitle}
@@ -202,13 +199,6 @@ export function HotelDetailsScreen({ route, navigation }: RootScreenProps<'Hotel
 }
 
 const styles = StyleSheet.create({
-  /** The quiet exit under the two loud actions. */
-  leaveRow: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  leaveText: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 13,
-    color: color.accentDeep,
-  },
   photoWrap: {
     borderRadius: radius.md,
     overflow: 'hidden',

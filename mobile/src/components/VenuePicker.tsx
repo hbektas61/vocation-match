@@ -760,7 +760,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     fontFamily: fontFamily.body,
     fontSize: 15,
-    lineHeight: 22,
+    // No lineHeight on purpose: iOS sinks a TextInput's text to the bottom
+    // of the line box, which cut the words in half (owner, 2026-08-03).
+    textAlignVertical: 'center',
     color: color.ink,
   },
   searchBoxActive: { borderWidth: 2, borderColor: color.accent },

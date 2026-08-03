@@ -620,15 +620,12 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           same teardown — leaving is a switch that puts nothing in its place. */}
       {activeId && !picking && !onActivated ? (
         <>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={COPY.hotel.leaveCta}
+          <Button
+            label={COPY.hotel.leaveCta}
+            variant="danger"
             onPress={() => setConfirmingLeave(true)}
-            style={({ pressed }) => [styles.leaveRow, pressed && styles.resultPressed]}
             testID="hotel-leave-home"
-          >
-            <Text style={styles.leaveText}>{COPY.hotel.leaveCta}</Text>
-          </Pressable>
+          />
           <ConfirmDialog
             visible={confirmingLeave}
             title={COPY.hotel.leaveConfirmTitle}
@@ -791,9 +788,6 @@ const styles = StyleSheet.create({
   teaserOpenDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: color.successMark },
   teaserOpenText: { fontFamily: fontFamily.bodySemi, fontSize: 11, color: color.success },
   teaserArrow: { fontFamily: fontFamily.bodySemi, fontSize: 16, lineHeight: 22, color: color.accentDeep },
-  /** The tab's quiet exit, under the change button. */
-  leaveRow: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  leaveText: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.accentDeep },
   /** The quiet second action a live room earns. */
   teaserExtra: { minHeight: 32, justifyContent: 'center' },
   teaserExtraText: { fontFamily: fontFamily.bodySemi, fontSize: 12, color: color.accentDeep },
