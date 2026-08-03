@@ -279,11 +279,23 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         type: 'HOTEL_ACTIVATED',
         activeHotel: active ?? { hotelId: result.hotelId, activatedAt: nowMs() },
       });
-      setActiveVenue(await api.getActiveVenue().catch(() => null));
+      const venue = await api.getActiveVenue().catch(() => null);
+      setActiveVenue(venue);
       // The name the user just read, kept for this screen only. Resolving it
       // again from Google would be a second paid call for a string already on
       // the device.
       setGoogleName(choice.name);
+      // The photo is the one thing the selection did not carry, so it is the
+      // one thing worth a call here — without this, the hero stayed a bare
+      // band until the next focus happened to re-run the resolver (owner
+      // report, 2026-08-03: "the photo only appears after I pick dates").
+      setGooglePhoto(null);
+      if (venue?.provider === 'google' && venue.googlePlaceId) {
+        api
+          .resolveGooglePlace(venue.googlePlaceId)
+          .then((identity) => setGooglePhoto(identity?.photoUri ?? null))
+          .catch(() => undefined);
+      }
       // The feature cards' state words have to describe the venue just
       // activated, not the one from screen-mount.
       api
