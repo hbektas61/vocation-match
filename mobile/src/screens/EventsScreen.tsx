@@ -3,10 +3,13 @@
  *
  * Two things this screen is careful about, and they are the same thing twice:
  *
- *   1. **It never calls the provider on its own.** Not on focus, not on mount,
- *      not because a GPS reading refreshed. Every request here is downstream of
- *      somebody choosing an area, a bucket or a chip (§3.2). A tab that polls
- *      is a tab that spends a quota on people who are not looking.
+ *   1. **It calls the provider for exactly one unasked thing** (owner
+ *      revision, 2026-08-04): the first open with no area tries the device's
+ *      own location once, because "where am I" is the answer nearly everyone
+ *      was typing by hand. Denied or unavailable falls back to the picker in
+ *      silence. Beyond that one attempt, every request is still downstream of
+ *      somebody choosing an area, a bucket or a chip (§3.2) — a tab that
+ *      polls is a tab that spends a quota on people who are not looking.
  *
  *   2. **It says which of the nine "no"s happened.** Nothing found, provider
  *      down, day's ceiling reached, offline, feature off, permission denied —
@@ -16,7 +19,7 @@
  * Everything drawn from the provider is a lease: it lives in this component's
  * state while the list is on screen and is written down nowhere.
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -81,14 +84,6 @@ const MagnifierIcon = () => (
   <Svg {...iconStroke(color.inkMuted, 18)}>
     <Circle cx={11} cy={11} r={7} />
     <Path d="m20 20-3.5-3.5" />
-  </Svg>
-);
-
-/** 138:82: the pin before "use my current location". */
-const PinIcon = () => (
-  <Svg {...iconStroke(color.ink, 16)}>
-    <Path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-    <Circle cx={12} cy={10} r={3} />
   </Svg>
 );
 
@@ -157,6 +152,8 @@ export function EventsScreen({
   /** eventId → its lease, for the memberships list and the detail it opens. */
   const [mineLeases, setMineLeases] = useState<Record<string, EventContent>>({});
   const [permissionDenied, setPermissionDenied] = useState(false);
+  /** The one unasked location attempt (owner, 2026-08-04) — never repeated. */
+  const autoTried = useRef(false);
   const [busy, setBusy] = useState(false);
   /** E-01 (131:132): which card each bucket's carousel rests on. */
   const [pageIndex, setPageIndex] = useState<{ today: number; upcoming: number }>({
@@ -169,36 +166,6 @@ export function EventsScreen({
   /** Provider image URLs that failed to load — a lease can lapse mid-list. */
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 
-  // Only the switch and the account's own events are read on focus. Neither
-  // touches Ticketmaster.
-  useFocusEffect(useCallback(() => {
-    let cancelled = false;
-    (async () => {
-      const flags: Record<string, boolean> = await getApi()
-        .getFeatureFlags()
-        .catch(() => ({}) as Record<string, boolean>);
-      if (cancelled) return;
-      setEnabled(flags.EVENTS_FEATURE_ENABLED === true);
-      const events = await getApi().getMyEvents().catch(() => []);
-      if (cancelled) return;
-      setMine(events);
-      // E-11: the list names the events. The name lives in the lease, so it is
-      // read from there rather than kept — and when the lease has lapsed the
-      // row falls back to the app's own "Geçmiş etkinlik" instead of printing
-      // a provider id at somebody.
-      if (events.length > 0) {
-        const leases = await getApi()
-          .getEventContent(events.map((e) => e.eventId))
-          .catch(() => []);
-        if (!cancelled) {
-          setMineLeases(Object.fromEntries(leases.map((lease) => [lease.eventId, lease])));
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []));
 
   const look = useCallback(async (next: EventArea, chip: EventCategory, keep = false) => {
     setBusy(true);
@@ -243,13 +210,14 @@ export function EventsScreen({
     await look(next, category);
   };
 
-  const chooseHere = async () => {
-    // §3.2: permission is requested at the moment of the action, never before,
-    // and the reading is used to derive a coarse area and then dropped.
+  const chooseHere = useCallback(async (auto = false) => {
+    // The reading is used to derive a coarse area and then dropped. The
+    // automatic first attempt fails in silence — a notice about an action
+    // nobody took reads as a malfunction; a pressed retry still explains.
     setPermissionDenied(false);
     const reading = await reader.read();
     if (reading.status !== 'granted') {
-      setPermissionDenied(true);
+      if (!auto) setPermissionDenied(true);
       return;
     }
     const next: EventArea = {
@@ -262,7 +230,43 @@ export function EventsScreen({
     setArea(next);
     setChoosingArea(false);
     await look(next, category);
-  };
+  }, [reader, look, category]);
+
+  // Only the switch and the account's own events are read on focus. Neither
+  // touches Ticketmaster.
+  useFocusEffect(useCallback(() => {
+    let cancelled = false;
+    (async () => {
+      const flags: Record<string, boolean> = await getApi()
+        .getFeatureFlags()
+        .catch(() => ({}) as Record<string, boolean>);
+      if (cancelled) return;
+      setEnabled(flags.EVENTS_FEATURE_ENABLED === true);
+      // Guarded by the ref alone: one attempt per screen life, ever.
+      if (flags.EVENTS_FEATURE_ENABLED === true && !autoTried.current) {
+        autoTried.current = true;
+        void chooseHere(true);
+      }
+      const events = await getApi().getMyEvents().catch(() => []);
+      if (cancelled) return;
+      setMine(events);
+      // E-11: the list names the events. The name lives in the lease, so it is
+      // read from there rather than kept — and when the lease has lapsed the
+      // row falls back to the app's own "Geçmiş etkinlik" instead of printing
+      // a provider id at somebody.
+      if (events.length > 0) {
+        const leases = await getApi()
+          .getEventContent(events.map((e) => e.eventId))
+          .catch(() => []);
+        if (!cancelled) {
+          setMineLeases(Object.fromEntries(leases.map((lease) => [lease.eventId, lease])));
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [chooseHere]));
 
   const chooseChip = async (chip: EventCategory) => {
     setCategory(chip);
@@ -543,17 +547,6 @@ export function EventsScreen({
           />
           {/* ED-01: the heading asks the question; the button says the deed. */}
           <Button label={COPY.events.showEvents} onPress={chooseCity} testID="events-area-confirm" />
-          {/* 138:81: the white pill with the pin standing before the words. */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={COPY.events.useMyLocation}
-            onPress={chooseHere}
-            style={({ pressed }) => [styles.hereButton, pressed && styles.cardPressed]}
-            testID="events-area-here"
-          >
-            <PinIcon />
-            <Text style={styles.hereButtonText}>{COPY.events.useMyLocation}</Text>
-          </Pressable>
           {permissionDenied ? (
             <Notice
               message={COPY.events.permissionDenied}
