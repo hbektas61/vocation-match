@@ -358,7 +358,7 @@ describe('authentication and profile', () => {
     );
     await press(screen.getByTestId('onboarding-continue'));
 
-    expect(await screen.findByText('Vacation Match is 18+ only.')).toBeTruthy();
+    expect(await screen.findByText('CheckMatch is 18+ only.')).toBeTruthy();
     expect(screen.getByTestId('screen-onboarding-birthdate')).toBeTruthy();
   });
 

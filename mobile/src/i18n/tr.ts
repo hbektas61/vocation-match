@@ -56,7 +56,7 @@ export const tr: Copy = {
     en: 'English',
     tr: 'Türkçe',
   },
-  appName: 'Vacation Match',
+  appName: 'CheckMatch',
   tagline: 'Otelinle bağlantılı insanlarla tanış.',
 
   onboarding: {
@@ -76,7 +76,7 @@ export const tr: Copy = {
 
     promise: {
       headline: 'Yalnız yetişkinler, ve kısa bir söz.',
-      body: 'Vacation Match 18 yaş ve üzeri içindir. Devam ederek en az 18 yaşında olduğunu onaylıyorsun.',
+      body: 'CheckMatch 18 yaş ve üzeri içindir. Devam ederek en az 18 yaşında olduğunu onaylıyorsun.',
       points: [
         'Kendin ol. İsim ve fotoğraf sana ait olmalı.',
         'İlk buluşmayı kalabalık bir yerde yap ve birine nereye gittiğini söyle.',
@@ -144,7 +144,7 @@ export const tr: Copy = {
 
   ageGate: {
     title: 'Yalnız yetişkinler',
-    body: 'Vacation Match 18 yaş ve üzeri içindir. Devam ederek en az 18 yaşında olduğunu onaylıyorsun.',
+    body: 'CheckMatch 18 yaş ve üzeri içindir. Devam ederek en az 18 yaşında olduğunu onaylıyorsun.',
     confirm: '18 yaşında veya üzerindeyim',
   },
 
@@ -197,7 +197,7 @@ export const tr: Copy = {
     invalidBirthdate: 'Takvimde böyle bir tarih yok. Günü ve ayı kontrol et.',
     incompleteBirthdate: 'Bu tarih henüz bitmedi.',
     futureBirthdate: 'Bu tarih henüz gelmedi.',
-    underAge: 'Vacation Match yalnız 18 yaş ve üzeri içindir.',
+    underAge: 'CheckMatch yalnız 18 yaş ve üzeri içindir.',
     bioLabel: 'Tanıtım',
     bioPlaceholder: 'Kendin hakkında bir cümle',
     birthdateNote:
@@ -662,7 +662,7 @@ export const tr: Copy = {
     youLabel: 'Sen',
     locationTitle: 'Konum ve gizlilik',
     locationNote:
-      'Vacation Match seni asla arka planda takip etmez ve tam konumları asla paylaşmaz.',
+      'CheckMatch seni asla arka planda takip etmez ve tam konumları asla paylaşmaz.',
     accountTitle: 'Hesap',
     signOutButton: 'Çıkış yap',
     blockedTitle: 'Engellenenler',
@@ -687,7 +687,7 @@ export const tr: Copy = {
 
   deleteAccount: {
     title: 'Hesabını sil',
-    intro: 'Bu, hesabını Vacation Match’ten kaldırır. Geri alınamaz.',
+    intro: 'Bu, hesabını CheckMatch’ten kaldırır. Geri alınamaz.',
     startButton: 'Hesabımı sil',
     whatGoes:
       'Silinir: profilin ve fotoğrafın, otelin ve konaklaman, beğenilerin, eşleşmelerin ve konuşmaların. Konuşmaların karşı tarafın gelen kutusundan da kaybolur.',
@@ -823,7 +823,7 @@ export const tr: Copy = {
     unauthenticated: 'Devam etmek için yeniden giriş yap.',
     otpInvalid: 'Bu kod hatalı ya da süresi dolmuş. Yeni kod isteyip tekrar dene.',
     forbidden: 'Bunu yapma iznin yok.',
-    underAge: 'Vacation Match yalnız 18 yaş ve üzeri içindir.',
+    underAge: 'CheckMatch yalnız 18 yaş ve üzeri içindir.',
     contentRefused: 'Bu burada paylaşılamaz. Başka türlü ifade etmeyi dene.',
     captchaCancelled: 'Güvenlik kontrolü kapatıldı, bu yüzden kod gönderilmedi.',
     captchaRequired: 'Güvenlik kontrolü tamamlanamadı. Birazdan tekrar dene.',

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Vacation Match",
+    "name": "CheckMatch",
     "slug": "vocation-match",
     "scheme": "vocationmatch",
     "version": "1.0.0",
@@ -35,13 +35,13 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Vacation Match asks for a photo only when you choose to add one to your profile. It is stored privately and is visible only to people in a room with you or matched with you."
+          "photosPermission": "CheckMatch asks for a photo only when you choose to add one to your profile. It is stored privately and is visible only to people in a room with you or matched with you."
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Vacation Match checks once, while you have the app open, whether you are within 500 metres of your hotel. It keeps only yes or no — never where you are, and never a distance anyone else can see.",
+          "locationWhenInUsePermission": "CheckMatch checks once, while you have the app open, whether you are within 500 metres of your hotel. It keeps only yes or no — never where you are, and never a distance anyone else can see.",
           "isIosBackgroundLocationEnabled": false,
           "isAndroidBackgroundLocationEnabled": false,
           "isAndroidForegroundServiceEnabled": false
