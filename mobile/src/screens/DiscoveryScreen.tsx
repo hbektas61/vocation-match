@@ -16,7 +16,7 @@ import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation } from '../copy'
 import { ApiError, getApi, type CandidateCard, type MyEvent, type RoomKey, type RoomStatus } from '../data';
 import { resolveDeckLabels, resolveOwnVenueLabel } from '../data/venueLabels';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
-import { color, elevation, font, fontFamily, gradient, overlay, radius, spacing } from '../theme';
+import { color, elevation, font, fontFamily, gradient, overlay, radius, spacing, tokens } from '../theme';
 import { earliestRoomExpiry } from '../state/roomSchedule';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { PinScene } from '../components/RoomIllustrations';
@@ -646,6 +646,20 @@ export function DiscoveryScreen() {
             </>
           ) : null}
 
+          {/* The photo-progress bars ride the photo's very top (owner,
+              2026-08-04): tap left or right and the lit bar walks with the
+              photo, the way every deck app has taught. */}
+          {cardPaths.length > 1 ? (
+            <View style={styles.segments} pointerEvents="none" testID="card-photo-segments">
+              {cardPaths.map((path, index) => (
+                <View
+                  key={path}
+                  style={[styles.segment, index === photoIndex && styles.segmentActive]}
+                />
+              ))}
+            </View>
+          ) : null}
+
           {/* K-01 (132:72/74): the two floating glass controls — the ring
               to yourself top-left, and the matches count top-right, which is
               the one heart-number this product honestly has. */}
@@ -725,17 +739,6 @@ export function DiscoveryScreen() {
           </View>
         </View>
 
-        {/* The photo segments live under the card in the reference. */}
-        {cardPaths.length > 1 ? (
-          <View style={styles.segments} testID="card-photo-segments">
-            {cardPaths.map((path, index) => (
-              <View
-                key={path}
-                style={[styles.segment, index === photoIndex && styles.segmentActive]}
-              />
-            ))}
-          </View>
-        ) : null}
 
         {/* Pass, the big heart, and safety — three circles on the ground,
             sized exactly as the reference sizes them. The reference gives
@@ -748,7 +751,7 @@ export function DiscoveryScreen() {
             accessibilityState={{ disabled: busy }}
             disabled={busy}
             onPress={() => swipe('PASS')}
-            style={styles.actionCircle}
+            style={styles.actionPass}
             testID="swipe-pass"
           >
             <XIcon />
@@ -775,7 +778,7 @@ export function DiscoveryScreen() {
                 displayName: candidate.displayName,
               })
             }
-            style={styles.actionSmall}
+            style={styles.actionFlag}
             testID="discovery-report-block"
           >
             <FlagIcon />
@@ -915,10 +918,10 @@ const styles = StyleSheet.create({
     backgroundColor: color.veil,
   },
   cardPhoto: { ...StyleSheet.absoluteFillObject },
-  /** K-01: the floating glass controls over the photo's head. */
+  /** K-01: the floating glass controls, a step under the progress bars. */
   floatTop: {
     position: 'absolute',
-    top: spacing.md,
+    top: 22,
     left: spacing.md,
     right: spacing.md,
     flexDirection: 'row',
@@ -1006,20 +1009,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: color.onPhoto,
   },
-  /** Under the card, as the reference draws them. */
+  /** On the photo's head (owner, 2026-08-04) — the deck-app grammar. */
   segments: {
+    position: 'absolute',
+    top: 8,
+    left: spacing.md,
+    right: spacing.md,
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.sm,
+    gap: 6,
   },
   segment: {
     flex: 1,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: color.veil,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: tokens.border.inverse,
   },
-  segmentActive: { backgroundColor: color.accentDeep },
+  segmentActive: { backgroundColor: color.onPhoto },
   /** Three circles on the ground: 64 · 84 · 64, the heart carrying the size. */
   /** K-01: the circles float on the photo, not on a strip under it. */
   cardActions: {
@@ -1059,16 +1064,25 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
   },
-  /** 132:89: the small glass circle at the right edge of the pair's row. */
-  actionSmall: {
-    position: 'absolute',
-    right: spacing.md + 8,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  /** The safety flag rides the same centred row, one size down. */
+  actionFlag: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: overlay.glass,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  actionPass: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: color.surface,
+    borderWidth: 1.5,
+    borderColor: color.rule,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...elevation.raised,
   },
   cardNoPhoto: {
     ...StyleSheet.absoluteFillObject,
