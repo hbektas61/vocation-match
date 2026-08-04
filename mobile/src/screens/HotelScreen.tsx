@@ -449,7 +449,12 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
             ) : null}
           </View>
           <View style={styles.heroPlate}>
-            <Text style={styles.heroPlateLabel}>{upperCase(COPY.hotel.activePlate)}</Text>
+            {/* Active, said visually as well (owner, 2026-08-05): the same
+                green mark every live state in this product wears. */}
+            <View style={styles.plateBadgeRow}>
+              <View style={styles.activeDot} />
+              <Text style={styles.heroPlateLabel}>{upperCase(COPY.hotel.activePlate)}</Text>
+            </View>
             {/* D-054: for a Google venue this is a name resolved a moment ago
                 and held in memory, never a stored one. */}
             <Text style={styles.heroPlateName} testID="active-hotel-name">
@@ -619,12 +624,15 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           same teardown — leaving is a switch that puts nothing in its place. */}
       {activeId && !picking && !onActivated ? (
         <>
-          <Button
-            label={COPY.hotel.leaveCta}
-            variant="danger"
-            onPress={() => setConfirmingLeave(true)}
-            testID="hotel-leave-home"
-          />
+          <View style={styles.leaveWrap}>
+            <Button
+              label={COPY.hotel.leaveCta}
+              variant="danger"
+              compact
+              onPress={() => setConfirmingLeave(true)}
+              testID="hotel-leave-home"
+            />
+          </View>
           <ConfirmDialog
             visible={confirmingLeave}
             title={COPY.hotel.leaveConfirmTitle}
@@ -764,9 +772,8 @@ const styles = StyleSheet.create({
   teaser: {
     flex: 1,
     backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.rule,
     borderRadius: 20,
+    ...elevation.card,
     paddingTop: 18,
     paddingBottom: 16,
     paddingHorizontal: 16,
@@ -783,6 +790,7 @@ const styles = StyleSheet.create({
   },
   teaserTitle: { fontFamily: fontFamily.bodySemi, fontSize: 15, lineHeight: 21, color: color.ink },
   teaserBody: { fontFamily: fontFamily.body, fontSize: 12, lineHeight: 17, color: color.inkMuted },
+  leaveWrap: { alignItems: 'center' },
   teaserOpenRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   teaserOpenDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: color.successMark },
   teaserOpenText: { fontFamily: fontFamily.bodySemi, fontSize: 11, color: color.success },
@@ -801,7 +809,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 4,
+    ...elevation.card,
   },
+  plateBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  activeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.successMark },
   heroPlateLabel: {
     fontFamily: fontFamily.bodySemi,
     fontSize: 10,

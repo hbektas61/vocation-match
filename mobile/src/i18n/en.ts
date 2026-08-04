@@ -822,9 +822,9 @@ export const en = {
     /** The green word a live room's teaser carries. */
     cardOpen: 'Room open',
     upcomingCardTitle: 'Going',
-    upcomingCardBody: 'Meet people going on this vacation.',
+    upcomingCardBody: 'Meet the people who will be at the hotel on your dates.',
     hereNowCardTitle: 'At the hotel',
-    hereNowCardBody: 'Meet people at the hotel right now.',
+    hereNowCardBody: 'Meet the people at the hotel right now.',
     discoverCta: 'Discover people',
     changeHotel: 'Change vacation place',
   },

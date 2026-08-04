@@ -735,9 +735,9 @@ export const tr: Copy = {
     /** The green word a live room's teaser carries. */
     cardOpen: 'Oda açık',
     upcomingCardTitle: 'Gidecekler',
-    upcomingCardBody: 'Tatile gidecek kişilerle tanış.',
+    upcomingCardBody: 'Seninle aynı tarihlerde otelde olacak kişilerle tanış.',
     hereNowCardTitle: 'Oteldeyim',
-    hereNowCardBody: 'Otelde olan kişilerle tanış.',
+    hereNowCardBody: 'Şu an otelde olanlarla tanış.',
     discoverCta: 'Kişileri keşfet',
     changeHotel: 'Tatil mekânını değiştir',
   },
