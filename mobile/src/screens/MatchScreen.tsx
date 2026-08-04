@@ -7,9 +7,11 @@
  * why the secondary's label is white here despite sitting on the gradient's
  * pale reach; this is the one allowlisted full-colour moment (D-058).
  */
+import { Image as ExpoImage } from 'expo-image';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useMemo } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { Button, Notice, Screen } from '../components/ui';
@@ -63,11 +65,12 @@ function FaceCircle({
   return (
     <View style={styles.face} testID={testID}>
       {url ? (
-        <Image
+        <ExpoImage
           source={{ uri: url }}
           style={styles.facePhoto}
-          resizeMode="cover"
-          accessibilityIgnoresInvertColors
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          transition={180}
         />
       ) : (
         <View style={styles.faceEmpty}>
@@ -89,6 +92,11 @@ export function MatchScreen({ navigation, route }: RootScreenProps<'Match'>) {
   // D-057: the moment still says which room it came from — the drawing keeps
   // one sentence, so the room's own line stands quietly under it.
   const source = matchSource(match?.room ?? 'UPCOMING');
+
+  // The moment lands in the hand as well as on the screen (owner, 2026-08-04).
+  useEffect(() => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+  }, []);
 
   if (!match) {
     return (

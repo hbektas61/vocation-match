@@ -11,6 +11,8 @@ import {
   View,
 } from 'react-native';
 
+import { Image as ExpoImage } from 'expo-image';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Rect } from 'react-native-svg';
 
@@ -430,7 +432,13 @@ export function DiscoveryScreen() {
         : [],
     [candidate],
   );
-  const photoPaths = cardPaths;
+  // The card waiting underneath: its face is signed and warmed with the
+  // current card's set, so the reveal at the end of a fling is instant.
+  const nextCandidate = visibleDeck[1] ?? null;
+  const nextPath = nextCandidate
+    ? nextCandidate.photoPaths[0] ?? nextCandidate.photoPath ?? null
+    : null;
+  const photoPaths = useMemo(() => [...cardPaths, nextPath], [cardPaths, nextPath]);
   useEffect(() => setPhotoIndex(0), [candidate?.userId]);
   const shownPath = cardPaths[Math.min(photoIndex, Math.max(cardPaths.length - 1, 0))] ?? null;
   const photoUrls = usePhotoUrls(photoPaths);
@@ -497,6 +505,22 @@ export function DiscoveryScreen() {
   const cardLean = position.x.interpolate({
     inputRange: [-300, 0, 300],
     outputRange: ['-10deg', '0deg', '10deg'],
+  });
+  const likeStampOpacity = position.x.interpolate({
+    inputRange: [0, 40, 130],
+    outputRange: [0, 0, 1],
+    extrapolate: 'clamp',
+  });
+  const nopeStampOpacity = position.x.interpolate({
+    inputRange: [-130, -40, 0],
+    outputRange: [1, 0, 0],
+    extrapolate: 'clamp',
+  });
+  // The card behind grows toward full size as the one in hand travels.
+  const backdropScale = position.x.interpolate({
+    inputRange: [-200, 0, 200],
+    outputRange: [1, 0.94, 1],
+    extrapolate: 'clamp',
   });
 
   // "No hotel yet" is a claim about the account, and while the account is
@@ -622,6 +646,7 @@ export function DiscoveryScreen() {
 
   const swipe = async (direction: 'LIKE' | 'PASS') => {
     if (!candidate || busy) return;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
     setBusy(true);
     setActionError(null);
     try {
@@ -684,6 +709,27 @@ export function DiscoveryScreen() {
            room · hotel bond — as its only tag, and the three actions floating
            at its foot. No sections to scroll; the decision is made here. */
         <>
+        {/* The stack (owner, 2026-08-04): the next person waits a breath
+            behind, growing to full size as the card in hand travels. */}
+        {nextCandidate ? (
+          <Animated.View
+            style={[styles.card, styles.backdropCard, { transform: [{ scale: backdropScale }] }]}
+            pointerEvents="none"
+          >
+            {nextPath && photoUrls[nextPath] ? (
+              <ExpoImage
+                source={{ uri: photoUrls[nextPath] }}
+                style={styles.cardPhoto}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+              />
+            ) : (
+              <View style={styles.cardNoPhoto}>
+                <Text style={styles.cardInitial}>{nextCandidate.displayName.slice(0, 1)}</Text>
+              </View>
+            )}
+          </Animated.View>
+        ) : null}
         <Animated.View
           style={[
             styles.card,
@@ -699,10 +745,12 @@ export function DiscoveryScreen() {
           testID={`candidate-${candidate.userId}`}
         >
           {shownPath && photoUrls[shownPath] ? (
-            <Image
+            <ExpoImage
               source={{ uri: photoUrls[shownPath] }}
               style={styles.cardPhoto}
-              resizeMode="cover"
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={140}
               accessibilityLabel={`Photo ${photoIndex + 1} of ${cardPaths.length} of ${candidate.displayName}`}
               testID={`candidate-photo-${candidate.userId}`}
             />
@@ -732,6 +780,26 @@ export function DiscoveryScreen() {
               />
             </>
           ) : null}
+
+          {/* The verdict, said as you pull (owner, 2026-08-04): LIKE leans
+              in from the left shoulder, NOPE from the right, opacity riding
+              the drag — the deck-app grammar completed. */}
+          <Animated.View
+            style={[styles.stamp, styles.stampLike, { opacity: likeStampOpacity }]}
+            pointerEvents="none"
+          >
+            <Text style={[styles.stampText, styles.stampTextLike]}>
+              {COPY.discovery.likeStamp}
+            </Text>
+          </Animated.View>
+          <Animated.View
+            style={[styles.stamp, styles.stampNope, { opacity: nopeStampOpacity }]}
+            pointerEvents="none"
+          >
+            <Text style={[styles.stampText, styles.stampTextNope]}>
+              {COPY.discovery.nopeStamp}
+            </Text>
+          </Animated.View>
 
           {/* The photo-progress bars ride the photo's very top (owner,
               2026-08-04): tap left or right and the lit bar walks with the
@@ -1020,6 +1088,22 @@ const styles = StyleSheet.create({
     backgroundColor: color.veil,
   },
   cardPhoto: { ...StyleSheet.absoluteFillObject },
+  /** The waiting card: same frame, no interaction, a breath smaller. */
+  backdropCard: { ...StyleSheet.absoluteFillObject },
+  /** The drag verdicts, worn like rubber stamps. */
+  stamp: {
+    position: 'absolute',
+    top: 64,
+    borderWidth: 3.5,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  stampLike: { left: 20, borderColor: color.successMark, transform: [{ rotate: '-14deg' }] },
+  stampNope: { right: 20, borderColor: color.danger, transform: [{ rotate: '14deg' }] },
+  stampText: { fontFamily: fontFamily.bodySemi, fontSize: 30, letterSpacing: 3 },
+  stampTextLike: { color: color.successMark },
+  stampTextNope: { color: color.danger },
   /** K-01: the floating glass controls, a step under the progress bars. */
   floatTop: {
     position: 'absolute',

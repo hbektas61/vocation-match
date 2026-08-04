@@ -68,7 +68,11 @@ describe('the card photo set', () => {
   it('moves through the set by tapping, and stops at both ends', async () => {
     await openDeckWithPhotos();
     const shown = () =>
-      screen.getByTestId(`candidate-photo-${OWNER}`).props.source.uri as string;
+      {
+        // expo-image's test double normalises `source` to an array.
+        const raw = screen.getByTestId(`candidate-photo-${OWNER}`).props.source;
+        return (Array.isArray(raw) ? raw[0]?.uri : raw?.uri) as string;
+      }
 
     await waitFor(() => expect(shown()).toContain(PATHS[0]));
 

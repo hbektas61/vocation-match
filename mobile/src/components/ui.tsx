@@ -277,6 +277,9 @@ export function Button({
         (disabled || busy) && styles.buttonDisabled,
         pressed && !disabled && !busy && variant === 'primary' && styles.buttonPrimaryPressed,
         pressed && !disabled && !busy && variant !== 'primary' && styles.buttonPressed,
+        // The spring under the thumb (owner, 2026-08-04): every button gives
+        // the same slight, immediate acknowledgement.
+        pressed && !disabled && !busy && styles.buttonSpring,
       ]}
     >
       <View style={styles.buttonInner}>
@@ -1086,6 +1089,7 @@ const styles = StyleSheet.create({
   screenSheet: { backgroundColor: color.surface },
   /** The screen shell: 20 aside, 24 above, 16 below, 14 between. */
   screenContent: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: spacing.md, gap: 14 },
+  buttonSpring: { transform: [{ scale: 0.97 }] },
   /** The shared waiting state: centred, with air around it. */
   loading: { alignItems: 'center', paddingVertical: spacing.lg },
   /** The dimmed ground under a blocking question. */
