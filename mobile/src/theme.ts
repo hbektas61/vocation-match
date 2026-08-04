@@ -117,7 +117,9 @@ export const tokens = {
     /** Decorative, disabled and placeholder text only. See `palette.slate`. */
     tertiary: palette.slateLight,
     /** On a coral fill. Navy, 5.7:1 — the coral cannot carry white at 4.5. */
-    onBrand: palette.navy,
+    onBrand: '#FFFFFF', // owner decision (2026-08-05): white on coral, the
+    // reference apps' voice. Measured ~2.9:1 — under AA for body text, which
+    // is why button labels on coral stay 15pt semibold and nothing smaller.
     /** On the navy ribbon and the deep surfaces. 15.7:1. */
     onInverse: palette.cream,
     /** Over a photograph, on top of `overlay.photo`. */

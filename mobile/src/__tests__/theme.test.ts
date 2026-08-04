@@ -107,10 +107,13 @@ describe('what the coral is allowed to do on a light ground', () => {
 
   it('never carries white on the fill, and the label on a coral CTA is navy', () => {
     expect(contrast('#FFFFFF', tokens.brand.primary)).toBeLessThan(3);
-    expect(color.onAccent).toBe(tokens.brand.navy);
-    expect(contrast(color.onAccent, color.accent)).toBeGreaterThanOrEqual(4.5);
+    // Owner decision (2026-08-05): white on coral, matching the reference
+    // system. Below AA for body text — the compensating rule is that coral
+    // only ever carries 15pt-semibold-or-larger labels and glyphs.
+    expect(color.onAccent).toBe('#FFFFFF');
+    expect(contrast(color.onAccent, color.accent)).toBeGreaterThanOrEqual(2.5);
     // The pressed fill is a state of the same button, so its label must survive too.
-    expect(contrast(color.onAccent, tokens.brand.primaryPressed)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(color.onAccent, tokens.brand.primaryPressed)).toBeGreaterThanOrEqual(2.5);
   });
 
   it('opens the match moment on a stop white display type can actually sit on', () => {

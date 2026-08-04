@@ -1461,14 +1461,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  chipSelected: { backgroundColor: color.ink, borderColor: color.ink },
+  chipSelected: { backgroundColor: color.accentSoft, borderColor: color.accent },
   chipDisabled: { backgroundColor: color.veil, borderColor: color.rule },
   chipLabel: {
     fontFamily: fontFamily.bodyMedium,
     fontSize: font.caption + 1,
     color: color.ink,
   },
-  chipLabelSelected: { fontFamily: fontFamily.bodySemi, color: color.onInverse },
+  chipLabelSelected: { fontFamily: fontFamily.bodySemi, color: color.accentDeep },
   chipLabelDisabled: { color: color.inkFaint },
 
   contextRibbon: {
