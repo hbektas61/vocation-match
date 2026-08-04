@@ -13,7 +13,7 @@
  * the same facts stand as plain text (E-20), and the attribution moves to a
  * caption, because it follows the provider's content wherever that is.
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Caption, Notice, PhotoScrim, Screen } from '../components/ui';
@@ -132,11 +132,35 @@ export function EventDetailScreen({
   /** A leased URL can lapse mid-screen; the fallback is the text layout. */
   const [imageFailed, setImageFailed] = useState(false);
 
+  // Opened from "Etkinliklerin" (owner, 2026-08-04): no fresh selection, just
+  // the membership — loaded here so the withdraw door exists after the
+  // session that joined is long gone.
+  useEffect(() => {
+    const eventId = route.params.eventId;
+    if (!eventId) return;
+    let cancelled = false;
+    (async () => {
+      const mine = await getApi().getMyEvents().catch(() => []);
+      if (!cancelled) setJoined(mine.find((row) => row.eventId === eventId) ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [route.params.eventId]);
+
+  /** The deck, focused on this event — where "see who is going" lands now. */
+  const openDeck = (source: 'EVENT_UPCOMING' | 'EVENT_HERE_NOW') => {
+    if (joined) getApi().setEventFocus(joined.eventId, source).catch(() => undefined);
+    navigation.navigate('Tabs', { screen: 'Discovery', params: { source } });
+  };
+
   const join = async () => {
+    const token = route.params.selectionToken;
+    if (!token) return;
     setPending('join');
     setProblem(null);
     try {
-      const mine = await getApi().joinEventUpcoming(route.params.selectionToken);
+      const mine = await getApi().joinEventUpcoming(token);
       setJoined(mine);
     } catch (error) {
       setProblem(error instanceof ApiError ? apiErrorMessage(error.code) : COPY.errors.unknown);
@@ -151,6 +175,8 @@ export function EventDetailScreen({
    * somebody who *has* joined — it needs no token and re-uses their event.
    */
   const verifyFromSelection = async () => {
+    const token = route.params.selectionToken;
+    if (!token) return;
     setPending('live');
     setProblem(null);
     setOutcome(null);
@@ -161,7 +187,7 @@ export function EventDetailScreen({
         return;
       }
       const answer = await getApi().verifyEventPresenceFromSelection(
-        route.params.selectionToken,
+        token,
         reading.latitude,
         reading.longitude,
         reading.accuracyMeters,
@@ -312,7 +338,7 @@ export function EventDetailScreen({
             <Text style={styles.roomBody}>{COPY.events.joined}</Text>
             <Button
               label={COPY.events.joinedRoomCta}
-              onPress={() => navigation.navigate('Tabs')}
+              onPress={() => openDeck('EVENT_UPCOMING')}
               testID="event-open-upcoming-deck"
             />
             <Pressable
@@ -327,7 +353,7 @@ export function EventDetailScreen({
             </Pressable>
           </View>
         )
-      ) : (
+      ) : route.params.selectionToken ? (
         /* ED-02 (E-21/E-22): two independent ways in, and what "going" means
            before it is declared — the whole product risk of this feature is
            somebody reading it as a ticket. Pressing either must not quietly
@@ -353,7 +379,7 @@ export function EventDetailScreen({
             testID="event-verify-from-selection"
           />
         </>
-      )}
+      ) : null}
 
       {joined && !withdrawing ? (
         /* ED-03: the live room — the card says what it is, the control says
@@ -375,7 +401,7 @@ export function EventDetailScreen({
               <Button
                 label={COPY.events.liveRoomCta}
                 variant="secondary"
-                onPress={() => navigation.navigate('Tabs')}
+                onPress={() => openDeck('EVENT_HERE_NOW')}
                 testID="event-open-live-deck"
               />
             </>

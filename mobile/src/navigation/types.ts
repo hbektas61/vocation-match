@@ -1,3 +1,4 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 export type RootStackParamList = {
@@ -5,7 +6,7 @@ export type RootStackParamList = {
   Onboarding: undefined;
   EditProfile: undefined;
   ChooseHotel: undefined;
-  Tabs: undefined;
+  Tabs: NavigatorScreenParams<TabParamList> | undefined;
   /**
    * D-057: Settings left the bottom bar for the profile ring. It is a pushed
    * screen now, so every primary tab keeps its own state while you are in it.
@@ -21,7 +22,10 @@ export type RootStackParamList = {
    * on the list they came from and nowhere else.
    */
   EventDetail: {
-    selectionToken: string;
+    /** Absent when the screen opens from a membership rather than a search. */
+    selectionToken?: string;
+    /** The membership to load, when there is no fresh selection. */
+    eventId?: string;
     name: string;
     when?: string;
     where?: string;

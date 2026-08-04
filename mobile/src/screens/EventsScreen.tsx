@@ -48,6 +48,7 @@ import {
   type EventArea,
   type EventCard,
   type EventCategory,
+  type EventContent,
   type EventSearchResult,
   type ForegroundLocationReader,
   type MyEvent,
@@ -153,8 +154,8 @@ export function EventsScreen({
   const [today, setToday] = useState<EventSearchResult | null>(null);
   const [upcoming, setUpcoming] = useState<EventSearchResult | null>(null);
   const [mine, setMine] = useState<MyEvent[]>([]);
-  /** eventId → the provider's leased name, for the memberships list. */
-  const [mineNames, setMineNames] = useState<Record<string, string | null>>({});
+  /** eventId → its lease, for the memberships list and the detail it opens. */
+  const [mineLeases, setMineLeases] = useState<Record<string, EventContent>>({});
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [busy, setBusy] = useState(false);
   /** E-01 (131:132): which card each bucket's carousel rests on. */
@@ -190,9 +191,7 @@ export function EventsScreen({
           .getEventContent(events.map((e) => e.eventId))
           .catch(() => []);
         if (!cancelled) {
-          setMineNames(
-            Object.fromEntries(leases.map((lease) => [lease.eventId, lease.name])),
-          );
+          setMineLeases(Object.fromEntries(leases.map((lease) => [lease.eventId, lease])));
         }
       }
     })();
@@ -659,7 +658,7 @@ export function EventsScreen({
            it had to say, and a list of "Geçmiş etkinlik" rows says nothing. */
         const mineShown = mine.filter(
           (event) =>
-            (mineNames[event.eventId] ?? null) !== null ||
+            (mineLeases[event.eventId]?.name ?? null) !== null ||
             (event.liveClosesAt !== null && event.liveClosesAt > nowMs()),
         );
         return mineShown.length > 0 ? (
@@ -669,17 +668,23 @@ export function EventsScreen({
             <Pressable
               key={event.eventId}
               accessibilityRole="button"
-              accessibilityLabel={mineNames[event.eventId] ?? COPY.events.pastEvent}
-              // Opening one of your own events means looking at its deck: the
-              // focus moves, and nothing else does.
-              onPress={async () => {
-                await getApi()
-                  .setEventFocus(
-                    event.eventId,
-                    event.hereNowOpen ? 'EVENT_HERE_NOW' : 'EVENT_UPCOMING',
-                  )
-                  .catch(() => undefined);
-                navigation.navigate('Tabs');
+              accessibilityLabel={mineLeases[event.eventId]?.name ?? COPY.events.pastEvent}
+              // The row opens the event's own screen (owner, 2026-08-04):
+              // that is where both doors live — the deck, and the withdraw
+              // for "actually, I am not going".
+              onPress={() => {
+                const lease = mineLeases[event.eventId];
+                navigation.navigate('EventDetail', {
+                  eventId: event.eventId,
+                  name: lease?.name ?? COPY.events.pastEvent,
+                  when: lease?.startsAt
+                    ? `${formatDayMonthLong(lease.startsAt.slice(0, 10))}${
+                        lease.startsAt.length >= 16 ? ` · ${lease.startsAt.slice(11, 16)}` : ''
+                      }`
+                    : undefined,
+                  where: [lease?.venueName, lease?.city].filter(Boolean).join(' · ') || undefined,
+                  imageUrl: lease?.imageUrl ?? null,
+                });
               }}
               style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
               testID={`events-mine-${event.eventId}`}
@@ -690,7 +695,7 @@ export function EventsScreen({
                   bad={false}
                 />
                 <Text style={styles.cardName} numberOfLines={2}>
-                  {mineNames[event.eventId] ?? COPY.events.pastEvent}
+                  {mineLeases[event.eventId]?.name ?? COPY.events.pastEvent}
                 </Text>
                 <Text style={styles.cardMeta}>
                   {event.hereNowOpen ? COPY.events.hereNowOpen : COPY.events.joined}
