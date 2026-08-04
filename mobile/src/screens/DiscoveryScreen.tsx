@@ -207,12 +207,19 @@ export function DiscoveryScreen() {
            * room was told "açık odan yok" while standing in it. They are built
            * the same way, from the memberships the account already has.
            */
-          // A membership whose live window has closed is a past event
-          // (owner, 2026-08-04): its rooms leave the selector instead of
-          // sitting there promising a deck for a night already over. A null
-          // close is an unconfirmed time, which is not the same as over.
+          // The Events tab's own rule (owner, 2026-08-04): a membership is
+          // current while its lease still names it OR its live window has not
+          // closed. Both gone — the name purged, no future close — is a past
+          // event, and a past event's room must not stand in the selector
+          // promising a deck the server will refuse ("Bunu bulamadık").
+          const leases = mine.length > 0
+            ? await getApi().getEventContent(mine.map((e) => e.eventId)).catch(() => [])
+            : [];
+          const leaseNames = new Map(leases.map((lease) => [lease.eventId, lease.name]));
           const currentEvents = mine.filter(
-            (e) => e.liveClosesAt === null || e.liveClosesAt > nowMs(),
+            (e) =>
+              (leaseNames.get(e.eventId) ?? null) !== null ||
+              (e.liveClosesAt !== null && e.liveClosesAt > nowMs()),
           );
           const focusedEvent = currentEvents.find((e) => e.focused) ?? currentEvents[0] ?? null;
           const upcomingEvent = currentEvents.find((e) => e.upcomingOpen) ?? null;
@@ -241,18 +248,9 @@ export function DiscoveryScreen() {
             ['EVENT_HERE_NOW', 'NEARBY', 'HERE_NOW', 'EVENT_UPCOMING', 'UPCOMING'] as RoomKey[]
           ).find((key) => eligible.includes(key));
           setRoom((current) => (current && eligible.includes(current) ? current : fallback ?? null));
-          // D-057: the selector names the event, so the focused event's leased
-          // name is fetched once per load — and only when an event room is
-          // actually on the list. An expired lease simply leaves it null.
-          if (withEvents.some((r) => r.room === 'EVENT_UPCOMING' || r.room === 'EVENT_HERE_NOW')) {
-            const focused = focusedEvent;
-            if (!cancelled && focused) {
-              const [lease] = await getApi().getEventContent([focused.eventId]).catch(() => []);
-              if (!cancelled) setEventName(lease?.name ?? null);
-            }
-          } else if (!cancelled) {
-            setEventName(null);
-          }
+          // D-057: the selector names the event — from the leases already in
+          // hand, since one answer now serves the filter and the name both.
+          setEventName(focusedEvent ? leaseNames.get(focusedEvent.eventId) ?? null : null);
           const soonest = earliestRoomExpiry(withEvents, nowMs());
           if (soonest !== null) {
             timer = setTimeout(load, soonest - nowMs());
