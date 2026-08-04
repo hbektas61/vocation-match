@@ -1,4 +1,3 @@
-import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 
 import { PresenceResult } from '../components/PresenceResult';
@@ -14,7 +13,7 @@ import {
   type ForegroundLocationReader,
 } from '../data';
 import { getHotelById } from '../fixtures/hotels';
-import type { RootScreenProps, TabParamList } from '../navigation/types';
+import type { RootScreenProps } from '../navigation/types';
 import { useAppStore } from '../state/AppStore';
 
 type CheckOutcome =
@@ -45,9 +44,6 @@ export function HereNowScreen({
   reader = deviceLocation,
 }: RootScreenProps<'HereNow'> & { reader?: ForegroundLocationReader }) {
   const { state, dispatch } = useAppStore();
-  // This screen is pushed over the tabs, so the deck lives on an ancestor
-  // navigator rather than this one.
-  const tabNavigation = useNavigation<NavigationProp<TabParamList>>();
   const [outcome, setOutcome] = useState<CheckOutcome | null>(null);
   const [checking, setChecking] = useState(false);
 
@@ -190,7 +186,14 @@ export function HereNowScreen({
   const wayOut = upcomingOpen
     ? {
         label: COPY.hereNow.seeUpcoming,
-        go: () => tabNavigation.navigate('Discovery', { source: 'UPCOMING' as const }),
+        // Pushed over the tabs, this screen's own navigator cannot see the
+        // deck — the way there is the root's nested route (owner report,
+        // 2026-08-05: 'NAVIGATE … not handled by any navigator').
+        go: () =>
+          navigation.navigate('Tabs', {
+            screen: 'Discovery',
+            params: { source: 'UPCOMING' as const },
+          }),
       }
     : { label: COPY.hereNow.addDates, go: () => navigation.navigate('Upcoming') };
 
