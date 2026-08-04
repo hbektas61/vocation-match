@@ -63,7 +63,7 @@ const DoorIcon = () => (
     height={32}
     viewBox="0 0 24 24"
     fill="none"
-    stroke={color.ink}
+    stroke={color.accent}
     strokeWidth={1.8}
     strokeLinecap="round"
     strokeLinejoin="round"

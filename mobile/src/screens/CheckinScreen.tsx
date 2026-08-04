@@ -47,8 +47,9 @@ import { color, elevation, font, fontFamily, MIN_TOUCH, radius, spacing } from '
 const HERO = require('../../assets/nearby-hero.jpg');
 
 /** The brand as text or a small glyph — the fill itself cannot carry a word. */
-// B (2026-08-05): the file's info glyphs speak ink; coral is for actions.
-const DEEP = color.ink;
+// Owner, 2026-08-05 (second pass): the glyphs speak coral, like the
+// reference's icon language — the words around them stay ink.
+const DEEP = color.accent;
 
 /**
  * Session memory for the expired-check-in card: the server forgets an

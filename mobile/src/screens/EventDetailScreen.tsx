@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     borderWidth: 1.6,
-    borderColor: color.ink,
+    borderColor: color.accent,
   },
   markHeadSecond: { left: 7, backgroundColor: color.accentWash },
   markRing: {
@@ -555,14 +555,14 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     borderWidth: 1.4,
-    borderColor: color.ink,
+    borderColor: color.accent,
     opacity: 0.55,
   },
   markDot: {
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: color.ink,
+    backgroundColor: color.accent,
   },
   /** ED-03's room cards. */
   roomCard: {

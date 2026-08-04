@@ -90,7 +90,7 @@ const MagnifierIcon = () => (
 
 /** ED-01's empty-state mark: a pennant — an event, not a hotel, not a pin. */
 const PennantIcon = () => (
-  <Svg {...iconStroke(color.ink, 26)}>
+  <Svg {...iconStroke(color.accent, 26)}>
     <Path d="M6 21V3" />
     <Path d="M6 4h11l-2.5 3.5L17 11H6" />
   </Svg>
