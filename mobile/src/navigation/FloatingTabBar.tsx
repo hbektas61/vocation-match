@@ -38,7 +38,9 @@ import { color, elevation, fontFamily, MIN_TOUCH, radius, spacing } from '../the
  * the packed trip, the pin, the ticket stub, the compass, the bubble.
  */
 function iconFor(routeName: string, active: boolean) {
-  const props = { size: 18, strokeWidth: 2, color: active ? color.accentDeep : color.inkMuted };
+  // Owner, 2026-08-05: the active tab speaks the same coral as every other
+  // icon — not the darker bordo that read as pink inside the pill.
+  const props = { size: 18, strokeWidth: 2, color: active ? color.accent : color.inkMuted };
   switch (routeName) {
     case 'Vacation':
       return <Briefcase {...props} />;
@@ -174,7 +176,7 @@ const styles = StyleSheet.create({
   // The selected surface, same job a selected chip does: a pale brand wash,
   // never the coral fill itself, which would put the small glyph on top of
   // a colour that cannot carry it.
-  iconSeatActive: { backgroundColor: color.accentSoft },
+  iconSeatActive: { backgroundColor: color.accentWash },
   label: {
     fontFamily: fontFamily.bodyMedium,
     fontSize: 10,
@@ -182,6 +184,6 @@ const styles = StyleSheet.create({
   // The coral itself is 2.99:1 on white — too faint for a 10px label — so the
   // active tab reads in its dark sibling instead, same as every other small
   // brand glyph in this theme.
-  labelActive: { color: color.accentDeep },
+  labelActive: { color: color.accent },
   labelIdle: { color: color.inkMuted },
 });
