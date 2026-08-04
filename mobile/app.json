@@ -17,7 +17,7 @@
     "android": {
       "package": "com.vocationmatch.app",
       "adaptiveIcon": {
-        "backgroundColor": "#F3E9FF",
+        "backgroundColor": "#FF5E62",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -51,6 +51,11 @@
       "expo-asset",
       "expo-notifications",
       "@react-native-community/datetimepicker"
-    ]
+    ],
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAFAF7"
+    }
   }
 }
