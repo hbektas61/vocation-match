@@ -21,7 +21,6 @@
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Animated,
   Image,
   PanResponder,
@@ -31,7 +30,7 @@ import {
   View,
 } from 'react-native';
 
-import { Body, Caption, Notice } from './ui';
+import { Body, Caption, Loading, Notice } from './ui';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, MAX_PHOTOS, type ProfilePhoto } from '../data';
 import { pickProfilePhoto } from '../data/imagePicker';
@@ -220,7 +219,7 @@ export function PhotoGrid({
                 testID={`${testID}-add-${slot}`}
               >
                 {busy === 'add' && isNext ? (
-                  <ActivityIndicator accessibilityLabel={COPY.photo.uploading} />
+                  <Loading label={COPY.photo.uploading} />
                 ) : isNext ? (
                   <Text style={styles.plus}>+</Text>
                 ) : null}
@@ -251,7 +250,7 @@ export function PhotoGrid({
                 />
               ) : (
                 <View style={styles.imagePending}>
-                  <ActivityIndicator accessibilityLabel={COPY.common.loading} />
+                  <Loading />
                 </View>
               )}
 

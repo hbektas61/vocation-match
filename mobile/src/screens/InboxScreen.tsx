@@ -2,7 +2,6 @@ import { useFocusEffect, useNavigation, type NavigationProp } from '@react-navig
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -12,7 +11,7 @@ import {
   View,
 } from 'react-native';
 
-import { Avatar, Button, EmptyState, Notice, Screen } from '../components/ui';
+import { Avatar, Button, EmptyState, Loading, Notice, Screen } from '../components/ui';
 import { EmptyInbox } from '../components/InboxIllustrations';
 import { ProfileRing } from '../components/ProfileRing';
 import { apiErrorMessage, COPY, COPY_FOR, roomPlate } from '../copy';
@@ -117,7 +116,7 @@ export function InboxScreen() {
       {error ? (
         <Notice message={error} tone="error" testID="inbox-error" />
       ) : matches === null ? (
-        <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="inbox-loading" />
+        <Loading testID="inbox-loading" />
       ) : isEmpty ? (
         /*
          * The sheet's empty inbox (12:137): the line under the head, the

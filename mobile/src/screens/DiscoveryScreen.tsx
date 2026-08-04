@@ -2,7 +2,6 @@ import { useFocusEffect, useNavigation, useRoute, type NavigationProp, type Rout
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Animated,
   Image,
   PanResponder,
@@ -15,7 +14,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Rect } from 'react-native-svg';
 
-import { Body, Button, Notice, Screen, ScreenHeader } from '../components/ui';
+import { Body, Button, Loading, Notice, Screen, ScreenHeader } from '../components/ui';
 import { ProfileRing } from '../components/ProfileRing';
 import { RadarEmpty } from '../components/RadarEmpty';
 import { ContextSelector, CONTEXT_ORDER, type ContextRow } from '../components/ContextSelector';
@@ -508,7 +507,7 @@ export function DiscoveryScreen() {
     return (
       <Screen safeTop testID="screen-discovery">
         <ScreenHeader title={COPY.tabs.discovery} ringTestID="discovery-profile-ring" />
-        <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="discovery-loading" />
+        <Loading testID="discovery-loading" />
       </Screen>
     );
   }
@@ -678,7 +677,7 @@ export function DiscoveryScreen() {
       ) : null}
 
       {deck === null ? (
-        <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="deck-loading" />
+        <Loading testID="deck-loading" />
       ) : candidate ? (
         /* The whole person is one screen (owner decision): a full-bleed photo
            card with the name on it, the one fact this app can print — the

@@ -22,9 +22,9 @@
  * that survives a selection is the opaque token the backend issued.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { Button, Caption, Chip, EmptyState, Notice } from './ui';
+import { Button, Caption, Chip, EmptyState, Loading, Notice } from './ui';
 import { COPY, getLocale, upperCase } from '../copy';
 import { ApiError, getApi, type GooglePlaceHit, type VenueSearchMode } from '../data';
 import {
@@ -594,7 +594,7 @@ export function VenuePicker({
         <Caption testID="venue-prompt">{prompt}</Caption>
       ) : results === null ? (
         loading ? (
-          <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="venue-loading" />
+          <Loading testID="venue-loading" />
         ) : null
       ) : results.length === 0 ? (
         destination && mode === 'stay' ? (

@@ -1,9 +1,8 @@
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator } from 'react-native';
 
 import { ProfileForm } from '../components/ProfileForm';
-import { Body, Notice, Screen, Title } from '../components/ui';
+import { Body, Loading, Notice, Screen, Title } from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type OwnProfile } from '../data';
 import type { RootScreenProps } from '../navigation/types';
@@ -59,7 +58,7 @@ export function EditProfileScreen({ navigation }: RootScreenProps<'EditProfile'>
     return (
       <Screen testID="screen-edit-profile">
         <Title>{COPY.editProfile.title}</Title>
-        <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="edit-profile-loading" />
+        <Loading testID="edit-profile-loading" />
       </Screen>
     );
   }

@@ -1,14 +1,14 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { LanguageSwitch } from '../components/LanguageSwitch';
 import { unregisterPush } from '../notifications/push';
 import { PhotoGrid } from '../components/PhotoGrid';
 import Svg, { Path } from 'react-native-svg';
 
-import { Avatar, Body, Button, Caption, Card, EmptyState, Heading, Notice, Screen, SectionLabel } from '../components/ui';
+import { Avatar, Body, Button, Caption, Card, EmptyState, Heading, Loading, Notice, Screen, SectionLabel } from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type BlockedUser, type ProfilePhoto } from '../data';
 import { resetDeckLabels } from '../data/venueLabels';
@@ -220,7 +220,7 @@ export function SettingsScreen() {
         <SectionLabel>{COPY.settings.blockedTitle}</SectionLabel>
         {blockedError ? <Notice message={blockedError} tone="error" testID="blocked-error" /> : null}
         {blocked === null ? (
-          <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="blocked-loading" />
+          <Loading testID="blocked-loading" />
         ) : blocked.length === 0 ? (
           <EmptyState message={COPY.settings.blockedEmpty} />
         ) : (

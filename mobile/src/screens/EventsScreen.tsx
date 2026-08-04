@@ -21,7 +21,6 @@
  */
 import React, { useCallback, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -39,10 +38,12 @@ import {
   Caption,
   Chip,
   Field,
+  Loading,
   Notice,
   PhotoScrim,
   Screen,
   ScreenHeader,
+  Spinner,
 } from '../components/ui';
 import { COPY, COPY_FOR, getLocale, upperCase } from '../copy';
 import {
@@ -617,11 +618,11 @@ export function EventsScreen({
       {busy ? (
         today || upcoming ? (
           <View style={styles.busyLine} testID="events-loading">
-            <ActivityIndicator accessibilityLabel={COPY.events.refreshing} />
+            <Spinner size={16} />
             <Text style={styles.busyText}>{COPY.events.refreshing}</Text>
           </View>
         ) : (
-          <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="events-loading" />
+          <Loading testID="events-loading" />
         )
       ) : null}
 

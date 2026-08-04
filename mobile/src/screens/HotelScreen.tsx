@@ -1,12 +1,12 @@
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useNavigation, type NavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 
-import { Button, ConfirmDialog, Notice, PhotoScrim, Screen } from '../components/ui';
+import { Button, ConfirmDialog, Loading, Notice, PhotoScrim, Screen } from '../components/ui';
 import { nowMs } from '../clock';
 import { formatStayRangeLabel } from '../domain/dates';
 import { earliestRoomExpiry } from '../state/roomSchedule';
@@ -382,7 +382,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       {picking ? null : loadingActive || (activeId && !activeHotel) ? (
         // Either the answer is on its way, or the id is known and its card
         // is still being resolved. Neither is "no hotel chosen".
-        <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="hotel-loading" />
+        <Loading testID="hotel-loading" />
       ) : activeHotel ? (
         <>
         {stay ? (

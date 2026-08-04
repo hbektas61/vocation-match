@@ -1,10 +1,10 @@
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 
-import { Button, Field, Notice, Screen } from '../components/ui';
+import { Button, Field, Loading, Notice, Screen } from '../components/ui';
 import { todayIsoDate } from '../clock';
 import { apiErrorMessage, COPY, upperCase } from '../copy';
 import { ApiError, getApi, type UpcomingStay } from '../data';
@@ -233,7 +233,7 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
       <Text style={styles.subtitle}>{COPY.upcoming.explainer}</Text>
 
       {existing === undefined ? (
-        <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="upcoming-loading" />
+        <Loading testID="upcoming-loading" />
       ) : null}
 
       <DateCard

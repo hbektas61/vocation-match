@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AppState,
-  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -14,7 +13,7 @@ import { useIsFocused } from '@react-navigation/native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { nowMs } from '../clock';
-import { Body, Button, Notice, Screen } from '../components/ui';
+import { Body, Button, Loading, Notice, Screen } from '../components/ui';
 import { apiErrorMessage, COPY, upperCase, roomPlate } from '../copy';
 import { ApiError, getApi, type ChatMessage } from '../data';
 import type { RootScreenProps } from '../navigation/types';
@@ -232,7 +231,7 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
     if (!checkedServer) {
       return (
         <Screen safeTop tone="sheet" testID="screen-chat">
-          <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="chat-match-loading" />
+          <Loading testID="chat-match-loading" />
         </Screen>
       );
     }
@@ -414,7 +413,7 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
       <ScrollView contentContainerStyle={styles.thread} keyboardShouldPersistTaps="handled">
         {loadError ? <Notice message={loadError} tone="error" testID="chat-load-error" /> : null}
         {messages === null ? (
-          <ActivityIndicator accessibilityLabel={COPY.common.loading} testID="chat-loading" />
+          <Loading testID="chat-loading" />
         ) : messages.length === 0 ? (
           <Body>
             {COPY.chat.sayHelloTo} {match.displayName}!

@@ -2,7 +2,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import {
   AccessibilityInfo,
-  ActivityIndicator,
+  Animated,
+  Easing,
   Image,
   Modal,
   Pressable,
@@ -17,6 +18,7 @@ import {
   type TextInputProps,
   type ViewStyle,
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -279,12 +281,7 @@ export function Button({
     >
       <View style={styles.buttonInner}>
         {busy ? (
-          <ActivityIndicator
-            size="small"
-            color={color.inkMuted}
-            accessibilityElementsHidden
-            importantForAccessibility="no"
-          />
+          <Spinner size={16} tone={variant === 'primary' ? color.onAccent : color.inkMuted} />
         ) : null}
         <Text
           style={[
@@ -881,6 +878,69 @@ export function EmptyState({
  * an inline card below the fold was a question half the screen never saw.
  * The scrim press and the hardware back both mean "no".
  */
+/**
+ * The one spinner (owner, 2026-08-04): a coral arc turning at the same pace
+ * everywhere, instead of each screen borrowing the platform's grey dots at
+ * whatever size it happened to pick. Decorative by itself — the accessible
+ * name lives on the `Loading` wrapper, or on the control that is busy.
+ */
+export function Spinner({ size = 28, tone = color.accent }: { size?: number; tone?: string }) {
+  const turn = React.useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(turn, {
+        toValue: 1,
+        duration: 900,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [turn]);
+  const rotate = turn.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  return (
+    <Animated.View
+      style={{ width: size, height: size, transform: [{ rotate }] }}
+      accessibilityElementsHidden
+      importantForAccessibility="no"
+    >
+      <Svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke={tone}
+        strokeWidth={2.6}
+        strokeLinecap="round"
+      >
+        <Path d="M12 2.5a9.5 9.5 0 1 1-9.5 9.5" />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+/** A waiting state, said once and the same way on every screen. */
+export function Loading({
+  label,
+  testID,
+}: {
+  /** Spoken and shown under the arc; defaults to the shared "Loading…". */
+  label?: string;
+  testID?: string;
+}) {
+  return (
+    <View
+      style={styles.loading}
+      accessibilityRole="progressbar"
+      accessibilityLabel={label ?? COPY.common.loading}
+      testID={testID}
+    >
+      <Spinner />
+    </View>
+  );
+}
+
 export function ConfirmDialog({
   visible,
   title,
@@ -1026,6 +1086,8 @@ const styles = StyleSheet.create({
   screenSheet: { backgroundColor: color.surface },
   /** The screen shell: 20 aside, 24 above, 16 below, 14 between. */
   screenContent: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: spacing.md, gap: 14 },
+  /** The shared waiting state: centred, with air around it. */
+  loading: { alignItems: 'center', paddingVertical: spacing.lg },
   /** The dimmed ground under a blocking question. */
   dialogScrim: {
     flex: 1,
