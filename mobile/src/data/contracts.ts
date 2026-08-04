@@ -877,6 +877,13 @@ export interface VocationApi {
 
   /* discovery */
   getDiscoveryFeed(room: RoomKey, limit?: number): Promise<CandidateCard[]>;
+  /**
+   * Investor-demo placement (2026-08-04): asks the server to fill the
+   * caller's current room with the flag-gated demo pool. A no-op wherever
+   * DEMO_SEED_ENABLED is off, and always best-effort — a deck must never
+   * fail because seeding did.
+   */
+  seedDemoRoom(room: RoomKey): Promise<void>;
 
   /* matching */
   swipe(targetUserId: string, room: RoomKey, direction: SwipeDirection): Promise<SwipeResult>;

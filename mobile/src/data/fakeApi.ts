@@ -633,6 +633,11 @@ export class FakeApi implements VocationApi {
     return { hotelId, previousHotelId, presenceCleared: presenceCleared === true };
   }
 
+  async seedDemoRoom(_room: RoomKey): Promise<void> {
+    // The fake's decks come from fixtures; there is nothing to seed.
+    await this.requireUserId();
+  }
+
   async leaveActiveVenue(): Promise<void> {
     const userId = await this.requireUserId();
     // The switch's teardown, with nothing put in the old venue's place.

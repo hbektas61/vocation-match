@@ -312,6 +312,10 @@ export function DiscoveryScreen() {
       }
       setDeckError(null);
       try {
+        // Investor demo (2026-08-04): entering a room fills it. The server
+        // no-ops unless DEMO_SEED_ENABLED is on, and a seeding failure is
+        // swallowed by contract — the deck fetch below is the real work.
+        await getApi().seedDemoRoom(room);
         const feed = await getApi().getDiscoveryFeed(room);
         if (!cancelled) setDeck(feed);
         // V-011: a Google venue has no stored name, so a neighbour's label has

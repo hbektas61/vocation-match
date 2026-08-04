@@ -1071,6 +1071,14 @@ export class SupabaseApi implements VocationApi {
     };
   }
 
+  async seedDemoRoom(room: RoomKey): Promise<void> {
+    // Best-effort by contract: the demo filler must never break a deck.
+    await this.client.rpc('seed_demo_room', { p_room: room }).then(
+      () => undefined,
+      () => undefined,
+    );
+  }
+
   async leaveActiveVenue(): Promise<void> {
     const { error } = await this.client.rpc('leave_active_venue');
     if (error) {

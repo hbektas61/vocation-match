@@ -194,3 +194,17 @@ provider behaviour, location privacy and accuracy thresholds, the schema and its
 migrations, matching/swipe/chat rules, the D-057 information architecture, and
 the production feature flags. D-058 is a visual system, and it did not vote on
 any of those.
+
+## D-064 — Investor-demo seeding is a launch-gated staging convenience (2026-08-04)
+
+Owner instruction: any room the owner opens on staging must fill with
+realistic profiles by default, so investors can test every deck. Implemented
+as `app.demo_users` (12 shadow accounts, no phone/password, `@demo.invalid`)
+plus flag-gated `public.seed_demo_room(p_room)`, called best-effort by the
+app before each deck fetch. Half the pool pre-likes the caller so a right
+swipe demonstrates match + chat.
+
+**Launch gate:** `DEMO_SEED_ENABLED` ships ON because this database is the
+demo environment. Before any production offering: flip the flag off AND
+delete `app.demo_users` rows (cascade removes their placements). This joins
+the D-056 launch checklist.
