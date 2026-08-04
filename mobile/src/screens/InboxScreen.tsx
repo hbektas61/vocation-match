@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 
-import { Avatar, Button, EmptyState, Loading, Notice, Screen } from '../components/ui';
+import { Avatar, Button, EmptyState, Notice, Screen, SkeletonRows } from '../components/ui';
 import { EmptyInbox } from '../components/InboxIllustrations';
 import { ProfileRing } from '../components/ProfileRing';
 import { apiErrorMessage, COPY, COPY_FOR, roomPlate } from '../copy';
@@ -116,7 +116,7 @@ export function InboxScreen() {
       {error ? (
         <Notice message={error} tone="error" testID="inbox-error" />
       ) : matches === null ? (
-        <Loading testID="inbox-loading" />
+        <SkeletonRows testID="inbox-loading" />
       ) : isEmpty ? (
         /*
          * The sheet's empty inbox (12:137): the line under the head, the

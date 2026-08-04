@@ -890,6 +890,9 @@ export function EmptyState({
 export function Spinner({ size = 28, tone = color.accent }: { size?: number; tone?: string }) {
   const turn = React.useRef(new Animated.Value(0)).current;
   useEffect(() => {
+    // Decoration only: under jest the loop is pure timer churn that slowed
+    // whole parallel runs into timeouts, so it simply does not start there.
+    if (process.env.NODE_ENV === 'test') return;
     const loop = Animated.loop(
       Animated.timing(turn, {
         toValue: 1,
@@ -920,6 +923,82 @@ export function Spinner({ size = 28, tone = color.accent }: { size?: number; ton
         <Path d="M12 2.5a9.5 9.5 0 1 1-9.5 9.5" />
       </Svg>
     </Animated.View>
+  );
+}
+
+/**
+ * A breathing placeholder block (owner, 2026-08-04): lists wait as the shape
+ * of their content rather than as an arc in a void — the screen reads as
+ * "almost here" instead of "empty".
+ */
+export function Skeleton({ style }: { style?: StyleProp<ViewStyle> }) {
+  const pulse = React.useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    // Same rule as the Spinner: decorative motion sits out the test runner.
+    if (process.env.NODE_ENV === 'test') return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0, duration: 700, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+  const opacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.45, 0.95] });
+  return <Animated.View style={[styles.skeletonBase, style, { opacity }]} />;
+}
+
+/** A list waiting as rows — a disc and two lines, repeated. */
+export function SkeletonRows({
+  rows = 3,
+  avatar = true,
+  testID,
+}: {
+  rows?: number;
+  avatar?: boolean;
+  testID?: string;
+}) {
+  return (
+    <View
+      style={styles.skeletonList}
+      accessibilityRole="progressbar"
+      accessibilityLabel={COPY.common.loading}
+      testID={testID}
+    >
+      {Array.from({ length: rows }, (_, index) => (
+        <View key={index} style={styles.skeletonRow}>
+          {avatar ? <Skeleton style={styles.skeletonDisc} /> : null}
+          <View style={styles.skeletonLines}>
+            <Skeleton style={styles.skeletonLineWide} />
+            <Skeleton style={styles.skeletonLineNarrow} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** A card-shaped wait — the hero that is about to be there. */
+export function SkeletonCard({
+  height = 300,
+  fill = false,
+  testID,
+}: {
+  height?: number;
+  /** Own the whole remaining screen, the way the deck's card does. */
+  fill?: boolean;
+  testID?: string;
+}) {
+  return (
+    <View
+      accessibilityRole="progressbar"
+      accessibilityLabel={COPY.common.loading}
+      style={fill ? styles.skeletonFill : undefined}
+      testID={testID}
+    >
+      <Skeleton style={fill ? styles.skeletonFillInner : [styles.skeletonCard, { height }]} />
+    </View>
   );
 }
 
@@ -1090,6 +1169,17 @@ const styles = StyleSheet.create({
   /** The screen shell: 20 aside, 24 above, 16 below, 14 between. */
   screenContent: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: spacing.md, gap: 14 },
   buttonSpring: { transform: [{ scale: 0.97 }] },
+  /** The breathing placeholders. */
+  skeletonBase: { backgroundColor: color.veil, borderRadius: 8 },
+  skeletonList: { gap: 14 },
+  skeletonRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  skeletonDisc: { width: 48, height: 48, borderRadius: 24 },
+  skeletonLines: { flex: 1, gap: 8 },
+  skeletonLineWide: { height: 14, borderRadius: 7, width: '72%' },
+  skeletonLineNarrow: { height: 11, borderRadius: 5.5, width: '44%' },
+  skeletonCard: { borderRadius: 24, width: '100%' },
+  skeletonFill: { flex: 1 },
+  skeletonFillInner: { flex: 1, borderRadius: 0 },
   /** The shared waiting state: centred, with air around it. */
   loading: { alignItems: 'center', paddingVertical: spacing.lg },
   /** The dimmed ground under a blocking question. */

@@ -22,7 +22,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import { Caption, EmptyState, Loading, Notice, PhotoScrim, Screen } from '../components/ui';
+import { Caption, EmptyState, Loading, Notice, PhotoScrim, Screen, SkeletonRows } from '../components/ui';
 import { ProfileRing } from '../components/ProfileRing';
 import { apiErrorMessage, COPY, COPY_FOR, upperCase } from '../copy';
 import {
@@ -737,7 +737,7 @@ export function CheckinScreen({
         <Text style={styles.kicker}>{upperCase(COPY.checkin.aroundYou)}</Text>
 
         {busy ? (
-          <Loading testID="checkin-looking" />
+          <SkeletonRows avatar={false} testID="checkin-looking" />
         ) : null}
         {shownCount === 0 && !busy ? (
           <EmptyState message={COPY.checkin.noVenues} testID="checkin-no-venues" />
@@ -880,7 +880,7 @@ export function CheckinScreen({
         <Text style={styles.findButtonLabel}>{COPY.checkin.findVenues}</Text>
       </Pressable>
       {busy ? (
-        <Loading testID="checkin-looking" />
+        <SkeletonRows avatar={false} testID="checkin-looking" />
       ) : null}
 
       {previewShore ? (

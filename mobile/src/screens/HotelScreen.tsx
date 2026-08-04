@@ -6,7 +6,7 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 
-import { Button, ConfirmDialog, Loading, Notice, PhotoScrim, Screen } from '../components/ui';
+import { Button, ConfirmDialog, Notice, PhotoScrim, Screen, SkeletonCard } from '../components/ui';
 import { nowMs } from '../clock';
 import { formatStayRangeLabel } from '../domain/dates';
 import { earliestRoomExpiry } from '../state/roomSchedule';
@@ -382,7 +382,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       {picking ? null : loadingActive || (activeId && !activeHotel) ? (
         // Either the answer is on its way, or the id is known and its card
         // is still being resolved. Neither is "no hotel chosen".
-        <Loading testID="hotel-loading" />
+        <SkeletonCard height={340} testID="hotel-loading" />
       ) : activeHotel ? (
         <>
         {stay ? (

@@ -11,12 +11,15 @@ import {
   View,
 } from 'react-native';
 
+import Flag from 'lucide-react-native/icons/flag';
+import Heart from 'lucide-react-native/icons/heart';
+import X from 'lucide-react-native/icons/x';
 import { Image as ExpoImage } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Rect } from 'react-native-svg';
 
-import { Body, Button, Loading, Notice, Screen, ScreenHeader } from '../components/ui';
+import { Body, Button, Loading, Notice, Screen, ScreenHeader, SkeletonCard } from '../components/ui';
 import { ProfileRing } from '../components/ProfileRing';
 import { RadarEmpty } from '../components/RadarEmpty';
 import { ContextSelector, CONTEXT_ORDER, type ContextRow } from '../components/ContextSelector';
@@ -34,27 +37,15 @@ import { useAppStore } from '../state/AppStore';
 
 /** The owner's own 3D door render (2026-07-28), bundled — not a redrawing. */
 
-const XIcon = () => (
-  <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke={color.ink} strokeWidth={2.6} strokeLinecap="round">
-    <Path d="M6 6l12 12M18 6L6 18" />
-  </Svg>
-);
+const XIcon = () => <X size={26} strokeWidth={2.6} color={color.ink} />;
 
 // The like button is a coral fill (D-058), and coral cannot carry a white
-// glyph at 4.5:1 any more than it can carry white text — this is the same
-// `color.onAccent` navy the shared `<ActionButton tone="like">` draws.
+// glyph at 4.5:1 any more than it can carry white text — the navy fill stays.
 const HeartIcon = () => (
-  <Svg width={34} height={34} viewBox="0 0 24 24" fill={color.onAccent}>
-    <Path d="M12 8c0-4.5-7.2-4.5-7.2 0 0 4 4.7 6.8 7.2 8.7 2.5-1.9 7.2-4.7 7.2-8.7 0-4.5-7.2-4.5-7.2 0z" />
-  </Svg>
+  <Heart size={30} strokeWidth={0} color={color.onAccent} fill={color.onAccent} />
 );
 
-const FlagIcon = () => (
-  <Svg width={22} height={22} viewBox="0 0 24 24" fill={color.ink} stroke={color.ink} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
-    <Path d="M4 21V4c3-2 6 2 9 0s4-1 7 0v11c-3-1-4-2-7 0s-6-2-9 0z" fill={color.ink} />
-    <Path d="M4 22V3" stroke={color.ink} fill="none" />
-  </Svg>
-);
+const FlagIcon = () => <Flag size={19} strokeWidth={2} color={color.ink} />;
 
 // These two ride on the deep navy plates over the photo, so they take the
 // same `onPhoto` white the plates' text does.
@@ -702,7 +693,7 @@ export function DiscoveryScreen() {
       ) : null}
 
       {deck === null ? (
-        <Loading testID="deck-loading" />
+        <SkeletonCard fill testID="deck-loading" />
       ) : candidate ? (
         /* The whole person is one screen (owner decision): a full-bleed photo
            card with the name on it, the one fact this app can print — the

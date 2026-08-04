@@ -53,7 +53,9 @@ fi
 
 if [ "$RUN_MOBILE" = "1" ]; then
   cd "$ROOT/mobile"
-  run "mobile — typecheck"  npx tsc --noEmit
+  # --stack-size: lucide-react-native's type surface recurses deeper than
+  # Node's default stack; with a larger one tsc completes clean (2026-08-04).
+  run "mobile — typecheck"  node --stack-size=30000 node_modules/typescript/lib/tsc.js --noEmit
   run "mobile — lint"       npx eslint . --max-warnings 0
   run "mobile — tests"      npx jest
   run "mobile — web bundle" npx expo export --platform web

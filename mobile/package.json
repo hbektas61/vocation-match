@@ -27,6 +27,7 @@
     "expo-status-bar": "~3.0.9",
     "jest": "~29.7.0",
     "jest-expo": "~54.0.17",
+    "lucide-react-native": "^1.28.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
@@ -59,7 +60,14 @@
     "preset": "jest-expo",
     "setupFiles": [
       "<rootDir>/jest.setup.js"
-    ]
+    ],
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|lucide-react-native))"
+    ],
+    "moduleNameMapper": {
+      "^lucide-react-native(/.*)?$": "<rootDir>/jest/lucideMock.js"
+    },
+    "maxWorkers": "50%"
   },
   "private": true,
   "overrides": {

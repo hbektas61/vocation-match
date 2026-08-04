@@ -17,71 +17,41 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+// Deep imports on purpose: the package's barrel re-exports ~1500 icons and
+// its type surface overflowed tsc's stack. One file per icon keeps the
+// checker on six small files.
+import Briefcase from 'lucide-react-native/icons/briefcase';
+import Compass from 'lucide-react-native/icons/compass';
+import MapPin from 'lucide-react-native/icons/map-pin';
+import MessageCircle from 'lucide-react-native/icons/message-circle';
+import Settings from 'lucide-react-native/icons/settings';
+import Ticket from 'lucide-react-native/icons/ticket';
 
 import { COPY_FOR } from '../copy';
 import { useAppStore } from '../state/AppStore';
 
 import { color, elevation, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
 
+/**
+ * One icon set, one grid (owner, 2026-08-04): Lucide replaces the hand-drawn
+ * paths so all five glyphs share exact metrics. The subjects are unchanged —
+ * the packed trip, the pin, the ticket stub, the compass, the bubble.
+ */
 function iconFor(routeName: string, active: boolean) {
-  const stroke = active ? color.accentDeep : color.inkMuted;
-  const common = {
-    width: 18,
-    height: 18,
-    viewBox: '0 0 24 24',
-    fill: 'none' as const,
-    stroke,
-    strokeWidth: 2,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-  };
+  const props = { size: 18, strokeWidth: 2, color: active ? color.accentDeep : color.inkMuted };
   switch (routeName) {
     case 'Vacation':
-      // The designer's suitcase (2026-07-29): the trip, packed.
-      return (
-        <Svg {...common}>
-          <Rect x={4} y={8} width={16} height={12} rx={2} />
-          <Path d="M9 8V6a3 3 0 0 1 6 0v2M9 12v4m6-4v4" />
-        </Svg>
-      );
+      return <Briefcase {...props} />;
     case 'Nearby':
-      return (
-        <Svg {...common}>
-          <Path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-          <Circle cx={12} cy={10} r={3} />
-        </Svg>
-      );
+      return <MapPin {...props} />;
     case 'Events':
-      // A ticket stub with its perforation — the object an event is, without
-      // claiming we sell one.
-      return (
-        <Svg {...common}>
-          <Path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 6 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-6Z" />
-          <Path d="M14 7v10" />
-        </Svg>
-      );
+      return <Ticket {...props} />;
     case 'Discovery':
-      return (
-        <Svg {...common}>
-          <Circle cx={12} cy={12} r={10} />
-          <Path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z" />
-        </Svg>
-      );
+      return <Compass {...props} />;
     case 'Inbox':
-      return (
-        <Svg {...common}>
-          <Path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 8.5-8.5 8.38 8.38 0 0 1 8.5 8.5z" />
-          <Path d="M8.5 10.5h7M8.5 13.5h4" />
-        </Svg>
-      );
+      return <MessageCircle {...props} />;
     default:
-      return (
-        <Svg {...common}>
-          <Path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
-          <Circle cx={12} cy={12} r={3} />
-        </Svg>
-      );
+      return <Settings {...props} />;
   }
 }
 

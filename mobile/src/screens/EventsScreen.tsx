@@ -38,11 +38,11 @@ import {
   Caption,
   Chip,
   Field,
-  Loading,
   Notice,
   PhotoScrim,
   Screen,
   ScreenHeader,
+  SkeletonCard,
   Spinner,
 } from '../components/ui';
 import { COPY, COPY_FOR, getLocale, upperCase } from '../copy';
@@ -622,7 +622,7 @@ export function EventsScreen({
             <Text style={styles.busyText}>{COPY.events.refreshing}</Text>
           </View>
         ) : (
-          <Loading testID="events-loading" />
+          <SkeletonCard height={300} testID="events-loading" />
         )
       ) : null}
 
