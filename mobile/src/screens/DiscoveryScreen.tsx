@@ -1,7 +1,16 @@
 import { useFocusEffect, useNavigation, useRoute, type NavigationProp, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Animated,
+  Image,
+  PanResponder,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Rect } from 'react-native-svg';
@@ -427,6 +436,58 @@ export function DiscoveryScreen() {
   const shownPath = cardPaths[Math.min(photoIndex, Math.max(cardPaths.length - 1, 0))] ?? null;
   const photoUrls = usePhotoUrls(photoPaths);
 
+  /**
+   * The hand-thrown swipe (owner, 2026-08-04): drag the card and it leans,
+   * cross the threshold and it flies, let go early and it springs home —
+   * the grammar every deck app taught. Taps still pass through (the photo
+   * zones, the selector), because the responder only claims a gesture once
+   * it has clearly become a horizontal drag.
+   */
+  const position = useRef(new Animated.ValueXY()).current;
+  const swipeRef = useRef<(direction: 'LIKE' | 'PASS') => void>(() => undefined);
+  const flingRef = useRef(false);
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_event, gesture) =>
+        Math.abs(gesture.dx) > 12 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
+      onPanResponderMove: (_event, gesture) => {
+        position.setValue({ x: gesture.dx, y: gesture.dy / 3 });
+      },
+      onPanResponderRelease: (_event, gesture) => {
+        if (Math.abs(gesture.dx) > 110 && !flingRef.current) {
+          flingRef.current = true;
+          const direction = gesture.dx > 0 ? 'LIKE' : 'PASS';
+          Animated.timing(position, {
+            toValue: { x: gesture.dx > 0 ? 560 : -560, y: gesture.dy / 2 },
+            duration: 180,
+            useNativeDriver: true,
+          }).start(() => {
+            swipeRef.current(direction);
+            position.setValue({ x: 0, y: 0 });
+            flingRef.current = false;
+          });
+        } else {
+          Animated.spring(position, {
+            toValue: { x: 0, y: 0 },
+            friction: 6,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(position, {
+          toValue: { x: 0, y: 0 },
+          friction: 6,
+          useNativeDriver: true,
+        }).start();
+      },
+    }),
+  ).current;
+  const cardLean = position.x.interpolate({
+    inputRange: [-300, 0, 300],
+    outputRange: ['-10deg', '0deg', '10deg'],
+  });
+
   // "No hotel yet" is a claim about the account, and while the account is
   // still being hydrated the claim is not known — showing the no-hotel
   // pitch to a returning owner for a heartbeat (or until they visited the
@@ -547,6 +608,7 @@ export function DiscoveryScreen() {
     );
   }
 
+
   const swipe = async (direction: 'LIKE' | 'PASS') => {
     if (!candidate || busy) return;
     setBusy(true);
@@ -578,6 +640,7 @@ export function DiscoveryScreen() {
       setBusy(false);
     }
   };
+  swipeRef.current = (direction) => void swipe(direction);
 
   return (
     <Screen safeTop testID="screen-discovery" bleed scroll={false}>
@@ -610,7 +673,20 @@ export function DiscoveryScreen() {
            room · hotel bond — as its only tag, and the three actions floating
            at its foot. No sections to scroll; the decision is made here. */
         <>
-        <View style={styles.card} testID={`candidate-${candidate.userId}`}>
+        <Animated.View
+          style={[
+            styles.card,
+            {
+              transform: [
+                { translateX: position.x },
+                { translateY: position.y },
+                { rotate: cardLean },
+              ],
+            },
+          ]}
+          {...panResponder.panHandlers}
+          testID={`candidate-${candidate.userId}`}
+        >
           {shownPath && photoUrls[shownPath] ? (
             <Image
               source={{ uri: photoUrls[shownPath] }}
@@ -699,16 +775,6 @@ export function DiscoveryScreen() {
                 {candidate.bio}
               </Text>
             ) : null}
-            {/* K-01's navy context pill (132:79) is the room selector itself:
-                it names the room — and the event, when the room is one — and
-                pressing it opens the sheet, exactly as D-057 requires. */}
-            <ContextSelector
-              rows={contextRows}
-              current={room}
-              onChange={chooseRoom}
-              now={nowMs()}
-              testID="discovery-context"
-            />
             {/* The bond — same venue, or the neighbour's venue by name
                 (D-038): the label is what keeps the region pool honest. */}
             <View
@@ -737,8 +803,21 @@ export function DiscoveryScreen() {
               </View>
             ) : null}
           </View>
-        </View>
+        </Animated.View>
 
+        {/* The room selector stands in the quiet strip over the actions
+            (owner, 2026-08-04) — off the person's photo, still one press
+            from anywhere, still opening the same sheet (D-057). It does not
+            ride the card, so it never flies with a swipe. */}
+        <View style={styles.selectorDock}>
+          <ContextSelector
+            rows={contextRows}
+            current={room}
+            onChange={chooseRoom}
+            now={nowMs()}
+            testID="discovery-context"
+          />
+        </View>
 
         {/* Pass, the big heart, and safety — three circles on the ground,
             sized exactly as the reference sizes them. The reference gives
@@ -974,9 +1053,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: spacing.md,
     right: spacing.md,
-    // Above the action circles now floating on the photo's foot.
-    bottom: 104,
+    // Above the selector dock, which is above the action circles.
+    bottom: 156,
     gap: spacing.sm,
+  },
+  /** The selector's own strip between the words and the actions. */
+  selectorDock: {
+    position: 'absolute',
+    left: spacing.md,
+    right: spacing.md,
+    bottom: 92,
   },
   /** 132:78: "Deniz, 28" — one voice, name and age together. */
   cardName: {
