@@ -573,6 +573,8 @@ export const en = {
     liveAtVenue: 'At the venue now',
     liveAtEvent: 'At the event now',
     /** Çevremde's own word for the bond (2026-08-04): a place, not a hotel. */
+    /** A placeless neighbour: near, and that is all that is known (2026-08-04). */
+    nearYou: 'Near you',
     samePlace: 'Same place',
     sameHotel: 'Same hotel',
     nearby: 'nearby',

@@ -529,6 +529,8 @@ export const tr: Copy = {
     liveAtVenue: 'Şu an mekânda',
     liveAtEvent: 'Şu an etkinlikte',
     /** Çevremde's own word for the bond (2026-08-04): a place, not a hotel. */
+    /** A placeless neighbour: near, and that is all that is known (2026-08-04). */
+    nearYou: 'Yakınında',
     samePlace: 'Aynı mekânda',
     sameHotel: 'Aynı otelde',
     nearby: 'çevrede',

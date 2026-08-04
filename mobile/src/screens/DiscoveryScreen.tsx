@@ -435,6 +435,18 @@ export function DiscoveryScreen() {
   useEffect(() => setPhotoIndex(0), [candidate?.userId]);
   const shownPath = cardPaths[Math.min(photoIndex, Math.max(cardPaths.length - 1, 0))] ?? null;
   const photoUrls = usePhotoUrls(photoPaths);
+  // Owner report (2026-08-04): tapping through a card's photos dragged,
+  // because each one was first fetched at the moment it was shown. The card's
+  // whole set warms the image cache the moment its URLs are signed, so a tap
+  // lands on bytes already on the device.
+  useEffect(() => {
+    for (const p of cardPaths) {
+      const url = photoUrls[p];
+      // `prefetch` returns undefined under the test renderer's mock, so the
+      // promise is normalised before the catch.
+      if (url) void Promise.resolve(Image.prefetch(url)).catch(() => undefined);
+    }
+  }, [cardPaths, photoUrls]);
 
   /**
    * The hand-thrown swipe (owner, 2026-08-04): drag the card and it leans,
@@ -790,7 +802,11 @@ export function DiscoveryScreen() {
                 <Text style={styles.sameHotelText} numberOfLines={1}>
                   {candidate.sameVenue
                     ? room === 'NEARBY'
-                      ? checkinName ?? COPY.discovery.samePlace
+                      ? /* The candidate's checked-in place by name; a
+                           placeless "buradayım" has no name to print, and
+                           "Yakınında" is the honest whole of what is known
+                           (owner, 2026-08-04). */
+                        checkinName ?? COPY.discovery.nearYou
                       : hotelName ?? COPY.discovery.sameHotel
                     : (candidate.venueName
                         ?? (candidate.venuePlaceId ? venueLabels.get(candidate.venuePlaceId) : null))
