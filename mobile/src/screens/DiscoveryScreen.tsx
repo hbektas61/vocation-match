@@ -8,7 +8,6 @@ import Svg, { Path, Rect } from 'react-native-svg';
 
 import { Body, Button, Notice, Screen, ScreenHeader } from '../components/ui';
 import { ProfileRing } from '../components/ProfileRing';
-import { BigActionButton } from '../components/BigActionButton';
 import { RadarEmpty } from '../components/RadarEmpty';
 import { ContextSelector, CONTEXT_ORDER, type ContextRow } from '../components/ContextSelector';
 import { nowMs } from '../clock';
@@ -24,7 +23,6 @@ import { PinScene } from '../components/RoomIllustrations';
 import { useAppStore } from '../state/AppStore';
 
 /** The owner's own 3D door render (2026-07-28), bundled — not a redrawing. */
-const DOOR_HERO = require('../../assets/discovery-door.jpg');
 
 const XIcon = () => (
   <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke={color.ink} strokeWidth={2.6} strokeLinecap="round">
@@ -54,6 +52,25 @@ const BuildingTinyIcon = () => (
   <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={color.onPhoto} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
     <Rect x={5} y={3} width={14} height={18} rx={2} />
     <Path d="M9 8h2m2 0h2M9 12h2m2 0h2M10 21v-4h4v4" />
+  </Svg>
+);
+
+/** The room's door, drawn in the product's own line (D-058). */
+const DoorIcon = () => (
+  <Svg
+    width={32}
+    height={32}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color.accentDeep}
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <Path d="M4 21h16" />
+    <Path d="M6 21V9a6 6 0 0 1 12 0v12" />
+    <Path d="M9 21V10a3 3 0 0 1 6 0v11" />
+    <Path d="M13.6 15.2h.01" />
   </Svg>
 );
 
@@ -477,39 +494,49 @@ export function DiscoveryScreen() {
           now={nowMs()}
           testID="discovery-context"
         />
+        {/* Redesigned in the app's own empty-state language (owner,
+            2026-08-04): the drawn door in its warm disc, the fact, one
+            sentence, one loud way in — and the two lighter doors as quiet
+            links instead of a wall of three pills. The purple raster this
+            replaces was the one AI image left standing after R-009/D-058
+            took the others down. */}
         <View style={styles.noRoom} testID="discovery-no-room">
-          <Image
-            source={DOOR_HERO}
-            style={styles.noRoomHero}
-            resizeMode="contain"
-            accessibilityIgnoresInvertColors
-          />
+          <View style={styles.noRoomDisc}>
+            <DoorIcon />
+          </View>
           <View style={styles.emptyWords}>
             <Text accessibilityRole="header" style={styles.emptyTitle}>
               {COPY.discovery.noRoomTitle}
             </Text>
             <Text style={styles.emptyBody}>{COPY.discovery.noRoomBody}</Text>
           </View>
-          <View style={styles.emptyActionWide}>
-            <BigActionButton
+          <View style={styles.noRoomActions}>
+            <Button
               label={COPY.inbox.viewRooms}
-              icon="door"
-              filled
               onPress={() => tabNavigation.navigate('Vacation')}
               testID="discovery-go-rooms"
             />
-            <BigActionButton
-              label={COPY.discovery.checkProximity}
-              icon="compass"
-              onPress={() => navigation.navigate('HereNow')}
-              testID="discovery-check-proximity"
-            />
-            <BigActionButton
-              label={COPY.checkin.openCta}
-              icon="sparkle"
-              onPress={() => tabNavigation.navigate('Nearby')}
-              testID="discovery-go-checkin"
-            />
+            <View style={styles.quietRow}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={COPY.discovery.checkProximity}
+                onPress={() => navigation.navigate('HereNow')}
+                style={({ pressed }) => [styles.quietAction, pressed && { opacity: 0.7 }]}
+                testID="discovery-check-proximity"
+              >
+                <Text style={styles.quietActionText}>{COPY.discovery.checkProximity}</Text>
+              </Pressable>
+              <View style={styles.quietDivider} />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={COPY.checkin.openCta}
+                onPress={() => tabNavigation.navigate('Nearby')}
+                style={({ pressed }) => [styles.quietAction, pressed && { opacity: 0.7 }]}
+                testID="discovery-go-checkin"
+              >
+                <Text style={styles.quietActionText}>{COPY.checkin.openCta}</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Screen>
@@ -803,7 +830,19 @@ const styles = StyleSheet.create({
   },
   emptyAction: { alignSelf: 'stretch', maxWidth: 280, width: '100%', gap: spacing.sm },
   emptyActionWide: { alignSelf: 'stretch', gap: spacing.sm },
-  noRoomHero: { width: 320, height: 292 },
+  noRoomDisc: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: color.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noRoomActions: { alignSelf: 'stretch', gap: 4 },
+  quietRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14 },
+  quietAction: { minHeight: 44, justifyContent: 'center' },
+  quietActionText: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.accentDeep },
+  quietDivider: { width: 1, height: 16, backgroundColor: color.rule },
   noHotelCard: {
     backgroundColor: color.surface,
     borderRadius: radius.lg,
