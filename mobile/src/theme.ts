@@ -22,7 +22,7 @@ import { Platform } from 'react-native';
  */
 export const palette = {
   /** The ground: warm cream, not white, so white cards lift off it. */
-  cream: '#FFF9F5',
+  cream: '#FAFAF7',
   /** Cards, sheets, the bottom bar. */
   white: '#FFFFFF',
   /** The wash under an input on cream, and the sunken step inside a card. */
@@ -66,7 +66,7 @@ export const palette = {
   /** A selected chip, a live-room badge, the wash behind a brand moment. */
   coralSoft: '#FFE3E0',
   /** One step paler again: a whole panel that should read as brand-adjacent. */
-  coralWash: '#FFF1EF',
+  coralWash: '#F3F4F1',
 
   /** Premium. The metal itself is a fill or a glyph; the text is the dark one. */
   gold: '#D4AF37',

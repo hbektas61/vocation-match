@@ -34,16 +34,19 @@ function contrast(a: string, b: string): number {
 }
 
 /** The two grounds every light surface is measured against. */
-const GROUND = '#FFF9F5';
+const GROUND = '#FAFAF7';
 const SURFACE = '#FFFFFF';
 
 describe('the D-058 palette', () => {
   it('uses exactly the hexes the brief specified', () => {
     // Not "about these colours". The brief gave the hexes; drifting off one by
     // a shade to win a contrast argument would answer a different brief. The
+    // B revision (owner, 2026-08-05): the ground moved from blush to paper
+    // and the coral wash to fog — the editorial-lean pass. The pins below
+    // hold the *current* palette, not the original brief's.
     // one value that had to move is `text.secondary`, and it moved by being
     // kept as `text.tertiary` rather than by being changed — see below.
-    expect(tokens.background.primary).toBe('#FFF9F5');
+    expect(tokens.background.primary).toBe('#FAFAF7');
     expect(tokens.surface.primary).toBe('#FFFFFF');
     expect(tokens.text.primary).toBe('#101A3A');
     expect(tokens.text.tertiary).toBe('#7C8194');
@@ -76,7 +79,7 @@ describe('the D-058 palette', () => {
   });
 
   it('puts the warm cream under everything and white on top of it', () => {
-    expect(color.background).toBe('#FFF9F5');
+    expect(color.background).toBe('#FAFAF7');
     expect(color.surface).toBe('#FFFFFF');
     // A white card only reads as lifted off a cream ground if it is actually a
     // different value and it is actually lifted.

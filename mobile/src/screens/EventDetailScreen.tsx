@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: color.premiumSoft,
+    backgroundColor: color.accentWash,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: color.premiumSoft,
+    backgroundColor: color.accentWash,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -546,23 +546,23 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     borderWidth: 1.6,
-    borderColor: color.accentDeep,
+    borderColor: color.ink,
   },
-  markHeadSecond: { left: 7, backgroundColor: color.premiumSoft },
+  markHeadSecond: { left: 7, backgroundColor: color.accentWash },
   markRing: {
     position: 'absolute',
     width: 18,
     height: 18,
     borderRadius: 9,
     borderWidth: 1.4,
-    borderColor: color.accentDeep,
+    borderColor: color.ink,
     opacity: 0.55,
   },
   markDot: {
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: color.accentDeep,
+    backgroundColor: color.ink,
   },
   /** ED-03's room cards. */
   roomCard: {
@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bodySemi,
     fontSize: 13,
     lineHeight: 18,
-    color: color.accentDeep,
+    color: color.danger,
   },
   /** ED-03's "what is true now" line. */
   livePill: {
@@ -604,7 +604,7 @@ const styles = StyleSheet.create({
   confirmCard: {
     borderRadius: 18,
     borderWidth: 1.5,
-    borderColor: color.accentDeep,
+    borderColor: color.danger,
     backgroundColor: color.surface,
     paddingVertical: 18,
     paddingHorizontal: spacing.md,

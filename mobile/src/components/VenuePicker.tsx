@@ -779,7 +779,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 15,
     letterSpacing: 0.8,
-    color: color.accentDeep,
+    color: color.inkMuted,
     marginTop: 3,
   },
   /** The hairline, and the words under it. */
@@ -788,7 +788,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 4,
     borderRadius: 2,
-    backgroundColor: color.accentSoft,
+    backgroundColor: color.veil,
   },
   progressSegmentDone: { backgroundColor: color.accent },
   progressLabel: {
@@ -840,7 +840,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.accentSoft,
   },
   progressStepComplete: {
-    borderColor: color.accentSoft,
+    borderColor: color.rule,
     backgroundColor: color.accentWash,
   },
   progressText: {
@@ -850,7 +850,7 @@ const styles = StyleSheet.create({
   },
   progressTextSelected: {
     fontFamily: fontFamily.bodySemi,
-    color: color.accentDeep,
+    color: color.ink,
   },
   hint: {
     fontFamily: fontFamily.body,
@@ -952,7 +952,7 @@ const styles = StyleSheet.create({
   changeText: {
     fontFamily: fontFamily.bodySemi,
     fontSize: 13,
-    color: color.accentDeep,
+    color: color.ink,
   },
   chipRow: {
     flexDirection: 'row',
@@ -1013,7 +1013,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 16,
     letterSpacing: 0.8,
-    color: color.accentDeep,
+    color: color.inkMuted,
   },
   promiseBody: {
     fontFamily: fontFamily.body,

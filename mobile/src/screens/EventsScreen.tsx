@@ -90,7 +90,7 @@ const MagnifierIcon = () => (
 
 /** ED-01's empty-state mark: a pennant — an event, not a hotel, not a pin. */
 const PennantIcon = () => (
-  <Svg {...iconStroke(color.accentDeep, 26)}>
+  <Svg {...iconStroke(color.ink, 26)}>
     <Path d="M6 21V3" />
     <Path d="M6 4h11l-2.5 3.5L17 11H6" />
   </Svg>
@@ -755,7 +755,7 @@ const styles = StyleSheet.create({
   changeArea: {
     fontFamily: fontFamily.bodySemi,
     fontSize: 12,
-    color: color.accentDeep,
+    color: color.ink,
   },
   /** E-06: busy, without taking the results away — the same neutral pill a
       standing notice uses, so "still working" never reads as an error. */
@@ -786,7 +786,7 @@ const styles = StyleSheet.create({
   countryScopeChangeText: {
     fontFamily: fontFamily.bodySemi,
     fontSize: 12,
-    color: color.accentDeep,
+    color: color.ink,
   },
   /** A country row: the name, and the code as its quiet proof. */
   countryRow: {
@@ -891,7 +891,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: color.accentSoft,
+    backgroundColor: color.accentWash,
     alignItems: 'center',
     justifyContent: 'center',
   },

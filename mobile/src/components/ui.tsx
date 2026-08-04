@@ -1445,7 +1445,7 @@ const styles = StyleSheet.create({
     ...elevation.card,
   },
   cardFlat: { ...elevation.none, backgroundColor: color.veil, borderColor: color.rule },
-  cardBrand: { backgroundColor: color.accentWash, borderColor: color.accentSoft },
+  cardBrand: { backgroundColor: color.accentWash, borderColor: color.rule },
 
   chip: {
     minHeight: MIN_TOUCH,
@@ -1458,14 +1458,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  chipSelected: { backgroundColor: color.accentSoft, borderColor: color.accent },
+  chipSelected: { backgroundColor: color.ink, borderColor: color.ink },
   chipDisabled: { backgroundColor: color.veil, borderColor: color.rule },
   chipLabel: {
     fontFamily: fontFamily.bodyMedium,
     fontSize: font.caption + 1,
     color: color.ink,
   },
-  chipLabelSelected: { fontFamily: fontFamily.bodySemi, color: color.accentDeep },
+  chipLabelSelected: { fontFamily: fontFamily.bodySemi, color: color.onInverse },
   chipLabelDisabled: { color: color.inkFaint },
 
   contextRibbon: {
@@ -1664,7 +1664,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: radius.pill,
-    backgroundColor: color.accentSoft,
+    backgroundColor: color.accentWash,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1673,7 +1673,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 34,
     lineHeight: 38,
-    color: color.accentDeep,
+    color: color.ink,
   },
   emptyText: {
     fontFamily: fontFamily.body,

@@ -35,14 +35,14 @@ function formatStayRange(stay: UpcomingStay): string {
 }
 
 const InfoIcon = () => (
-  <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2.2} strokeLinecap="round">
+  <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={color.ink} strokeWidth={2.2} strokeLinecap="round">
     <Circle cx={12} cy={12} r={9} />
     <Path d="M12 16v-4M12 8h.01" />
   </Svg>
 );
 
 const PinSmallIcon = () => (
-  <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+  <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={color.ink} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <Path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
     <Circle cx={12} cy={10} r={3} />
   </Svg>
@@ -50,14 +50,14 @@ const PinSmallIcon = () => (
 
 /** 131:87 — the drawn stand-ins for the frame's suitcase and bed emojis. */
 const SuitcaseIcon = () => (
-  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color.ink} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <Rect x={4} y={7} width={16} height={13} rx={2.5} />
     <Path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M9 11v5M15 11v5" />
   </Svg>
 );
 
 const BedIcon = () => (
-  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color.ink} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <Path d="M3 5v14" />
     <Path d="M3 15h18v4" />
     <Path d="M3 11h13a4 4 0 0 1 4 4" />
@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
   stayPillText: {
     fontFamily: fontFamily.bodyMedium,
     fontSize: 13,
-    color: color.accentDeep,
+    color: color.ink,
   },
   /** T-01: the question over the two rooms. */
   roomsHeading: {
@@ -786,10 +786,10 @@ const styles = StyleSheet.create({
   teaserOpenRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   teaserOpenDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: color.successMark },
   teaserOpenText: { fontFamily: fontFamily.bodySemi, fontSize: 11, color: color.success },
-  teaserArrow: { fontFamily: fontFamily.bodySemi, fontSize: 16, lineHeight: 22, color: color.accentDeep },
+  teaserArrow: { fontFamily: fontFamily.bodySemi, fontSize: 16, lineHeight: 22, color: color.ink },
   /** The quiet second action a live room earns. */
   teaserExtra: { minHeight: 32, justifyContent: 'center' },
-  teaserExtraText: { fontFamily: fontFamily.bodySemi, fontSize: 12, color: color.accentDeep },
+  teaserExtraText: { fontFamily: fontFamily.bodySemi, fontSize: 12, color: color.ink },
   /** T-01: the white plate floating on the hero's foot. */
   heroPlate: {
     position: 'absolute',
@@ -806,7 +806,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bodySemi,
     fontSize: 10,
     letterSpacing: 1,
-    color: color.accentDeep,
+    color: color.inkMuted,
   },
   heroPlateName: {
     fontFamily: fontFamily.display,

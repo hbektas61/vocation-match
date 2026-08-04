@@ -63,7 +63,7 @@ const DoorIcon = () => (
     height={32}
     viewBox="0 0 24 24"
     fill="none"
-    stroke={color.accentDeep}
+    stroke={color.ink}
     strokeWidth={1.8}
     strokeLinecap="round"
     strokeLinejoin="round"
@@ -1002,14 +1002,14 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: color.accentSoft,
+    backgroundColor: color.accentWash,
     alignItems: 'center',
     justifyContent: 'center',
   },
   noRoomActions: { alignSelf: 'stretch', gap: 4 },
   quietRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14 },
   quietAction: { minHeight: 44, justifyContent: 'center' },
-  quietActionText: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.accentDeep },
+  quietActionText: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.ink },
   quietDivider: { width: 1, height: 16, backgroundColor: color.rule },
   noHotelCard: {
     backgroundColor: color.surface,
@@ -1032,7 +1032,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   oneHotelPill: {
-    backgroundColor: color.accentSoft,
+    backgroundColor: color.accentWash,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: 6,

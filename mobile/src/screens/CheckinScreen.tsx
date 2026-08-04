@@ -47,7 +47,8 @@ import { color, elevation, font, fontFamily, MIN_TOUCH, radius, spacing } from '
 const HERO = require('../../assets/nearby-hero.jpg');
 
 /** The brand as text or a small glyph — the fill itself cannot carry a word. */
-const DEEP = color.accentDeep;
+// B (2026-08-05): the file's info glyphs speak ink; coral is for actions.
+const DEEP = color.ink;
 
 /**
  * Session memory for the expired-check-in card: the server forgets an
@@ -1221,7 +1222,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bodySemi,
     fontSize: 10,
     letterSpacing: 0.8,
-    color: color.accentDeep,
+    color: color.inkMuted,
   },
   livePill: {
     flexDirection: 'row',
@@ -1247,7 +1248,7 @@ const styles = StyleSheet.create({
   },
   remainText: { fontFamily: fontFamily.bodyMedium, fontSize: 13, lineHeight: 18, color: color.ink },
   checkOutRow: { minHeight: MIN_TOUCH, alignItems: 'center', justifyContent: 'center' },
-  checkOutText: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.accentDeep },
+  checkOutText: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.danger },
   /** N-01 (152:75): the photo as a band, the claim on its scrim. */
   heroBand: { borderRadius: 24, overflow: 'hidden' },
   heroBandPhoto: { width: '100%', height: 200, backgroundColor: color.veil },
@@ -1366,17 +1367,17 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bodySemi,
     fontSize: 10,
     letterSpacing: 1,
-    color: color.accentDeep,
+    color: color.inkMuted,
   },
   /** N-02: the kind as the tracked word under the name. */
   venueKind: {
     fontFamily: fontFamily.bodySemi,
     fontSize: 9,
     letterSpacing: 0.8,
-    color: color.accentDeep,
+    color: color.inkMuted,
   },
   googleMoreRow: { minHeight: MIN_TOUCH, alignItems: 'center', justifyContent: 'center' },
-  googleMoreText: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.accentDeep },
+  googleMoreText: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.ink },
   untilRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   untilText: {
     fontFamily: fontFamily.body,
