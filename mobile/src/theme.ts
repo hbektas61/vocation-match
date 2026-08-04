@@ -66,7 +66,7 @@ export const palette = {
   /** A selected chip, a live-room badge, the wash behind a brand moment. */
   coralSoft: '#FFE3E0',
   /** One step paler again: a whole panel that should read as brand-adjacent. */
-  coralWash: '#F3F4F1',
+  coralWash: '#FFE8EB',
 
   /** Premium. The metal itself is a fill or a glyph; the text is the dark one. */
   gold: '#D4AF37',
