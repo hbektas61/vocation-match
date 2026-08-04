@@ -613,7 +613,6 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       ) : loadingActive ? null : (
         <Button
           label={activeId ? COPY.hotel.switchButton : COPY.hotel.chooseCta}
-          variant={activeId ? 'secondary' : 'primary'}
           onPress={() => setPicking(true)}
           testID="venue-open-picker"
         />
@@ -624,15 +623,14 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           same teardown — leaving is a switch that puts nothing in its place. */}
       {activeId && !picking && !onActivated ? (
         <>
-          <View style={styles.leaveWrap}>
-            <Button
-              label={COPY.hotel.leaveCta}
-              variant="danger"
-              compact
-              onPress={() => setConfirmingLeave(true)}
-              testID="hotel-leave-home"
-            />
-          </View>
+          {/* Owner, 2026-08-05: change is the loud act, leaving the quiet
+              one — the red lives in the confirmation, not on the shelf. */}
+          <Button
+            label={COPY.hotel.leaveCta}
+            variant="secondary"
+            onPress={() => setConfirmingLeave(true)}
+            testID="hotel-leave-home"
+          />
           <ConfirmDialog
             visible={confirmingLeave}
             title={COPY.hotel.leaveConfirmTitle}
@@ -790,7 +788,6 @@ const styles = StyleSheet.create({
   },
   teaserTitle: { fontFamily: fontFamily.bodySemi, fontSize: 15, lineHeight: 21, color: color.ink },
   teaserBody: { fontFamily: fontFamily.body, fontSize: 12, lineHeight: 17, color: color.inkMuted },
-  leaveWrap: { alignItems: 'center' },
   teaserOpenRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   teaserOpenDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: color.successMark },
   teaserOpenText: { fontFamily: fontFamily.bodySemi, fontSize: 11, color: color.success },
