@@ -776,21 +776,29 @@ export function DiscoveryScreen() {
               </Text>
             ) : null}
             {/* The bond — same venue, or the neighbour's venue by name
-                (D-038): the label is what keeps the region pool honest. */}
-            <View
-              style={styles.sameHotelChip}
-              testID={candidate.sameVenue ? 'card-bond-same' : 'card-bond-nearby'}
-            >
-              <BuildingTinyIcon />
-              <Text style={styles.sameHotelText} numberOfLines={1}>
-                {candidate.sameVenue
-                  ? (room === 'NEARBY' ? checkinName : hotelName) ?? COPY.discovery.sameHotel
-                  : (candidate.venueName
-                      ?? (candidate.venuePlaceId ? venueLabels.get(candidate.venuePlaceId) : null))
-                    ? `${candidate.venueName ?? venueLabels.get(candidate.venuePlaceId!)} · ${COPY.discovery.nearby}`
-                    : COPY.discovery.nearby}
-              </Text>
-            </View>
+                (D-038): the label is what keeps the region pool honest. The
+                word follows the room (owner, 2026-08-04): "Aynı otelde" was
+                standing on Çevremde cards, where the shared thing is a
+                place, not a hotel. Event rooms carry no chip at all — the
+                dock below already names the event. */}
+            {room === 'EVENT_UPCOMING' || room === 'EVENT_HERE_NOW' ? null : (
+              <View
+                style={styles.sameHotelChip}
+                testID={candidate.sameVenue ? 'card-bond-same' : 'card-bond-nearby'}
+              >
+                <BuildingTinyIcon />
+                <Text style={styles.sameHotelText} numberOfLines={1}>
+                  {candidate.sameVenue
+                    ? room === 'NEARBY'
+                      ? checkinName ?? COPY.discovery.samePlace
+                      : hotelName ?? COPY.discovery.sameHotel
+                    : (candidate.venueName
+                        ?? (candidate.venuePlaceId ? venueLabels.get(candidate.venuePlaceId) : null))
+                      ? `${candidate.venueName ?? venueLabels.get(candidate.venuePlaceId!)} · ${COPY.discovery.nearby}`
+                      : COPY.discovery.nearby}
+                </Text>
+              </View>
+            )}
             {/* K-01's green-dot line (132:82) — said only when it is
                 live-true: these two rooms exist because a location check
                 passed minutes ago, and no other room may borrow the dot. */}

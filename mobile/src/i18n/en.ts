@@ -572,6 +572,8 @@ export const en = {
     /** K-01: the green-dot line — said only when it is live-true. */
     liveAtVenue: 'At the venue now',
     liveAtEvent: 'At the event now',
+    /** Çevremde's own word for the bond (2026-08-04): a place, not a hotel. */
+    samePlace: 'Same place',
     sameHotel: 'Same hotel',
     nearby: 'nearby',
     overlapUpcoming:

@@ -528,6 +528,8 @@ export const tr: Copy = {
     /** K-01: the green-dot line — said only when it is live-true. */
     liveAtVenue: 'Şu an mekânda',
     liveAtEvent: 'Şu an etkinlikte',
+    /** Çevremde's own word for the bond (2026-08-04): a place, not a hotel. */
+    samePlace: 'Aynı mekânda',
     sameHotel: 'Aynı otelde',
     nearby: 'çevrede',
     overlapUpcoming:

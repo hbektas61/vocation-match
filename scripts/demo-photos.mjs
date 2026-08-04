@@ -36,12 +36,12 @@ if (!url || !serviceKey) {
 
 const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
 
-/** The pool is seeded deterministically (ordered by id), so index → gender
- * follows the fixture order in 20260804000100: six women, then six men. */
+/** The pool alternates W/M in creation order (20260804000300), so even
+ * indices are women, odd are men — the portraits follow the same beat. */
 const PORTRAIT = (index) =>
-  index < 6
-    ? `https://xsgames.co/randomusers/assets/avatars/female/${10 + index}.jpg`
-    : `https://xsgames.co/randomusers/assets/avatars/male/${20 + index}.jpg`;
+  index % 2 === 0
+    ? `https://xsgames.co/randomusers/assets/avatars/female/${(10 + index) % 70}.jpg`
+    : `https://xsgames.co/randomusers/assets/avatars/male/${(20 + index) % 70}.jpg`;
 
 /** Stable scenery ids — beaches, water, terraces. */
 const SCENERY = [1011, 1015, 1016, 1018, 1021, 1035, 1036, 1039, 1041, 1043, 1044, 1045];
