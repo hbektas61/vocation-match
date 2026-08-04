@@ -24,7 +24,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { Button, Caption, Chip, EmptyState, Loading, Notice } from './ui';
+import { Button, Caption, Chip, ConfirmDialog, EmptyState, Loading, Notice } from './ui';
 import { COPY, getLocale, upperCase } from '../copy';
 import { ApiError, getApi, type GooglePlaceHit, type VenueSearchMode } from '../data';
 import {
@@ -632,52 +632,7 @@ export function VenuePicker({
         )
       ) : (
         <>
-          {results.map((hit, index) =>
-            pendingChoice && pendingChoice.selectionToken === hit.selectionToken ? (
-              /* The same row, opened. Same token, same single use — this is a
-                 presentation change, not a change to what gets committed. */
-              <View
-                key={hit.selectionToken}
-                style={styles.confirmCard}
-                testID="venue-picker-confirmation"
-              >
-                <Text style={styles.confirmName}>{pendingChoice.name}</Text>
-                {pendingChoice.detail || kindBadge(pendingChoice.kind) ? (
-                  <Text style={styles.confirmDetail}>
-                    {[pendingChoice.detail, kindBadge(pendingChoice.kind)]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </Text>
-                ) : null}
-                <View style={styles.promiseBox}>
-                  <Text style={styles.promiseTitle}>
-                    {upperCase(COPY.venue.confirmPromiseTitle)}
-                  </Text>
-                  <Text style={styles.promiseBody}>{COPY.venue.confirmPromiseBody}</Text>
-                </View>
-                <Button
-                  label={COPY.venue.confirmButton}
-                  onPress={() =>
-                    onChosen(
-                      pendingChoice.selectionToken,
-                      pendingChoice.mode,
-                      pendingChoice.name,
-                    )
-                  }
-                  disabled={busy}
-                  testID="confirm-venue-selection"
-                />
-                <Button
-                  label={COPY.venue.backToHotelSearch}
-                  variant="secondary"
-                  /* Clears the pending choice and nothing else: the results are
-                     still in state, so no second Google request is made. */
-                  onPress={() => setPendingChoice(null)}
-                  disabled={busy}
-                  testID="cancel-venue-selection"
-                />
-              </View>
-            ) : (
+          {results.map((hit, index) => (
             <Pressable
               key={hit.selectionToken}
               accessibilityRole="button"
@@ -708,11 +663,41 @@ export function VenuePicker({
                 <Text style={styles.rowKind}>{upperCase(kindBadge(hit.kind) ?? '')}</Text>
               ) : null}
             </Pressable>
-            ),
-          )}
+          ))}
           {/* Google's policies require the attribution wherever its data is
               shown. It stands with the list, which is where the data is. */}
           <Caption testID="venue-attribution">{COPY.venue.attribution}</Caption>
+
+          {/* The commitment pops over a dimmed screen (owner, 2026-08-05),
+              like every other confirmation — not a card growing under the
+              row. Same token, same single use; cancelling clears the pending
+              choice and nothing else, so the results stay and no second
+              Google request is made. */}
+          <ConfirmDialog
+            visible={pendingChoice !== null}
+            title={pendingChoice?.name ?? ''}
+            body={[
+              [pendingChoice?.detail, kindBadge(pendingChoice?.kind ?? null)]
+                .filter(Boolean)
+                .join(' · '),
+              COPY.venue.confirmPromiseBody,
+            ]
+              .filter(Boolean)
+              .join('\n\n')}
+            confirmLabel={COPY.venue.confirmButton}
+            cancelLabel={COPY.venue.backToHotelSearch}
+            confirmVariant="primary"
+            busy={busy}
+            onCancel={() => setPendingChoice(null)}
+            onConfirm={() => {
+              if (pendingChoice) {
+                onChosen(pendingChoice.selectionToken, pendingChoice.mode, pendingChoice.name);
+              }
+            }}
+            testID="venue-picker-confirmation"
+            confirmTestID="confirm-venue-selection"
+            cancelTestID="cancel-venue-selection"
+          />
         </>
       )}
     </View>

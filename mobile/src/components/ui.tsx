@@ -1030,6 +1030,7 @@ export function ConfirmDialog({
   confirmLabel,
   cancelLabel,
   busy = false,
+  confirmVariant = 'danger',
   onConfirm,
   onCancel,
   testID,
@@ -1042,6 +1043,8 @@ export function ConfirmDialog({
   confirmLabel: string;
   cancelLabel: string;
   busy?: boolean;
+  /** Destructive questions confirm in red; commitments confirm in coral. */
+  confirmVariant?: 'danger' | 'primary';
   onConfirm: () => void;
   onCancel: () => void;
   testID?: string;
@@ -1064,7 +1067,7 @@ export function ConfirmDialog({
           <Text style={styles.dialogBody}>{body}</Text>
           <Button
             label={confirmLabel}
-            variant="danger"
+            variant={confirmVariant}
             busy={busy}
             disabled={busy}
             onPress={onConfirm}

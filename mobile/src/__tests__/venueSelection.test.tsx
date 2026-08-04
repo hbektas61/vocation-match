@@ -218,7 +218,9 @@ describe('choosing a venue inside that destination', () => {
     await press(await screen.findByTestId('venue-option-0'));
 
     expect(await screen.findByTestId('venue-picker-confirmation')).toBeTruthy();
-    expect(screen.getByText('Biblos Resort Alaçatı')).toBeTruthy();
+    // The question pops over the list now (2026-08-05), so the name stands
+    // twice: on the row under the dim, and as the dialog's title.
+    expect(screen.getAllByText('Biblos Resort Alaçatı').length).toBeGreaterThanOrEqual(1);
     expect(await getApi().getActiveHotel()).toBeNull();
 
     await press(screen.getByTestId('confirm-venue-selection'));
