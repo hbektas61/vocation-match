@@ -96,8 +96,10 @@ const LocateIcon = ({ tone = DEEP }: { tone?: string }) => (
   </Svg>
 );
 
+// Coral like every other glyph on the screen (owner, 2026-08-05) — the grey
+// magnifier was the one icon left outside the palette's voice.
 const MagnifierIcon = () => (
-  <Svg {...stroke(color.inkMuted, 20)}>
+  <Svg {...stroke(DEEP, 20)}>
     <Circle cx={11} cy={11} r={7} />
     <Path d="m20 20-3.5-3.5" />
   </Svg>
@@ -218,6 +220,8 @@ export function CheckinScreen({
   const [activeLabel, setActiveLabel] = useState<string | null>(null);
   /** What the current reading's neighbourhood is called, when the geocoder knows. */
   const [hereName, setHereName] = useState<string | null>(null);
+  /** The search pill wears the same coral focus ring every input does. */
+  const [searchFocused, setSearchFocused] = useState(false);
 
   /** The name in the box, as the backend would group it (D-053 §3). */
   const fingerprint = normalizeQuery(query);
@@ -563,7 +567,7 @@ export function CheckinScreen({
         accessibilityLabel={`${venue.name}, ${detail}`}
         onPress={() => checkInAt(venue)}
         disabled={busy}
-        style={({ pressed }) => [styles.venueRow, pressed && styles.pressed]}
+        style={({ pressed }) => [styles.venueRow, pressed && styles.venueRowPressed]}
         testID={`checkin-venue-${venue.id}`}
       >
         {/* N-02 (153:85): the name, and the kind as its tracked word under
@@ -587,7 +591,7 @@ export function CheckinScreen({
         accessibilityLabel={place.detail ? `${place.name}, ${place.detail}` : place.name}
         disabled={busy}
         onPress={() => checkInAtGoogle(place)}
-        style={({ pressed }) => [styles.venueRow, pressed && styles.pressed]}
+        style={({ pressed }) => [styles.venueRow, pressed && styles.venueRowPressed]}
         testID={`checkin-google-${place.selectionToken}`}
       >
         <View style={styles.venueWords}>
@@ -750,13 +754,15 @@ export function CheckinScreen({
 
         {/* The written search stands over the list it filters (owner,
             2026-08-03) — at the foot of a long list it was unfindable. */}
-        <View style={styles.searchPill}>
+        <View style={[styles.searchPill, searchFocused && styles.searchPillFocused]}>
           <MagnifierIcon />
           <TextInput
             value={query}
             onChangeText={setQuery}
             placeholder={COPY.checkin.searchPlaceholder}
             placeholderTextColor={color.inkMuted}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
             style={styles.searchInput}
             testID="checkin-search"
           />
@@ -1034,6 +1040,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
   },
+  /** Typing here looks like typing anywhere else: the coral ring, thickened. */
+  searchPillFocused: {
+    borderColor: color.accent,
+    borderWidth: 2.5,
+  },
   searchInput: {
     flex: 1,
     fontFamily: fontFamily.body,
@@ -1053,6 +1064,12 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     paddingHorizontal: 14,
     ...elevation.card,
+  },
+  /** The press answers in the brand's wash rather than a mere dim (owner,
+      2026-08-05) — the row under a thumb visibly becomes the chosen one. */
+  venueRowPressed: {
+    backgroundColor: color.accentWash,
+    borderColor: color.accent,
   },
   venueDisc: {
     width: 44,

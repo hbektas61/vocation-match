@@ -81,9 +81,10 @@ const iconStroke = (tone: string, size = 20) => ({
   strokeLinejoin: 'round' as const,
 });
 
-/** ED-01: the search pill says it is a search before a word is typed. */
+/** ED-01: the search pill says it is a search before a word is typed —
+    in coral, the same voice every drawn glyph speaks (owner, 2026-08-05). */
 const MagnifierIcon = () => (
-  <Svg {...iconStroke(color.inkMuted, 18)}>
+  <Svg {...iconStroke(color.accent, 18)}>
     <Circle cx={11} cy={11} r={7} />
     <Path d="m20 20-3.5-3.5" />
   </Svg>
