@@ -29,9 +29,6 @@ export function WelcomeStep({ go }: StepProps) {
   const { dispatch } = useAppStore();
   const insets = useSafeAreaInsets();
 
-  // The headline's full stop is the sheet's heart (4:10).
-  const headline = COPY.onboarding.welcome.headline.replace(/[.。]\s*$/, '');
-
   return (
     // The mark bleeds to the very top, so only the bottom edge takes the
     // inset; the language pills carry the top inset themselves.
@@ -54,9 +51,6 @@ export function WelcomeStep({ go }: StepProps) {
         </View>
         <View style={styles.content}>
           <Text accessibilityRole="header" style={styles.wordmark}>{COPY.appName}</Text>
-          <Text accessibilityRole="header" style={styles.headline}>
-            {headline} ❤
-          </Text>
 
           {/* The one way forward, at the shared `Button`'s size (owner,
               2026-08-05) — the sheets' hundred-tall slab made onboarding the
@@ -112,13 +106,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     lineHeight: 30,
     color: color.accent,
-    textAlign: 'center',
-  },
-  headline: {
-    fontFamily: fontFamily.display,
-    fontSize: 26,
-    lineHeight: 26 * 1.2,
-    color: color.ink,
     textAlign: 'center',
   },
   cta: {

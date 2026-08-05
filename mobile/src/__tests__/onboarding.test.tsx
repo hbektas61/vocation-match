@@ -58,11 +58,10 @@ describe('the language', () => {
     await renderAsync(<App />);
     await press(await screen.findByTestId('welcome-language-tr'));
 
-    // The screen itself re-renders in Turkish… (the headline's full stop is
-    // drawn as a heart, so the match is on the words, not the punctuation)
-    expect(
-      await screen.findByText(tr.onboarding.welcome.headline.replace(/\.$/, ''), { exact: false }),
-    ).toBeTruthy();
+    // The screen itself re-renders in Turkish. The welcome page is down to the
+    // mark, the name and the button (owner, 2026-08-06), and the name is the
+    // same word in both languages — so the button is what proves the switch.
+    expect(await screen.findByText(tr.onboarding.welcome.continueWithPhone)).toBeTruthy();
 
     // …and the choice travels with the flow rather than living on one screen.
     await press(screen.getByTestId('welcome-phone'));
@@ -73,9 +72,7 @@ describe('the language', () => {
 
   it('speaks English by default, so nothing changed for existing tests', async () => {
     await renderAsync(<App />);
-    expect(
-      await screen.findByText(COPY.onboarding.welcome.headline.replace(/\.$/, ''), { exact: false }),
-    ).toBeTruthy();
+    expect(await screen.findByText(COPY.onboarding.welcome.continueWithPhone)).toBeTruthy();
   });
 });
 
