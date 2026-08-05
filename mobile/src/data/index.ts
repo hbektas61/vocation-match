@@ -24,6 +24,7 @@ export {
 } from './phoneTr';
 export { hasBackendConfig, isFakeApiEnabled, readBackendConfig } from './config';
 export {
+  describeNeighborhood,
   deviceLocation,
   deniedLocation,
   fixedLocation,

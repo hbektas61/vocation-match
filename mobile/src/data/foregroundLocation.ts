@@ -58,6 +58,30 @@ export const deviceLocation: ForegroundLocationReader = {
   },
 };
 
+/**
+ * Names the neighbourhood a reading falls in, for the reader's own eyes only
+ * (owner, 2026-08-05): a check-in card that says "Bulunduğun yer" tells the
+ * person nothing — "Kocatepe Mah." does. The platform's own geocoder answers
+ * on-device; the name is displayed and never sent anywhere, so D-005's "the
+ * reading travels no further than the presence check" still holds. Any
+ * failure — no geocoder, no network, an unnamed cell — is simply no name.
+ */
+export async function describeNeighborhood(
+  latitude: number,
+  longitude: number,
+): Promise<string | null> {
+  try {
+    const places = await Location.reverseGeocodeAsync({ latitude, longitude });
+    const first = places[0];
+    if (!first) return null;
+    // iOS puts the neighbourhood ("Kocatepe Mahallesi") in `district`;
+    // Android often leaves it null and knows only the wider subregion.
+    return first.district ?? first.subregion ?? first.city ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Deterministic reader for tests and for the credential-free demo controls. */
 export function fixedLocation(
   latitude: number,

@@ -150,8 +150,9 @@ export function OnboardingScaffold({
 
         <View style={styles.footer}>
           {footer}
-          {/* The sheets' outsized action (8:108): the warm gradient, a
-              hundred tall, the pink glow under it. Plainly there and plainly
+          {/* The one way forward, at the shared `Button`'s size (owner,
+              2026-08-05) — the sheets' hundred-tall slab made onboarding the
+              only place with a button that big. Plainly there and plainly
               inactive when the form is not ready — never vanishing. */}
           <Pressable
             accessibilityRole="button"
@@ -234,19 +235,21 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
   },
+  /** The shared `Button` primary's seat: MIN_TOUCH, 14pt padding, the pill. */
   cta: {
     alignSelf: 'stretch',
-    height: 100,
-    borderRadius: 999,
+    minHeight: MIN_TOUCH,
+    paddingVertical: 14,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: color.accent,
     overflow: 'hidden',
     shadowColor: color.accent,
-    shadowOpacity: 0.45,
-    shadowRadius: 11,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 5,
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
   ctaPressed: { opacity: 0.85 },
   /** A real state rather than a fade: flat fill, grey label — "the form,

@@ -28,6 +28,7 @@ import { apiErrorMessage, COPY, COPY_FOR, upperCase } from '../copy';
 import {
   ApiError,
   deniedLocation,
+  describeNeighborhood,
   deviceLocation,
   fixedLocation,
   getApi,
@@ -57,6 +58,15 @@ const DEEP = color.accent;
  * can remember. Nothing is persisted.
  */
 let lastSeenExpiry: number | null = null;
+
+/**
+ * The neighbourhood a placeless check-in was made from, remembered for the
+ * session so the active card can say "Kocatepe Mah." instead of the generic
+ * "Bulunduğun yer" (owner, 2026-08-05). The server stores no coordinate and
+ * no name for a placeless check-in, so after a fresh app start the card
+ * honestly falls back to the generic label.
+ */
+let lastHereName: string | null = null;
 
 /* ------------------------------------------------------------------ icons */
 
@@ -206,6 +216,8 @@ export function CheckinScreen({
    */
   const resolvedNames = useRef<Map<string, string>>(new Map());
   const [activeLabel, setActiveLabel] = useState<string | null>(null);
+  /** What the current reading's neighbourhood is called, when the geocoder knows. */
+  const [hereName, setHereName] = useState<string | null>(null);
 
   /** The name in the box, as the backend would group it (D-053 §3). */
   const fingerprint = normalizeQuery(query);
@@ -305,6 +317,10 @@ export function CheckinScreen({
     setReading({ latitude: read.latitude, longitude: read.longitude });
     setNearby([]);
     setNearbyGoogle([]);
+    // The here-anchor's own name, looked up on-device and shown only to its
+    // owner — arriving whenever it arrives, never holding the list up.
+    setHereName(null);
+    void describeNeighborhood(read.latitude, read.longitude).then(setHereName);
     // A new reading is a new place: the old predictions were restricted to a
     // circle around a point we no longer stand on.
     forgetGoogle();
@@ -386,6 +402,8 @@ export function CheckinScreen({
       // anchor is called, and for a cell that is nothing at all.
       const active = await getApi().getCheckin();
       if (active) {
+        // The person checked in at the neighbourhood, so the card names it.
+        lastHereName = hereName;
         lastSeenExpiry = active.expiresAt;
         setCheckin(active);
         setNearby(null);
@@ -510,6 +528,7 @@ export function CheckinScreen({
     try {
       await getApi().clearCheckin();
       lastSeenExpiry = null;
+      lastHereName = null;
       setCheckin(null);
       setNotice({ message: COPY.checkin.checkedOut, tone: 'info' });
     } catch (err) {
@@ -604,7 +623,7 @@ export function CheckinScreen({
             <Text style={styles.livePillText}>{COPY.checkin.activeChip}</Text>
           </View>
           <Text style={styles.activeName}>
-            {checkin.venueName ?? activeLabel ?? COPY.checkin.hereLabel}
+            {checkin.venueName ?? activeLabel ?? lastHereName ?? COPY.checkin.hereLabel}
           </Text>
           {/* Google's terms ask for the credit wherever its answer shows. */}
           {checkin.googlePlaceId && activeLabel ? (
@@ -709,6 +728,13 @@ export function CheckinScreen({
             emptiness. */}
         <View style={styles.hereCard}>
           <Text style={styles.hereLabel}>{upperCase(COPY.checkin.hereLabel)}</Text>
+          {/* The neighbourhood's own name (owner, 2026-08-05): the person is
+              checking in at "Kocatepe Mah.", and the card should say so. */}
+          {hereName ? (
+            <Text style={styles.hereName} testID="checkin-here-name">
+              {hereName}
+            </Text>
+          ) : null}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={COPY.checkin.hereCta}
@@ -832,6 +858,16 @@ export function CheckinScreen({
       </View>
       <Text style={styles.subtitle}>{COPY.checkin.idleSubtitle}</Text>
 
+      {/* What just happened stands where the eye already is (owner,
+          2026-08-05) — tacked under the privacy row it read as page litter. */}
+      {notice ? (
+        <Notice
+          message={notice.message}
+          tone={notice.tone === 'error' ? 'error' : undefined}
+          testID="checkin-notice"
+        />
+      ) : null}
+
       {/* N-01 (152:75): the photo as a full-width band with the claim on
           its scrim — not a tall column beside a hole of empty space. */}
       <View style={styles.heroBand}>
@@ -937,14 +973,6 @@ export function CheckinScreen({
         </View>
         <Text style={styles.privacyText}>{COPY.checkin.privacyCardBody}</Text>
       </View>
-
-      {notice ? (
-        <Notice
-          message={notice.message}
-          tone={notice.tone === 'error' ? 'error' : undefined}
-          testID="checkin-notice"
-        />
-      ) : null}
     </Screen>
   );
 }
@@ -1369,6 +1397,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1,
     color: color.inkMuted,
+  },
+  /** The neighbourhood's name, standing between the kicker and the deed. */
+  hereName: {
+    fontFamily: fontFamily.display,
+    fontSize: 20,
+    lineHeight: 26,
+    color: color.ink,
   },
   /** N-02: the kind as the tracked word under the name. */
   venueKind: {

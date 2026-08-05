@@ -18,7 +18,7 @@ import {
   type TextInputProps,
   type ViewStyle,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -1085,6 +1085,45 @@ export function ConfirmDialog({
   );
 }
 
+/**
+ * The notice's mark, drawn rather than typeset (owner, 2026-08-05): a lone
+ * "i" character read as a typo, not an icon. Each tone keeps its own colour,
+ * with the shape saying the same thing the colour does.
+ */
+function NoticeMark({ tone }: { tone: 'info' | 'error' | 'success' }) {
+  const markStroke = {
+    width: 16,
+    height: 16,
+    viewBox: '0 0 24 24',
+    fill: 'none' as const,
+    strokeWidth: 2,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+  };
+  if (tone === 'error') {
+    return (
+      <Svg {...markStroke} stroke={color.danger}>
+        <Path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+        <Path d="M12 9v4m0 4h.01" />
+      </Svg>
+    );
+  }
+  if (tone === 'success') {
+    return (
+      <Svg {...markStroke} stroke={color.success}>
+        <Circle cx={12} cy={12} r={9} />
+        <Path d="m8.5 12.5 2.5 2.5 4.5-5.5" />
+      </Svg>
+    );
+  }
+  return (
+    <Svg {...markStroke} stroke={color.accent}>
+      <Circle cx={12} cy={12} r={9} />
+      <Path d="M12 11v5m0-8h.01" />
+    </Svg>
+  );
+}
+
 export function Notice({
   message,
   tone = 'info',
@@ -1113,17 +1152,13 @@ export function Notice({
       accessibilityRole={tone === 'error' ? 'alert' : 'text'}
       accessibilityLiveRegion={announced ? 'polite' : 'none'}
     >
-      <Text
-        style={[
-          styles.noticeGlyph,
-          tone === 'error' && styles.noticeGlyphError,
-          tone === 'success' && styles.noticeGlyphSuccess,
-        ]}
+      <View
+        style={styles.noticeMark}
         accessibilityElementsHidden
         importantForAccessibility="no"
       >
-        {tone === 'error' ? '!' : tone === 'success' ? '✓' : 'i'}
-      </Text>
+        <NoticeMark tone={tone} />
+      </View>
       <Text
         style={[
           styles.noticeText,
@@ -1684,30 +1719,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
+  /** The info ground is the brand wash (owner, 2026-08-05): the grey-blue
+      plate was the one surface on screen from outside the palette. */
   notice: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.sm,
-    backgroundColor: color.infoSoft,
-    borderRadius: radius.sm,
+    backgroundColor: color.accentWash,
+    borderRadius: radius.md,
     padding: spacing.md,
   },
   noticeError: { backgroundColor: color.dangerSoft },
   noticeSuccess: { backgroundColor: color.successSoft },
-  noticeGlyph: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.caption,
-    lineHeight: font.body * 1.45,
-    color: color.inkMuted,
-  },
-  noticeGlyphError: { color: color.danger },
-  noticeGlyphSuccess: { color: color.success },
+  /** Seats the 16pt mark on the first line's centre. */
+  noticeMark: { marginTop: 2 },
   noticeText: {
     flex: 1,
     fontFamily: fontFamily.body,
     fontSize: font.body,
     lineHeight: font.body * 1.45,
-    color: color.inkMuted,
+    color: color.ink,
   },
   noticeErrorText: { color: color.danger },
   noticeSuccessText: { color: color.success },
