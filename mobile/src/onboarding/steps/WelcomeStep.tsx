@@ -40,7 +40,10 @@ export function WelcomeStep({ go }: StepProps) {
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.markRoom}>
+        {/* The mark and the name are one thing, and they sit in the middle of
+            whatever room the button leaves them (owner, 2026-08-06) — not
+            pinned under the language pills with a hole underneath. */}
+        <View style={styles.centre}>
           <Image
             source={MARK}
             style={styles.mark}
@@ -48,26 +51,24 @@ export function WelcomeStep({ go }: StepProps) {
             accessibilityIgnoresInvertColors
             testID="welcome-mark"
           />
-        </View>
-        <View style={styles.content}>
           <Text accessibilityRole="header" style={styles.wordmark}>{COPY.appName}</Text>
-
-          {/* The one way forward, at the shared `Button`'s size (owner,
-              2026-08-05) — the sheets' hundred-tall slab made onboarding the
-              only place with a button that big. */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={COPY.onboarding.welcome.continueWithPhone}
-            onPress={() => {
-              dispatch({ type: 'CONFIRM_AGE' });
-              go('promise');
-            }}
-            style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
-            testID="welcome-phone"
-          >
-            <Text style={styles.ctaLabel}>{COPY.onboarding.welcome.continueWithPhone}</Text>
-          </Pressable>
         </View>
+
+        {/* The one way forward, at the shared `Button`'s size (owner,
+            2026-08-05) — the sheets' hundred-tall slab made onboarding the
+            only place with a button that big. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={COPY.onboarding.welcome.continueWithPhone}
+          onPress={() => {
+            dispatch({ type: 'CONFIRM_AGE' });
+            go('promise');
+          }}
+          style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
+          testID="welcome-phone"
+        >
+          <Text style={styles.ctaLabel}>{COPY.onboarding.welcome.continueWithPhone}</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -76,25 +77,13 @@ export function WelcomeStep({ go }: StepProps) {
 const styles = StyleSheet.create({
   /** White, like the apps this screen is answering (owner, 2026-08-05). */
   screen: { flex: 1, backgroundColor: color.surface },
-  /**
-   * The mark sits low rather than at the ceiling (owner, 2026-08-06): with the
-   * body sentence and the trust card gone, the page is the mark, the name, one
-   * line and the button — so the mark takes the room those left behind.
-   */
-  markRoom: { alignItems: 'center', justifyContent: 'center', paddingTop: 132, paddingBottom: 18 },
   mark: { width: 196, height: 222 },
-  scroll: { flexGrow: 1, paddingBottom: 24 },
+  scroll: { flexGrow: 1, paddingHorizontal: 20, paddingBottom: 24 },
+  /** The mark and the name, centred in the room above the button. */
+  centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   languageRow: {
     position: 'absolute',
     right: 16,
-  },
-  /** The sheet's column (4:2): 20 aside, 14 between, everything centred. */
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    alignItems: 'center',
-    gap: 14,
   },
   /**
    * The name, in the brand coral (owner, 2026-08-06). The dark sibling is
@@ -117,7 +106,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: color.accent,
     overflow: 'hidden',
-    marginTop: 'auto',
     shadowColor: color.accent,
     shadowOpacity: 0.28,
     shadowRadius: 10,
