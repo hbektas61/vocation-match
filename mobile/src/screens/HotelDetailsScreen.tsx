@@ -46,6 +46,13 @@ export function HotelDetailsScreen({ route, navigation }: RootScreenProps<'Hotel
    * which the screen says outright rather than inventing a name.
    */
   const [googleName, setGoogleName] = useState<string | null | false>(null);
+  /**
+   * The same resolve already answers with a photograph (D-054: a keyless,
+   * expiring URL, held in memory and stored nowhere). This screen was throwing
+   * it away and drawing the illustration instead, so a venue that had a photo
+   * on Tatilim had none here (owner, 2026-08-06).
+   */
+  const [googlePhoto, setGooglePhoto] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isGoogle) return;
@@ -58,8 +65,10 @@ export function HotelDetailsScreen({ route, navigation }: RootScreenProps<'Hotel
         if (!cancelled) setGoogleName(false);
         return;
       }
-      const name = (await api.resolveGooglePlace(placeId).catch(() => null))?.name ?? null;
-      if (!cancelled) setGoogleName(name ?? false);
+      const identity = await api.resolveGooglePlace(placeId).catch(() => null);
+      if (cancelled) return;
+      setGoogleName(identity?.name ?? false);
+      setGooglePhoto(identity?.photoUri ?? null);
     })();
     return () => {
       cancelled = true;
@@ -74,8 +83,9 @@ export function HotelDetailsScreen({ route, navigation }: RootScreenProps<'Hotel
     );
   }
 
-  const source =
-    hotel.photoUrl && config && hotel.photoUrl.includes('/functions/v1/hotel-photo')
+  const source = googlePhoto
+    ? { uri: googlePhoto }
+    : hotel.photoUrl && config && hotel.photoUrl.includes('/functions/v1/hotel-photo')
       ? { uri: hotel.photoUrl, headers: { apikey: config.anonKey } }
       : hotel.photoUrl
         ? { uri: hotel.photoUrl }
@@ -145,28 +155,27 @@ export function HotelDetailsScreen({ route, navigation }: RootScreenProps<'Hotel
             <Body>{COPY.hotel.activatedNote}</Body>
             <Caption>{COPY.trust.oneHotel}</Caption>
           </Card>
-          <Button
-            label={COPY.hotel.backToPlan}
-            onPress={() => navigation.goBack()}
-            testID="hotel-details-back-to-plan"
-          />
-          {/*
-            `replace`, not `navigate`: choosing a new venue there hands you
-            back with `goBack`, and if this screen were still on the stack you
-            would land on the details of the venue you just left.
-          */}
+          {/* The three doors in the order the owner ranked them (2026-08-06):
+              changing the venue is the loud one, going back and leaving are
+              both quiet. Leaving keeps its weight in the question it asks, not
+              in a red slab that shouted louder than the thing people came for. */}
           <Button
             label={COPY.hotel.switchButton}
-            variant="secondary"
             onPress={() => navigation.replace('ChooseHotel')}
             testID="hotel-details-change-venue"
+          />
+          <Button
+            label={COPY.hotel.backToPlan}
+            variant="secondary"
+            onPress={() => navigation.goBack()}
+            testID="hotel-details-back-to-plan"
           />
           {/* Leaving is not switching: cancelling the trip needs its own door
               (owner, 2026-08-03), and it asks first because it shuts rooms the
               same way a switch does (D-004). */}
           <Button
             label={COPY.hotel.leaveCta}
-            variant="danger"
+            variant="secondary"
             onPress={() => setConfirmingLeave(true)}
             testID="hotel-leave"
           />

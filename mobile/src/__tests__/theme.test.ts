@@ -58,7 +58,9 @@ describe('the D-058 palette', () => {
     expect(tokens.border.subtle).toBe('#E8EBEF');
     expect(tokens.brand.primary).toBe('#FF5E62');
     expect(tokens.brand.primaryPressed).toBe('#E94F54');
-    expect(tokens.brand.soft).toBe('#FFE3E0');
+    // Warmed towards the coral on 2026-08-06 (owner: the tints read pink).
+    expect(tokens.brand.soft).toBe('#FFE0D4');
+    expect(tokens.brand.wash).toBe('#FFEDE4');
     expect(tokens.brand.navy).toBe('#101A3A');
     expect(tokens.premium.gold).toBe('#D4AF37');
     expect(tokens.success.base).toBe('#22C55E');

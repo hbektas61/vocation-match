@@ -69,10 +69,15 @@ export const palette = {
    * 6.5:1 on white and 5.3:1 on the soft fill.
    */
   coralInk: '#B3272C',
-  /** A selected chip, a live-room badge, the wash behind a brand moment. */
-  coralSoft: '#FFE3E0',
+  /**
+   * A selected chip, a live-room badge, the wash behind a brand moment — and
+   * the disc behind every drawn glyph. Warmed towards the coral on
+   * 2026-08-06 (owner: "the pinks, I do not like them"), which also brings
+   * the tints into the logo's own peach family.
+   */
+  coralSoft: '#FFE0D4',
   /** One step paler again: a whole panel that should read as brand-adjacent. */
-  coralWash: '#FFE8EB',
+  coralWash: '#FFEDE4',
 
   /** Premium. The metal itself is a fill or a glyph; the text is the dark one. */
   gold: '#D4AF37',
