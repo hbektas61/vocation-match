@@ -82,23 +82,13 @@ describe('the light theme is the only theme left in the source', () => {
 
   it('no longer paints a full-screen gradient ground', () => {
     // The sunset was drawn by a `LinearGradient` sized to the screen. D-058
-    // allows the match moment and the scrims that make text legible over
-    // artwork — and nothing that is a *coloured ground* in its own right.
-    // `paperVeil` joined the list on 2026-08-05 for the welcome screen, which
-    // stands on the brand mark; the assertion below is what keeps it a veil:
-    // every stop is the paper colour, so it can lift ink but never tint a page.
+    // allows exactly two gradients — the match moment and a photo scrim — and
+    // both are named in `theme.ts`.
     const source = readFileSync(join(SRC, 'theme.ts'), 'utf8');
     expect(source).not.toMatch(/backgroundGradient/);
     expect(source).not.toMatch(/\bglass\b\s*=/);
     const gradientNames = [...source.matchAll(/^\s{2}(\w+):\s*\[/gm)].map((m) => m[1]);
-    expect(gradientNames.sort()).toEqual(['match', 'paperVeil', 'photoScrim']);
-
-    const veil = source.match(/paperVeil:\s*\[([^\]]+)\]/)?.[1] ?? '';
-    expect(veil).toBeTruthy();
-    for (const stop of veil.split(',').map((s) => s.trim()).filter(Boolean)) {
-      expect(stop).toMatch(/250|247|#FAFAF7|0\)|'|"/);
-    }
-    expect(veil).not.toMatch(/#(?!FAFAF7)[0-9A-Fa-f]{6}/);
+    expect(gradientNames.sort()).toEqual(['match', 'photoScrim']);
   });
 
   it('loads no display font that has to be downloaded', () => {

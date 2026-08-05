@@ -1,26 +1,25 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 import { LanguageSwitch } from '../../components/LanguageSwitch';
 import { COPY } from '../../copy';
 import { useAppStore } from '../../state/AppStore';
-import { color, elevation, fontFamily, gradient } from '../../theme';
+import { color, elevation, fontFamily } from '../../theme';
 import type { StepProps } from './types';
 
 /**
- * The mark itself, filling the screen behind the words (owner, 2026-08-05):
- * the way the dating apps open, and the way somebody learns what this app is
- * called before they have read a word of it. It replaces the stock couple
- * photograph, which said "a holiday" but never said "us".
+ * The mark, cut out of the artwork's own pale field so it can stand on white
+ * (owner, 2026-08-05): the way the dating apps open — a white page, the logo,
+ * one sentence, one button. It replaces the stock couple photograph, which
+ * said "a holiday" but never said "us".
  *
- * The artwork carries its own pale field, so it *is* the background rather
- * than a picture on one — and a white veil rises over its lower half so the
- * ink below stays ink instead of becoming on-photo white.
+ * `assets/brand-mark.png` is generated from `brand-src/logo-1024.png`: the
+ * pin's shape is flood-filled out of the drawing, so the heart stays a hole
+ * and the page shows through it.
  */
-const MARK = require('../../../assets/brand-src/logo-1024.png');
+const MARK = require('../../../assets/brand-mark.png');
 
 const ShieldDisc = () => (
   <View style={styles.shieldDisc}>
@@ -47,34 +46,23 @@ export function WelcomeStep({ go }: StepProps) {
     // The mark bleeds to the very top, so only the bottom edge takes the
     // inset; the language pills carry the top inset themselves.
     <SafeAreaView style={styles.screen} edges={['bottom']} testID="screen-welcome">
-      <ImageBackground
-        source={MARK}
-        style={styles.mark}
-        imageStyle={styles.markImage}
-        resizeMode="cover"
-        accessibilityIgnoresInvertColors
-        testID="welcome-mark"
-      >
-        {/* The words sit on the mark's own pale field, so the veil is white
-            rather than the usual dark photo scrim. */}
-        <LinearGradient
-          colors={[...gradient.paperVeil]}
-          locations={[0, 0.42, 0.66]}
-          style={StyleSheet.absoluteFillObject}
-          pointerEvents="none"
-        />
-        {/* The first decision on the first screen: which language the rest
-            of this conversation happens in. Floats over the mark (4:4). */}
-        <View style={[styles.languageRow, { top: insets.top + 14 }]}>
-          <LanguageSwitch testID="welcome-language" />
-        </View>
+      {/* The first decision on the first screen: which language the rest of
+          this conversation happens in. */}
+      <View style={[styles.languageRow, { top: insets.top + 14 }]}>
+        <LanguageSwitch testID="welcome-language" />
+      </View>
 
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.markRoom} />
-          <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.markRoom}>
+          <Image
+            source={MARK}
+            style={styles.mark}
+            resizeMode="contain"
+            accessibilityIgnoresInvertColors
+            testID="welcome-mark"
+          />
+        </View>
+        <View style={styles.content}>
           <Text accessibilityRole="header" style={styles.wordmark}>{COPY.appName}</Text>
           <Text accessibilityRole="header" style={styles.headline}>
             {headline} ❤
@@ -103,22 +91,19 @@ export function WelcomeStep({ go }: StepProps) {
             testID="welcome-phone"
           >
             <Text style={styles.ctaLabel}>{COPY.onboarding.welcome.continueWithPhone}</Text>
-            </Pressable>
-          </View>
-        </ScrollView>
-      </ImageBackground>
+          </Pressable>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: color.background },
-  /** The mark is the ground, so it owns the whole screen. */
-  mark: { flex: 1 },
-  /** Anchored high: the pin stays whole while the words take the foot. */
-  markImage: { resizeMode: 'cover', top: 0 },
-  /** What the mark keeps for itself before the words begin. */
-  markRoom: { height: 300 },
+  /** White, like the apps this screen is answering (owner, 2026-08-05). */
+  screen: { flex: 1, backgroundColor: color.surface },
+  /** The mark's own room at the top of the page. */
+  markRoom: { alignItems: 'center', justifyContent: 'center', paddingTop: 56, paddingBottom: 8 },
+  mark: { width: 176, height: 200 },
   scroll: { flexGrow: 1, paddingBottom: 24 },
   languageRow: {
     position: 'absolute',

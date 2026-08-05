@@ -177,13 +177,6 @@ export const gradient = {
   match: ['#E94F52', '#FFC7BC'],
   /** A photograph's foot, so a name and a ribbon stay readable on any image. */
   photoScrim: ['rgba(16, 26, 58, 0)', 'rgba(16, 26, 58, 0.82)'],
-  /**
-   * The paper veil (owner, 2026-08-05): the welcome screen stands on the
-   * brand mark's own pale field rather than a photograph, so the words below
-   * it are lifted by rising *paper* instead of the usual dark scrim — ink
-   * stays ink, and the mark still shows through at the top.
-   */
-  paperVeil: ['rgba(250, 250, 247, 0)', 'rgba(250, 250, 247, 0.86)', '#FAFAF7'],
 } as const;
 
 export const color = {
