@@ -834,6 +834,9 @@ export const tr: Copy = {
     premiumRequired:
       'Bunun için Premium gerekli. Ücretsiz üyelikte Tatilden Önce odasında 3 beğeni ve 5 geçiş hakkın var.',
     destinationRequired: 'Önce nereye gittiğini seç.',
+    findAllowanceSpent:
+      'Bu ayki aramayla mekân bulma hakkın doldu. Çevrendeki listeden ya da bulunduğun yerden yine check-in yapabilirsin.',
+    selectionStale: 'Bu liste tazeliğini yitirdi. Çevrene yeniden bak ve tekrar seç.',
     network: 'Bağlantı yok. Tekrar dene.',
     suspended: 'Hesabın askıya alındı. Engelleme, bildirme ve konuşmalarını okuma yine açık.',
     unknown: 'Bir şeyler ters gitti. Tekrar dene.',

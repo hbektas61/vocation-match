@@ -498,6 +498,7 @@ Deno.serve(async (req) => {
         p_user: userId,
         p_session: session.session_id,
         p_place_ids: predictions.map((prediction) => prediction.placeId!),
+        p_source: "search",
       },
     );
     if (selectionError) {
@@ -654,6 +655,8 @@ Deno.serve(async (req) => {
         p_user: userId,
         p_session: session.session_id,
         p_place_ids: found.map(({ place }) => place.id!),
+        // Ordinary check-in machinery, not a metered find (2026-08-05).
+        p_source: "nearby",
       },
     );
     if (selectionError) {
@@ -874,6 +877,7 @@ Deno.serve(async (req) => {
         p_user: userId,
         p_session: session.session_id,
         p_place_ids: predictions.map((prediction) => prediction.placeId!),
+        p_source: "search",
       },
     );
     if (selectionError) {

@@ -109,6 +109,22 @@ it('spends one advanced find per labelled check-in, and refuses at the third (D-
   expect(answer.withinRange).toBe(true);
 });
 
+it('never charges a find for a pick from the around-you list (owner, 2026-08-05)', async () => {
+  // The regression this pins: once Çevremde's list became Google-only, every
+  // ordinary check-in spent one of three monthly finds, so the fourth tap of
+  // the month did nothing at all and the picker read as broken.
+  const api = await signedIn('+905551119028');
+  await api.setPremium(false);
+
+  for (const place of ['nearby-one', 'nearby-two', 'nearby-three', 'nearby-four']) {
+    const answer = await api.checkinHere(SPOT.latitude, SPOT.longitude, place);
+    expect(answer.withinRange).toBe(true);
+  }
+
+  // Four picks later the typed search still has its whole month.
+  expect(await api.googleFindsRemaining()).toBe(3);
+});
+
 it('refuses a label that is not a plausible place reference', async () => {
   const api = await signedIn('+905551119025');
   // The server-side check is a length window; the fake mirrors the contract

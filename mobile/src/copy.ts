@@ -96,6 +96,10 @@ export function apiErrorMessage(code: ApiErrorCode): string {
       return COPY.errors.rateLimited;
     case 'PREMIUM_REQUIRED':
       return COPY.errors.premiumRequired;
+    case 'FIND_ALLOWANCE_SPENT':
+      return COPY.errors.findAllowanceSpent;
+    case 'SELECTION_STALE':
+      return COPY.errors.selectionStale;
     case 'DESTINATION_REQUIRED':
       return COPY.errors.destinationRequired;
     case 'NETWORK':

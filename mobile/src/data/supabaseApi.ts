@@ -113,6 +113,18 @@ export function toApiError(error: PostgresLikeError | null | undefined, fallback
   if (code === 'PP001') {
     return new ApiError('PREMIUM_REQUIRED', message);
   }
+  // PP002: the month's advanced *typed* finds are spent (D-053). Its own code
+  // because the screen keeps offering everything else — the around-you list
+  // and the here-anchor both still work, and saying "something went wrong"
+  // suggested otherwise.
+  if (code === 'PP002') {
+    return new ApiError('FIND_ALLOWANCE_SPENT', message);
+  }
+  // P0003: the selection token behind that row is spent or older than ten
+  // minutes. The answer is a fresh look, not a retry of the same tap.
+  if (code === 'P0003') {
+    return new ApiError('SELECTION_STALE', message);
+  }
   // A suspended account is refused like any other forbidden action, but the
   // user needs to be told which of the two it is.
   if (code === '42501' && /suspended/i.test(message)) {

@@ -931,6 +931,9 @@ export const en = {
     premiumRequired:
       'That needs Premium. Free members get 3 likes and 5 passes in Before the Trip.',
     destinationRequired: 'Choose where you are going first.',
+    findAllowanceSpent:
+      'You have used this month’s searched place finds. You can still check in from the list around you or from where you are.',
+    selectionStale: 'That list is no longer fresh. Look around again and pick once more.',
     network: 'No connection. Try again.',
     suspended: 'Your account is suspended. You can still block, report, and read your conversations.',
     unknown: 'Something went wrong. Try again.',

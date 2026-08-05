@@ -405,7 +405,11 @@ export function CheckinScreen({
       // Re-read rather than assemble it here: the server decides what the
       // anchor is called, and for a cell that is nothing at all.
       const active = await getApi().getCheckin();
-      if (active) {
+      if (!active) {
+        setNotice({ message: COPY.errors.unknown, tone: 'error' });
+        return;
+      }
+      {
         // The person checked in at the neighbourhood, so the card names it.
         lastHereName = hereName;
         lastSeenExpiry = active.expiresAt;
@@ -501,9 +505,23 @@ export function CheckinScreen({
     setBusy(true);
     setNotice(null);
     try {
-      await getApi().checkinHere(reading.latitude, reading.longitude, place.selectionToken);
+      const answer = await getApi().checkinHere(
+        reading.latitude,
+        reading.longitude,
+        place.selectionToken,
+      );
+      if (!answer.withinRange) {
+        // Silence here was half of "the picker is broken" (owner, 2026-08-05):
+        // the refusal was thrown away and the screen simply did not change.
+        setNotice({ message: COPY.checkin.tooFar, tone: 'error' });
+        return;
+      }
       const active = await getApi().getCheckin();
-      if (active) {
+      if (!active) {
+        setNotice({ message: COPY.errors.unknown, tone: 'error' });
+        return;
+      }
+      {
         // The prediction text is good enough to show *this* user right away,
         // and it stays in session memory only (D-053 §5).
         if (active.googlePlaceId) resolvedNames.current.set(active.googlePlaceId, place.name);
@@ -727,6 +745,17 @@ export function CheckinScreen({
         </View>
         <Text style={styles.subtitleSm}>{COPY.checkin.listSubtitle}</Text>
 
+        {/* A refusal belongs where the eye is (owner, 2026-08-05): at the foot
+            of a list this long nobody ever saw it, so a refused pick looked
+            like a tap that did nothing at all. */}
+        {notice ? (
+          <Notice
+            message={notice.message}
+            tone={notice.tone === 'error' ? 'error' : undefined}
+            testID="checkin-notice"
+          />
+        ) : null}
+
         {/* N-02 (153:75), D-048: the anchor that always exists — where you
             are standing — first, in its wash card, never only under an
             emptiness. */}
@@ -838,13 +867,6 @@ export function CheckinScreen({
           </Text>
         ) : null}
 
-        {notice ? (
-          <Notice
-            message={notice.message}
-            tone={notice.tone === 'error' ? 'error' : undefined}
-            testID="checkin-notice"
-          />
-        ) : null}
         {/* ODbL. The catalogue under this list is OpenStreetMap/Overture data
             and had no credit on screen at all — only Google's answers did,
             which is the wrong way round given whose data is shown by default. */}

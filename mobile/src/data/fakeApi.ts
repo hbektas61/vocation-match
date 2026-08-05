@@ -1086,13 +1086,17 @@ export class FakeApi implements VocationApi {
     ) {
       throw new ApiError('INVALID_INPUT', 'That location reading is not usable.');
     }
-    if (selectionToken) {
-      // D-053: a labelled check-in spends one of the month's finds, and a
+    // Only a *typed search* selection is metered (2026-08-05). The server
+    // knows which list minted a token from its `source` column; the fake has
+    // no Google, so a token naming itself `nearby-` stands for the free
+    // around-you list, and anything else for the metered search.
+    if (selectionToken && !selectionToken.startsWith('nearby-')) {
+      // D-053: a searched check-in spends one of the month's finds, and a
       // spent allowance refuses the label rather than the check-in.
       const allowance = this.isPremiumNow(userId) ? 10 : 3;
       const used = this.googleFinds.get(userId) ?? 0;
       if (used >= allowance) {
-        throw new ApiError('FORBIDDEN', 'No advanced place finds left this month.');
+        throw new ApiError('FIND_ALLOWANCE_SPENT', 'No advanced place finds left this month.');
       }
       this.googleFinds.set(userId, used + 1);
     }

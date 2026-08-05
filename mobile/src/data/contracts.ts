@@ -30,6 +30,17 @@ export type ApiErrorCode =
   /** The server refused because the action is part of Premium (D-036). */
   | 'PREMIUM_REQUIRED'
   /**
+   * The month's advanced *typed* place finds are spent (D-053). Its own code
+   * because everything else on the screen still works — the around-you list
+   * and the here-anchor are both free.
+   */
+  | 'FIND_ALLOWANCE_SPENT'
+  /**
+   * The selection behind that row is spent or older than ten minutes. The
+   * repair is another look around, not another tap on the same row.
+   */
+  | 'SELECTION_STALE'
+  /**
    * The venue search has no destination behind it any more — the session
    * lapsed (D-054). Its own code because the repair is a step back, not a
    * retry: nothing the user types will work until a destination is chosen.

@@ -272,3 +272,36 @@ describe('the selection guard', () => {
     expect(migration).toContain('drop function if exists public.checkin_here(double precision, double precision, text)');
   });
 });
+
+describe('what a find is spent on (2026-08-05)', () => {
+  const free = readFileSync(
+    join(__dirname, '../../../supabase/migrations/20260805000100_nearby_pick_is_free.sql'),
+    'utf8',
+  );
+
+  it('charges the month’s allowance only for a typed-search selection', () => {
+    // Çevremde's list is Google-only, so charging every pick spent three
+    // finds and then refused — the feature stopped working for a free account.
+    expect(free).toMatch(/if v_source = 'search' then[\s\S]*?app\.google_finds/);
+  });
+
+  it('lets the around-you list mint its own kind of selection', () => {
+    expect(free).toContain("check (source in ('search', 'nearby'))");
+    expect(source).toContain('p_source: "nearby"');
+    expect(source).toContain('p_source: "search"');
+  });
+
+  it('still spends the entitlement inside the check-in transaction', () => {
+    const findsAt = free.indexOf('app.google_finds');
+    const insertAt = free.indexOf('insert into public.checkins');
+    expect(findsAt).toBeGreaterThan(-1);
+    expect(insertAt).toBeGreaterThan(findsAt);
+  });
+
+  it('leaves exactly one resolvable signature for the selection recorder', () => {
+    // Two overloads and PostgREST refuses to choose (the D-052 lesson).
+    expect(free).toContain(
+      'drop function if exists public.record_place_selections(uuid, uuid, text[])',
+    );
+  });
+});
