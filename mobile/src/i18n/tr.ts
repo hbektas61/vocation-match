@@ -546,9 +546,23 @@ export const tr: Copy = {
     rescanning: 'Taranıyor…',
     noHotelTitle: 'Keşfet için önce otel seç',
     noHotelBody: 'Bir otel seçtikten sonra sana uygun odalar ve kişiler burada görünecek.',
+    /**
+     * Owner, 2026-08-05: bu ekran "otel seç" diye dayatıyordu, oysa Keşfet'i
+     * açan üç ayrı yol var — tatil mekânı (2 oda), etkinlik (2 oda) ve
+     * çevren (1 oda). Kapıları sayıp yan yana koymak, birini şart koşmaktan
+     * hem daha doğru hem daha davetkâr.
+     */
+    doorsTitle: 'Keşfet, girdiğin odayı gösterir',
+    doorsBody: 'Beş oda var; birini açman yeter. Aradığın insanlar burada belirir.',
+    doorHotelTitle: 'Tatil mekânın',
+    doorHotelMeta: '2 oda · Otele Gidecekler, Oteldeyim',
+    doorEventTitle: 'Bir etkinlik',
+    doorEventMeta: '2 oda · Etkinliğe Gidecekler, Etkinlikteyim',
+    doorNearbyTitle: 'Çevren',
+    doorNearbyMeta: '1 oda · Şu an aynı yerde olanlar',
     howItWorks: 'Nasıl çalışır?',
     howItWorksBody:
-      'İki oda var. Tatilden Önce, konaklama tarihlerini beyan ettiğinde açılır; Oteldeyim ise oteldeyken yapılan tek seferlik bir konum kontrolüyle. Odadaki kişiler burada, Keşfet\'te görünür.',
+      'Beş oda var. Tatil mekânında iki tane: tarihlerini beyan edersen Otele Gidecekler, mekândayken yapılan tek seferlik konum kontrolüyle Oteldeyim. Etkinlikte de iki tane: gideceğini söylersen Etkinliğe Gidecekler, etkinlik alanındayken Etkinlikteyim. Beşincisi Çevrende: check-in yaptığın yerde şu an bulunanlar. Hangi odadaysan oradaki kişiler burada, Keşfet\'te görünür.',
     /** D-057: tek destenin üstündeki paylaşılan bağlam seçici. */
     contextTitle: 'Hangi odayı keşfediyorsun?',
     contextHint: 'Açık odalarının listesini açar',

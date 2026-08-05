@@ -19,7 +19,7 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Rect } from 'react-native-svg';
 
-import { Body, Button, Loading, Notice, Screen, ScreenHeader, SkeletonCard } from '../components/ui';
+import { Button, Loading, Notice, Screen, ScreenHeader, SkeletonCard } from '../components/ui';
 import { ProfileRing } from '../components/ProfileRing';
 import { RadarEmpty } from '../components/RadarEmpty';
 import { ContextSelector, CONTEXT_ORDER, type ContextRow } from '../components/ContextSelector';
@@ -32,7 +32,7 @@ import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { color, elevation, font, fontFamily, gradient, overlay, radius, spacing, tokens } from '../theme';
 import { earliestRoomExpiry } from '../state/roomSchedule';
 import { usePhotoUrls } from '../state/usePhotoUrls';
-import { PinScene } from '../components/RoomIllustrations';
+import { RadarScene } from '../components/RoomIllustrations';
 import { useAppStore } from '../state/AppStore';
 
 /** The owner's own 3D door render (2026-07-28), bundled — not a redrawing. */
@@ -72,6 +72,39 @@ const DoorIcon = () => (
     <Path d="M6 21V9a6 6 0 0 1 12 0v12" />
     <Path d="M9 21V10a3 3 0 0 1 6 0v11" />
     <Path d="M13.6 15.2h.01" />
+  </Svg>
+);
+
+/** The three doors into the deck, in the product's own line (2026-08-05). */
+const doorStroke = {
+  width: 20,
+  height: 20,
+  viewBox: '0 0 24 24',
+  fill: 'none' as const,
+  stroke: color.accent,
+  strokeWidth: 2,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+};
+
+const SuitcaseIcon = () => (
+  <Svg {...doorStroke}>
+    <Rect x={3} y={7} width={18} height={13} rx={2} />
+    <Path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18" />
+  </Svg>
+);
+
+const TicketIcon = () => (
+  <Svg {...doorStroke}>
+    <Path d="M4 8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z" />
+    <Path d="M12 8v1m0 3v1m0 3v1" />
+  </Svg>
+);
+
+const PinDoorIcon = () => (
+  <Svg {...doorStroke}>
+    <Path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+    <Path d="M12 10h.01" />
   </Svg>
 );
 
@@ -533,26 +566,70 @@ export function DiscoveryScreen() {
     return (
       <Screen safeTop testID="screen-discovery">
         <ScreenHeader title={COPY.tabs.discovery} ringTestID="discovery-profile-ring" />
-        <Body>{`${COPY.roomReason.NO_ACTIVE_HOTEL} ${COPY.trust.oneHotel}`}</Body>
-        {/* The empty state: the pin, the claim, the one-hotel pill, and both
-            actions. D-058 replaced the raster here — it was cropped from the
-            D-044 night mock, so it stayed navy after the card went white. The
-            drawn pin carries the same idea in the light tokens. */}
-        <View style={styles.noHotelCard}>
-          <PinScene size={120} />
-          <Text accessibilityRole="header" style={styles.noHotelTitle}>
-            {COPY.discovery.noHotelTitle}
-          </Text>
-          <Text style={styles.noHotelBody}>{COPY.discovery.noHotelBody}</Text>
-          <View style={styles.oneHotelPill}>
-            <Text style={styles.oneHotelPillText}>{COPY.trust.oneHotel}</Text>
+        {/*
+          Three doors, not one demand (owner, 2026-08-05). The old state said
+          "choose a hotel first", which is not even true: the deck also opens
+          from an event and from a check-in, five rooms between them. Each door
+          says what it opens and how many rooms that is, and the radar above
+          them moves, because the promise of this screen is that somebody may
+          appear at any moment.
+        */}
+        <View style={styles.doors}>
+          <RadarScene size={132} />
+          <View style={styles.emptyWords}>
+            <Text accessibilityRole="header" style={styles.noHotelTitle}>
+              {COPY.discovery.doorsTitle}
+            </Text>
+            <Text style={styles.noHotelBody}>{COPY.discovery.doorsBody}</Text>
           </View>
+
+          <View style={styles.doorList}>
+            {[
+              {
+                key: 'hotel',
+                title: COPY.discovery.doorHotelTitle,
+                meta: COPY.discovery.doorHotelMeta,
+                icon: <SuitcaseIcon />,
+                onPress: () => navigation.navigate('ChooseHotel'),
+                testID: 'discovery-choose-hotel',
+              },
+              {
+                key: 'event',
+                title: COPY.discovery.doorEventTitle,
+                meta: COPY.discovery.doorEventMeta,
+                icon: <TicketIcon />,
+                onPress: () => tabNavigation.navigate('Events'),
+                testID: 'discovery-go-events',
+              },
+              {
+                key: 'nearby',
+                title: COPY.discovery.doorNearbyTitle,
+                meta: COPY.discovery.doorNearbyMeta,
+                icon: <PinDoorIcon />,
+                onPress: () => tabNavigation.navigate('Nearby'),
+                testID: 'discovery-go-nearby',
+              },
+            ].map((door) => (
+              <Pressable
+                key={door.key}
+                accessibilityRole="button"
+                accessibilityLabel={`${door.title}. ${door.meta}`}
+                onPress={door.onPress}
+                style={({ pressed }) => [styles.doorRow, pressed && styles.doorRowPressed]}
+                testID={door.testID}
+              >
+                <View style={styles.doorDisc}>{door.icon}</View>
+                <View style={styles.doorWords}>
+                  <Text style={styles.doorTitle}>{door.title}</Text>
+                  <Text style={styles.doorMeta}>{door.meta}</Text>
+                </View>
+                <Text style={styles.doorChevron}>›</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.oneHotelPillText}>{COPY.trust.oneHotel}</Text>
         </View>
-        <Button
-          label={COPY.hotel.chooseCta}
-          onPress={() => navigation.navigate('ChooseHotel')}
-          testID="discovery-choose-hotel"
-        />
         <Button
           label={COPY.discovery.howItWorks}
           variant="secondary"
@@ -1011,6 +1088,34 @@ const styles = StyleSheet.create({
   quietAction: { minHeight: 44, justifyContent: 'center' },
   quietActionText: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.ink },
   quietDivider: { width: 1, height: 16, backgroundColor: color.rule },
+  /** The three-door state: the radar, the claim, the doors, the promise. */
+  doors: { alignItems: 'center', gap: spacing.md, paddingTop: spacing.sm },
+  doorList: { alignSelf: 'stretch', gap: 10 },
+  doorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: color.surface,
+    borderWidth: 1,
+    borderColor: color.rule,
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    ...elevation.card,
+  },
+  doorRowPressed: { backgroundColor: color.accentWash, borderColor: color.accent },
+  doorDisc: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: color.accentWash,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doorWords: { flex: 1, gap: 3 },
+  doorTitle: { fontFamily: fontFamily.bodySemi, fontSize: 15, color: color.ink },
+  doorMeta: { fontFamily: fontFamily.body, fontSize: 12, lineHeight: 16, color: color.inkMuted },
+  doorChevron: { fontFamily: fontFamily.bodySemi, fontSize: 18, color: color.inkMuted },
   noHotelCard: {
     backgroundColor: color.surface,
     borderRadius: radius.lg,
@@ -1041,6 +1146,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bodyMedium,
     fontSize: font.caption,
     color: color.inkMuted,
+    textAlign: 'center',
   },
   howBody: {
     fontFamily: fontFamily.body,

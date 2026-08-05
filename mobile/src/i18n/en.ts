@@ -596,9 +596,18 @@ export const en = {
     /** Discovery before any door is open — the orbit screen's words. */
     noHotelTitle: 'Choose a hotel to discover',
     noHotelBody: 'Once you choose a hotel, the rooms and people open to you will show up here.',
+    /** Owner, 2026-08-05: three doors open Discovery, not one. */
+    doorsTitle: 'Discovery shows the room you are in',
+    doorsBody: 'There are five rooms; opening one is enough. The people you came for show up here.',
+    doorHotelTitle: 'Your vacation place',
+    doorHotelMeta: '2 rooms · Going to the Hotel, At the Hotel',
+    doorEventTitle: 'An event',
+    doorEventMeta: '2 rooms · Going to the Event, At the Event',
+    doorNearbyTitle: 'Around you',
+    doorNearbyMeta: '1 room · People in the same place right now',
     howItWorks: 'How does it work?',
     howItWorksBody:
-      'There are two rooms. Before the Trip opens when you declare your stay dates; At the Hotel opens with a one-time location check made at the hotel. The people in a room appear here, in Discovery.',
+      'There are five rooms. Two at your vacation place: Going to the Hotel opens when you declare your dates, At the Hotel with a one-time location check made there. Two at an event, the same way. The fifth is Around You: whoever is at the place you checked into right now. Whichever room you are in, its people appear here, in Discovery.',
     /** D-057: the shared context selector over the one deck. */
     contextTitle: 'Which room are you exploring?',
     contextHint: 'Opens the list of your open rooms',

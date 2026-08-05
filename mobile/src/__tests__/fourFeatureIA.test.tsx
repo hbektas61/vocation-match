@@ -277,6 +277,32 @@ describe('D-057 Etkinlikler (§9)', () => {
   });
 });
 
+describe('the way into the deck (owner, 2026-08-05)', () => {
+  it('offers all three doors rather than demanding a hotel', async () => {
+    // The screen used to say "choose a hotel first", which is not even true:
+    // an event and a check-in each open the deck too, five rooms between the
+    // three. A door that is hidden is a feature nobody finds.
+    await onboard('Deniz');
+    await press(await screen.findByTestId('tab-Discovery'));
+
+    expect(await screen.findByTestId('discovery-choose-hotel')).toBeTruthy();
+    expect(await screen.findByTestId('discovery-go-events')).toBeTruthy();
+    expect(await screen.findByTestId('discovery-go-nearby')).toBeTruthy();
+  });
+
+  it('sends each door to the tab that actually opens that room', async () => {
+    await onboard('Deniz');
+    await press(await screen.findByTestId('tab-Discovery'));
+
+    await press(screen.getByTestId('discovery-go-events'));
+    expect(await screen.findByTestId('screen-events')).toBeTruthy();
+
+    await press(await screen.findByTestId('tab-Discovery'));
+    await press(await screen.findByTestId('discovery-go-nearby'));
+    expect(await screen.findByTestId('screen-checkin')).toBeTruthy();
+  });
+});
+
 describe('D-057 Tatilim (§7)', () => {
   it('shows both features, both shut, before a place is chosen (T-01)', async () => {
     // A fresh account with no active venue: the tab's whole job here is to

@@ -9,7 +9,8 @@
  * steps for what were alpha-blended pink tints on the old night ground — the
  * same recolour `HotelIllustrations.tsx` and `NoHotelIllustrations.tsx` use.
  */
-import React from 'react';
+import React, { useEffect } from 'react';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Ellipse, Path, Rect } from 'react-native-svg';
 
 import { color } from '../theme';
@@ -64,6 +65,123 @@ export function ShieldLock({ size = 64 }: { size?: number }) {
     </Svg>
   );
 }
+
+/**
+ * Keşfet's own mark, and the one drawing in the app that moves.
+ *
+ * A radar: three coral rings leaving the centre in turn, with the pin riding
+ * a slow float above them. It replaces a static illustration on the screen
+ * whose whole promise is that somebody may appear at any moment (owner,
+ * 2026-08-05) — a still picture said the opposite.
+ *
+ * Motion is transform and opacity only, so it runs on the native driver and
+ * costs the JS thread nothing; like every other decorative loop in the app it
+ * sits the test runner out, where it would be timer churn and nothing else.
+ */
+export function RadarScene({ size = 132 }: { size?: number }) {
+  const waves = [
+    React.useRef(new Animated.Value(0)).current,
+    React.useRef(new Animated.Value(0)).current,
+    React.useRef(new Animated.Value(0)).current,
+  ];
+  const float = React.useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'test') return;
+    const loops = waves.map((wave, index) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(index * 800),
+          Animated.timing(wave, {
+            toValue: 1,
+            duration: 2400,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(wave, { toValue: 0, duration: 0, useNativeDriver: true }),
+        ]),
+      ),
+    );
+    const drift = Animated.loop(
+      Animated.sequence([
+        Animated.timing(float, {
+          toValue: 1,
+          duration: 1600,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(float, {
+          toValue: 0,
+          duration: 1600,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loops.forEach((loop) => loop.start());
+    drift.start();
+    return () => {
+      loops.forEach((loop) => loop.stop());
+      drift.stop();
+    };
+    // The animated values are refs; the effect is a mount/unmount lifecycle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const ring = size * 0.9;
+  return (
+    <View
+      style={[styles.radar, { width: size, height: size }]}
+      accessibilityElementsHidden
+      importantForAccessibility="no"
+      pointerEvents="none"
+      testID="radar-scene"
+    >
+      {waves.map((wave, index) => (
+        <Animated.View
+          key={index}
+          style={[
+            styles.wave,
+            {
+              width: ring,
+              height: ring,
+              borderRadius: ring / 2,
+              opacity: wave.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 0.55, 0] }),
+              transform: [
+                { scale: wave.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }) },
+              ],
+            },
+          ]}
+        />
+      ))}
+      <Animated.View
+        style={{
+          transform: [
+            { translateY: float.interpolate({ inputRange: [0, 1], outputRange: [3, -5] }) },
+          ],
+        }}
+      >
+        <Svg width={size * 0.44} height={size * 0.44} viewBox="0 0 48 48" fill="none">
+          <Path
+            d="M24 4c-8 0-14.5 6.3-14.5 14.1C9.5 28.6 24 44 24 44s14.5-15.4 14.5-25.9C38.5 10.3 32 4 24 4z"
+            fill={DEEP}
+          />
+          <Circle cx={24} cy={18} r={5.6} fill={WHITE} />
+        </Svg>
+      </Animated.View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  radar: { alignItems: 'center', justifyContent: 'center' },
+  wave: {
+    position: 'absolute',
+    borderWidth: 2,
+    borderColor: MID,
+    backgroundColor: FAINT,
+  },
+});
 
 /** A pin dropped between the palm and the town: near, and only near. */
 export function PinScene({ size = 96 }: { size?: number }) {
