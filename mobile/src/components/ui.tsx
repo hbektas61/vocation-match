@@ -1302,10 +1302,10 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: color.border,
   },
+  /** Filled, like every other loud button now (owner, 2026-08-05): the
+      destructive confirm speaks in the same voice as the primary, in red. */
   buttonDanger: {
-    backgroundColor: color.surface,
-    borderWidth: 1.5,
-    borderColor: color.danger,
+    backgroundColor: color.danger,
   },
   /**
    * A real state rather than a fade: the fill goes flat and neutral and the
@@ -1329,7 +1329,7 @@ const styles = StyleSheet.create({
   buttonLabelCompact: { fontSize: font.caption + 1, letterSpacing: 0 },
   buttonLabelOnColor: { color: color.onAccent },
   buttonLabelSecondary: { color: color.ink },
-  buttonLabelDanger: { color: color.danger },
+  buttonLabelDanger: { color: color.onInverse },
 
   action: {
     width: ACTION_TOUCH,
