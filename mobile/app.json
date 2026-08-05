@@ -53,9 +53,9 @@
       "@react-native-community/datetimepicker"
     ],
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/brand-mark.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FDE4D7"
+      "backgroundColor": "#FFFFFF"
     }
   }
 }

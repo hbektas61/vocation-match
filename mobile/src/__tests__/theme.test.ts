@@ -33,8 +33,13 @@ function contrast(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-/** The two grounds every light surface is measured against. */
-const GROUND = '#FAFAF7';
+/**
+ * The ground every light surface is measured against. It became white on
+ * 2026-08-05 (owner: "coral and white are our main colours"), so ground and
+ * surface are now the same value — which is why the card test below stopped
+ * asking them to differ and started asking for an edge and a lift instead.
+ */
+const GROUND = '#FFFFFF';
 const SURFACE = '#FFFFFF';
 
 describe('the D-058 palette', () => {
@@ -46,7 +51,7 @@ describe('the D-058 palette', () => {
     // hold the *current* palette, not the original brief's.
     // one value that had to move is `text.secondary`, and it moved by being
     // kept as `text.tertiary` rather than by being changed — see below.
-    expect(tokens.background.primary).toBe('#FAFAF7');
+    expect(tokens.background.primary).toBe('#FFFFFF');
     expect(tokens.surface.primary).toBe('#FFFFFF');
     expect(tokens.text.primary).toBe('#101A3A');
     expect(tokens.text.tertiary).toBe('#7C8194');
@@ -78,14 +83,23 @@ describe('the D-058 palette', () => {
     }
   });
 
-  it('puts the warm cream under everything and white on top of it', () => {
-    expect(color.background).toBe('#FAFAF7');
+  it('puts white under everything, and tells a card from it by edge and lift', () => {
+    expect(color.background).toBe('#FFFFFF');
     expect(color.surface).toBe('#FFFFFF');
-    // A white card only reads as lifted off a cream ground if it is actually a
-    // different value and it is actually lifted.
-    expect(color.surface).not.toBe(color.background);
+    // With the ground and the card the same white, the two things that say
+    // "this is a card" are the only two left — so both have to be real.
     expect(elevation.card.elevation).toBeGreaterThan(0);
     expect(elevation.card.shadowOpacity).toBeGreaterThan(0);
+    expect(color.rule).not.toBe(color.surface);
+    // And the edge has to be visible on it, not merely different.
+    expect(contrast(color.rule, SURFACE)).toBeGreaterThan(1.1);
+  });
+
+  it('keeps a warm off-white for the one job pure white does badly', () => {
+    // On the navy ribbon, pure white glares; the retired ground is exactly
+    // the right value there, so it stayed in the palette under its own name.
+    expect(palette.paper).toBe('#FAFAF7');
+    expect(tokens.text.onInverse).toBe('#FAFAF7');
   });
 
   it('keeps the card radius inside the 18–22 the brief asked for', () => {

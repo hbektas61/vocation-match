@@ -21,11 +21,17 @@ import { Platform } from 'react-native';
  * these, so a hue can move without touching a screen.
  */
 export const palette = {
-  /** The ground: warm cream, not white, so white cards lift off it. */
-  cream: '#FAFAF7',
-  /** Cards, sheets, the bottom bar. */
+  /**
+   * The ground, and everything on it (owner, 2026-08-05): coral and white are
+   * the brand, so the page is white and a card is told apart by its edge and
+   * its lift rather than by being a different white. The warm cream this
+   * replaces is kept below as `paper`, which is still the right value for the
+   * one place a *warm* off-white is wanted — text on the navy ribbon.
+   */
   white: '#FFFFFF',
-  /** The wash under an input on cream, and the sunken step inside a card. */
+  /** Warm off-white. Reads on navy without the glare of pure white. */
+  paper: '#FAFAF7',
+  /** A sunken step inside a card, and the well under a thumbnail. */
   creamSunken: '#FBF2EC',
 
   /**
@@ -95,7 +101,7 @@ export const palette = {
 export const tokens = {
   background: {
     /** Every screen's ground. */
-    primary: palette.cream,
+    primary: palette.white,
     /** A screen that is deliberately a white sheet (a modal, the chat). */
     elevated: palette.white,
     /** A recessed strip inside a light surface. */
@@ -121,7 +127,7 @@ export const tokens = {
     // reference apps' voice. Measured ~2.9:1 — under AA for body text, which
     // is why button labels on coral stay 15pt semibold and nothing smaller.
     /** On the navy ribbon and the deep surfaces. 15.7:1. */
-    onInverse: palette.cream,
+    onInverse: palette.paper,
     /** Over a photograph, on top of `overlay.photo`. */
     onPhoto: palette.white,
     /** A coral word on a light surface. */
