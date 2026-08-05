@@ -154,6 +154,7 @@ export const en = {
     retry: 'Try again',
     back: 'Back',
     cancel: 'Cancel',
+    close: 'Close',
   },
 
   phoneAuth: {
@@ -376,7 +377,7 @@ export const en = {
     hereNowNotStarted: 'The live room opens two hours before the event.',
     hereNowFinished: 'This event is over.',
     hereNowInaccurate: 'Your location is not precise enough. Step outside and try again.',
-    hereNowTooFar: 'That check could not find you at the event. Try again when you are there.',
+    hereNowTooFar: 'You are not at the event right now. Try again once you get there.',
     hereNowOpen: 'You are in. The live room is open.',
     /** §10.2: after the lease ends there is nothing of theirs left to draw. */
     pastEvent: 'Past event',
@@ -944,7 +945,8 @@ export const en = {
     destinationRequired: 'Choose where you are going first.',
     findAllowanceSpent:
       'You have used this month’s searched place finds. You can still check in from the list around you or from where you are.',
-    selectionStale: 'That list is no longer fresh. Look around again and pick once more.',
+    selectionStale: 'That selection is no longer fresh. Go back to the list and pick again.',
+    providerUnavailable: 'The event provider cannot be reached right now. Try again shortly.',
     network: 'No connection. Try again.',
     suspended: 'Your account is suspended. You can still block, report, and read your conversations.',
     unknown: 'Something went wrong. Try again.',

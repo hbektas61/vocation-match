@@ -1309,6 +1309,15 @@ export class SupabaseApi implements VocationApi {
       if (code === 'PP001') {
         throw new ApiError('PREMIUM_REQUIRED', 'That is not available on your account.');
       }
+      // Owner, 2026-08-05: every refusal on this path used to arrive as
+      // "something went wrong", which tells somebody standing outside a venue
+      // nothing about what to do. The server does distinguish them.
+      if (code === 'selection_required') {
+        throw new ApiError('SELECTION_STALE', 'That event selection is no longer valid.');
+      }
+      if (code === 'provider_unavailable' || code === 'check_failed') {
+        throw new ApiError('PROVIDER_UNAVAILABLE', 'The event provider could not be reached.');
+      }
       throw new ApiError('UNKNOWN', 'Could not check where you are.');
     }
     return {

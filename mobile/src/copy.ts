@@ -100,6 +100,8 @@ export function apiErrorMessage(code: ApiErrorCode): string {
       return COPY.errors.findAllowanceSpent;
     case 'SELECTION_STALE':
       return COPY.errors.selectionStale;
+    case 'PROVIDER_UNAVAILABLE':
+      return COPY.errors.providerUnavailable;
     case 'DESTINATION_REQUIRED':
       return COPY.errors.destinationRequired;
     case 'NETWORK':

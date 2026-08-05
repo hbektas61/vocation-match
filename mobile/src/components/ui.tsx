@@ -1040,6 +1040,59 @@ export function Loading({
   );
 }
 
+/**
+ * A sentence that arrives, is read, and leaves by itself (owner, 2026-08-05).
+ *
+ * For an answer somebody asked for and acted on — "you are not at the event
+ * yet" — where a standing banner would sit on the screen long after it stopped
+ * being news. It closes itself, and a press closes it sooner; it never carries
+ * an action, because a message you cannot keep is the wrong place for one.
+ *
+ * It is announced to a screen reader like any other alert, and the dismissal
+ * timer is deliberately generous enough to read two lines.
+ */
+export function Toast({
+  message,
+  tone = 'info',
+  visible,
+  onClose,
+  testID,
+}: {
+  message: string;
+  tone?: 'info' | 'error' | 'success';
+  visible: boolean;
+  onClose: () => void;
+  testID?: string;
+}) {
+  useEffect(() => {
+    if (!visible) return;
+    if (message) AccessibilityInfo.announceForAccessibility(message);
+    const timer = setTimeout(onClose, 2400);
+    return () => clearTimeout(timer);
+  }, [visible, message, onClose]);
+
+  return (
+    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+      <Pressable
+        style={styles.toastScrim}
+        onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel={COPY.common.close}
+      >
+        <View
+          style={styles.toastCard}
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+          testID={testID}
+        >
+          <NoticeMark tone={tone} />
+          <Text style={styles.toastText}>{message}</Text>
+        </View>
+      </Pressable>
+    </Modal>
+  );
+}
+
 export function ConfirmDialog({
   visible,
   title,
@@ -1238,6 +1291,32 @@ const styles = StyleSheet.create({
   /** The shared waiting state: centred, with air around it. */
   loading: { alignItems: 'center', paddingVertical: spacing.lg },
   /** The dimmed ground under a blocking question. */
+  /** The toast: a card in the middle of a dimmed screen, and nothing else. */
+  toastScrim: {
+    flex: 1,
+    backgroundColor: overlay.photo,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  toastCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    maxWidth: 340,
+    borderRadius: 18,
+    backgroundColor: color.surface,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    ...elevation.raised,
+  },
+  toastText: {
+    flex: 1,
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: font.body,
+    lineHeight: font.body * 1.45,
+    color: color.ink,
+  },
   dialogScrim: {
     flex: 1,
     backgroundColor: overlay.photo,

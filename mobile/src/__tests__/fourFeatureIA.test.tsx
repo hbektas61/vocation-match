@@ -343,9 +343,22 @@ describe('D-057 event detail (§9.3)', () => {
     expect(await screen.findByText(COPY.events.joinExplainer)).toBeTruthy();
   });
 
+  it('lands in the deck the declaration just opened (owner, 2026-08-05)', async () => {
+    await openFirstEvent();
+    await press(await screen.findByTestId('event-join-upcoming'));
+
+    // Declaring and then being left on the same screen made the deed look
+    // like it had not landed. The deck opens focused on this event's room.
+    expect(await screen.findByTestId('screen-discovery')).toBeTruthy();
+  });
+
   it('asks before withdrawing, and keeps the membership until confirmed (E-24)', async () => {
     await openFirstEvent();
     await press(await screen.findByTestId('event-join-upcoming'));
+    // The withdraw door lives where the membership does: Etkinliklerin.
+    await press(await screen.findByTestId('tab-Events'));
+    const mine = await screen.findByTestId('events-mine');
+    await press(mine.findByProps({ accessibilityRole: 'button' }));
     expect(await screen.findByTestId('event-withdraw')).toBeTruthy();
 
     // First press opens the question rather than doing the thing.

@@ -16,7 +16,7 @@
 import React, { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Button, Caption, Notice, PhotoScrim, Screen } from '../components/ui';
+import { Button, Caption, ConfirmDialog, PhotoScrim, Screen, Toast } from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
 import {
   ApiError,
@@ -162,6 +162,15 @@ export function EventDetailScreen({
     try {
       const mine = await getApi().joinEventUpcoming(token);
       setJoined(mine);
+      // Straight into the room it just opened (owner, 2026-08-05): declaring
+      // you are going and then being left on the same screen made the deed
+      // look like it had not landed. The focus is set first, so the deck
+      // arrives already showing this event rather than the venue's room.
+      await getApi().setEventFocus(mine.eventId, 'EVENT_UPCOMING').catch(() => undefined);
+      navigation.navigate('Tabs', {
+        screen: 'Discovery',
+        params: { source: 'EVENT_UPCOMING' as const },
+      });
     } catch (error) {
       setProblem(error instanceof ApiError ? apiErrorMessage(error.code) : COPY.errors.unknown);
     } finally {
@@ -300,33 +309,7 @@ export function EventDetailScreen({
       )}
 
       {joined ? (
-        withdrawing ? (
-          /* ED-04 (E-24): withdrawing shuts a room you are in, so it is a
-             question card, not a first-press action. It deletes nothing either
-             way — the matches and the conversations are as much theirs as
-             anybody's — but leaving a room is a thing to mean, not to graze. */
-          <View style={styles.confirmCard}>
-            <Text style={styles.confirmTitle}>{COPY.events.withdrawConfirm}</Text>
-            <Text style={styles.confirmBody}>{COPY.events.withdrawBody}</Text>
-            <Button
-              label={COPY.events.withdrawYes}
-              variant="danger"
-              disabled={busy}
-              onPress={async () => {
-                await getApi().withdrawFromEvent(joined.eventId);
-                setWithdrawing(false);
-                setJoined(null);
-              }}
-              testID="event-withdraw-confirm"
-            />
-            <Button
-              label={COPY.common.cancel}
-              variant="secondary"
-              onPress={() => setWithdrawing(false)}
-              testID="event-withdraw-cancel"
-            />
-          </View>
-        ) : (
+        (
           /* ED-03: the goers room, open. */
           <View style={styles.roomCard}>
             <View style={styles.roomHead}>
@@ -381,7 +364,7 @@ export function EventDetailScreen({
         </>
       ) : null}
 
-      {joined && !withdrawing ? (
+      {joined ? (
         /* ED-03: the live room — the card says what it is, the control says
            what pressing it does, and the green line says what is true now. */
         <View style={styles.roomCard}>
@@ -417,20 +400,52 @@ export function EventDetailScreen({
         </View>
       ) : null}
 
-      {outcome ? (
-        <Notice
-          message={outcomeMessage(outcome)}
-          tone={outcome === 'IN_RANGE' ? 'success' : 'error'}
-          testID={`event-outcome-${outcome}`}
-        />
-      ) : null}
-      {problem ? <Notice message={problem} tone="error" testID="event-problem" /> : null}
-
       {/* D-007, in the event room's own words: proximity is not a ticket. */}
       <Caption>{COPY.events.noTicketClaim}</Caption>
       {showHero ? null : (
         <Caption testID="event-attribution">{COPY.events.attribution}</Caption>
       )}
+
+      {/* The check's answer arrives, is read, and leaves (owner, 2026-08-05).
+          It was a banner that stayed on the page long after it had stopped
+          being news — and "TOO_FAR" is news for about two seconds. */}
+      <Toast
+        visible={outcome !== null}
+        message={outcome ? outcomeMessage(outcome) : ''}
+        tone={outcome === 'IN_RANGE' ? 'success' : 'error'}
+        onClose={() => setOutcome(null)}
+        testID={outcome ? `event-outcome-${outcome}` : 'event-outcome'}
+      />
+      <Toast
+        visible={problem !== null}
+        message={problem ?? ''}
+        tone="error"
+        onClose={() => setProblem(null)}
+        testID="event-problem"
+      />
+
+      {/* E-24: withdrawing shuts a room you are in, so it is a question —
+          asked in the same popup every other destructive question uses
+          (owner, 2026-08-05). It deletes nothing either way: the matches and
+          the conversations are as much theirs as anybody's. */}
+      <ConfirmDialog
+        visible={withdrawing}
+        title={COPY.events.withdrawConfirm}
+        body={COPY.events.withdrawBody}
+        confirmLabel={COPY.events.withdrawYes}
+        cancelLabel={COPY.common.cancel}
+        busy={busy}
+        onConfirm={async () => {
+          if (!joined) return;
+          await getApi().withdrawFromEvent(joined.eventId);
+          setWithdrawing(false);
+          setJoined(null);
+        }}
+        onCancel={() => setWithdrawing(false)}
+        testID="event-withdraw-dialog"
+        confirmTestID="event-withdraw-confirm"
+        cancelTestID="event-withdraw-cancel"
+      />
     </Screen>
   );
 }

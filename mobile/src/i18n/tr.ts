@@ -159,6 +159,7 @@ export const tr: Copy = {
     retry: 'Tekrar dene',
     back: 'Geri',
     cancel: 'Vazgeç',
+    close: 'Kapat',
   },
 
   phoneAuth: {
@@ -357,7 +358,7 @@ export const tr: Copy = {
     hereNowNotStarted: 'Canlı oda, etkinlikten iki saat önce açılır.',
     hereNowFinished: 'Bu etkinlik sona erdi.',
     hereNowInaccurate: 'Konum yeterince hassas değil. Açık alanda tekrar dene.',
-    hereNowTooFar: 'Bu kontrol seni etkinlikte bulamadı. Oradayken tekrar dene.',
+    hereNowTooFar: 'Şu an etkinlik alanında değilsin. Oraya vardığında tekrar dene.',
     hereNowOpen: 'Girdin. Canlı oda açık.',
     pastEvent: 'Geçmiş etkinlik',
     noTicketClaim: 'Konum kontrolü bilet değildir ve kimseden bilet istenmez.',
@@ -854,7 +855,8 @@ export const tr: Copy = {
     destinationRequired: 'Önce nereye gittiğini seç.',
     findAllowanceSpent:
       'Bu ayki aramayla mekân bulma hakkın doldu. Çevrendeki listeden ya da bulunduğun yerden yine check-in yapabilirsin.',
-    selectionStale: 'Bu liste tazeliğini yitirdi. Çevrene yeniden bak ve tekrar seç.',
+    selectionStale: 'Bu seçim tazeliğini yitirdi. Listeye dönüp yeniden seç.',
+    providerUnavailable: 'Etkinlik sağlayıcısına şu an ulaşılamıyor. Birazdan tekrar dene.',
     network: 'Bağlantı yok. Tekrar dene.',
     suspended: 'Hesabın askıya alındı. Engelleme, bildirme ve konuşmalarını okuma yine açık.',
     unknown: 'Bir şeyler ters gitti. Tekrar dene.',

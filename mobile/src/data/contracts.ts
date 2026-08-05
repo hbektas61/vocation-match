@@ -40,6 +40,8 @@ export type ApiErrorCode =
    * repair is another look around, not another tap on the same row.
    */
   | 'SELECTION_STALE'
+  /** The third party behind the answer could not be reached just now. */
+  | 'PROVIDER_UNAVAILABLE'
   /**
    * The venue search has no destination behind it any more — the session
    * lapsed (D-054). Its own code because the repair is a step back, not a
