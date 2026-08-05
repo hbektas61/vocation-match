@@ -21,6 +21,7 @@ import Svg, { Path, Rect } from 'react-native-svg';
 
 import { Button, Loading, Notice, Screen, ScreenHeader, SkeletonCard } from '../components/ui';
 import { ProfileRing } from '../components/ProfileRing';
+import { useToast } from '../components/ToastHost';
 import { RadarEmpty } from '../components/RadarEmpty';
 import { ContextSelector, CONTEXT_ORDER, type ContextRow } from '../components/ContextSelector';
 import { nowMs } from '../clock';
@@ -192,7 +193,8 @@ export function DiscoveryScreen() {
   /** The no-hotel screen's "how does it work?" reveal. */
   const [howOpen, setHowOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+  /** A swipe's refusal is news about that swipe, so it goes to the host. */
+  const toast = useToast();
   /** Which of the candidate's photos is showing; reset per candidate. */
   const [photoIndex, setPhotoIndex] = useState(0);
 
@@ -716,7 +718,6 @@ export function DiscoveryScreen() {
     if (!candidate || busy) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
     setBusy(true);
-    setActionError(null);
     try {
       const result = await getApi().swipe(candidate.userId, room, direction);
       if (result.matched && result.matchId) {
@@ -739,7 +740,10 @@ export function DiscoveryScreen() {
       }
       setDeck((prev) => (prev ?? []).filter((c) => c.userId !== candidate.userId));
     } catch (err) {
-      setActionError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
+      toast.error(
+        err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown,
+        'discovery-action-error',
+      );
     } finally {
       setBusy(false);
     }
@@ -765,9 +769,6 @@ export function DiscoveryScreen() {
       )}
 
       {deckError ? <Notice message={deckError} tone="error" testID="discovery-error" /> : null}
-      {actionError ? (
-        <Notice message={actionError} tone="error" testID="discovery-action-error" />
-      ) : null}
 
       {deck === null ? (
         <SkeletonCard fill testID="deck-loading" />

@@ -14,6 +14,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 
 import { nowMs } from '../clock';
 import { Body, Button, Loading, Notice, Screen, SkeletonRows } from '../components/ui';
+import { useToast } from '../components/ToastHost';
 import { apiErrorMessage, COPY, upperCase, roomPlate } from '../copy';
 import { ApiError, getApi, type ChatMessage } from '../data';
 import type { RootScreenProps } from '../navigation/types';
@@ -91,7 +92,8 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   const draftToken = useRef<string>(newToken());
   /** Unmatching asks first, the way blocking and leaving an event room do. */
   const [unmatching, setUnmatching] = useState(false);
-  const [sendError, setSendError] = useState<string | null>(null);
+  /** A send's refusal is news about that send, not page content. */
+  const toast = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   // True once a server lookup for a not-yet-cached match has finished,
   // whichever way it went — gates the "no longer available" fallback.
@@ -259,7 +261,6 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
     if (!text || sending || sendingRef.current || closed) return;
     sendingRef.current = true;
     setSending(true);
-    setSendError(null);
     try {
       await getApi().sendMessage(matchId, text, draftToken.current);
       setDraft('');
@@ -276,7 +277,10 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
       if (err instanceof ApiError && (err.code === 'NOT_FOUND' || err.code === 'FORBIDDEN')) {
         await refreshMatches();
       }
-      setSendError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
+      toast.error(
+        err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown,
+        'chat-send-error',
+      );
     } finally {
       sendingRef.current = false;
       setSending(false);
@@ -293,7 +297,10 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
       if (err instanceof ApiError && err.code === 'NOT_FOUND') {
         await refreshMatches();
       }
-      setSendError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
+      toast.error(
+        err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown,
+        'chat-send-error',
+      );
     }
   };
 
@@ -452,7 +459,6 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
           ))
         )}
         {closed ? <Notice message={COPY.chat.closedNotice} testID="chat-closed" /> : null}
-        {sendError ? <Notice message={sendError} tone="error" testID="chat-send-error" /> : null}
       </ScrollView>
 
       {!closed ? (

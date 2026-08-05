@@ -6,6 +6,7 @@ import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { PrivacyShield } from './src/components/PrivacyShield';
+import { ToastHost } from './src/components/ToastHost';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { AppStoreProvider } from './src/state/AppStore';
 
@@ -42,9 +43,14 @@ function ProductApp() {
   return (
     <SafeAreaProvider>
       <AppStoreProvider>
-        <NavigationContainer>
-          <RootNavigator />
-        </NavigationContainer>
+        {/* One host over the whole app (owner, 2026-08-05): a refusal is said
+            once, in one place, instead of every screen finding somewhere on
+            its own page to put it. */}
+        <ToastHost>
+          <NavigationContainer>
+            <RootNavigator />
+          </NavigationContainer>
+        </ToastHost>
       </AppStoreProvider>
       <StatusBar style="dark" />
       <PrivacyShield />

@@ -25,6 +25,7 @@ import { HotelBuilding } from '../components/HotelIllustrations';
 import { VenuePicker } from '../components/VenuePicker';
 import { VacationFeatureCard } from '../components/VacationFeatureCard';
 import { ProfileRing } from '../components/ProfileRing';
+import { useToast } from '../components/ToastHost';
 import { useAppStore } from '../state/AppStore';
 import { color, elevation, fontFamily, radius, spacing } from '../theme';
 
@@ -161,7 +162,8 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
   >(null);
   const [switchedNotice, setSwitchedNotice] = useState(false);
   const [activating, setActivating] = useState(false);
-  const [activateError, setActivateError] = useState<string | null>(null);
+  /** Activating is an action; its refusal is said by the shared host. */
+  const toast = useToast();
   /** For the state words on the two feature cards. */
   const [roomStates, setRoomStates] = useState<RoomStatus[] | null>(null);
   /** The declared window, shown on the active card (D-040). */
@@ -268,7 +270,6 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
   const activate = async (choice: { selectionToken: string; mode: VenueSearchMode; name: string }) => {
     setPendingSwitch(null);
     setActivating(true);
-    setActivateError(null);
     try {
       const api = getApi();
       const result = await api.activateGoogleVenue(choice.selectionToken, choice.mode);
@@ -317,7 +318,10 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       // As a tab the screen stays (D-040): the next decision — dates or a
       // location check — is made right here, on the feature cards below.
     } catch (err) {
-      setActivateError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
+      toast.error(
+        err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown,
+        'hotel-activate-error',
+      );
     } finally {
       setActivating(false);
     }
@@ -512,7 +516,6 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       )}
 
       {switchedNotice ? <Notice message={COPY.hotel.switchedNotice} testID="hotel-switched" /> : null}
-      {activateError ? <Notice message={activateError} tone="error" testID="hotel-activate-error" /> : null}
 
       {/* The switch question pops like the leave question does (owner,
           2026-08-03): a blocking card over a dimmed screen, not a card the

@@ -16,7 +16,8 @@
 import React, { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Button, Caption, ConfirmDialog, PhotoScrim, Screen, Toast } from '../components/ui';
+import { Button, Caption, ConfirmDialog, PhotoScrim, Screen } from '../components/ui';
+import { useToast } from '../components/ToastHost';
 import { apiErrorMessage, COPY } from '../copy';
 import {
   ApiError,
@@ -127,8 +128,16 @@ export function EventDetailScreen({
   const busy = pending !== null;
   /** E-24: the withdraw confirmation is open. */
   const [withdrawing, setWithdrawing] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
-  const [outcome, setOutcome] = useState<EventPresenceAnswer['outcome'] | null>(null);
+  /** Both the check's answer and any refusal are said by the shared host. */
+  const toast = useToast();
+  /** The one-time check's verdict, in its own sentence and its own tone. */
+  const showOutcome = (outcome: EventPresenceAnswer['outcome']) => {
+    toast.show({
+      message: outcomeMessage(outcome),
+      tone: outcome === 'IN_RANGE' ? 'success' : 'error',
+      testID: `event-outcome-${outcome}`,
+    });
+  };
   /** A leased URL can lapse mid-screen; the fallback is the text layout. */
   const [imageFailed, setImageFailed] = useState(false);
 
@@ -158,7 +167,6 @@ export function EventDetailScreen({
     const token = route.params.selectionToken;
     if (!token) return;
     setPending('join');
-    setProblem(null);
     try {
       const mine = await getApi().joinEventUpcoming(token);
       setJoined(mine);
@@ -172,7 +180,10 @@ export function EventDetailScreen({
         params: { source: 'EVENT_UPCOMING' as const },
       });
     } catch (error) {
-      setProblem(error instanceof ApiError ? apiErrorMessage(error.code) : COPY.errors.unknown);
+      toast.error(
+        error instanceof ApiError ? apiErrorMessage(error.code) : COPY.errors.unknown,
+        'event-problem',
+      );
     } finally {
       setPending(null);
     }
@@ -187,12 +198,10 @@ export function EventDetailScreen({
     const token = route.params.selectionToken;
     if (!token) return;
     setPending('live');
-    setProblem(null);
-    setOutcome(null);
     try {
       const reading = await reader.read();
       if (reading.status !== 'granted') {
-        setProblem(COPY.events.permissionDenied);
+        toast.error(COPY.events.permissionDenied, 'event-problem');
         return;
       }
       const answer = await getApi().verifyEventPresenceFromSelection(
@@ -201,10 +210,13 @@ export function EventDetailScreen({
         reading.longitude,
         reading.accuracyMeters,
       );
-      setOutcome(answer.outcome);
+      showOutcome(answer.outcome);
       // Nothing is joined by this: only a live answer, and only when it worked.
     } catch (error) {
-      setProblem(error instanceof ApiError ? apiErrorMessage(error.code) : COPY.errors.unknown);
+      toast.error(
+        error instanceof ApiError ? apiErrorMessage(error.code) : COPY.errors.unknown,
+        'event-problem',
+      );
     } finally {
       setPending(null);
     }
@@ -213,14 +225,12 @@ export function EventDetailScreen({
   const verify = async () => {
     if (!joined) return;
     setPending('verify');
-    setProblem(null);
-    setOutcome(null);
     try {
       // The reading is taken at the moment of the action, handed to the server
       // once, and never stored on the device or shown to anybody (§9).
       const reading = await reader.read();
       if (reading.status !== 'granted') {
-        setProblem(COPY.events.permissionDenied);
+        toast.error(COPY.events.permissionDenied, 'event-problem');
         return;
       }
       const answer = await getApi().verifyEventPresence(
@@ -229,14 +239,17 @@ export function EventDetailScreen({
         reading.longitude,
         reading.accuracyMeters,
       );
-      setOutcome(answer.outcome);
+      showOutcome(answer.outcome);
       if (answer.withinRange) {
         setJoined(
           (await getApi().getMyEvents()).find((row) => row.eventId === joined.eventId) ?? joined,
         );
       }
     } catch (error) {
-      setProblem(error instanceof ApiError ? apiErrorMessage(error.code) : COPY.errors.unknown);
+      toast.error(
+        error instanceof ApiError ? apiErrorMessage(error.code) : COPY.errors.unknown,
+        'event-problem',
+      );
     } finally {
       setPending(null);
     }
@@ -406,23 +419,6 @@ export function EventDetailScreen({
         <Caption testID="event-attribution">{COPY.events.attribution}</Caption>
       )}
 
-      {/* The check's answer arrives, is read, and leaves (owner, 2026-08-05).
-          It was a banner that stayed on the page long after it had stopped
-          being news — and "TOO_FAR" is news for about two seconds. */}
-      <Toast
-        visible={outcome !== null}
-        message={outcome ? outcomeMessage(outcome) : ''}
-        tone={outcome === 'IN_RANGE' ? 'success' : 'error'}
-        onClose={() => setOutcome(null)}
-        testID={outcome ? `event-outcome-${outcome}` : 'event-outcome'}
-      />
-      <Toast
-        visible={problem !== null}
-        message={problem ?? ''}
-        tone="error"
-        onClose={() => setProblem(null)}
-        testID="event-problem"
-      />
 
       {/* E-24: withdrawing shuts a room you are in, so it is a question —
           asked in the same popup every other destructive question uses

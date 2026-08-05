@@ -24,6 +24,7 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { Caption, EmptyState, Loading, Notice, PhotoScrim, Screen, SkeletonRows } from '../components/ui';
 import { ProfileRing } from '../components/ProfileRing';
+import { useToast } from '../components/ToastHost';
 import { apiErrorMessage, COPY, COPY_FOR, upperCase } from '../copy';
 import {
   ApiError,
@@ -186,7 +187,13 @@ export function CheckinScreen({
    * with the server about somebody's rights.
    */
   const [entitlement, setEntitlement] = useState<CheckinEntitlement | null>(null);
-  const [notice, setNotice] = useState<{ message: string; tone: 'error' | 'info' } | null>(null);
+  /**
+   * Every refusal on this screen is news about an action just taken, so it
+   * goes to the one host over the app (owner, 2026-08-05) rather than to a
+   * banner this page has to find room for. What stays inline here is standing
+   * state — "the live provider is down", "there is nothing around you".
+   */
+  const toast = useToast();
   /**
    * D-052/D-053: what Google has been asked, keyed by the same normalized query
    * the backend fingerprints. Three states per key, and the distinctions matter:
@@ -298,19 +305,18 @@ export function CheckinScreen({
   /** One reading serves both the list and every check-in made from it. */
   const lookAround = async (source: ForegroundLocationReader) => {
     setBusy(true);
-    setNotice(null);
     // Never leave a previous reading armed while a fresh permission/location
     // request is in flight. If consent is denied or the device cannot produce
     // a fix, the old point must not remain usable for a new check-in.
     setReading(null);
     const read = await source.read();
     if (read.status === 'denied') {
-      setNotice({ message: COPY.hereNow.permissionDenied, tone: 'error' });
+      toast.error(COPY.hereNow.permissionDenied, 'checkin-notice');
       setBusy(false);
       return;
     }
     if (read.status === 'unavailable') {
-      setNotice({ message: COPY.hereNow.unavailable, tone: 'error' });
+      toast.error(COPY.hereNow.unavailable, 'checkin-notice');
       setBusy(false);
       return;
     }
@@ -345,10 +351,10 @@ export function CheckinScreen({
       (googleResult.status === 'rejected' || googleResult.value === null)
     ) {
       const error = catalogueResult.reason;
-      setNotice({
-        message: error instanceof ApiError ? apiErrorMessage(error.code) : COPY.errors.unknown,
-        tone: 'error',
-      });
+      toast.error(
+        error instanceof ApiError ? apiErrorMessage(error.code) : COPY.errors.unknown,
+        'checkin-notice',
+      );
     }
     setBusy(false);
   };
@@ -356,11 +362,10 @@ export function CheckinScreen({
   const checkInAt = async (venue: HotelCard) => {
     if (!reading || busy) return;
     setBusy(true);
-    setNotice(null);
     try {
       const answer = await getApi().recordCheckin(venue.id, reading.latitude, reading.longitude);
       if (!answer.withinRange) {
-        setNotice({ message: COPY.checkin.tooFar, tone: 'error' });
+        toast.error(COPY.checkin.tooFar, 'checkin-notice');
       } else {
         const active: ActiveCheckin = {
           venueId: venue.id,
@@ -380,10 +385,10 @@ export function CheckinScreen({
         setQuery('');
       }
     } catch (err) {
-      setNotice({
-        message: err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown,
-        tone: 'error',
-      });
+      toast.error(
+        err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown,
+        'checkin-notice',
+      );
     } finally {
       setBusy(false);
     }
@@ -399,14 +404,13 @@ export function CheckinScreen({
   const checkInHere = async () => {
     if (!reading || busy) return;
     setBusy(true);
-    setNotice(null);
     try {
       await getApi().checkinHere(reading.latitude, reading.longitude);
       // Re-read rather than assemble it here: the server decides what the
       // anchor is called, and for a cell that is nothing at all.
       const active = await getApi().getCheckin();
       if (!active) {
-        setNotice({ message: COPY.errors.unknown, tone: 'error' });
+        toast.error(COPY.errors.unknown, 'checkin-notice');
         return;
       }
       {
@@ -420,10 +424,10 @@ export function CheckinScreen({
         setQuery('');
       }
     } catch (err) {
-      setNotice({
-        message: err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown,
-        tone: 'error',
-      });
+      toast.error(
+        err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown,
+        'checkin-notice',
+      );
     } finally {
       setBusy(false);
     }
@@ -459,7 +463,6 @@ export function CheckinScreen({
     // does not ask — the same saving, one round trip earlier.
     if (googleAsked.has(fingerprint)) return;
     setBusy(true);
-    setNotice(null);
     try {
       const answer = await getApi().googlePlaceSearch(
         query.trim(),
@@ -472,7 +475,7 @@ export function CheckinScreen({
         // street is not empty. Recorded against this name only, so a different
         // name is a fresh attempt rather than a dead screen.
         rememberGoogle(fingerprint, null);
-        setNotice({ message: COPY.checkin.googleUnavailable, tone: 'info' });
+        toast.info(COPY.checkin.googleUnavailable, 'checkin-notice');
         return;
       }
       // The server owns the session; take a new id, never re-set the same one.
@@ -488,7 +491,7 @@ export function CheckinScreen({
         // Google answered, and knows no such place near here. A different
         // sentence from "the option is unavailable", because it is a different
         // fact — and without it an empty answer drew nothing at all.
-        setNotice({ message: COPY.checkin.googleNoResults, tone: 'info' });
+        toast.info(COPY.checkin.googleNoResults, 'checkin-notice');
       }
     } finally {
       setBusy(false);
@@ -503,7 +506,6 @@ export function CheckinScreen({
   const checkInAtGoogle = async (place: GooglePlaceHit) => {
     if (!reading || busy) return;
     setBusy(true);
-    setNotice(null);
     try {
       const answer = await getApi().checkinHere(
         reading.latitude,
@@ -513,12 +515,12 @@ export function CheckinScreen({
       if (!answer.withinRange) {
         // Silence here was half of "the picker is broken" (owner, 2026-08-05):
         // the refusal was thrown away and the screen simply did not change.
-        setNotice({ message: COPY.checkin.tooFar, tone: 'error' });
+        toast.error(COPY.checkin.tooFar, 'checkin-notice');
         return;
       }
       const active = await getApi().getCheckin();
       if (!active) {
-        setNotice({ message: COPY.errors.unknown, tone: 'error' });
+        toast.error(COPY.errors.unknown, 'checkin-notice');
         return;
       }
       {
@@ -535,10 +537,10 @@ export function CheckinScreen({
         forgetGoogle();
       }
     } catch (err) {
-      setNotice({
-        message: err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown,
-        tone: 'error',
-      });
+      toast.error(
+        err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown,
+        'checkin-notice',
+      );
     } finally {
       setBusy(false);
     }
@@ -546,18 +548,17 @@ export function CheckinScreen({
 
   const endCheckin = async () => {
     setBusy(true);
-    setNotice(null);
     try {
       await getApi().clearCheckin();
       lastSeenExpiry = null;
       lastHereName = null;
       setCheckin(null);
-      setNotice({ message: COPY.checkin.checkedOut, tone: 'info' });
+      toast.info(COPY.checkin.checkedOut, 'checkin-notice');
     } catch (err) {
-      setNotice({
-        message: err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown,
-        tone: 'error',
-      });
+      toast.error(
+        err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown,
+        'checkin-notice',
+      );
     } finally {
       setBusy(false);
     }
@@ -688,13 +689,6 @@ export function CheckinScreen({
         </View>
         <Caption>{COPY.checkin.safeCheck}</Caption>
 
-        {notice ? (
-          <Notice
-            message={notice.message}
-            tone={notice.tone === 'error' ? 'error' : undefined}
-            testID="checkin-notice"
-          />
-        ) : null}
       </Screen>
     );
   }
@@ -748,13 +742,6 @@ export function CheckinScreen({
         {/* A refusal belongs where the eye is (owner, 2026-08-05): at the foot
             of a list this long nobody ever saw it, so a refused pick looked
             like a tap that did nothing at all. */}
-        {notice ? (
-          <Notice
-            message={notice.message}
-            tone={notice.tone === 'error' ? 'error' : undefined}
-            testID="checkin-notice"
-          />
-        ) : null}
 
         {/* N-02 (153:75), D-048: the anchor that always exists — where you
             are standing — first, in its wash card, never only under an
@@ -888,13 +875,6 @@ export function CheckinScreen({
 
       {/* What just happened stands where the eye already is (owner,
           2026-08-05) — tacked under the privacy row it read as page litter. */}
-      {notice ? (
-        <Notice
-          message={notice.message}
-          tone={notice.tone === 'error' ? 'error' : undefined}
-          testID="checkin-notice"
-        />
-      ) : null}
 
       {/* N-01 (152:75): the photo as a full-width band with the claim on
           its scrim — not a tall column beside a hole of empty space. */}
