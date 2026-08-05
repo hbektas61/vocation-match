@@ -9,16 +9,12 @@ import { color, fontFamily, MIN_TOUCH, radius } from '../../theme';
 import type { StepProps } from './types';
 
 /**
- * The mark, cut out of the artwork's own pale field so it can stand on white
- * (owner, 2026-08-05): the way the dating apps open — a white page, the logo,
- * one sentence, one button. It replaces the stock couple photograph, which
- * said "a holiday" but never said "us".
- *
- * `assets/brand-mark.png` is generated from `brand-src/logo-1024.png`: the
- * pin's shape is flood-filled out of the drawing, so the heart stays a hole
- * and the page shows through it.
+ * The logo, whole (owner, 2026-08-06): its pale field and the waves in it are
+ * part of the drawing, not a background somebody put behind it — so the mark
+ * is shown as the tile it is, rounded like an app icon, on the white page.
+ * The cut-out version this replaces threw that field away.
  */
-const MARK = require('../../../assets/brand-mark.png');
+const MARK = require('../../../assets/brand-src/logo-1024.png');
 
 /**
  * Phone OTP deliberately has no separate sign-up and sign-in journeys: the
@@ -77,7 +73,9 @@ export function WelcomeStep({ go }: StepProps) {
 const styles = StyleSheet.create({
   /** White, like the apps this screen is answering (owner, 2026-08-05). */
   screen: { flex: 1, backgroundColor: color.surface },
-  mark: { width: 196, height: 222 },
+  /** The artwork is square and keeps its own ground; the corners are the
+      icon's, so it reads as the app's mark rather than a photograph. */
+  mark: { width: 208, height: 208, borderRadius: 46 },
   scroll: { flexGrow: 1, paddingHorizontal: 20, paddingBottom: 24 },
   /** The mark and the name, centred in the room above the button. */
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
