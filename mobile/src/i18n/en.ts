@@ -300,6 +300,8 @@ export const en = {
     subtitle: 'Match with the people going to the same event.',
     todayHeading: 'Today',
     upcomingHeading: 'Upcoming events',
+    yourEventsAll: 'View all',
+    seeWhoIsGoing: 'See who is going',
     areaLabel: 'Event area',
     /** The pinned country over the city search, and its one-press change. */
     changeCountry: 'Change country',

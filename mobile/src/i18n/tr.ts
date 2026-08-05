@@ -290,7 +290,11 @@ export const tr: Copy = {
     title: 'Etkinlikler',
     subtitle: 'Aynı etkinliğe gidenlerle eşleş.',
     todayHeading: 'Bugün',
-    upcomingHeading: 'Yaklaşan Etkinlikler',
+    upcomingHeading: 'Yaklaşan etkinlikler',
+    /** Owner's Events sheet (2026-08-05): "Etkinliklerin" listesinin başı. */
+    yourEventsAll: 'Tümünü gör',
+    /** Üyelik satırının üstündeki küçük kırmızı satır — satırın ne olduğu. */
+    seeWhoIsGoing: 'Gidenleri gör',
     areaLabel: 'Etkinlik bölgesi',
     /** The pinned country over the city search, and its one-press change. */
     changeCountry: 'Ülkeyi değiştir',

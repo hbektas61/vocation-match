@@ -580,24 +580,42 @@ export function Card({
 export function Chip({
   label,
   selected = false,
+  solid = false,
   onPress,
   disabled = false,
   testID,
 }: {
   label: string;
   selected?: boolean;
+  /**
+   * The filter-bar reading of "selected": the chip fills coral and its label
+   * goes white, rather than taking the wash (owner's Events sheet,
+   * 2026-08-05). Reserved for a row of chips that filters a list, where the
+   * chosen one has to read as the switch that is on.
+   */
+  solid?: boolean;
   onPress?: () => void;
   disabled?: boolean;
   testID?: string;
 }) {
+  const chosen = selected && !disabled;
   const content = (
-    <Text style={[styles.chipLabel, selected && styles.chipLabelSelected, disabled && styles.chipLabelDisabled]}>
+    <Text
+      style={[
+        styles.chipLabel,
+        selected && (solid ? styles.chipLabelSolid : styles.chipLabelSelected),
+        disabled && styles.chipLabelDisabled,
+      ]}
+    >
       {label}
     </Text>
   );
   if (!onPress) {
     return (
-      <View style={[styles.chip, selected && styles.chipSelected]} testID={testID}>
+      <View
+        style={[styles.chip, chosen && (solid ? styles.chipSolid : styles.chipSelected)]}
+        testID={testID}
+      >
         {content}
       </View>
     );
@@ -612,7 +630,7 @@ export function Chip({
       testID={testID}
       style={({ pressed }) => [
         styles.chip,
-        selected && styles.chipSelected,
+        chosen && (solid ? styles.chipSolid : styles.chipSelected),
         disabled && styles.chipDisabled,
         pressed && !disabled && styles.buttonPressed,
       ]}
@@ -1495,6 +1513,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   chipSelected: { backgroundColor: color.accentSoft, borderColor: color.accent },
+  /** The filter bar's on-switch: coral through, like the primary button. */
+  chipSolid: { backgroundColor: color.accent, borderColor: color.accent },
   chipDisabled: { backgroundColor: color.veil, borderColor: color.rule },
   chipLabel: {
     fontFamily: fontFamily.bodyMedium,
@@ -1502,6 +1522,8 @@ const styles = StyleSheet.create({
     color: color.ink,
   },
   chipLabelSelected: { fontFamily: fontFamily.bodySemi, color: color.accentDeep },
+  /** White on coral, under the same ≥15pt-semibold rule the buttons keep. */
+  chipLabelSolid: { fontFamily: fontFamily.bodySemi, fontSize: 15, color: color.onAccent },
   chipLabelDisabled: { color: color.inkFaint },
 
   contextRibbon: {

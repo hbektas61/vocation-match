@@ -30,7 +30,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -40,7 +40,6 @@ import {
   Chip,
   Field,
   Notice,
-  PhotoScrim,
   Screen,
   ScreenHeader,
   SkeletonCard,
@@ -87,6 +86,56 @@ const MagnifierIcon = () => (
   <Svg {...iconStroke(color.accent, 18)}>
     <Circle cx={11} cy={11} r={7} />
     <Path d="m20 20-3.5-3.5" />
+  </Svg>
+);
+
+/* The owner's Events sheet (2026-08-05) draws four small marks: the pin on
+   the area row, and the calendar / clock / pin that label a card's facts. */
+const PinIcon = ({ tone = color.ink, size = 16 }: { tone?: string; size?: number }) => (
+  <Svg {...iconStroke(tone, size)}>
+    <Path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+    <Circle cx={12} cy={10} r={2.6} />
+  </Svg>
+);
+
+const CalendarIcon = () => (
+  <Svg {...iconStroke(color.inkMuted, 14)}>
+    <Rect x={3} y={5} width={18} height={16} rx={2} />
+    <Path d="M8 3v4m8-4v4M3 10h18" />
+  </Svg>
+);
+
+const ClockIcon = () => (
+  <Svg {...iconStroke(color.inkMuted, 14)}>
+    <Circle cx={12} cy={12} r={9} />
+    <Path d="M12 7v5l3 2" />
+  </Svg>
+);
+
+/** The saveable heart in the card's corner — outline until it is pressed. */
+const HeartIcon = ({ filled }: { filled: boolean }) => (
+  <Svg
+    {...iconStroke(color.accent, 18)}
+    fill={filled ? color.accent : 'none'}
+  >
+    <Path d="M12 20c-4-2.9-8-5.9-8-9.8A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 8 3.2c0 3.9-4 6.9-8 9.8z" />
+  </Svg>
+);
+
+/** The pair of people on the membership row's disc. */
+const PeopleIcon = () => (
+  <Svg {...iconStroke(color.accentDeep, 20)}>
+    <Circle cx={9} cy={9} r={3.2} />
+    <Path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5" />
+    <Path d="M16 7.5a3 3 0 0 1 0 5.6M17.5 19c0-2.2-.9-3.9-2.3-5" />
+  </Svg>
+);
+
+/** The (i) that opens the sheet's closing sentence. */
+const InfoIcon = () => (
+  <Svg {...iconStroke(color.inkMuted, 16)}>
+    <Circle cx={12} cy={12} r={9} />
+    <Path d="M12 11v5m0-8h.01" />
   </Svg>
 );
 
@@ -164,6 +213,12 @@ export function EventsScreen({
   const cardWidth = width - 40;
   /** Provider image URLs that failed to load — a lease can lapse mid-list. */
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  /**
+   * The hearts in the cards' corners. Kept in this component and nowhere
+   * else on purpose: a "saved event" is Ticketmaster content the moment it
+   * outlives the lease, so it lives exactly as long as the list does.
+   */
+  const [savedEvents, setSavedEvents] = useState<Set<string>>(new Set());
 
 
   const look = useCallback(async (next: EventArea, chip: EventCategory, keep = false) => {
@@ -345,6 +400,10 @@ export function EventsScreen({
       .filter(Boolean)
       .join(' · ');
     const showImage = event.imageUrl !== null && !failedImages.has(event.imageUrl);
+    const day =
+      event.dateTbd || !event.localDate ? COPY.events.dateTbd : formatDayMonthLong(event.localDate);
+    const time = event.localTime ? event.localTime.slice(0, 5) : null;
+    const saved = savedEvents.has(event.selectionToken);
     return (
       <Pressable
         key={event.selectionToken}
@@ -355,47 +414,75 @@ export function EventsScreen({
         style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
         testID={testID}
       >
+        {/* The owner's sheet (2026-08-05): the artwork is a square held on
+            the left, and the facts stand beside it in their own column —
+            not a full-bleed photograph with the words on a scrim. */}
         {showImage ? (
-          <View>
-            <Image
-              source={{ uri: event.imageUrl as string }}
-              style={[styles.cardImage, bad && styles.dimmed]}
-              resizeMode="cover"
-              accessibilityIgnoresInvertColors
-              onError={() =>
-                setFailedImages((current) => new Set(current).add(event.imageUrl as string))
-              }
-            />
-            <View style={styles.badgeOnImage}>
-              <StatusBadge label={badge} bad={bad} />
-            </View>
-            {/* E-01: the words move onto the artwork, over the same scrim
-                every on-photo text in the app uses. */}
-            <PhotoScrim />
-            <View style={styles.heroText}>
-              <Text style={styles.heroName} numberOfLines={2}>
-                {event.name}
-              </Text>
-              {/* D-062: the facts are one dotted line, as drawn — a name too
-                  long for it ends in an ellipsis rather than a second row. */}
-              <Text style={styles.heroMeta} numberOfLines={1}>
-                {`${whenLabel(event)} · ${place}`}
-              </Text>
-              <Text style={styles.heroAttribution}>{COPY.events.attribution}</Text>
-            </View>
-          </View>
+          <Image
+            source={{ uri: event.imageUrl as string }}
+            style={[styles.cardThumb, bad && styles.dimmed]}
+            resizeMode="cover"
+            accessibilityIgnoresInvertColors
+            onError={() =>
+              setFailedImages((current) => new Set(current).add(event.imageUrl as string))
+            }
+          />
         ) : (
-          <View style={styles.cardBody}>
-            <StatusBadge label={badge} bad={bad} />
-            <Text style={styles.cardName} numberOfLines={2}>
-              {event.name}
-            </Text>
-            <Text style={styles.cardMeta} numberOfLines={1}>
-              {`${place} · ${whenLabel(event)}`}
-            </Text>
-            <Text style={styles.cardAttribution}>{COPY.events.attribution}</Text>
+          /* E-20: no artwork is a first-class layout, not a hole. */
+          <View style={[styles.cardThumb, styles.cardThumbEmpty]}>
+            <PennantIcon />
           </View>
         )}
+
+        <View style={styles.cardColumn}>
+          <View style={styles.cardTopRow}>
+            <StatusBadge label={badge} bad={bad} />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={event.name ?? COPY.events.pastEvent}
+              accessibilityState={{ selected: saved }}
+              hitSlop={8}
+              onPress={() =>
+                setSavedEvents((current) => {
+                  const next = new Set(current);
+                  if (next.has(event.selectionToken)) next.delete(event.selectionToken);
+                  else next.add(event.selectionToken);
+                  return next;
+                })
+              }
+              style={styles.heartSeat}
+              testID={`${testID}-save`}
+            >
+              <HeartIcon filled={saved} />
+            </Pressable>
+          </View>
+
+          <Text style={styles.cardName} numberOfLines={2}>
+            {event.name}
+          </Text>
+
+          <View style={styles.factRow}>
+            <CalendarIcon />
+            <Text style={styles.factText} numberOfLines={1}>
+              {day}
+            </Text>
+            {time ? (
+              <>
+                <Text style={styles.factDot}>·</Text>
+                <ClockIcon />
+                <Text style={styles.factText}>{time}</Text>
+              </>
+            ) : null}
+          </View>
+          <View style={styles.factRow}>
+            <PinIcon tone={color.inkMuted} size={14} />
+            <Text style={styles.factText} numberOfLines={2}>
+              {place}
+            </Text>
+          </View>
+
+          <Text style={styles.cardAttribution}>{COPY.events.attribution}</Text>
+        </View>
       </Pressable>
     );
   };
@@ -408,7 +495,7 @@ export function EventsScreen({
       return (
         <View testID={testID} style={styles.section}>
           <View style={styles.sectionHead}>
-            <Text style={styles.heading}>{upperCase(heading)}</Text>
+            <Text style={styles.sectionTitle}>{heading}</Text>
             <Text style={styles.sectionCount}>{COPY_FOR.eventCount(result.events.length)}</Text>
           </View>
           <ScrollView
@@ -456,7 +543,7 @@ export function EventsScreen({
     const tone = result.kind === 'empty' ? 'info' : 'error';
     return (
       <View testID={testID} style={styles.section}>
-        <Text style={styles.heading}>{upperCase(heading)}</Text>
+        <Text style={styles.sectionTitle}>{heading}</Text>
         <Notice message={message} tone={tone} testID={`${testID}-empty`} />
       </View>
     );
@@ -536,26 +623,25 @@ export function EventsScreen({
            uses; the "Değiştir" link sits beside it rather than inside it, so
            it stays its own reachable control rather than being swallowed by
            the ribbon's single `accessibilityLabel`. */
-        <View style={styles.areaBlock}>
-          <Text style={styles.areaKicker}>{upperCase(COPY.events.areaLabel)}</Text>
-          {/* The same wash pill the pinned country wears (owner, 2026-08-04):
-              the area's name on the left, the one-press change on the right —
-              not a navy plate with a red link crowding its shoulder. */}
-          <View style={styles.countryScope}>
-            <Text style={styles.countryScopeName} numberOfLines={1} testID="events-area-label">
-              {area.label}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={COPY.events.changeArea}
-              onPress={() => setChoosingArea(true)}
-              hitSlop={8}
-              style={styles.countryScopeChange}
-              testID="events-change-area"
-            >
-              <Text style={styles.countryScopeChangeText}>{COPY.events.changeArea}</Text>
-            </Pressable>
-          </View>
+        /* The owner's sheet (2026-08-05): one white row — the pin and the
+           area's name on the left, the coral change on the right. No kicker
+           above it; the row says what it is. */
+        <View style={styles.areaRow}>
+          <PinIcon />
+          <Text style={styles.areaName} numberOfLines={1} testID="events-area-label">
+            {area.label}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={COPY.events.changeArea}
+            onPress={() => setChoosingArea(true)}
+            hitSlop={8}
+            style={styles.areaChange}
+            testID="events-change-area"
+          >
+            <Text style={styles.areaChangeText}>{COPY.events.changeArea}</Text>
+            <Text style={styles.areaChangeChevron}>›</Text>
+          </Pressable>
         </View>
       )}
 
@@ -575,6 +661,8 @@ export function EventsScreen({
                 key={chip.key}
                 label={chip.label()}
                 selected={selected}
+                // The filter bar's chosen chip fills coral (owner's sheet).
+                solid
                 onPress={() => chooseChip(chip.key)}
                 testID={`events-chip-${chip.key}`}
               />
@@ -616,8 +704,13 @@ export function EventsScreen({
             (event.liveClosesAt !== null && event.liveClosesAt > nowMs()),
         );
         return mineShown.length > 0 ? (
-        <View testID="events-mine">
-          <Text style={styles.heading}>{upperCase(COPY.events.myEvents)}</Text>
+        <View testID="events-mine" style={styles.section}>
+          <View style={styles.sectionHead}>
+            <Text style={styles.sectionTitle}>{COPY.events.myEvents}</Text>
+            {mineShown.length > 1 ? (
+              <Text style={styles.sectionLink}>{COPY.events.yourEventsAll}</Text>
+            ) : null}
+          </View>
           {mineShown.map((event) => (
             <Pressable
               key={event.eventId}
@@ -640,21 +733,26 @@ export function EventsScreen({
                   imageUrl: lease?.imageUrl ?? null,
                 });
               }}
-              style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+              style={({ pressed }) => [styles.mineRow, pressed && styles.cardPressed]}
               testID={`events-mine-${event.eventId}`}
             >
-              <View style={styles.cardBody}>
-                <StatusBadge
-                  label={event.hereNowOpen ? COPY.events.liveRoomCta : COPY.events.joinedRoomCta}
-                  bad={false}
-                />
-                <Text style={styles.cardName} numberOfLines={2}>
+              {/* The owner's sheet: the pair in their warm disc, the coral
+                  line saying what the row does, the name, and the state. */}
+              <View style={styles.mineDisc}>
+                <PeopleIcon />
+              </View>
+              <View style={styles.mineWords}>
+                <Text style={styles.mineKicker}>
+                  {event.hereNowOpen ? COPY.events.liveRoomCta : COPY.events.seeWhoIsGoing}
+                </Text>
+                <Text style={styles.mineName} numberOfLines={2}>
                   {mineLeases[event.eventId]?.name ?? COPY.events.pastEvent}
                 </Text>
-                <Text style={styles.cardMeta}>
+                <Text style={styles.mineState}>
                   {event.hereNowOpen ? COPY.events.hereNowOpen : COPY.events.joined}
                 </Text>
               </View>
+              <Text style={styles.mineChevron}>›</Text>
             </Pressable>
           ))}
         </View>
@@ -672,9 +770,13 @@ export function EventsScreen({
       })()}
 
       {/* ED-01 keeps the first open clean: the no-ticket sentence stands
-          only once something checkable — results or memberships — is up. */}
+          only once something checkable — results or memberships — is up. It
+          closes the sheet as its own quiet card with the (i) mark. */}
       {upcoming || mine.length > 0 ? (
-        <Caption>{COPY.events.noTicketClaim}</Caption>
+        <View style={styles.claimCard} testID="events-no-ticket">
+          <InfoIcon />
+          <Text style={styles.claimText}>{COPY.events.noTicketClaim}</Text>
+        </View>
       ) : null}
 
       {/* Changing the area or the country opens over the list, never under
@@ -761,21 +863,23 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     marginBottom: spacing.xs,
   },
-  /** E-05: the standing area header — the ribbon and its "Değiştir" pair. */
-  areaBlock: { marginBottom: spacing.sm, gap: 4 },
-  areaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  areaKicker: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 9,
-    letterSpacing: 0.6,
-    color: color.inkMuted,
+  /** E-05, redrawn to the owner's sheet: one white row, pin to chevron. */
+  areaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: spacing.sm,
+    backgroundColor: color.surface,
+    borderWidth: 1,
+    borderColor: color.rule,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
   },
-  changeAreaRow: { minHeight: MIN_TOUCH, justifyContent: 'center' },
-  changeArea: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 12,
-    color: color.ink,
-  },
+  areaName: { flex: 1, fontFamily: fontFamily.bodyMedium, fontSize: 14, color: color.ink },
+  areaChange: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 28 },
+  areaChangeText: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.accent },
+  areaChangeChevron: { fontFamily: fontFamily.bodySemi, fontSize: 15, color: color.accent },
   /** E-06: busy, without taking the results away — the same neutral pill a
       standing notice uses, so "still working" never reads as an error. */
   busyLine: {
@@ -867,7 +971,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: spacing.md,
   },
-  sectionCount: { fontFamily: fontFamily.body, fontSize: 11, color: color.inkMuted },
+  /** The sheet's section heads: sentence case, ink, 17 — not a tracked kicker. */
+  sectionTitle: { fontFamily: fontFamily.bodySemi, fontSize: 17, color: color.ink },
+  sectionCount: { fontFamily: fontFamily.body, fontSize: 12, color: color.inkMuted },
+  sectionLink: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.accent },
   /**
    * E-18: the state as a word and a glyph first. The plate is deliberately
    * self-contained (deep navy, near-opaque) rather than a scrim-dependent
@@ -896,32 +1003,75 @@ const styles = StyleSheet.create({
   dimmed: { opacity: 0.45 },
   chipStrip: { flexGrow: 0, marginBottom: spacing.sm },
   chipRow: { flexDirection: 'row', gap: spacing.xs },
+  /** The owner's card (2026-08-05): square artwork left, facts right. */
   card: {
-    borderRadius: 24,
+    flexDirection: 'row',
+    gap: 12,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: color.rule,
     backgroundColor: color.surface,
-    overflow: 'hidden',
     marginBottom: spacing.xs,
+    padding: 12,
     ...elevation.card,
   },
   cardPressed: { opacity: 0.7 },
-  cardImage: { width: '100%', height: 300, backgroundColor: color.veil },
-  /** E-01: the words on the artwork. */
-  heroText: { position: 'absolute', left: 18, right: 18, bottom: 14, gap: 3 },
-  heroName: {
+  cardThumb: { width: 118, height: 118, borderRadius: 14, backgroundColor: color.veil },
+  cardThumbEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: color.accentWash },
+  cardColumn: { flex: 1, gap: 5 },
+  cardTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  heartSeat: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
+  cardName: {
     fontFamily: fontFamily.display,
-    fontSize: 24,
-    lineHeight: 28,
-    color: color.onPhoto,
+    fontSize: 18,
+    lineHeight: 23,
+    color: color.ink,
   },
-  heroMeta: { fontFamily: fontFamily.bodyMedium, fontSize: 13, color: color.onPhoto },
-  heroAttribution: { fontFamily: fontFamily.body, fontSize: 10, color: color.onPhoto },
-  cardBody: { paddingVertical: 11, paddingHorizontal: 14, gap: 4 },
-  cardName: { fontFamily: fontFamily.bodySemi, fontSize: 16, color: color.ink },
-  cardMeta: { fontFamily: fontFamily.body, fontSize: 12, color: color.inkMuted },
+  /** A fact is its mark and its words, on one line. */
+  factRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  factText: { flexShrink: 1, fontFamily: fontFamily.body, fontSize: 12, lineHeight: 16, color: color.inkMuted },
+  factDot: { fontFamily: fontFamily.body, fontSize: 12, color: color.inkMuted },
   /** Required wherever the provider's answer is on screen. */
-  cardAttribution: { fontFamily: fontFamily.bodyMedium, fontSize: 10, color: color.inkMuted },
+  cardAttribution: { fontFamily: fontFamily.body, fontSize: 10, color: color.inkFaint, marginTop: 2 },
+  /** "Etkinliklerin": the disc, the coral line, the name, the state. */
+  mineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: color.rule,
+    backgroundColor: color.surface,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    marginBottom: spacing.xs,
+    ...elevation.card,
+  },
+  mineDisc: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: color.accentWash,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mineWords: { flex: 1, gap: 2 },
+  mineKicker: { fontFamily: fontFamily.bodyMedium, fontSize: 12, color: color.accent },
+  mineName: { fontFamily: fontFamily.display, fontSize: 16, lineHeight: 21, color: color.ink },
+  mineState: { fontFamily: fontFamily.body, fontSize: 12, lineHeight: 16, color: color.inkMuted },
+  mineChevron: { fontFamily: fontFamily.bodySemi, fontSize: 18, color: color.inkMuted },
+  /** The closing sentence, in its own quiet card with the (i). */
+  claimCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    borderRadius: 16,
+    backgroundColor: color.veil,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    marginTop: spacing.sm,
+  },
+  claimText: { flex: 1, fontFamily: fontFamily.body, fontSize: 12, lineHeight: 17, color: color.inkMuted },
   /** ED-01's empty state. */
   emptyWrap: { alignItems: 'center', gap: 10, paddingTop: 56 },
   emptyDisc: {
