@@ -1,0 +1,117 @@
+- generic [ref=f14e5]:
+  - generic [ref=f14e6]: VOCATION_VISUAL_HARNESS_ONLY
+  - generic [ref=f14e7]: Vacation Match — D-057 visual gate
+  - generic [ref=f14e8] [cursor=pointer]:
+    - generic [ref=f14e9]: T-17
+    - generic [ref=f14e10]: Oteldeyim — Premium gerekli · 36:135
+  - generic [ref=f14e11] [cursor=pointer]:
+    - generic [ref=f14e12]: T-22
+    - generic [ref=f14e13]: Oteldeyim — yakınlık kontrolü süresi doldu · 36:235
+  - generic [ref=f14e14] [cursor=pointer]:
+    - generic [ref=f14e15]: E-05
+    - generic [ref=f14e16]: Etkinlikler — bölge seçili, liste (E-05…E-20 bu sahneden gezilir) · 39:375
+  - generic [ref=f14e17] [cursor=pointer]:
+    - generic [ref=f14e18]: E-11
+    - generic [ref=f14e19]: Etkinliklerin — çoklu üyelik · 40:502
+  - generic [ref=f14e20] [cursor=pointer]:
+    - generic [ref=f14e21]: E-04
+    - generic [ref=f14e22]: Etkinlikler — konum izni reddedildi · 39:334
+  - generic [ref=f14e23] [cursor=pointer]:
+    - generic [ref=f14e24]: E-12
+    - generic [ref=f14e25]: Etkinlikler — bu bölgede etkinlik yok · 40:572
+  - generic [ref=f14e26] [cursor=pointer]:
+    - generic [ref=f14e27]: E-15
+    - generic [ref=f14e28]: Etkinlikler — sağlayıcı kullanılamıyor · 40:750
+  - generic [ref=f14e29] [cursor=pointer]:
+    - generic [ref=f14e30]: E-16
+    - generic [ref=f14e31]: Etkinlikler — günlük sınır doldu · 40:800
+  - generic [ref=f14e32] [cursor=pointer]:
+    - generic [ref=f14e33]: E-17
+    - generic [ref=f14e34]: Etkinlikler kapalı · 41:533
+  - generic [ref=f14e35] [cursor=pointer]:
+    - generic [ref=f14e36]: E-31
+    - generic [ref=f14e37]: EVENT_CANCELLED — canlı oda açılmaz · 42:738
+  - generic [ref=f14e38] [cursor=pointer]:
+    - generic [ref=f14e39]: E-32
+    - generic [ref=f14e40]: EVENT_TIME_UNCONFIRMED — saat kesinleşmedi · 42:758
+  - generic [ref=f14e41] [cursor=pointer]:
+    - generic [ref=f14e42]: E-33
+    - generic [ref=f14e43]: EVENT_LOCATION_UNAVAILABLE — konum yayınlanmamış · 43:617
+  - generic [ref=f14e44] [cursor=pointer]:
+    - generic [ref=f14e45]: E-27
+    - generic [ref=f14e46]: LOCATION_INACCURATE — 900 m okuma · 42:654
+  - generic [ref=f14e47] [cursor=pointer]:
+    - generic [ref=f14e48]: E-28
+    - generic [ref=f14e49]: TOO_FAR — geçerli okuma, yarıçap dışı · 42:676
+  - generic [ref=f14e50] [cursor=pointer]:
+    - generic [ref=f14e51]: N-08
+    - generic [ref=f14e52]: Çevremde — gelişmiş arama hakkı bitti · 38:155
+  - generic [ref=f14e53] [cursor=pointer]:
+    - generic [ref=f14e54]: N-09
+    - generic [ref=f14e55]: Çevremde — sağlayıcı kapalı · 38:174
+  - generic [ref=f14e56] [cursor=pointer]:
+    - generic [ref=f14e57]: N-11
+    - generic [ref=f14e58]: Çevremde — adlı mekânda aktif · 38:207
+  - generic [ref=f14e59] [cursor=pointer]:
+    - generic [ref=f14e60]: N-12
+    - generic [ref=f14e61]: Çevremde — genel alanda aktif (çevrede) · 38:254
+  - generic [ref=f14e62] [cursor=pointer]:
+    - generic [ref=f14e63]: NAV-06
+    - generic [ref=f14e64]: Keşfet — bağlam süresi doldu · 44:859
+  - generic [ref=f14e65] [cursor=pointer]:
+    - generic [ref=f14e66]: D-03
+    - generic [ref=f14e67]: Keşfet — Çevremde, adlı mekân · 45:843
+  - generic [ref=f14e68] [cursor=pointer]:
+    - generic [ref=f14e69]: D-04
+    - generic [ref=f14e70]: Keşfet — Çevremde, adı olmayan çevre · 45:893
+  - generic [ref=f14e71] [cursor=pointer]:
+    - generic [ref=f14e72]: D-05
+    - generic [ref=f14e73]: Keşfet — Etkinliğe Gidecekler · 45:943
+  - generic [ref=f14e74] [cursor=pointer]:
+    - generic [ref=f14e75]: D-06
+    - generic [ref=f14e76]: Keşfet — Şu An Etkinlikte · 45:993
+  - generic [ref=f14e77] [cursor=pointer]:
+    - generic [ref=f14e78]: M-04
+    - generic [ref=f14e79]: Eşleşme — Çevremde · 46:885
+  - generic [ref=f14e80] [cursor=pointer]:
+    - generic [ref=f14e81]: C-03
+    - generic [ref=f14e82]: Sohbet — oda kapandı · 46:1069
+  - generic [ref=f14e83] [cursor=pointer]:
+    - generic [ref=f14e84]: NAV-02
+    - generic [ref=f14e85]: Keşfet — bağlam seçici kapalı · 44:674
+  - generic [ref=f14e86] [cursor=pointer]:
+    - generic [ref=f14e87]: NAV-04
+    - generic [ref=f14e88]: Keşfet — çoklu bağlam, canlı oda seçili · 44:767
+  - generic [ref=f14e89] [cursor=pointer]:
+    - generic [ref=f14e90]: NAV-05
+    - generic [ref=f14e91]: Keşfet — uygun oda yok, seçici devre dışı · 44:814
+  - generic [ref=f14e92] [cursor=pointer]:
+    - generic [ref=f14e93]: NAV-07
+    - generic [ref=f14e94]: Keşfet — oda boş / yeniden tara · 44:906
+  - generic [ref=f14e95] [cursor=pointer]:
+    - generic [ref=f14e96]: T-19
+    - generic [ref=f14e97]: Oteldeyim — konum hassas değil · 36:171
+  - generic [ref=f14e98] [cursor=pointer]:
+    - generic [ref=f14e99]: T-20
+    - generic [ref=f14e100]: Oteldeyim — çok uzakta · 36:192
+  - generic [ref=f14e101] [cursor=pointer]:
+    - generic [ref=f14e102]: T-21
+    - generic [ref=f14e103]: Oteldeyim — açık · 36:213
+  - generic [ref=f14e104] [cursor=pointer]:
+    - generic [ref=f14e105]: D-02
+    - generic [ref=f14e106]: Keşfet — Oteldeyim bağlamı · 45:793
+  - generic [ref=f14e107] [cursor=pointer]:
+    - generic [ref=f14e108]: D-01
+    - generic [ref=f14e109]: Keşfet — Tatilden Önce bağlamı · 45:743
+  - generic [ref=f14e110] [cursor=pointer]:
+    - generic [ref=f14e111]: I-02
+    - generic [ref=f14e112]: Gelen kutusu — boş · 46:985
+  - generic [ref=f14e113] [cursor=pointer]:
+    - generic [ref=f14e114]: I-01
+    - generic [ref=f14e115]: Gelen kutusu — dolu · 46:901
+  - generic [ref=f14e116] [cursor=pointer]:
+    - generic [ref=f14e117]: M-03
+    - generic [ref=f14e118]: Eşleşme — Tatilden Önce · 46:869
+  - generic [ref=f14e119] [cursor=pointer]:
+    - generic [ref=f14e120]: C-01
+    - generic [ref=f14e121]: Sohbet — tatil mekânı · 46:1025

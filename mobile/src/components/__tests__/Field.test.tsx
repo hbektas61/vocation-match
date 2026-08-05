@@ -32,19 +32,17 @@ function flatten(style: unknown): Record<string, unknown> {
 const shellOf = (testID: string) => flatten(screen.getByTestId(`${testID}-box`).props.style);
 
 describe('focus', () => {
-  it('draws focus in the brand’s dark sibling, not the coral itself (D-058)', () => {
-    // D-043 asked for the focus edge to be exactly the brand pink and accepted
-    // the 1.55:1 that cost, on a dark ground, with weight carrying the state.
-    // D-058 moved the ground to white, where the brand coral measures 2.99:1 —
-    // under even the 3:1 WCAG 1.4.11 asks of a control boundary. So the hue
-    // stays in the family and moves to the sibling that clears it, and this
-    // assertion is what stops somebody "restoring" the coral.
+  it('draws focus in the brand coral on a white interior (owner, 2026-08-05)', () => {
+    // The dark-ringed, wash-filled focus box read as a different control from
+    // every other input on the screen; the owner asked for a coral ring and a
+    // white interior. Coral is 2.99:1 on white, which is why the next test —
+    // weight carrying the state alongside colour — is the accepted trade.
     render(<Field label="Name" testID="f" />);
 
     fireEvent(screen.getByTestId('f'), 'focus');
 
-    expect(shellOf('f').borderColor).toBe(color.focus);
-    expect(shellOf('f').borderColor).not.toBe(color.accent);
+    expect(shellOf('f').borderColor).toBe(color.accent);
+    expect(shellOf('f').backgroundColor).toBe(color.surface);
   });
 
   it('does not rely on that colour alone', () => {
@@ -54,12 +52,9 @@ describe('focus', () => {
     fireEvent(screen.getByTestId('f'), 'focus');
     const focused = shellOf('f');
 
-    // Two companion cues now, not one: the border thickens and the box takes
-    // the brand wash. On a light ground the fill is legible in a way it never
-    // was on the night ground, which is why D-058 could take it back.
+    // Coral alone clears neither 3:1 on white nor everyone's eyes: the border
+    // thickening from 1.5 to 2.5 is the cue that has to survive the colour.
     expect(focused.borderWidth).toBeGreaterThan(Number(resting.borderWidth));
-    expect(focused.backgroundColor).not.toBe(resting.backgroundColor);
-    expect(focused.backgroundColor).toBe(color.accentWash);
   });
 
   it('goes back to a neutral edge on blur', () => {

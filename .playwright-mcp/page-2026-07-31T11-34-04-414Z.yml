@@ -1,0 +1,15 @@
+- generic [ref=f8e48]:
+  - generic [ref=f8e49]:
+    - button "Back" [ref=f8e50] [cursor=pointer]:
+      - generic [ref=f8e51]: ←
+    - progressbar "Step 1 of 10" [ref=f8e53]
+  - generic [ref=f8e55]:
+    - generic [ref=f8e57]:
+      - heading "Adults only, and a short promise." [level=1] [ref=f8e58]
+      - generic [ref=f8e59]: Vacation Match is for people 18 or older. By continuing you confirm you are at least 18.
+      - generic [ref=f8e60]:
+        - generic [ref=f8e61]: Be yourself. The name and photo should be you.
+        - generic [ref=f8e64]: Meet in public first, and tell someone where you are going.
+        - generic [ref=f8e67]: Be decent. A conversation you would not want quoted is one to rethink.
+        - generic [ref=f8e70]: Report anything that feels wrong. It reaches a person, and blocking is one tap.
+    - button "I agree" [ref=f8e74] [cursor=pointer]

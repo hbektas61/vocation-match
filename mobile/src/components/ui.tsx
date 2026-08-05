@@ -367,12 +367,11 @@ export function ActionButton({
  * Two things here are the whole reason it exists rather than each screen
  * rolling its own `TextInput`:
  *
- * - **Focus.** D-058's ground is light, so the focus state is drawn in the
- *   brand's dark sibling (6.5:1 on white) rather than the coral itself, which
- *   is 2.99:1 there and would be a focus ring a good number of people simply
- *   cannot see. Colour is not asked to carry it alone either: the border
- *   thickens and the box takes the brand wash, so weight and fill say the same
- *   thing.
+ * - **Focus.** The ring is the brand coral on a white interior (owner,
+ *   2026-08-05) — the wash-filled, dark-ringed box read as a different
+ *   control from every other input on the screen. Coral alone is 2.99:1 on
+ *   white, so colour is not asked to carry it by itself: the border thickens
+ *   from 1.5 to 2.5, and weight says the same thing the colour does.
  * - **Vertical centring.** Android puts extra room under the baseline and
  *   top-aligns the text in a fixed-height box, which is what made every field
  *   look like the text had been pushed up against the ceiling.
@@ -1400,9 +1399,8 @@ const styles = StyleSheet.create({
    * Weight and fill say it too, so no one signal has to carry it.
    */
   inputShellFocused: {
-    borderColor: color.focus,
+    borderColor: color.accent,
     borderWidth: 2.5,
-    backgroundColor: color.accentWash,
   },
   inputShellInvalid: { borderColor: color.danger, backgroundColor: color.dangerSoft },
   input: {

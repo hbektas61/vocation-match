@@ -22,6 +22,7 @@
 import React, { useCallback, useRef, useState } from 'react';
 import {
   Image,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -147,7 +148,6 @@ export function EventsScreen({
   const [pickingCountry, setPickingCountry] = useState(false);
   const [countryQuery, setCountryQuery] = useState('');
   const [category, setCategory] = useState<EventCategory>('all');
-  const [today, setToday] = useState<EventSearchResult | null>(null);
   const [upcoming, setUpcoming] = useState<EventSearchResult | null>(null);
   const [mine, setMine] = useState<MyEvent[]>([]);
   /** eventId → its lease, for the memberships list and the detail it opens. */
@@ -156,11 +156,8 @@ export function EventsScreen({
   /** The one unasked location attempt (owner, 2026-08-04) — never repeated. */
   const autoTried = useRef(false);
   const [busy, setBusy] = useState(false);
-  /** E-01 (131:132): which card each bucket's carousel rests on. */
-  const [pageIndex, setPageIndex] = useState<{ today: number; upcoming: number }>({
-    today: 0,
-    upcoming: 0,
-  });
+  /** E-01 (131:132): which card the carousel rests on. */
+  const [pageIndex, setPageIndex] = useState(0);
   // One card fills the view between the Screen's 20pt gutters.
   const { width } = useWindowDimensions();
   const cardWidth = width - 40;
@@ -176,21 +173,15 @@ export function EventsScreen({
     // A *new area* is the one case that must clear: İstanbul's concerts under
     // a heading that says Paris would be a lie rather than a stale view.
     if (!keep) {
-      setToday(null);
       setUpcoming(null);
     }
     try {
       const api = getApi();
-      // Two buckets, two requests — asked one after the other, not as
-      // concurrent twins: the provider's rate limiter was refusing the
-      // second of a simultaneous pair, which put "unavailable" under one
-      // heading while the other showed cards (owner screenshot, 2026-08-03).
-      // Each answer is cached server-side on an area key, so the second
-      // person to look at İstanbul today still costs nothing.
-      const todayResult = await api.searchEvents(next, 'today', chip);
-      const upcomingResult = await api.searchEvents(next, 'upcoming', chip);
-      setToday(todayResult);
-      setUpcoming(upcomingResult);
+      // One bucket, one request (owner, 2026-08-05): "Bugün" and "Yaklaşan"
+      // were the same list said twice — the upcoming window starts now, so it
+      // already contains today. A card that IS today still says so, on its
+      // own badge rather than under a heading of its own.
+      setUpcoming(await api.searchEvents(next, 'upcoming', chip));
     } finally {
       setBusy(false);
     }
@@ -282,7 +273,7 @@ export function EventsScreen({
       if (!opened) {
         // The provider could not confirm it. Better to say nothing happened
         // than to open a room around an event we cannot currently verify.
-        setToday((current) => (current?.kind === 'ok' ? { kind: 'unavailable' } : current));
+        setUpcoming((current) => (current?.kind === 'ok' ? { kind: 'unavailable' } : current));
         return;
       }
       navigation.navigate('EventDetail', {
@@ -326,7 +317,16 @@ export function EventsScreen({
    *   with a glyph, and the card is dimmed — never colour alone, and never
    *   hidden from the list, which would just send somebody there anyway.
    */
-  const card = (event: EventCard, bucket: 'today' | 'upcoming', testID: string) => {
+  // The device's own calendar date, for the one distinction the removed
+  // "Bugün" heading still owes the card: tonight's concert says "Bugün".
+  const deviceNow = new Date(nowMs());
+  const todayIso = [
+    deviceNow.getFullYear(),
+    String(deviceNow.getMonth() + 1).padStart(2, '0'),
+    String(deviceNow.getDate()).padStart(2, '0'),
+  ].join('-');
+
+  const card = (event: EventCard, testID: string) => {
     const status = event.status.toLowerCase();
     const cancelled = status === 'cancelled';
     const postponed = status === 'postponed';
@@ -337,7 +337,7 @@ export function EventsScreen({
         ? COPY.events.postponed
         : event.dateTbd
           ? COPY.events.dateTbd
-          : bucket === 'today'
+          : event.localDate === todayIso
             ? COPY.events.badgeToday
             : COPY.events.badgeUpcoming;
     const place = [event.venueName ?? COPY.venue.nameUnavailable, event.city]
@@ -399,14 +399,7 @@ export function EventsScreen({
     );
   };
 
-  const section = (
-    heading: string,
-    result: EventSearchResult | null,
-    bucket: 'today' | 'upcoming',
-    testID: string,
-    /** Both buckets failed the same way: one notice, and no heading over it. */
-    sharedRefusal = false,
-  ) => {
+  const section = (heading: string, result: EventSearchResult | null, testID: string) => {
     if (result === null) return null;
     if (result.kind === 'ok') {
       // E-01 (131:127/132): one card at a time, swiped sideways, with the
@@ -425,14 +418,13 @@ export function EventsScreen({
             snapToAlignment="start"
             disableIntervalMomentum
             onMomentumScrollEnd={(e) => {
-              const page = Math.round(e.nativeEvent.contentOffset.x / (cardWidth + 12));
-              setPageIndex((current) => ({ ...current, [bucket]: page }));
+              setPageIndex(Math.round(e.nativeEvent.contentOffset.x / (cardWidth + 12)));
             }}
             contentContainerStyle={styles.carousel}
           >
             {result.events.map((event, index) => (
               <View key={event.selectionToken} style={{ width: cardWidth }}>
-                {card(event, bucket, `${testID}-option-${index}`)}
+                {card(event, `${testID}-option-${index}`)}
               </View>
             ))}
           </ScrollView>
@@ -441,7 +433,7 @@ export function EventsScreen({
               {result.events.map((event, index) => (
                 <View
                   key={event.selectionToken}
-                  style={[styles.dot, index === pageIndex[bucket] && styles.dotActive]}
+                  style={[styles.dot, index === pageIndex && styles.dotActive]}
                 />
               ))}
             </View>
@@ -463,100 +455,77 @@ export function EventsScreen({
     const tone = result.kind === 'empty' ? 'info' : 'error';
     return (
       <View testID={testID} style={styles.section}>
-        {sharedRefusal ? null : <Text style={styles.heading}>{upperCase(heading)}</Text>}
+        <Text style={styles.heading}>{upperCase(heading)}</Text>
         <Notice message={message} tone={tone} testID={`${testID}-empty`} />
       </View>
     );
   };
 
+  /* The city step, shared between the first open (inline, ED-01) and the
+     change (a sheet over the list — owner, 2026-08-05: "Değiştir" must not
+     shove the results down the screen; it opens on top of them). */
+  const cityStep = (
+    <>
+      <View style={styles.countryScope}>
+        <Text style={styles.countryScopeName} testID="events-country-scope">
+          {areaCountry.name}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={COPY.events.changeCountry}
+          onPress={() => setPickingCountry(true)}
+          hitSlop={8}
+          style={styles.countryScopeChange}
+          testID="events-change-country"
+        >
+          <Text style={styles.countryScopeChangeText}>{COPY.events.changeCountry}</Text>
+        </Pressable>
+      </View>
+      <Field
+        label={COPY.events.areaLabel}
+        hideLabel
+        pill
+        prefix={<MagnifierIcon />}
+        value={areaDraft}
+        onChangeText={setAreaDraft}
+        placeholder={COPY.events.areaPlaceholder}
+        onSubmitEditing={chooseCity}
+        testID="events-area-input"
+      />
+      {/* ED-01: the heading asks the question; the button says the deed. */}
+      <Button label={COPY.events.showEvents} onPress={chooseCity} testID="events-area-confirm" />
+      {permissionDenied ? (
+        <Notice
+          message={COPY.events.permissionDenied}
+          tone="error"
+          testID="events-permission-denied"
+        />
+      ) : null}
+    </>
+  );
+
+  /* Either the country list or the city step rides the sheet — never two
+     stacked Modals, which iOS refuses to present. */
+  const sheetOpen = pickingCountry || (choosingArea && area !== null);
+  const closeSheet = () => {
+    if (pickingCountry) {
+      setPickingCountry(false);
+      setCountryQuery('');
+      return;
+    }
+    setChoosingArea(false);
+  };
+
   return (
     <Screen safeTop testID="screen-events">
       <ScreenHeader title={COPY.events.title} ringTestID="events-profile-ring" />
-      <Text style={styles.subtitle}>{COPY.events.subtitle}</Text>
 
-      {choosingArea || !area ? (
-        /* ED-01's vertical rhythm: the pill, the two buttons, each standing
+      {area === null ? (
+        /* ED-01's vertical rhythm: the pill, the button, each standing
            14pt apart rather than touching (owner screenshot, 2026-08-03). */
         <View style={styles.areaPicker} testID="events-area-picker">
           <Text style={styles.heading}>{upperCase(COPY.events.chooseArea)}</Text>
-          {pickingCountry ? (
-            /* The wizard's country step, borrowed whole (D-060): a local,
-               free, unmisspellable list — search above, the usual suspects
-               underneath. */
-            <>
-              <Field
-                label={COPY.venue.countryLabel}
-                hideLabel
-                pill
-                prefix={<MagnifierIcon />}
-                value={countryQuery}
-                onChangeText={setCountryQuery}
-                placeholder={COPY.venue.countryPlaceholder}
-                testID="events-country-input"
-              />
-              {countryQuery.trim() === '' ? (
-                <Text style={styles.heading}>{upperCase(COPY.venue.countryPopular)}</Text>
-              ) : null}
-              {(countryQuery.trim()
-                ? filterCountries(countryOptions(getLocale()), countryQuery)
-                : suggestedCountries(getLocale())
-              ).map((option) => (
-                <Pressable
-                  key={option.code}
-                  accessibilityRole="button"
-                  accessibilityLabel={option.name}
-                  onPress={() => {
-                    setAreaCountry(option);
-                    setPickingCountry(false);
-                    setCountryQuery('');
-                  }}
-                  style={({ pressed }) => [styles.countryRow, pressed && styles.cardPressed]}
-                  testID={`events-country-${option.code}`}
-                >
-                  <Text style={styles.countryName}>{option.name}</Text>
-                  <Text style={styles.countryCode}>{option.code}</Text>
-                </Pressable>
-              ))}
-            </>
-          ) : (
-            <>
-          <View style={styles.countryScope}>
-            <Text style={styles.countryScopeName} testID="events-country-scope">
-              {areaCountry.name}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={COPY.events.changeCountry}
-              onPress={() => setPickingCountry(true)}
-              hitSlop={8}
-              style={styles.countryScopeChange}
-              testID="events-change-country"
-            >
-              <Text style={styles.countryScopeChangeText}>{COPY.events.changeCountry}</Text>
-            </Pressable>
-          </View>
-          <Field
-            label={COPY.events.areaLabel}
-            hideLabel
-            pill
-            prefix={<MagnifierIcon />}
-            value={areaDraft}
-            onChangeText={setAreaDraft}
-            placeholder={COPY.events.areaPlaceholder}
-            onSubmitEditing={chooseCity}
-            testID="events-area-input"
-          />
-          {/* ED-01: the heading asks the question; the button says the deed. */}
-          <Button label={COPY.events.showEvents} onPress={chooseCity} testID="events-area-confirm" />
-          {permissionDenied ? (
-            <Notice
-              message={COPY.events.permissionDenied}
-              tone="error"
-              testID="events-permission-denied"
-            />
-          ) : null}
-            </>
-          )}
+          {cityStep}
         </View>
       ) : (
         /* E-05: the chosen area is a standing header, not a line that
@@ -589,7 +558,7 @@ export function EventsScreen({
         </View>
       )}
 
-      {area && !choosingArea ? (
+      {area ? (
         /* E-01 (131:118): one row of chips that scrolls off the edge —
            wrapping to a second line was spending a card's worth of screen. */
         <ScrollView
@@ -616,7 +585,7 @@ export function EventsScreen({
       {/* E-06: while results are already up, busy is a quiet line rather than
           a spinner standing where the list was. */}
       {busy ? (
-        today || upcoming ? (
+        upcoming ? (
           <View style={styles.busyLine} testID="events-loading">
             <Spinner size={16} />
             <Text style={styles.busyText}>{COPY.events.refreshing}</Text>
@@ -626,19 +595,9 @@ export function EventsScreen({
         )
       ) : null}
 
-      {/* Both buckets fail for the same reason far more often than not — the
-          provider is down for both, the ceiling is spent for both. Saying it
-          twice, once under each heading, reads as two problems. */}
-      {today && upcoming && today.kind !== 'ok' && today.kind === upcoming.kind
-        ? section(COPY.events.todayHeading, today, 'today', 'events-today', true)
-        : (
-          <>
-            {section(COPY.events.todayHeading, today, 'today', 'events-today')}
-            {section(COPY.events.upcomingHeading, upcoming, 'upcoming', 'events-upcoming')}
-          </>
-        )}
+      {section(COPY.events.upcomingHeading, upcoming, 'events-upcoming')}
 
-      {today || upcoming ? (
+      {upcoming ? (
         <>
           {/* §3.4: never imply the list is the world. */}
           <Caption testID="events-coverage-note">{COPY.events.notEverything}</Caption>
@@ -713,9 +672,75 @@ export function EventsScreen({
 
       {/* ED-01 keeps the first open clean: the no-ticket sentence stands
           only once something checkable — results or memberships — is up. */}
-      {today || upcoming || mine.length > 0 ? (
+      {upcoming || mine.length > 0 ? (
         <Caption>{COPY.events.noTicketClaim}</Caption>
       ) : null}
+
+      {/* Changing the area or the country opens over the list, never under
+          it (owner, 2026-08-05) — the results keep their place on the page. */}
+      <Modal transparent visible={sheetOpen} animationType="fade" onRequestClose={closeSheet}>
+        <Pressable
+          style={styles.sheetScrim}
+          onPress={closeSheet}
+          accessibilityRole="button"
+          accessibilityLabel={COPY.common.cancel}
+        >
+          {/* The sheet swallows the press so only the scrim closes. */}
+          <Pressable style={styles.sheetCard} onPress={() => {}} testID="events-picker-sheet">
+            {pickingCountry ? (
+              /* The wizard's country step, borrowed whole (D-060): a local,
+                 free, unmisspellable list — search above, the usual suspects
+                 underneath. */
+              <>
+                <Field
+                  label={COPY.venue.countryLabel}
+                  hideLabel
+                  pill
+                  prefix={<MagnifierIcon />}
+                  value={countryQuery}
+                  onChangeText={setCountryQuery}
+                  placeholder={COPY.venue.countryPlaceholder}
+                  testID="events-country-input"
+                />
+                {countryQuery.trim() === '' ? (
+                  <Text style={styles.heading}>{upperCase(COPY.venue.countryPopular)}</Text>
+                ) : null}
+                <ScrollView
+                  style={styles.sheetScroll}
+                  contentContainerStyle={styles.sheetScrollBody}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {(countryQuery.trim()
+                    ? filterCountries(countryOptions(getLocale()), countryQuery)
+                    : suggestedCountries(getLocale())
+                  ).map((option) => (
+                    <Pressable
+                      key={option.code}
+                      accessibilityRole="button"
+                      accessibilityLabel={option.name}
+                      onPress={() => {
+                        setAreaCountry(option);
+                        setPickingCountry(false);
+                        setCountryQuery('');
+                      }}
+                      style={({ pressed }) => [styles.countryRow, pressed && styles.cardPressed]}
+                      testID={`events-country-${option.code}`}
+                    >
+                      <Text style={styles.countryName}>{option.name}</Text>
+                      <Text style={styles.countryCode}>{option.code}</Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </>
+            ) : (
+              <>
+                <Text style={styles.heading}>{upperCase(COPY.events.chooseArea)}</Text>
+                {cityStep}
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }
@@ -726,13 +751,6 @@ const styles = StyleSheet.create({
     fontSize: 26,
     lineHeight: 32,
     color: color.ink,
-  },
-  subtitle: {
-    fontFamily: fontFamily.body,
-    fontSize: 14,
-    lineHeight: 20,
-    color: color.inkMuted,
-    marginBottom: spacing.sm,
   },
   heading: {
     fontFamily: fontFamily.bodySemi,
@@ -819,6 +837,24 @@ const styles = StyleSheet.create({
   hereButtonText: { fontFamily: fontFamily.bodySemi, fontSize: 14, color: color.ink },
   /** ED-01 (137:72): 14 between the search pill and each button under it. */
   areaPicker: { gap: 14 },
+  /** The change sheet: the same scrim every dialog uses, the card held high
+      so the keyboard rising under the city input never covers it. */
+  sheetScrim: {
+    flex: 1,
+    backgroundColor: overlay.photo,
+    justifyContent: 'flex-start',
+    paddingHorizontal: 20,
+    paddingTop: 96,
+  },
+  sheetCard: {
+    backgroundColor: color.surface,
+    borderRadius: 24,
+    padding: spacing.lg,
+    gap: 14,
+    maxHeight: '78%',
+  },
+  sheetScroll: { flexGrow: 0 },
+  sheetScrollBody: { gap: spacing.xs },
   carousel: { gap: 12 },
   /** 131:132: the page dots — the resting one stretched into a coral pill. */
   dots: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.xs },

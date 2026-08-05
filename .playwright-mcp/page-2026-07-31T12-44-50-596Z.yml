@@ -1,0 +1,12 @@
+- generic [ref=f10e12]:
+  - radiogroup "Language" [ref=f10e17]:
+    - radio "English" [ref=f10e18] [cursor=pointer]
+    - radio "Türkçe" [ref=f10e20] [cursor=pointer]
+  - generic [ref=f10e22]:
+    - heading "Vacation Match" [level=1] [ref=f10e23]
+    - heading "Meet the people already at your hotel ❤" [level=1] [ref=f10e24]
+    - generic [ref=f10e25]: Pick the place you are at — or the one you are going to — and match with the people there when you are. One place at a time.
+    - generic [ref=f10e31]:
+      - generic [ref=f10e32]: Safe and private
+      - generic [ref=f10e33]: Your identity stays private. No reservation, document, or ID is asked for.
+    - button "Continue with phone" [ref=f10e34] [cursor=pointer]
