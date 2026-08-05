@@ -509,15 +509,13 @@ describe('waiting for an SMS code', () => {
     await press(screen.getByLabelText(COPY.common.back));
 
     expect(await screen.findByTestId('screen-onboarding-phone')).toBeTruthy();
-    // Same number, shown the way the field shows numbers: the country code is
-    // the fixed prefix beside the box, and the rest is grouped as it is read.
+    // Same number, shown the way the field shows numbers: the dialling code is
+    // the control beside the box, and the rest is grouped as it is read. The
+    // country is *derived from the draft* (2026-08-06), so coming back to a
+    // Turkish number comes back to Türkiye rather than to whatever the picker
+    // happened to default to.
     expect(screen.getByTestId('auth-phone').props.value).toBe('555 111 00 20');
-    // Hidden from the screen reader on purpose — the field's accessible name
-    // already says "Turkey, country code plus 90", and reading the glyphs
-    // again would be the same fact twice.
-    expect(
-      screen.getByTestId('phone-prefix', { includeHiddenElements: true }),
-    ).toHaveTextContent('+90');
+    expect(screen.getByTestId('phone-country')).toHaveTextContent(/\+90/);
   });
 
   it('does not request another SMS when back and forward happen during the cooldown', async () => {

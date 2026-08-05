@@ -1,42 +1,59 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Modal, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { Field } from '../../components/ui';
-import { apiErrorMessage, COPY } from '../../copy';
+import { apiErrorMessage, COPY, getLocale } from '../../copy';
+import { ApiError, getApi } from '../../data';
+import { countryOptions, filterCountries, type CountryOption } from '../../domain/countries';
+import { dialCode, dialableCountries } from '../../domain/dialCodes';
 import {
-  ApiError,
-  formatNationalTr,
-  getApi,
-  isValidNationalTr,
-  nationalTrProblem,
-  toE164Tr,
+  countryOfE164,
+  formatNational,
+  fromE164,
+  isValidPhone,
+  phoneProblem,
+  toE164,
   toNationalDigits,
-} from '../../data';
-import { color, font, fontFamily, spacing } from '../../theme';
+} from '../../domain/phoneNumber';
+import { color, font, fontFamily, MIN_TOUCH, overlay, spacing } from '../../theme';
 import { OnboardingScaffold } from '../OnboardingScaffold';
 import { useCaptchaGate } from '../useCaptchaGate';
 import type { StepProps } from './types';
 
 /**
- * The number, with its country fixed.
+ * The number, and the country it belongs to.
  *
- * `+90` is drawn beside the box and is never part of the editable value, which
- * is what makes it impossible to delete half of it or to send a number with no
- * country on it. The state here is therefore ten national digits; the E.164
- * form is produced once, at the call.
+ * D-022 drew `+90` as a permanent part of the control. That was right for a
+ * Turkish pilot and wrong for the product this is — somebody flying from
+ * Amsterdam cannot sign in at all (owner, 2026-08-06). The prefix is now a
+ * *control*: it still never enters the editable value, so a number can still
+ * not lose half its country code, but pressing it opens the same searchable
+ * country list the venue and event flows use.
  *
- * The draft keeps E.164, because that is what the OTP step and the resend
- * window compare against. The grouped display is a view of those digits rather
- * than a second thing to keep in step.
+ * Türkiye stays the default because that is where the product launches, and
+ * the list is one press away rather than a setting.
  */
 export function PhoneStep({ step, total, draft, patch, go, onBack }: StepProps) {
   const { challenge, solve } = useCaptchaGate();
-  const [digits, setDigits] = useState(() => toNationalDigits(draft.phone));
+  /** Only the countries we can actually dial; the picker shows no dead rows. */
+  const countries = useMemo(() => {
+    const dialable = new Set(dialableCountries());
+    return countryOptions(getLocale()).filter((option) => dialable.has(option.code));
+  }, []);
+  const [country, setCountry] = useState<string>(
+    () => countryOfE164(draft.phone, dialableCountries()) ?? 'TR',
+  );
+  const [digits, setDigits] = useState(() => {
+    const national = fromE164(draft.phone, country);
+    return national ?? toNationalDigits(draft.phone, country);
+  });
+  const [picking, setPicking] = useState(false);
+  const [countryQuery, setCountryQuery] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
 
-  const problem = nationalTrProblem(digits);
+  const problem = phoneProblem(digits, country);
   // Only once somebody has left the field. Telling a person their number is
   // too short while they are still typing it is not help.
   const visibleProblem =
@@ -44,13 +61,15 @@ export function PhoneStep({ step, total, draft, patch, go, onBack }: StepProps) 
       ? null
       : problem === 'NOT_MOBILE'
         ? COPY.phoneAuth.notMobile
-        : COPY.phoneAuth.incomplete;
+        : problem === 'TOO_LONG'
+          ? COPY.phoneAuth.tooLong
+          : COPY.phoneAuth.incomplete;
 
   const sendCode = async () => {
-    if (busy || !isValidNationalTr(digits)) return;
+    if (busy || !isValidPhone(digits, country)) return;
     setBusy(true);
     setError(null);
-    const normalized = toE164Tr(digits);
+    const normalized = toE164(digits, country);
     const requestedRecently =
       draft.phone === normalized &&
       draft.otpRequestedAt !== null &&
@@ -100,6 +119,16 @@ export function PhoneStep({ step, total, draft, patch, go, onBack }: StepProps) 
     }
   };
 
+  const chooseCountry = (option: CountryOption) => {
+    setCountry(option.code);
+    // The digits belong to the country they were typed for: keeping them under
+    // a new dialling code would silently invent a different number.
+    setDigits('');
+    setTouched(false);
+    setPicking(false);
+    setCountryQuery('');
+  };
+
   return (
     <>
       {challenge}
@@ -110,7 +139,7 @@ export function PhoneStep({ step, total, draft, patch, go, onBack }: StepProps) 
       body={COPY.onboarding.phone.body}
       onBack={onBack}
       actionLabel={busy ? COPY.phoneAuth.sending : COPY.phoneAuth.sendCode}
-      actionEnabled={isValidNationalTr(digits) && !busy}
+      actionEnabled={isValidPhone(digits, country) && !busy}
       actionBusy={busy}
       onAction={sendCode}
       error={error ?? visibleProblem}
@@ -118,25 +147,31 @@ export function PhoneStep({ step, total, draft, patch, go, onBack }: StepProps) 
       errorTestID="phone-error"
     >
       <Field
-        // The box cannot speak the `+90` drawn next to it, so the accessible
-        // name carries the country instead.
+        // The box cannot speak the dialling code drawn next to it, so the
+        // accessible name carries the country instead.
         label={COPY.phoneAuth.phoneAccessibleLabel}
         hideLabel
         invalid={visibleProblem !== null}
         prefix={
-          <Text
-            style={styles.prefix}
-            accessibilityElementsHidden
-            importantForAccessibility="no"
-            testID="phone-prefix"
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={COPY.phoneAuth.changeCountry}
+            onPress={() => setPicking(true)}
+            disabled={busy}
+            hitSlop={6}
+            style={styles.prefixButton}
+            testID="phone-country"
           >
-            {COPY.phoneAuth.countryPrefix}
-          </Text>
+            <Text style={styles.prefix}>{`+${dialCode(country) ?? ''}`}</Text>
+            <Text style={styles.prefixChevron}>{'▾'}</Text>
+          </Pressable>
         }
-        value={formatNationalTr(digits)}
-        onChangeText={(text) => setDigits(toNationalDigits(text))}
+        value={formatNational(digits, country)}
+        onChangeText={(text) => setDigits(toNationalDigits(text, country))}
         onBlur={() => setTouched(true)}
-        placeholder={COPY.phoneAuth.phonePlaceholder}
+        placeholder={
+          country === 'TR' ? COPY.phoneAuth.phonePlaceholder : COPY.phoneAuth.phonePlaceholderAny
+        }
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="phone-pad"
@@ -145,12 +180,70 @@ export function PhoneStep({ step, total, draft, patch, go, onBack }: StepProps) 
         editable={!busy}
         testID="auth-phone"
       />
+
+      {/* The country list, over the page rather than under it — the same sheet
+          the events area picker uses. */}
+      <Modal
+        transparent
+        visible={picking}
+        animationType="fade"
+        onRequestClose={() => setPicking(false)}
+      >
+        <Pressable
+          style={styles.sheetScrim}
+          onPress={() => setPicking(false)}
+          accessibilityRole="button"
+          accessibilityLabel={COPY.common.cancel}
+        >
+          <Pressable style={styles.sheetCard} onPress={() => {}} testID="phone-country-sheet">
+            <Field
+              label={COPY.venue.countryLabel}
+              hideLabel
+              pill
+              value={countryQuery}
+              onChangeText={setCountryQuery}
+              placeholder={COPY.venue.countryPlaceholder}
+              testID="phone-country-input"
+            />
+            <ScrollView
+              style={styles.sheetScroll}
+              contentContainerStyle={styles.sheetBody}
+              keyboardShouldPersistTaps="handled"
+            >
+              {filterCountries(countries, countryQuery, 40).map((option) => (
+                <Pressable
+                  key={option.code}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${option.name} +${dialCode(option.code) ?? ''}`}
+                  accessibilityState={{ selected: option.code === country }}
+                  onPress={() => chooseCountry(option)}
+                  style={({ pressed }) => [styles.countryRow, pressed && styles.countryRowPressed]}
+                  testID={`phone-country-${option.code}`}
+                >
+                  <Text style={styles.countryName} numberOfLines={1}>
+                    {option.name}
+                  </Text>
+                  <Text style={styles.countryDial}>{`+${dialCode(option.code) ?? ''}`}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </OnboardingScaffold>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  /** The dialling code, and the fact that it can be changed. */
+  prefixButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    minHeight: MIN_TOUCH,
+    paddingRight: spacing.sm,
+  },
   prefix: {
     fontFamily: fontFamily.bodyMedium,
     fontSize: font.body,
@@ -159,6 +252,37 @@ const styles = StyleSheet.create({
     // were half of why +90 and the digits refused to sit on one line.
     includeFontPadding: false,
     color: color.ink,
-    marginRight: spacing.sm,
   },
+  prefixChevron: { fontFamily: fontFamily.bodySemi, fontSize: 11, color: color.accent },
+  sheetScrim: {
+    flex: 1,
+    backgroundColor: overlay.photo,
+    justifyContent: 'flex-start',
+    paddingHorizontal: 20,
+    paddingTop: 96,
+  },
+  sheetCard: {
+    backgroundColor: color.surface,
+    borderRadius: 24,
+    padding: spacing.lg,
+    gap: 12,
+    maxHeight: '78%',
+  },
+  sheetScroll: { flexGrow: 0 },
+  sheetBody: { gap: spacing.xs },
+  countryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: MIN_TOUCH,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: color.rule,
+    backgroundColor: color.surface,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  countryRowPressed: { backgroundColor: color.accentWash, borderColor: color.accent },
+  countryName: { flex: 1, fontFamily: fontFamily.bodyMedium, fontSize: 14, color: color.ink },
+  countryDial: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.inkMuted },
 });

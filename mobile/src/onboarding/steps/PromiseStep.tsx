@@ -50,11 +50,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   point: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  /** The brand coral, not its dark sibling: a dot carries no text (owner). */
   dot: {
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: color.accentDeep,
+    backgroundColor: color.accent,
     marginTop: 6,
   },
   pointText: {
