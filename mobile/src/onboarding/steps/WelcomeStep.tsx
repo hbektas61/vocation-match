@@ -1,12 +1,11 @@
 import React from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
 
 import { LanguageSwitch } from '../../components/LanguageSwitch';
 import { COPY } from '../../copy';
 import { useAppStore } from '../../state/AppStore';
-import { color, elevation, fontFamily } from '../../theme';
+import { color, fontFamily, MIN_TOUCH, radius } from '../../theme';
 import type { StepProps } from './types';
 
 /**
@@ -20,15 +19,6 @@ import type { StepProps } from './types';
  * and the page shows through it.
  */
 const MARK = require('../../../assets/brand-mark.png');
-
-const ShieldDisc = () => (
-  <View style={styles.shieldDisc}>
-    <Svg width={22} height={22} viewBox="0 0 24 24" fill={color.accentDeep} stroke={color.accentDeep} strokeWidth={1.5} strokeLinejoin="round">
-      <Path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
-      <Path d="M8.5 11.8l2.6 2.6 4.8-4.8" stroke={color.surface} strokeWidth={2.2} fill="none" strokeLinecap="round" />
-    </Svg>
-  </View>
-);
 
 /**
  * Phone OTP deliberately has no separate sign-up and sign-in journeys: the
@@ -67,19 +57,10 @@ export function WelcomeStep({ go }: StepProps) {
           <Text accessibilityRole="header" style={styles.headline}>
             {headline} ❤
           </Text>
-          <Text style={styles.body}>{COPY.onboarding.welcome.body}</Text>
 
-          {/* The trust card (4:12): a white card at 18, the 44 disc, 14/12 words. */}
-          <View style={styles.trustCard}>
-            <ShieldDisc />
-            <View style={styles.trustWords}>
-              <Text style={styles.trustTitle}>{COPY.onboarding.welcome.trustTitle}</Text>
-              <Text style={styles.trustBody}>{COPY.onboarding.welcome.trustBody}</Text>
-            </View>
-          </View>
-
-          {/* The sheet's outsized welcome action (4:17): flat coral,
-              a hundred tall, with the coral glow under it. */}
+          {/* The one way forward, at the shared `Button`'s size (owner,
+              2026-08-05) — the sheets' hundred-tall slab made onboarding the
+              only place with a button that big. */}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={COPY.onboarding.welcome.continueWithPhone}
@@ -101,9 +82,13 @@ export function WelcomeStep({ go }: StepProps) {
 const styles = StyleSheet.create({
   /** White, like the apps this screen is answering (owner, 2026-08-05). */
   screen: { flex: 1, backgroundColor: color.surface },
-  /** The mark's own room at the top of the page. */
-  markRoom: { alignItems: 'center', justifyContent: 'center', paddingTop: 56, paddingBottom: 8 },
-  mark: { width: 176, height: 200 },
+  /**
+   * The mark sits low rather than at the ceiling (owner, 2026-08-06): with the
+   * body sentence and the trust card gone, the page is the mark, the name, one
+   * line and the button — so the mark takes the room those left behind.
+   */
+  markRoom: { alignItems: 'center', justifyContent: 'center', paddingTop: 132, paddingBottom: 18 },
+  mark: { width: 196, height: 222 },
   scroll: { flexGrow: 1, paddingBottom: 24 },
   languageRow: {
     position: 'absolute',
@@ -117,10 +102,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
   },
+  /**
+   * The name, in the brand coral (owner, 2026-08-06). The dark sibling is
+   * what coral *text* normally has to be — but a wordmark is a logotype, not
+   * prose, and WCAG exempts one. It is drawn large for the same reason.
+   */
   wordmark: {
     fontFamily: fontFamily.display,
-    fontSize: 20,
-    color: color.accentDeep,
+    fontSize: 24,
+    lineHeight: 30,
+    color: color.accent,
     textAlign: 'center',
   },
   headline: {
@@ -130,65 +121,26 @@ const styles = StyleSheet.create({
     color: color.ink,
     textAlign: 'center',
   },
-  body: {
-    fontFamily: fontFamily.body,
-    fontSize: 14,
-    lineHeight: 14 * 1.5,
-    color: color.inkMuted,
-    textAlign: 'center',
-  },
-  trustCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    alignSelf: 'stretch',
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.rule,
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    ...elevation.card,
-  },
-  shieldDisc: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: color.veil,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  trustWords: { flex: 1, gap: 3 },
-  trustTitle: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 14,
-    color: color.ink,
-  },
-  trustBody: {
-    fontFamily: fontFamily.body,
-    fontSize: 12,
-    lineHeight: 12 * 1.45,
-    color: color.inkMuted,
-  },
   cta: {
     alignSelf: 'stretch',
-    height: 100,
-    borderRadius: 999,
+    minHeight: MIN_TOUCH,
+    paddingVertical: 14,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: color.accent,
     overflow: 'hidden',
     marginTop: 'auto',
     shadowColor: color.accent,
-    shadowOpacity: 0.45,
-    shadowRadius: 11,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 5,
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
   ctaPressed: { opacity: 0.85 },
   ctaLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 16,
+    fontSize: 15,
     color: color.onAccent,
   },
 });
