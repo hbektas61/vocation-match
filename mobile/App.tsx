@@ -1,5 +1,10 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from '@expo-google-fonts/inter';
+import {
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from '@expo-google-fonts/plus-jakarta-sans';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
@@ -31,13 +36,20 @@ function ProductApp() {
   // moment before the files arrive, which is a slightly different shape rather
   // than a blank screen — and a blank screen while a network fetches a font is
   // a worse first impression than either.
-  // D-058 retired the rounded display face: the one display voice is now the
-  // platform serif, which is already on the device. Only the reading family
-  // has to arrive.
+  // D-060 retired the platform serif. D-058 chose it to avoid a download, and
+  // the download it avoided cost the product its voice: on iOS that serif is
+  // Georgia, drawn in 1996 for reading body text on a CRT, and it is why the
+  // owner read the whole app as "old, like Wikipedia". The display face is now
+  // a geometric sans, which is a second family to fetch — acceptable because
+  // the reading family was already being fetched, so this changes how much
+  // arrives late rather than whether anything does.
   useFonts({
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
   });
 
   return (

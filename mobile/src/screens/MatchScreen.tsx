@@ -217,7 +217,8 @@ const styles = StyleSheet.create({
   /** 132:95: centred, the drawing's 18pt between heart and word. */
   head: { alignItems: 'center', gap: 18, marginTop: 44 },
   title: {
-    fontFamily: fontFamily.display,
+    // The heaviest cut in the app, in the one place that has earned it.
+    fontFamily: fontFamily.displayHeavy,
     fontSize: 44,
     lineHeight: 48,
     color: color.onPhoto,

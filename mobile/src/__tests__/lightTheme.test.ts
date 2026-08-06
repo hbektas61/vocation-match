@@ -91,11 +91,30 @@ describe('the light theme is the only theme left in the source', () => {
     expect(gradientNames.sort()).toEqual(['match', 'photoScrim']);
   });
 
-  it('loads no display font that has to be downloaded', () => {
-    // D-058 forbids a new font dependency, and the display face is the
-    // platform serif precisely so there is nothing to fail to arrive.
+  it('renders without waiting for a font to arrive', () => {
+    // D-058 kept the display face on the platform serif so nothing could fail
+    // to arrive. D-060 spent that: on iOS the platform serif is Georgia, and
+    // the product read as an encyclopedia. What has to survive the trade is
+    // the reason behind it — `useFonts` must stay ungated, so a slow network
+    // costs a moment of the wrong shape rather than a blank screen.
     const app = readFileSync(join(MOBILE, 'App.tsx'), 'utf8');
-    expect(app).not.toMatch(/Nunito/);
     expect(app).toMatch(/Inter_400Regular/);
+    expect(app).toMatch(/PlusJakartaSans_700Bold/);
+    // The retired families stay retired: Nunito was D-043's rounded face.
+    expect(app).not.toMatch(/Nunito/);
+    // No `const [loaded] = useFonts(...); if (!loaded) return …`.
+    expect(app).not.toMatch(/=\s*useFonts\(/);
+  });
+
+  it('draws a border only on something you can operate', () => {
+    // D-060: a white card on a white ground was fenced with a 1px rule, which
+    // is how a document panel is drawn. The lift tells a card from the ground
+    // now, and an edge means one thing — input, chip, secondary button.
+    const ui = readFileSync(join(SRC, 'components/ui.tsx'), 'utf8');
+    const fenced = ['  card: {', '  keyCard: {', '  empty: {'].filter((key) => {
+      const block = ui.slice(ui.indexOf(key), ui.indexOf('},', ui.indexOf(key)));
+      return /borderWidth/.test(block);
+    });
+    expect(fenced).toEqual([]);
   });
 });

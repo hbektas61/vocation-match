@@ -85,15 +85,18 @@ describe('the D-058 palette', () => {
     }
   });
 
-  it('puts white under everything, and tells a card from it by edge and lift', () => {
+  it('puts white under everything, and tells a card from it by lift alone', () => {
     expect(color.background).toBe('#FFFFFF');
     expect(color.surface).toBe('#FFFFFF');
-    // With the ground and the card the same white, the two things that say
-    // "this is a card" are the only two left — so both have to be real.
+    // D-060 took the card's edge away, so the lift is not one of two signals
+    // any more — it is the only one, and it has to carry the whole job on
+    // both platforms. Android draws nothing at all without `elevation`.
     expect(elevation.card.elevation).toBeGreaterThan(0);
-    expect(elevation.card.shadowOpacity).toBeGreaterThan(0);
+    expect(elevation.card.shadowOpacity).toBeGreaterThanOrEqual(0.08);
+    expect(elevation.card.shadowRadius).toBeGreaterThanOrEqual(16);
+    // The rule survives for the jobs that are actually a line: a divider, and
+    // the edge of anything operable.
     expect(color.rule).not.toBe(color.surface);
-    // And the edge has to be visible on it, not merely different.
     expect(contrast(color.rule, SURFACE)).toBeGreaterThan(1.1);
   });
 
@@ -104,9 +107,15 @@ describe('the D-058 palette', () => {
     expect(tokens.text.onInverse).toBe('#FAFAF7');
   });
 
-  it('keeps the card radius inside the 18–22 the brief asked for', () => {
+  it('rounds a card enough to read as an object rather than a panel', () => {
+    // D-058's brief asked for 18–22 and `radius.lg` still answers it, for the
+    // surfaces that want a restrained corner. The card itself went to `xl`
+    // with the border removal (D-060): once nothing fences it, a softer
+    // corner is what stops it dissolving into the ground.
     expect(radius.lg).toBeGreaterThanOrEqual(18);
     expect(radius.lg).toBeLessThanOrEqual(22);
+    expect(radius.xl).toBeGreaterThan(radius.lg);
+    expect(radius.xl).toBeLessThanOrEqual(28);
   });
 });
 

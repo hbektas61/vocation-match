@@ -223,14 +223,18 @@ export function Caption({
 }
 
 /**
- * Tracked, uppercase, small. The only job is to name what follows — a section,
- * a state — so it is deliberately not usable for prose. Where a label appears,
- * the structure it marks should be real.
+ * Small and semibold, in the display face. The only job is to name what
+ * follows — a section, a state — so it is deliberately not usable for prose.
+ * Where a label appears, the structure it marks should be real.
+ *
+ * D-060 took the capitals off. Uppercase set with a point and a half of
+ * tracking is a print eyebrow, and a screen of them is a reference work rather
+ * than an app. A section is now named the way somebody would say it.
  */
 export function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <Text accessibilityRole="header" style={styles.sectionLabel}>
-      {typeof children === 'string' ? upperCase(children) : children}
+      {children}
     </Text>
   );
 }
@@ -410,7 +414,8 @@ export function Field(
 
   return (
     <View style={styles.field}>
-      {hideLabel ? null : <Text style={styles.fieldLabel}>{upperCase(label)}</Text>}
+      {/* Sentence case (D-060): a label over an input is read, not indexed. */}
+      {hideLabel ? null : <Text style={styles.fieldLabel}>{label}</Text>}
       <View
         // The box carries the border, so the border is only assertable if the
         // box can be found.
@@ -1311,7 +1316,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: spacing.sm,
     maxWidth: 340,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     backgroundColor: color.surface,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.wide,
@@ -1333,12 +1338,12 @@ const styles = StyleSheet.create({
   },
   dialogCard: {
     backgroundColor: color.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     padding: spacing.lg,
     gap: spacing.sm,
   },
   dialogTitle: {
-    fontFamily: fontFamily.display,
+    fontFamily: fontFamily.displaySemi,
     fontSize: font.heading,
     lineHeight: font.heading * leading.snug,
     color: color.ink,
@@ -1363,7 +1368,6 @@ const styles = StyleSheet.create({
   screenHeaderTitle: {
     flexShrink: 1,
     fontFamily: fontFamily.display,
-    fontWeight: '700',
     fontSize: font.display,
     lineHeight: font.display * leading.tight,
     letterSpacing: tracking.display,
@@ -1372,7 +1376,6 @@ const styles = StyleSheet.create({
 
   display: {
     fontFamily: fontFamily.display,
-    fontWeight: '700',
     fontSize: font.display,
     lineHeight: font.display * leading.tight,
     letterSpacing: tracking.display,
@@ -1380,7 +1383,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fontFamily.display,
-    fontWeight: '700',
     fontSize: font.title,
     lineHeight: font.title * leading.tight,
     letterSpacing: tracking.display,
@@ -1404,11 +1406,16 @@ const styles = StyleSheet.create({
     lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
+  /**
+   * Sentence case (D-060). Tracked uppercase over a block of content is a
+   * newspaper's eyebrow — the convention that, with the serif, made the app
+   * read as a reference work. A section is named the way it would be said.
+   */
   sectionLabel: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.label,
-    letterSpacing: tracking.label,
-    color: color.inkMuted,
+    fontFamily: fontFamily.displaySemi,
+    fontSize: font.caption,
+    letterSpacing: tracking.none,
+    color: color.ink,
   },
 
   button: {
@@ -1507,8 +1514,8 @@ const styles = StyleSheet.create({
   fieldHintInvalid: { color: color.danger },
   fieldLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: font.label,
-    letterSpacing: tracking.label,
+    fontSize: font.caption,
+    letterSpacing: tracking.none,
     color: color.inkMuted,
   },
   /**
@@ -1578,17 +1585,21 @@ const styles = StyleSheet.create({
    * 375pt — the border is deliberately quiet and the shadow disappears on
    * Android without `elevation`.
    */
+  /**
+   * No edge (D-060). A white card on a white ground used to be fenced with a
+   * 1px rule, which is how a document panel is drawn — and a page of fenced
+   * panels is what read as "old" to the owner. The lift does the whole job
+   * now, and a border in this app means one thing only: you can operate it.
+   */
   card: {
     backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.rule,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     padding: spacing.md,
     gap: spacing.sm,
     ...elevation.card,
   },
-  cardFlat: { ...elevation.none, backgroundColor: color.veil, borderColor: color.rule },
-  cardBrand: { backgroundColor: color.accentWash, borderColor: color.rule },
+  cardFlat: { ...elevation.none, backgroundColor: color.veil },
+  cardBrand: { backgroundColor: color.accentWash },
 
   chip: {
     minHeight: MIN_TOUCH,
@@ -1676,9 +1687,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.cozy,
   },
   keyCard: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: color.rule,
+    borderRadius: radius.xl,
     backgroundColor: color.surface,
     overflow: 'hidden',
     ...elevation.card,
@@ -1790,16 +1799,13 @@ const styles = StyleSheet.create({
   avatarImage: { resizeMode: 'cover' },
   avatarInitial: {
     fontFamily: fontFamily.display,
-    fontWeight: '700',
     fontSize: font.heading,
     color: color.inkMuted,
   },
 
   empty: {
     backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.rule,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.md,
     alignItems: 'center',
@@ -1817,7 +1823,6 @@ const styles = StyleSheet.create({
   },
   emptyGlyph: {
     fontFamily: fontFamily.display,
-    fontWeight: '700',
     fontSize: font.display,
     lineHeight: font.display * leading.tight,
     color: color.ink,

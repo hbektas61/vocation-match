@@ -238,3 +238,50 @@ inherits from it. The conversion table is `.studio/d059-scale-contract.md`.
 
 **Unchanged.** The palette (D-058), the information architecture (D-057), copy,
 room eligibility, provider behaviour, privacy thresholds, and the schema.
+
+## D-060 — The display face is a geometric sans, and a card floats (2026-08-06)
+
+Owner, on the whole product: "modern çok durmuyor, fontlar vesaire hep böyle
+eski Wikipedia gibi duruyor." The diagnosis had four parts and one main cause.
+
+**The face.** D-058 set the display family to the *platform serif* to avoid a
+font download. On iOS that resolves to **Georgia** — drawn in 1996 for reading
+body text on a CRT, and the voice of every encyclopedia and blog on the web.
+Every screen title, person's name, card title, avatar initial and the match word
+spoke in it. D-058's argument (nothing to fail to arrive) was already spent,
+because the reading family is downloaded anyway.
+
+**Decision, owner's choice of three offered:** a geometric display sans —
+**Plus Jakarta Sans** 600/700/800 — with Inter kept for all reading, forms,
+chips and navigation. `useFonts` stays ungated: a slow network costs a moment of
+the wrong shape, never a blank screen.
+
+Three consequences, all in `theme.ts` and `ui.tsx`:
+
+- **Real weights, no synthetic bold.** Five styles asked the system to embolden
+  the serif with `fontWeight: '700'`; iOS smears a face that way. Every weight
+  is now a real cut and nothing sets `fontWeight` over it.
+- **Tighter display tracking**, −0.2 → **−0.5**. A geometric sans sets loose and
+  reads dated left alone; more of the modern voice comes from this than from
+  the weight.
+- **Sentence case.** `SectionLabel` and the field label were tracked uppercase —
+  a newspaper eyebrow, and with the serif the second half of the Wikipedia
+  read. Badges and room ribbons keep their capitals: those are pills, and the
+  room plate is the product's signature signal.
+
+**The surface (owner's choice of three offered): a card floats.** The 1px rule
+around every white card on a white ground is how a *document panel* is drawn.
+It is gone from `card`, `keyCard` and `empty`; `elevation.card` widened and
+softened (0.06/12/y4 → 0.10/24/y8) to carry the whole job, and the card corner
+went `radius.lg` → `radius.xl` (24) so an unfenced card does not dissolve into
+the ground. **A border in this app now means exactly one thing: you can operate
+it** — input, chip, secondary button, pass action.
+
+**Enforcement.** `lightTheme.test.ts` gained two: `useFonts` is never gated on,
+and `card`/`keyCard`/`empty` carry no `borderWidth`. `theme.test.ts`'s card
+assertions were rewritten — they claimed "edge and lift" and would have passed
+while asserting nothing about the signal that now does all the work.
+
+**Deferred.** The four card *shapes* (hero, object row, status panel, choice
+tile) that replace the app's 35 hand-built card styles land per screen during
+the D-059 pass, not as separate work.

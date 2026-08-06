@@ -14,8 +14,6 @@
  * `color` underneath is the flat alias every screen already imports.
  */
 
-import { Platform } from 'react-native';
-
 /**
  * The canonical palette. Screens use the semantic names below rather than
  * these, so a hue can move without touching a screen.
@@ -292,17 +290,29 @@ export const spacing = {
 
 /**
  * Two families, two jobs. Inter does all of the reading, the forms, the chips
- * and the navigation — unchanged from D-057, because it is the better face at
+ * and the navigation — unchanged since D-057, because it is the better face at
  * 13px in a bio nobody asked to squint at.
  *
- * `display` is D-058's one controlled indulgence: the platform serif, on
- * screen titles, names and the match moment only. It is the system face on
- * both platforms rather than a new download, so there is no font to fail to
- * arrive and no new dependency (D-058 forbids both).
+ * The display face is a geometric sans (D-060). It replaces the platform serif
+ * D-058 chose, which on iOS resolves to Georgia — a 1996 screen serif drawn for
+ * body text on a CRT, and the reason the owner read the product as "old, like
+ * Wikipedia" (2026-08-06). D-058's argument for it was that a system face
+ * cannot fail to arrive; that argument was already spent, because the reading
+ * family is downloaded too. What it bought instead was the voice of an
+ * encyclopedia on a product about meeting people on holiday.
+ *
+ * Emphasis now comes from weight and from a size that is genuinely larger,
+ * rather than from a change of species. Nothing sets `fontWeight` on top of
+ * these: every weight here is a real cut, and asking the system to embolden a
+ * real cut is what produces the smeared type iOS calls synthetic bold.
  */
 export const fontFamily = {
-  display: Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia' }) as string,
-  displaySemi: 'Inter_600SemiBold',
+  /** A screen title, a name, the match word. */
+  display: 'PlusJakartaSans_700Bold',
+  /** The heaviest voice: the one-word moment, and nothing routine. */
+  displayHeavy: 'PlusJakartaSans_800ExtraBold',
+  /** A section heading, a card's own title — display, one weight down. */
+  displaySemi: 'PlusJakartaSans_600SemiBold',
   body: 'Inter_400Regular',
   bodyMedium: 'Inter_500Medium',
   bodySemi: 'Inter_600SemiBold',
@@ -374,8 +384,12 @@ export const leading = {
  * Large type closes up, small uppercase opens out — the rest is noise.
  */
 export const tracking = {
-  /** Display type at 26 and above, which sets loose by default. */
-  display: -0.2,
+  /**
+   * Display type, which sets loose by default and reads dated when left that
+   * way. A geometric sans pulled in half a point is where the modern voice
+   * actually comes from — more of the emphasis than the weight does.
+   */
+  display: -0.5,
   none: 0,
   /** A control's label: barely open, so a button reads as a button. */
   control: 0.2,
@@ -408,12 +422,18 @@ export const radius = {
  * edge and a soft shadow; Android needs `elevation` for any of it to appear.
  */
 export const elevation = {
+  /**
+   * A card floats (D-060). It used to be fenced: a 1px border plus a tight 6%
+   * shadow, which is how a document panel is drawn and not how an object is.
+   * The border is gone everywhere and this took over its whole job, so it is
+   * wider and softer — a shadow you do not notice until the card is missing.
+   */
   card: {
     shadowColor: palette.navy,
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
   },
   raised: {
     shadowColor: palette.navy,
