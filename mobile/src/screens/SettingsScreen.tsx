@@ -15,7 +15,7 @@ import { resetDeckLabels } from '../data/venueLabels';
 import type { RootStackParamList } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
-import { color, spacing } from '../theme';
+import { color, radius, spacing } from '../theme';
 
 /**
  * What the app is entitled to claim about a deletion that did not visibly work.
@@ -295,20 +295,20 @@ export function SettingsScreen() {
 
 const styles = StyleSheet.create({
   profileHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  avatarRing: { borderRadius: 999, padding: 3, backgroundColor: color.accent },
-  avatarSeat: { borderRadius: 999, padding: 3, backgroundColor: color.surface },
+  avatarRing: { borderRadius: radius.pill, padding: spacing.xs, backgroundColor: color.accent },
+  avatarSeat: { borderRadius: radius.pill, padding: spacing.xs, backgroundColor: color.surface },
   crownBadge: {
     position: 'absolute',
     right: -2,
     bottom: -2,
     width: 26,
     height: 26,
-    borderRadius: 13,
+    borderRadius: radius.pill,
     backgroundColor: color.background,
     borderWidth: 1.5,
     borderColor: color.premiumMark,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  profileText: { flex: 1, gap: 2 },
+  profileText: { flex: 1, gap: spacing.tight },
 });

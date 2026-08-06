@@ -12,11 +12,11 @@ import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Body, Button, Caption, Card, ConfirmDialog, PhotoScrim, Screen, SuccessBadge, Title } from '../components/ui';
 import { HotelBuilding } from '../components/HotelIllustrations';
-import { COPY, upperCase } from '../copy';
+import { COPY } from '../copy';
 import { getApi, readBackendConfig } from '../data';
 import type { RootScreenProps } from '../navigation/types';
 import { useAppStore } from '../state/AppStore';
-import { color, font, fontFamily, radius, spacing } from '../theme';
+import { color, font, fontFamily, radius, spacing, tracking } from '../theme';
 
 const PinIcon = () => (
   <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -129,7 +129,7 @@ export function HotelDetailsScreen({ route, navigation }: RootScreenProps<'Hotel
       )}
       {!isGoogle && hotel.address ? (
         <View style={styles.block}>
-          <Text style={styles.blockLabel}>{upperCase(COPY.hotel.addressLabel)}</Text>
+          <Text style={styles.blockLabel}>{COPY.hotel.addressLabel}</Text>
           <Body>{hotel.address}</Body>
         </View>
       ) : null}
@@ -209,7 +209,7 @@ export function HotelDetailsScreen({ route, navigation }: RootScreenProps<'Hotel
 
 const styles = StyleSheet.create({
   photoWrap: {
-    borderRadius: radius.md,
+    borderRadius: radius.xl,
     overflow: 'hidden',
   },
   photo: { width: '100%', height: 210, backgroundColor: color.veil },
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     bottom: 4,
     right: 8,
     fontFamily: fontFamily.body,
-    fontSize: 10,
+    fontSize: font.label,
     color: color.onPhoto,
     maxWidth: '80%',
   },
@@ -227,19 +227,19 @@ const styles = StyleSheet.create({
   // else an image would otherwise sit.
   artWrap: {
     height: 160,
-    borderRadius: radius.md,
+    borderRadius: radius.xl,
     backgroundColor: color.veil,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  placeRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  placeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.cozy },
   /** The badge sits on its own row so it keeps its size beside nothing. */
   statusHead: { flexDirection: 'row' },
-  block: { gap: 4, marginTop: spacing.sm },
+  block: { gap: spacing.xs, marginTop: spacing.sm },
   blockLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: font.label,
-    letterSpacing: 1.2,
+    fontSize: font.caption,
+    letterSpacing: tracking.none,
     color: color.inkMuted,
   },
 });

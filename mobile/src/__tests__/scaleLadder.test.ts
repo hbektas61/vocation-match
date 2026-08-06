@@ -32,9 +32,17 @@ const SRC = join(__dirname, '..');
  */
 const CONVERTED = [
   'components/ui.tsx',
+  'screens/ChatScreen.tsx',
   'screens/CheckinScreen.tsx',
   'screens/DiscoveryScreen.tsx',
+  'screens/EventDetailScreen.tsx',
   'screens/EventsScreen.tsx',
+  'screens/HotelDetailsScreen.tsx',
+  'screens/HotelScreen.tsx',
+  'screens/InboxScreen.tsx',
+  'screens/MatchScreen.tsx',
+  'screens/SettingsScreen.tsx',
+  'screens/UpcomingScreen.tsx',
 ];
 
 /** Queued for the D-059 pass. Every name here is a screen still on its own eye. */
@@ -68,14 +76,6 @@ const PENDING = [
   'onboarding/steps/PromiseStep.tsx',
   'onboarding/steps/ShowMeStep.tsx',
   'onboarding/steps/WelcomeStep.tsx',
-  'screens/ChatScreen.tsx',
-  'screens/EventDetailScreen.tsx',
-  'screens/HotelDetailsScreen.tsx',
-  'screens/HotelScreen.tsx',
-  'screens/InboxScreen.tsx',
-  'screens/MatchScreen.tsx',
-  'screens/SettingsScreen.tsx',
-  'screens/UpcomingScreen.tsx',
 ];
 
 /**

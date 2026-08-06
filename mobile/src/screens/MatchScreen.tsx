@@ -19,7 +19,17 @@ import { COPY, upperCase, matchSource } from '../copy';
 import type { RootScreenProps } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
-import { color, fontFamily, gradient, MIN_TOUCH, radius, spacing } from '../theme';
+import {
+  color,
+  font,
+  fontFamily,
+  gradient,
+  leading,
+  MIN_TOUCH,
+  radius,
+  spacing,
+  tracking,
+} from '../theme';
 
 /** 132:96 — the outline heart over the title. */
 const HeartOutline = () => (
@@ -203,24 +213,28 @@ export function MatchScreen({ navigation, route }: RootScreenProps<'Match'>) {
 
 const FACE = 170;
 
+/** The initial that stands in for a missing face, sized to the ring. */
+const FACELESS_INITIAL = 52;
+
 const styles = StyleSheet.create({
   /** Carries `gradient.match`, the one full-bleed layer this screen paints. */
-  page: { flex: 1, position: 'relative', paddingHorizontal: 20 },
+  page: { flex: 1, position: 'relative', paddingHorizontal: spacing.wide },
   close: {
     width: MIN_TOUCH,
     height: MIN_TOUCH,
     marginTop: spacing.sm,
-    marginLeft: -4,
+    marginLeft: -spacing.xs,
     alignItems: 'center',
     justifyContent: 'center',
   },
   /** 132:95: centred, the drawing's 18pt between heart and word. */
-  head: { alignItems: 'center', gap: 18, marginTop: 44 },
+  head: { alignItems: 'center', gap: spacing.wide, marginTop: spacing.xl },
   title: {
     // The heaviest cut in the app, in the one place that has earned it.
     fontFamily: fontFamily.displayHeavy,
-    fontSize: 44,
-    lineHeight: 48,
+    fontSize: font.moment,
+    lineHeight: font.moment * leading.tight,
+    letterSpacing: tracking.display,
     color: color.onPhoto,
     textAlign: 'center',
   },
@@ -229,8 +243,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 2,
-    marginTop: 56,
+    gap: spacing.tight,
+    marginTop: spacing.xl,
   },
   face: {
     width: FACE,
@@ -243,9 +257,10 @@ const styles = StyleSheet.create({
   },
   facePhoto: { width: '100%', height: '100%' },
   faceEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  /** A drawing rather than type: the initial is sized to the face it fills. */
   faceInitial: {
     fontFamily: fontFamily.display,
-    fontSize: 52,
+    fontSize: FACELESS_INITIAL,
     color: color.accentDeep,
   },
   /** 132:101: the coral heart in its 5pt white collar, pinned at the seam. */
@@ -255,43 +270,48 @@ const styles = StyleSheet.create({
     top: (FACE - 64) / 2,
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: radius.pill,
     borderWidth: 5,
     borderColor: color.surface,
     backgroundColor: color.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  words: { alignItems: 'center', gap: 6, marginTop: 44, paddingHorizontal: 20 },
+  words: {
+    alignItems: 'center',
+    gap: spacing.cozy,
+    marginTop: spacing.xl,
+    paddingHorizontal: spacing.wide,
+  },
   body: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: font.body,
+    lineHeight: font.body * leading.snug,
     color: color.onPhoto,
     textAlign: 'center',
   },
   /** The room's sentence, one size down from the body it follows. */
   source: {
     fontFamily: fontFamily.body,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.onPhoto,
     textAlign: 'center',
   },
   spacer: { flex: 1 },
-  actions: { gap: 12, paddingBottom: 40 },
+  actions: { gap: spacing.snug, paddingBottom: spacing.xl },
   /** White pill, coral-ink label — the primary legible anywhere on it. */
   ctaPrimary: {
     minHeight: MIN_TOUCH,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 15,
+    paddingVertical: spacing.md,
     backgroundColor: color.surface,
   },
   ctaPrimaryLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 15,
+    fontSize: font.control,
     color: color.accentDeep,
   },
   ctaSecondary: {
@@ -299,13 +319,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 15,
+    paddingVertical: spacing.md,
     borderWidth: 1.5,
     borderColor: color.surface,
   },
   ctaSecondaryLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 15,
+    fontSize: font.control,
     color: color.onPhoto,
   },
   ctaPressed: { opacity: 0.85 },

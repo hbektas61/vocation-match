@@ -19,7 +19,7 @@ import { ApiError, getApi, type MatchSummary } from '../data';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
-import { color, elevation, font, fontFamily, spacing } from '../theme';
+import { color, elevation, font, fontFamily, leading, radius, spacing, tracking } from '../theme';
 
 /** The owner's own 3D lobby render (2026-07-28), bundled — not a redrawing. */
 
@@ -334,23 +334,24 @@ const styles = StyleSheet.create({
    * heading, the drawing and the card read as one block instead of three
    * things pushed against the title with the screen empty below them.
    */
-  empty: { alignSelf: 'stretch', flex: 1, justifyContent: 'center', gap: 12 },
+  empty: { alignSelf: 'stretch', flex: 1, justifyContent: 'center', gap: spacing.snug },
   subtitle: {
     fontFamily: fontFamily.body,
-    fontSize: 13,
-    lineHeight: 13 * 1.5,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
   emptyTitle: {
     fontFamily: fontFamily.display,
-    fontSize: 22,
+    fontSize: font.title,
+    letterSpacing: tracking.display,
     color: color.ink,
     textAlign: 'center',
   },
   emptyBody: {
     fontFamily: fontFamily.body,
-    fontSize: 13,
-    lineHeight: 13 * 1.5,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
     textAlign: 'center',
   },
@@ -367,82 +368,81 @@ const styles = StyleSheet.create({
   },
   headTitle: {
     fontFamily: fontFamily.display,
-    fontSize: 34,
-    lineHeight: 34 * 1.15,
+    fontSize: font.display,
+    lineHeight: font.display * leading.tight,
+    letterSpacing: tracking.display,
     color: color.ink,
   },
   /** The new-match strip (12:170): 14 between faces, 6 under each. */
-  freshRow: { flexDirection: 'row', gap: 14 },
-  freshItem: { alignItems: 'center', gap: 6 },
+  freshRow: { flexDirection: 'row', gap: spacing.md },
+  freshItem: { alignItems: 'center', gap: spacing.cozy },
   /** The 64 collar (12:172): 4 of solid coral around the 56 face. */
   freshRing: {
-    padding: 4,
-    borderRadius: 32,
+    padding: spacing.xs,
+    borderRadius: radius.pill,
     backgroundColor: color.accent,
   },
   freshName: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: 12,
+    fontSize: font.label,
     color: color.ink,
   },
   /** The sheet's conversation row (12:183): white, 18 corners, 12 inside. */
   chatCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.snug,
     backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.rule,
-    borderRadius: 18,
-    padding: 12,
+    borderRadius: radius.lg,
+    padding: spacing.snug,
     ...elevation.card,
   },
   /** Readable, dimmed: a closed conversation is history, not a mistake. */
   rowClosed: { opacity: 0.55 },
-  rowText: { flex: 1, gap: 2 },
+  rowText: { flex: 1, gap: spacing.tight },
   rowName: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 14,
+    fontSize: font.body,
     color: color.ink,
   },
   /** D-057: where the two of you met, under the preview. */
   rowSource: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: 10,
-    letterSpacing: 0.3,
+    fontSize: font.label,
+    letterSpacing: tracking.none,
     color: color.inkMuted,
   },
   rowPreview: {
     fontFamily: fontFamily.body,
-    fontSize: 12,
+    fontSize: font.caption,
     color: color.inkMuted,
   },
-  rowRight: { alignItems: 'flex-end', gap: 4 },
+  rowRight: { alignItems: 'flex-end', gap: spacing.xs },
   /** The count, in the brand fill with navy on it — the same pairing every
       other coral surface uses. */
   unreadPill: {
     minWidth: 20,
     height: 20,
-    borderRadius: 10,
-    paddingHorizontal: 6,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.cozy,
     backgroundColor: color.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   unreadPillText: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 11,
+    fontSize: font.label,
     color: color.onAccent,
   },
   rowWhen: {
     fontFamily: fontFamily.body,
-    fontSize: 11,
+    fontSize: font.label,
     color: color.inkMuted,
   },
   rowFace: {
     width: 46,
     height: 46,
-    borderRadius: 23,
+    borderRadius: radius.pill,
     backgroundColor: color.veil,
     overflow: 'hidden',
     alignItems: 'center',

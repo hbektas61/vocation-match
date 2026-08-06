@@ -18,7 +18,16 @@ import { useToast } from '../components/ToastHost';
 import { apiErrorMessage, COPY, upperCase, roomPlate } from '../copy';
 import { ApiError, getApi, type ChatMessage } from '../data';
 import type { RootScreenProps } from '../navigation/types';
-import { color, elevation, font, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
+import {
+  color,
+  elevation,
+  font,
+  fontFamily,
+  leading,
+  MIN_TOUCH,
+  radius,
+  spacing,
+} from '../theme';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
 
@@ -506,14 +515,14 @@ const styles = StyleSheet.create({
   menuBody: {
     fontFamily: fontFamily.body,
     fontSize: font.caption,
-    lineHeight: font.caption * 1.45,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
   /** The sheet's head row (13:154): 12 between everything, one line. */
   headRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.snug,
     paddingBottom: spacing.sm,
   },
   /**
@@ -534,33 +543,33 @@ const styles = StyleSheet.create({
   headAvatar: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radius.pill,
     backgroundColor: color.veil,
   },
   headAvatarEmpty: { alignItems: 'center', justifyContent: 'center' },
-  headInitial: { fontFamily: fontFamily.display, fontSize: 20, color: color.accentDeep },
-  headWords: { flex: 1, gap: 2 },
+  headInitial: { fontFamily: fontFamily.display, fontSize: font.heading, color: color.accentDeep },
+  headWords: { flex: 1, gap: spacing.tight },
   headName: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 15,
+    fontFamily: fontFamily.displaySemi,
+    fontSize: font.body,
     color: color.ink,
   },
   headBond: {
     fontFamily: fontFamily.body,
-    fontSize: 11,
+    fontSize: font.label,
     color: color.inkMuted,
   },
   pressed: { opacity: 0.8 },
   menu: {
     gap: spacing.sm,
     backgroundColor: color.surface,
-    borderRadius: radius.md,
+    borderRadius: radius.xl,
     padding: spacing.sm,
     marginBottom: spacing.sm,
     ...elevation.raised,
   },
-  thread: { paddingVertical: spacing.md, gap: 12, flexGrow: 1 },
-  dayGroup: { gap: 12 },
+  thread: { paddingVertical: spacing.md, gap: spacing.snug, flexGrow: 1 },
+  dayGroup: { gap: spacing.snug },
   daySeparator: {
     fontFamily: fontFamily.body,
     fontSize: font.caption,
@@ -573,15 +582,14 @@ const styles = StyleSheet.create({
   /** The sheet's bubble (13:163): 18 corners, 14/10 inside, clock within. */
   bubble: {
     maxWidth: 260,
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 4,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.snug,
+    gap: spacing.xs,
   },
+  /** No edge (D-060): the fill is what tells the two voices apart. */
   bubbleTheirs: {
     backgroundColor: color.veil,
-    borderWidth: 1,
-    borderColor: color.rule,
   },
   /**
    * The own bubble, D-058: a pale coral wash rather than a coral fill — the
@@ -592,33 +600,33 @@ const styles = StyleSheet.create({
   bubbleMine: { backgroundColor: color.accentSoft },
   bubbleText: {
     color: color.ink,
-    fontSize: 14,
-    lineHeight: 14 * 1.4,
+    fontSize: font.body,
+    lineHeight: font.body * leading.normal,
     fontFamily: fontFamily.body,
   },
   bubbleTime: {
     fontFamily: fontFamily.body,
-    fontSize: 10,
+    fontSize: font.label,
     color: color.inkMuted,
   },
   /** The sheet's composer pill (13:174): the input rules, pill-shaped. */
   composer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.snug,
     marginTop: spacing.sm,
     backgroundColor: color.surface,
     borderWidth: 1.5,
     borderColor: color.border,
     borderRadius: radius.pill,
-    paddingLeft: 16,
-    paddingRight: 10,
-    paddingVertical: 10,
+    paddingLeft: spacing.md,
+    paddingRight: spacing.snug,
+    paddingVertical: spacing.snug,
   },
   composerInput: {
     flex: 1,
     fontFamily: fontFamily.body,
-    fontSize: 14,
+    fontSize: font.body,
     color: color.ink,
     paddingVertical: 0,
   },

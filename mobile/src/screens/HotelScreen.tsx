@@ -10,7 +10,7 @@ import { Button, ConfirmDialog, Notice, PhotoScrim, Screen, SkeletonCard } from 
 import { nowMs } from '../clock';
 import { formatStayRangeLabel } from '../domain/dates';
 import { earliestRoomExpiry } from '../state/roomSchedule';
-import { apiErrorMessage, COPY, COPY_FOR, upperCase } from '../copy';
+import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
 import {
   ApiError,
   getApi,
@@ -27,7 +27,7 @@ import { VacationFeatureCard } from '../components/VacationFeatureCard';
 import { ProfileRing } from '../components/ProfileRing';
 import { useToast } from '../components/ToastHost';
 import { useAppStore } from '../state/AppStore';
-import { color, elevation, fontFamily, radius, spacing } from '../theme';
+import { color, elevation, font, fontFamily, leading, radius, spacing, tracking } from '../theme';
 
 
 /** "12–17 Ağustos" in the app's language — dates, never documents. */
@@ -457,7 +457,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
                 green mark every live state in this product wears. */}
             <View style={styles.plateBadgeRow}>
               <View style={styles.activeDot} />
-              <Text style={styles.heroPlateLabel}>{upperCase(COPY.hotel.activePlate)}</Text>
+              <Text style={styles.heroPlateLabel}>{COPY.hotel.activePlate}</Text>
             </View>
             {/* D-054: for a Google venue this is a name resolved a moment ago
                 and held in memory, never a stored one. */}
@@ -715,29 +715,28 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontFamily: fontFamily.display,
-    fontSize: 34,
-    lineHeight: 34 * 1.15,
+    fontSize: font.display,
+    lineHeight: font.display * leading.tight,
+    letterSpacing: tracking.display,
     color: color.ink,
   },
   subtitle: {
     fontFamily: fontFamily.body,
-    fontSize: 14,
-    lineHeight: 14 * 1.45,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
   searchLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 11,
+    fontSize: font.label,
     color: color.inkMuted,
   },
   /** The Figma placeholder size (10:78). */
-  searchInput: { fontSize: 14 },
+  searchInput: { fontSize: font.body },
   /** The Figma card shell (10:117): white, the quiet hairline, the card radius. */
   hotelCard: {
     backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.rule,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     overflow: 'hidden',
     ...elevation.card,
   },
@@ -745,59 +744,74 @@ const styles = StyleSheet.create({
   stayPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
     backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.rule,
     borderRadius: radius.pill,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.snug,
     marginBottom: spacing.sm,
+    ...elevation.card,
   },
   stayPillText: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: 13,
+    fontSize: font.caption,
     color: color.ink,
   },
   /** T-01: the question over the two rooms. */
   roomsHeading: {
     fontFamily: fontFamily.display,
-    fontSize: 19,
-    lineHeight: 24,
+    fontSize: font.heading,
+    lineHeight: font.heading * leading.snug,
+    letterSpacing: tracking.display,
     color: color.ink,
     marginTop: spacing.sm,
     marginBottom: spacing.xs,
   },
-  roomsGrid: { flexDirection: 'row', gap: 12, alignItems: 'stretch' },
+  roomsGrid: { flexDirection: 'row', gap: spacing.snug, alignItems: 'stretch' },
   /** 131:86: the teaser card itself. */
   teaser: {
     flex: 1,
     backgroundColor: color.surface,
-    borderRadius: 20,
+    borderRadius: radius.xl,
     ...elevation.card,
-    paddingTop: 18,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-    gap: 8,
+    paddingTop: spacing.wide,
+    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
     alignItems: 'flex-start',
   },
   teaserDisc: {
     width: 52,
     height: 52,
-    borderRadius: 26,
+    borderRadius: radius.pill,
     backgroundColor: color.accentWash,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  teaserTitle: { fontFamily: fontFamily.bodySemi, fontSize: 15, lineHeight: 21, color: color.ink },
-  teaserBody: { fontFamily: fontFamily.body, fontSize: 12, lineHeight: 17, color: color.inkMuted },
-  teaserOpenRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  teaserOpenDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: color.successMark },
-  teaserOpenText: { fontFamily: fontFamily.bodySemi, fontSize: 11, color: color.success },
-  teaserArrow: { fontFamily: fontFamily.bodySemi, fontSize: 16, lineHeight: 22, color: color.ink },
+  teaserTitle: {
+    fontFamily: fontFamily.displaySemi,
+    fontSize: font.body,
+    lineHeight: font.body * leading.snug,
+    color: color.ink,
+  },
+  teaserBody: {
+    fontFamily: fontFamily.body,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
+    color: color.inkMuted,
+  },
+  teaserOpenRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.cozy },
+  teaserOpenDot: { width: 7, height: 7, borderRadius: radius.pill, backgroundColor: color.successMark },
+  teaserOpenText: { fontFamily: fontFamily.bodySemi, fontSize: font.label, color: color.success },
+  teaserArrow: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.body,
+    lineHeight: font.body * leading.snug,
+    color: color.ink,
+  },
   /** The quiet second action a live room earns. */
   teaserExtra: { minHeight: 32, justifyContent: 'center' },
-  teaserExtraText: { fontFamily: fontFamily.bodySemi, fontSize: 12, color: color.ink },
+  teaserExtraText: { fontFamily: fontFamily.bodySemi, fontSize: font.caption, color: color.ink },
   /** T-01: the white plate floating on the hero's foot. */
   heroPlate: {
     position: 'absolute',
@@ -805,30 +819,31 @@ const styles = StyleSheet.create({
     right: 14,
     bottom: 12,
     backgroundColor: color.surface,
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 4,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.snug,
+    gap: spacing.xs,
     ...elevation.card,
   },
-  plateBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  activeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.successMark },
+  plateBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.cozy },
+  activeDot: { width: 8, height: 8, borderRadius: radius.pill, backgroundColor: color.successMark },
   heroPlateLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 10,
-    letterSpacing: 1,
+    fontSize: font.label,
+    letterSpacing: tracking.none,
     color: color.inkMuted,
   },
   heroPlateName: {
     fontFamily: fontFamily.display,
-    fontSize: 20,
-    lineHeight: 24,
+    fontSize: font.heading,
+    lineHeight: font.heading * leading.snug,
+    letterSpacing: tracking.display,
     color: color.ink,
   },
   heroPlateMeta: {
     fontFamily: fontFamily.body,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
   /** The stand-in band for a hotel the catalogue holds no photo of. */
@@ -841,92 +856,90 @@ const styles = StyleSheet.create({
     bottom: 4,
     right: 8,
     fontFamily: fontFamily.body,
-    fontSize: 10,
+    fontSize: font.label,
     color: color.onPhoto,
     maxWidth: '80%',
   },
   hotelCardBody: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 14,
-    gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.snug,
+    paddingBottom: spacing.md,
+    gap: spacing.cozy,
   },
   hotelName: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 18,
+    fontFamily: fontFamily.displaySemi,
+    fontSize: font.heading,
     color: color.ink,
   },
   /** The provider credit: quiet, and never wearing a location pin. */
   venueAttribution: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: 10,
+    fontSize: font.label,
     color: color.inkMuted,
   },
   selectedPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: spacing.cozy,
     alignSelf: 'flex-start',
     backgroundColor: color.veil,
     borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: spacing.snug,
+    paddingVertical: spacing.cozy,
   },
   selectedPillText: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: 11,
+    fontSize: font.label,
     color: color.accentDeep,
   },
   /** The Figma empty card (10:79): 20 corners, 16 inside, 14 between. */
   emptyCard: {
     flexDirection: 'row',
-    gap: 14,
+    gap: spacing.md,
     alignItems: 'center',
     backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.rule,
-    borderRadius: radius.lg,
-    padding: 16,
+    borderRadius: radius.xl,
+    padding: spacing.md,
     ...elevation.card,
   },
   /** The 74 disc (10:80): a circle over the pink-soft fill, the art inside. */
   emptyDisc: {
     width: 74,
     height: 74,
-    borderRadius: 37,
+    borderRadius: radius.pill,
     backgroundColor: color.veil,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyText: { flex: 1, gap: 6 },
+  emptyText: { flex: 1, gap: spacing.cozy },
   emptyTitle: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 16,
+    fontFamily: fontFamily.displaySemi,
+    fontSize: font.body,
     color: color.ink,
   },
   emptyBody: {
     fontFamily: fontFamily.body,
-    fontSize: 12,
-    lineHeight: 12 * 1.45,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
   emptyBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: spacing.cozy,
     alignSelf: 'flex-start',
     backgroundColor: color.veil,
     borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: spacing.snug,
+    paddingVertical: spacing.cozy,
   },
   emptyBadgeText: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: 11,
+    fontSize: font.label,
     color: color.accentDeep,
   },
-  idle: { gap: 14 },
+  idle: { gap: spacing.md },
   resultBand: { height: 20, backgroundColor: color.accent },
   resultPhoto: { width: '100%', height: 110, backgroundColor: color.veil },
   resultBody: { padding: spacing.md, gap: spacing.xs },

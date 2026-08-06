@@ -6,12 +6,12 @@ import Svg, { Path, Rect } from 'react-native-svg';
 
 import { Button, Field, Loading, Notice, Screen } from '../components/ui';
 import { todayIsoDate } from '../clock';
-import { apiErrorMessage, COPY, upperCase } from '../copy';
+import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type UpcomingStay } from '../data';
 import { formatLongDate } from '../domain/dates';
 import { validateStayDates } from '../domain/upcoming';
 import type { RootScreenProps } from '../navigation/types';
-import { color, elevation, fontFamily, radius } from '../theme';
+import { color, elevation, font, fontFamily, leading, radius, spacing, tracking } from '../theme';
 
 const CalendarGlyph = () => (
   <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -74,7 +74,7 @@ function DateCard({
 
   return (
     <View style={styles.dateCard}>
-      <Text style={styles.dateLabel}>{upperCase(label)}</Text>
+      <Text style={styles.dateLabel}>{label}</Text>
       {Platform.OS === 'web' ? (
         <Field
           label={label}
@@ -292,41 +292,40 @@ const styles = StyleSheet.create({
   /** The sheet's head (13:113): 28, left, on the cream ground. */
   title: {
     fontFamily: fontFamily.display,
-    fontSize: 28,
-    lineHeight: 28 * 1.2,
+    fontSize: font.display,
+    lineHeight: font.display * leading.tight,
+    letterSpacing: tracking.display,
     color: color.ink,
   },
   subtitle: {
     fontFamily: fontFamily.body,
-    fontSize: 13,
-    lineHeight: 13 * 1.5,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
   /** The date card (13:115): white, the card radius, 16 inside, 10 between. */
   dateCard: {
     backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.rule,
-    borderRadius: radius.lg,
-    padding: 16,
-    gap: 10,
+    borderRadius: radius.xl,
+    padding: spacing.md,
+    gap: spacing.snug,
     ...elevation.card,
   },
   dateLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 11,
-    letterSpacing: 1.4,
+    fontSize: font.caption,
+    letterSpacing: tracking.none,
     color: color.accentDeep,
   },
   valueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
     alignSelf: 'flex-start',
   },
   valueText: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 17,
+    fontFamily: fontFamily.displaySemi,
+    fontSize: font.heading,
     color: color.ink,
   },
   /** The privacy line's card (13:121): white with the quiet edge, deliberately
@@ -335,18 +334,16 @@ const styles = StyleSheet.create({
   noteCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.rule,
-    borderRadius: radius.lg,
-    padding: 16,
+    gap: spacing.sm,
+    backgroundColor: color.veil,
+    borderRadius: radius.xl,
+    padding: spacing.md,
   },
   noteText: {
     flex: 1,
     fontFamily: fontFamily.body,
-    fontSize: 12,
-    lineHeight: 12 * 1.45,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
 });
