@@ -45,7 +45,7 @@ import {
   SkeletonCard,
   Spinner,
 } from '../components/ui';
-import { COPY, COPY_FOR, getLocale, upperCase } from '../copy';
+import { COPY, COPY_FOR, getLocale } from '../copy';
 import {
   deviceLocation,
   getApi,
@@ -66,7 +66,19 @@ import {
 import { nowMs } from '../clock';
 import { formatDayMonthLong } from '../domain/dates';
 import type { RootStackParamList } from '../navigation/types';
-import { color, elevation, fontFamily, overlay, radius, spacing, tokens, MIN_TOUCH } from '../theme';
+import {
+  color,
+  elevation,
+  font,
+  fontFamily,
+  leading,
+  overlay,
+  radius,
+  spacing,
+  tokens,
+  tracking,
+  MIN_TOUCH,
+} from '../theme';
 
 /** The shared outline recipe every drawn icon in this product uses (D-058). */
 const iconStroke = (tone: string, size = 20) => ({
@@ -612,7 +624,7 @@ export function EventsScreen({
         /* ED-01's vertical rhythm: the pill, the button, each standing
            14pt apart rather than touching (owner screenshot, 2026-08-03). */
         <View style={styles.areaPicker} testID="events-area-picker">
-          <Text style={styles.heading}>{upperCase(COPY.events.chooseArea)}</Text>
+          <Text style={styles.heading}>{COPY.events.chooseArea}</Text>
           {cityStep}
         </View>
       ) : (
@@ -806,7 +818,7 @@ export function EventsScreen({
                   testID="events-country-input"
                 />
                 {countryQuery.trim() === '' ? (
-                  <Text style={styles.heading}>{upperCase(COPY.venue.countryPopular)}</Text>
+                  <Text style={styles.heading}>{COPY.venue.countryPopular}</Text>
                 ) : null}
                 <ScrollView
                   style={styles.sheetScroll}
@@ -837,7 +849,7 @@ export function EventsScreen({
               </>
             ) : (
               <>
-                <Text style={styles.heading}>{upperCase(COPY.events.chooseArea)}</Text>
+                <Text style={styles.heading}>{COPY.events.chooseArea}</Text>
                 {cityStep}
               </>
             )}
@@ -848,18 +860,23 @@ export function EventsScreen({
   );
 }
 
+/** The change sheet rides high, so the keyboard under the city input never covers it. */
+const SHEET_TOP = 96;
+
 const styles = StyleSheet.create({
   title: {
     fontFamily: fontFamily.display,
-    fontSize: 26,
-    lineHeight: 32,
+    fontSize: font.title,
+    lineHeight: font.title * leading.tight,
+    letterSpacing: tracking.display,
     color: color.ink,
   },
+  /** Sentence case and ink (D-060) — a heading, not a tracked kicker. */
   heading: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 12,
-    letterSpacing: 1.2,
-    color: color.inkMuted,
+    fontFamily: fontFamily.displaySemi,
+    fontSize: font.body,
+    letterSpacing: tracking.none,
+    color: color.ink,
     marginTop: spacing.md,
     marginBottom: spacing.xs,
   },
@@ -867,19 +884,18 @@ const styles = StyleSheet.create({
   areaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.snug,
     marginBottom: spacing.sm,
     backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.rule,
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.snug,
+    paddingHorizontal: spacing.md,
+    ...elevation.card,
   },
-  areaName: { flex: 1, fontFamily: fontFamily.bodyMedium, fontSize: 14, color: color.ink },
-  areaChange: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 28 },
-  areaChangeText: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.accent },
-  areaChangeChevron: { fontFamily: fontFamily.bodySemi, fontSize: 15, color: color.accent },
+  areaName: { flex: 1, fontFamily: fontFamily.bodyMedium, fontSize: font.body, color: color.ink },
+  areaChange: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 28 },
+  areaChangeText: { fontFamily: fontFamily.bodySemi, fontSize: font.control, color: color.accent },
+  areaChangeChevron: { fontFamily: fontFamily.bodySemi, fontSize: font.control, color: color.accent },
   /** E-06: busy, without taking the results away — the same neutral pill a
       standing notice uses, so "still working" never reads as an error. */
   busyLine: {
@@ -889,10 +905,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     borderRadius: radius.pill,
     backgroundColor: color.infoSoft,
-    paddingVertical: 7,
-    paddingHorizontal: 12,
+    paddingVertical: spacing.cozy,
+    paddingHorizontal: spacing.snug,
   },
-  busyText: { fontFamily: fontFamily.bodySemi, fontSize: 11, color: color.ink },
+  busyText: { fontFamily: fontFamily.bodySemi, fontSize: font.label, color: color.ink },
   section: { gap: spacing.xs },
   /** The pinned country over the city box, and the way to change it. */
   countryScope: {
@@ -901,14 +917,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderRadius: radius.pill,
     backgroundColor: color.accentWash,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.snug,
   },
-  countryScopeName: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.ink },
+  countryScopeName: { fontFamily: fontFamily.bodySemi, fontSize: font.caption, color: color.ink },
   countryScopeChange: { minHeight: 28, justifyContent: 'center' },
   countryScopeChangeText: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 12,
+    fontSize: font.caption,
     color: color.ink,
   },
   /** A country row: the name, and the code as its quiet proof. */
@@ -917,53 +933,53 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     minHeight: MIN_TOUCH,
-    borderRadius: 14,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: color.rule,
     backgroundColor: color.surface,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.snug,
   },
-  countryName: { fontFamily: fontFamily.bodyMedium, fontSize: 14, color: color.ink },
-  countryCode: { fontFamily: fontFamily.bodySemi, fontSize: 11, color: color.inkMuted },
+  countryName: { fontFamily: fontFamily.bodyMedium, fontSize: font.body, color: color.ink },
+  countryCode: { fontFamily: fontFamily.bodySemi, fontSize: font.label, color: color.inkMuted },
   /** 138:81: the white location pill, its pin and its 15pt seat. */
   hereButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: spacing.sm,
     minHeight: MIN_TOUCH,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: color.rule,
     backgroundColor: color.surface,
-    paddingVertical: 15,
+    paddingVertical: spacing.md,
   },
-  hereButtonText: { fontFamily: fontFamily.bodySemi, fontSize: 14, color: color.ink },
+  hereButtonText: { fontFamily: fontFamily.bodySemi, fontSize: font.control, color: color.ink },
   /** ED-01 (137:72): 14 between the search pill and each button under it. */
-  areaPicker: { gap: 14 },
+  areaPicker: { gap: spacing.md },
   /** The change sheet: the same scrim every dialog uses, the card held high
       so the keyboard rising under the city input never covers it. */
   sheetScrim: {
     flex: 1,
     backgroundColor: overlay.photo,
     justifyContent: 'flex-start',
-    paddingHorizontal: 20,
-    paddingTop: 96,
+    paddingHorizontal: spacing.wide,
+    paddingTop: SHEET_TOP,
   },
   sheetCard: {
     backgroundColor: color.surface,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     padding: spacing.lg,
-    gap: 14,
+    gap: spacing.md,
     maxHeight: '78%',
   },
   sheetScroll: { flexGrow: 0 },
   sheetScrollBody: { gap: spacing.xs },
-  carousel: { gap: 12 },
+  carousel: { gap: spacing.snug },
   /** 131:132: the page dots — the resting one stretched into a coral pill. */
-  dots: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.xs },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: color.rule },
+  dots: { flexDirection: 'row', alignItems: 'center', gap: spacing.cozy, marginBottom: spacing.xs },
+  dot: { width: 6, height: 6, borderRadius: radius.pill, backgroundColor: color.rule },
   dotActive: { width: 18, backgroundColor: color.accent },
   sectionHead: {
     flexDirection: 'row',
@@ -972,9 +988,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   /** The sheet's section heads: sentence case, ink, 17 — not a tracked kicker. */
-  sectionTitle: { fontFamily: fontFamily.bodySemi, fontSize: 17, color: color.ink },
-  sectionCount: { fontFamily: fontFamily.body, fontSize: 12, color: color.inkMuted },
-  sectionLink: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.accent },
+  sectionTitle: { fontFamily: fontFamily.displaySemi, fontSize: font.body, color: color.ink },
+  sectionCount: { fontFamily: fontFamily.body, fontSize: font.label, color: color.inkMuted },
+  sectionLink: { fontFamily: fontFamily.bodySemi, fontSize: font.control, color: color.accent },
   /**
    * E-18: the state as a word and a glyph first. The plate is deliberately
    * self-contained (deep navy, near-opaque) rather than a scrim-dependent
@@ -985,17 +1001,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    gap: 5,
+    gap: spacing.xs,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: tokens.border.inverse,
     backgroundColor: overlay.plate,
-    paddingVertical: 4,
-    paddingHorizontal: 9,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
   },
   badgeBad: { borderColor: color.danger, backgroundColor: color.dangerSoft },
-  badgeGlyph: { fontFamily: fontFamily.bodySemi, fontSize: 9, color: color.onInverse },
-  badgeText: { fontFamily: fontFamily.bodySemi, fontSize: 10, color: color.onInverse },
+  badgeGlyph: { fontFamily: fontFamily.bodySemi, fontSize: font.label, color: color.onInverse },
+  badgeText: { fontFamily: fontFamily.bodySemi, fontSize: font.label, color: color.onInverse },
   badgeTextBad: { color: color.danger },
   /** Top-left, as ED-02 draws it — the bottom corner belongs to the words. */
   badgeOnImage: { position: 'absolute', left: 11, top: 11 },
@@ -1006,92 +1022,117 @@ const styles = StyleSheet.create({
   /** The owner's card (2026-08-05): square artwork left, facts right. */
   card: {
     flexDirection: 'row',
-    gap: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: color.rule,
+    gap: spacing.snug,
+    borderRadius: radius.xl,
     backgroundColor: color.surface,
-    marginBottom: spacing.xs,
-    padding: 12,
+    marginBottom: spacing.sm,
+    padding: spacing.snug,
     ...elevation.card,
   },
   cardPressed: { opacity: 0.7 },
-  cardThumb: { width: 118, height: 118, borderRadius: 14, backgroundColor: color.veil },
+  cardThumb: { width: 118, height: 118, borderRadius: radius.md, backgroundColor: color.veil },
   cardThumbEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: color.accentWash },
-  cardColumn: { flex: 1, gap: 5 },
+  cardColumn: { flex: 1, gap: spacing.xs },
   cardTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   heartSeat: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   cardName: {
     fontFamily: fontFamily.display,
-    fontSize: 18,
-    lineHeight: 23,
+    fontSize: font.heading,
+    lineHeight: font.heading * leading.snug,
+    letterSpacing: tracking.display,
     color: color.ink,
   },
   /** A fact is its mark and its words, on one line. */
-  factRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  factText: { flexShrink: 1, fontFamily: fontFamily.body, fontSize: 12, lineHeight: 16, color: color.inkMuted },
-  factDot: { fontFamily: fontFamily.body, fontSize: 12, color: color.inkMuted },
+  factRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.cozy },
+  factText: {
+    flexShrink: 1,
+    fontFamily: fontFamily.body,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
+    color: color.inkMuted,
+  },
+  factDot: { fontFamily: fontFamily.body, fontSize: font.caption, color: color.inkMuted },
   /** Required wherever the provider's answer is on screen. */
-  cardAttribution: { fontFamily: fontFamily.body, fontSize: 10, color: color.inkFaint, marginTop: 2 },
+  cardAttribution: {
+    fontFamily: fontFamily.body,
+    fontSize: font.label,
+    color: color.inkFaint,
+    marginTop: spacing.tight,
+  },
   /** "Etkinliklerin": the disc, the coral line, the name, the state. */
   mineRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: color.rule,
+    gap: spacing.snug,
+    borderRadius: radius.lg,
     backgroundColor: color.surface,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    marginBottom: spacing.xs,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
     ...elevation.card,
   },
   mineDisc: {
     width: 44,
-    height: 44,
-    borderRadius: 22,
+    height: MIN_TOUCH,
+    borderRadius: radius.pill,
     backgroundColor: color.accentWash,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  mineWords: { flex: 1, gap: 2 },
-  mineKicker: { fontFamily: fontFamily.bodyMedium, fontSize: 12, color: color.accent },
-  mineName: { fontFamily: fontFamily.display, fontSize: 16, lineHeight: 21, color: color.ink },
-  mineState: { fontFamily: fontFamily.body, fontSize: 12, lineHeight: 16, color: color.inkMuted },
-  mineChevron: { fontFamily: fontFamily.bodySemi, fontSize: 18, color: color.inkMuted },
+  mineWords: { flex: 1, gap: spacing.tight },
+  mineKicker: { fontFamily: fontFamily.bodyMedium, fontSize: font.label, color: color.accent },
+  mineName: {
+    fontFamily: fontFamily.displaySemi,
+    fontSize: font.body,
+    lineHeight: font.body * leading.snug,
+    color: color.ink,
+  },
+  mineState: {
+    fontFamily: fontFamily.body,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
+    color: color.inkMuted,
+  },
+  mineChevron: { fontFamily: fontFamily.bodySemi, fontSize: font.heading, color: color.inkMuted },
   /** The closing sentence, in its own quiet card with the (i). */
   claimCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
-    borderRadius: 16,
+    gap: spacing.snug,
+    borderRadius: radius.lg,
     backgroundColor: color.veil,
-    paddingVertical: 13,
-    paddingHorizontal: 14,
+    paddingVertical: spacing.snug,
+    paddingHorizontal: spacing.md,
     marginTop: spacing.sm,
   },
-  claimText: { flex: 1, fontFamily: fontFamily.body, fontSize: 12, lineHeight: 17, color: color.inkMuted },
+  claimText: {
+    flex: 1,
+    fontFamily: fontFamily.body,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
+    color: color.inkMuted,
+  },
   /** ED-01's empty state. */
-  emptyWrap: { alignItems: 'center', gap: 10, paddingTop: 56 },
+  emptyWrap: { alignItems: 'center', gap: spacing.snug, paddingTop: spacing.xl },
   emptyDisc: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: radius.pill,
     backgroundColor: color.accentWash,
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptyTitle: {
     fontFamily: fontFamily.display,
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: font.heading,
+    lineHeight: font.heading * leading.snug,
+    letterSpacing: tracking.display,
     color: color.ink,
   },
   emptyBody: {
     fontFamily: fontFamily.body,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
     textAlign: 'center',
     maxWidth: 270,

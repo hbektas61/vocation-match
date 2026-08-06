@@ -30,7 +30,20 @@ import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation } from '../copy'
 import { ApiError, getApi, type CandidateCard, type MyEvent, type RoomKey, type RoomStatus } from '../data';
 import { resolveDeckLabels, resolveOwnVenueLabel } from '../data/venueLabels';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
-import { color, elevation, font, fontFamily, gradient, overlay, radius, spacing, tokens } from '../theme';
+import {
+  color,
+  elevation,
+  font,
+  fontFamily,
+  gradient,
+  leading,
+  MIN_TOUCH,
+  overlay,
+  radius,
+  spacing,
+  tokens,
+  tracking,
+} from '../theme';
 import { earliestRoomExpiry } from '../state/roomSchedule';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { RadarScene } from '../components/RoomIllustrations';
@@ -1050,6 +1063,9 @@ export function DiscoveryScreen() {
   );
 }
 
+/** The initial that stands in for a missing photograph, sized to the card. */
+const PHOTOLESS_INITIAL = 128;
+
 const styles = StyleSheet.create({
   /** Centered column, generous air — the reference's stage. */
   emptyRoom: {
@@ -1069,7 +1085,7 @@ const styles = StyleSheet.create({
   emptyBody: {
     fontFamily: fontFamily.body,
     fontSize: font.body,
-    lineHeight: font.body * 1.6,
+    lineHeight: font.body * leading.normal,
     color: color.inkMuted,
     textAlign: 'center',
     maxWidth: 260,
@@ -1079,47 +1095,50 @@ const styles = StyleSheet.create({
   noRoomDisc: {
     width: 72,
     height: 72,
-    borderRadius: 36,
+    borderRadius: radius.pill,
     backgroundColor: color.accentWash,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  noRoomActions: { alignSelf: 'stretch', gap: 4 },
-  quietRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14 },
-  quietAction: { minHeight: 44, justifyContent: 'center' },
-  quietActionText: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.ink },
+  noRoomActions: { alignSelf: 'stretch', gap: spacing.xs },
+  quietRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.md },
+  quietAction: { minHeight: MIN_TOUCH, justifyContent: 'center' },
+  quietActionText: { fontFamily: fontFamily.bodySemi, fontSize: font.control, color: color.ink },
   quietDivider: { width: 1, height: 16, backgroundColor: color.rule },
   /** The three-door state: the radar, the claim, the doors, the promise. */
   doors: { alignItems: 'center', gap: spacing.md, paddingTop: spacing.sm },
-  doorList: { alignSelf: 'stretch', gap: 10 },
+  doorList: { alignSelf: 'stretch', gap: spacing.snug },
   doorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.snug,
     backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.rule,
-    borderRadius: 18,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
     ...elevation.card,
   },
-  doorRowPressed: { backgroundColor: color.accentWash, borderColor: color.accent },
+  doorRowPressed: { backgroundColor: color.accentWash },
   doorDisc: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.pill,
     backgroundColor: color.accentWash,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  doorWords: { flex: 1, gap: 3 },
-  doorTitle: { fontFamily: fontFamily.bodySemi, fontSize: 15, color: color.ink },
-  doorMeta: { fontFamily: fontFamily.body, fontSize: 12, lineHeight: 16, color: color.inkMuted },
-  doorChevron: { fontFamily: fontFamily.bodySemi, fontSize: 18, color: color.inkMuted },
+  doorWords: { flex: 1, gap: spacing.tight },
+  doorTitle: { fontFamily: fontFamily.bodySemi, fontSize: font.control, color: color.ink },
+  doorMeta: {
+    fontFamily: fontFamily.body,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
+    color: color.inkMuted,
+  },
+  doorChevron: { fontFamily: fontFamily.bodySemi, fontSize: font.heading, color: color.inkMuted },
   noHotelCard: {
     backgroundColor: color.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     padding: spacing.md,
     alignItems: 'center',
     gap: spacing.sm,
@@ -1133,7 +1152,7 @@ const styles = StyleSheet.create({
   noHotelBody: {
     fontFamily: fontFamily.body,
     fontSize: font.body,
-    lineHeight: font.body * 1.5,
+    lineHeight: font.body * leading.normal,
     color: color.inkMuted,
     textAlign: 'center',
   },
@@ -1141,7 +1160,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.accentWash,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
-    paddingVertical: 6,
+    paddingVertical: spacing.cozy,
   },
   oneHotelPillText: {
     fontFamily: fontFamily.bodyMedium,
@@ -1152,7 +1171,7 @@ const styles = StyleSheet.create({
   howBody: {
     fontFamily: fontFamily.body,
     fontSize: font.caption,
-    lineHeight: font.caption * 1.55,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
     paddingHorizontal: spacing.xs,
   },
@@ -1170,10 +1189,10 @@ const styles = StyleSheet.create({
    * run to the edges and the head is not.
    */
   deckHead: {
-    paddingHorizontal: 20,
-    paddingTop: 4,
+    paddingHorizontal: spacing.wide,
+    paddingTop: spacing.xs,
     paddingBottom: spacing.sm,
-    gap: spacing.sm + 2,
+    gap: spacing.snug,
   },
   /**
    * The card is the screen: everything else stands on the photograph. Lifted
@@ -1193,13 +1212,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 64,
     borderWidth: 3.5,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.snug,
+    paddingVertical: spacing.xs,
   },
   stampLike: { left: 20, borderColor: color.successMark, transform: [{ rotate: '-14deg' }] },
   stampNope: { right: 20, borderColor: color.danger, transform: [{ rotate: '14deg' }] },
-  stampText: { fontFamily: fontFamily.bodySemi, fontSize: 30, letterSpacing: 3 },
+  stampText: {
+    fontFamily: fontFamily.displayHeavy,
+    fontSize: font.display,
+    letterSpacing: tracking.label,
+  },
   stampTextLike: { color: color.successMark },
   stampTextNope: { color: color.danger },
   /** K-01: the floating glass controls, a step under the progress bars. */
@@ -1215,19 +1238,19 @@ const styles = StyleSheet.create({
   glassRing: {
     borderRadius: radius.pill,
     backgroundColor: overlay.glass,
-    padding: 3,
+    padding: spacing.xs,
   },
   likesPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: spacing.cozy,
     minHeight: 36,
     borderRadius: radius.pill,
     backgroundColor: overlay.glass,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.snug,
+    paddingVertical: spacing.sm,
   },
-  likesCount: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.ink },
+  likesCount: { fontFamily: fontFamily.bodySemi, fontSize: font.caption, color: color.ink },
   /**
    * The bond chip — same venue, or a neighbour's by name. A deep navy plate
    * over the photo, matching the room ribbon it sits beside.
@@ -1236,11 +1259,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    gap: 6,
+    gap: spacing.cozy,
     backgroundColor: overlay.plate,
     borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm + 6,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.snug,
+    paddingVertical: spacing.sm,
   },
   sameHotelText: {
     fontFamily: fontFamily.bodyMedium,
@@ -1272,32 +1295,34 @@ const styles = StyleSheet.create({
   /** 132:78: "Deniz, 28" — one voice, name and age together. */
   cardName: {
     fontFamily: fontFamily.display,
-    fontSize: 32,
-    lineHeight: 35,
+    fontSize: font.display,
+    lineHeight: font.display * leading.tight,
+    letterSpacing: tracking.display,
     color: color.onPhoto,
   },
   cardAge: {
     fontFamily: fontFamily.display,
-    fontSize: 32,
+    fontSize: font.display,
+    letterSpacing: tracking.display,
     color: color.onPhoto,
   },
   cardBio: {
     fontFamily: fontFamily.body,
     fontSize: font.body,
-    lineHeight: font.body * 1.4,
+    lineHeight: font.body * leading.normal,
     color: color.onPhoto,
   },
   /** 132:82: the live line — a green mark and the words beside it. */
-  liveRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  liveRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.cozy },
   liveDot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: radius.pill,
     backgroundColor: color.successMark,
   },
   liveText: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: 13,
+    fontSize: font.caption,
     color: color.onPhoto,
   },
   /** On the photo's head (owner, 2026-08-04) — the deck-app grammar. */
@@ -1307,12 +1332,12 @@ const styles = StyleSheet.create({
     left: spacing.md,
     right: spacing.md,
     flexDirection: 'row',
-    gap: 6,
+    gap: spacing.cozy,
   },
   segment: {
     flex: 1,
     height: 3,
-    borderRadius: 1.5,
+    borderRadius: radius.pill,
     backgroundColor: tokens.border.inverse,
   },
   segmentActive: { backgroundColor: color.onPhoto },
@@ -1332,7 +1357,7 @@ const styles = StyleSheet.create({
   actionCircle: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: radius.pill,
     backgroundColor: color.surface,
     borderWidth: 1.5,
     borderColor: color.rule,
@@ -1345,7 +1370,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: radius.pill,
     backgroundColor: color.accent,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1358,8 +1383,8 @@ const styles = StyleSheet.create({
   /** The safety flag rides the same centred row, one size down. */
   actionFlag: {
     width: 44,
-    height: 44,
-    borderRadius: 22,
+    height: MIN_TOUCH,
+    borderRadius: radius.pill,
     backgroundColor: overlay.glass,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1367,7 +1392,7 @@ const styles = StyleSheet.create({
   actionPass: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radius.pill,
     backgroundColor: color.surface,
     borderWidth: 1.5,
     borderColor: color.rule,
@@ -1380,10 +1405,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  /**
+   * A drawing rather than type: the initial fills a card with no photograph,
+   * so it is sized to the card and sits outside the type ladder by name.
+   */
   cardInitial: {
     fontFamily: fontFamily.display,
-    fontSize: 128,
-    lineHeight: 140,
+    fontSize: PHOTOLESS_INITIAL,
+    lineHeight: PHOTOLESS_INITIAL * leading.tight,
     color: color.inkFaint,
   },
   /** Below the top scrim and the action row, so both stay tappable. */

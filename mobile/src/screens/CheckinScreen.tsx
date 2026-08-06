@@ -25,7 +25,7 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { Caption, EmptyState, Loading, Notice, PhotoScrim, Screen, SkeletonRows } from '../components/ui';
 import { ProfileRing } from '../components/ProfileRing';
 import { useToast } from '../components/ToastHost';
-import { apiErrorMessage, COPY, COPY_FOR, upperCase } from '../copy';
+import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
 import {
   ApiError,
   deniedLocation,
@@ -44,7 +44,17 @@ import { MIN_QUERY_WEIGHT, normalizeQuery, queryWeight } from '../domain/searchQ
 import { getHotelById } from '../fixtures/hotels';
 import type { TabParamList } from '../navigation/types';
 
-import { color, elevation, font, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
+import {
+  color,
+  elevation,
+  font,
+  fontFamily,
+  leading,
+  MIN_TOUCH,
+  radius,
+  spacing,
+  tracking,
+} from '../theme';
 
 const HERO = require('../../assets/nearby-hero.jpg');
 
@@ -594,7 +604,7 @@ export function CheckinScreen({
             places still need telling apart. */}
         <View style={styles.venueWords}>
           <Text style={styles.venueName} numberOfLines={1}>{venue.name}</Text>
-          <Text style={styles.venueKind}>{upperCase(meta.label())}</Text>
+          <Text style={styles.venueKind}>{meta.label()}</Text>
         </View>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
@@ -615,7 +625,7 @@ export function CheckinScreen({
       >
         <View style={styles.venueWords}>
           <Text style={styles.venueName} numberOfLines={1}>{place.name}</Text>
-          <Text style={styles.venueKind}>{upperCase(meta.label())}</Text>
+          <Text style={styles.venueKind}>{meta.label()}</Text>
         </View>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
@@ -653,7 +663,7 @@ export function CheckinScreen({
             <Text style={styles.attribution}>{COPY.checkin.googleAttribution}</Text>
           ) : null}
           <Text style={styles.activeKindLine}>
-            {`${upperCase(meta.label())} · ${COPY.checkin.validFor}`}
+            {`${meta.label()} · ${COPY.checkin.validFor}`}
           </Text>
           <View style={styles.remainRow}>
             <ClockIcon tone={DEEP} size={13} />
@@ -747,7 +757,7 @@ export function CheckinScreen({
             are standing — first, in its wash card, never only under an
             emptiness. */}
         <View style={styles.hereCard}>
-          <Text style={styles.hereLabel}>{upperCase(COPY.checkin.hereLabel)}</Text>
+          <Text style={styles.hereLabel}>{COPY.checkin.hereLabel}</Text>
           {/* The neighbourhood's own name (owner, 2026-08-05): the person is
               checking in at "Kocatepe Mah.", and the card should say so. */}
           {hereName ? (
@@ -784,7 +794,7 @@ export function CheckinScreen({
           />
         </View>
 
-        <Text style={styles.kicker}>{upperCase(COPY.checkin.aroundYou)}</Text>
+        <Text style={styles.kicker}>{COPY.checkin.aroundYou}</Text>
 
         {busy ? (
           <SkeletonRows avatar={false} testID="checkin-looking" />
@@ -893,7 +903,7 @@ export function CheckinScreen({
       </View>
 
       {/* N-01 (152:80): the four facts as a 2×2 grid, not a column. */}
-      <Text style={styles.kicker}>{upperCase(COPY.checkin.howTitle)}</Text>
+      <Text style={styles.kicker}>{COPY.checkin.howTitle}</Text>
       <View style={styles.factsGrid}>
         {[
           [
@@ -994,38 +1004,40 @@ const styles = StyleSheet.create({
   /** D-063: one head across all three states — Lora 30 on a 42 line. */
   title: {
     fontFamily: fontFamily.display,
-    fontSize: 30,
-    lineHeight: 42,
+    fontSize: font.display,
+    lineHeight: font.display * leading.tight,
+    letterSpacing: tracking.display,
     color: color.ink,
   },
   titleSm: {
     fontFamily: fontFamily.display,
-    fontSize: 30,
-    lineHeight: 42,
+    fontSize: font.display,
+    lineHeight: font.display * leading.tight,
+    letterSpacing: tracking.display,
     color: color.ink,
   },
   /** The corner ring (11:76): the empty frame, an operable control's edge. */
   profileRing: {
     width: 46,
     height: 46,
-    borderRadius: 23,
+    borderRadius: radius.pill,
     borderWidth: 1.4,
     borderColor: color.border,
   },
   ringCentered: { alignItems: 'center', justifyContent: 'center' },
-  cornerPair: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  cornerPair: { flexDirection: 'row', alignItems: 'center', gap: spacing.snug },
   /** The Figma line under the head (1:6): 15, muted. */
   subtitle: {
     fontFamily: fontFamily.body,
-    fontSize: 15,
-    lineHeight: 15 * 1.5,
+    fontSize: font.body,
+    lineHeight: font.body * leading.normal,
     color: color.inkMuted,
   },
   /** The line under the list/active heads (11:77/11:149): 13, muted. */
   subtitleSm: {
     fontFamily: fontFamily.body,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
   /** The corner badge (1:5): the panel disc with the 1.5 control edge. */
@@ -1050,98 +1062,96 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontFamily: fontFamily.body,
-    fontSize: 14,
+    fontSize: font.body,
     color: color.ink,
-    paddingVertical: 12,
+    paddingVertical: spacing.snug,
   },
   /** 153:80: the row is the name and its kind — 16 corners, 13/14 seat. */
   venueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.snug,
     backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.rule,
-    borderRadius: 16,
-    paddingVertical: 13,
-    paddingHorizontal: 14,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.snug,
+    paddingHorizontal: spacing.md,
     ...elevation.card,
   },
   /** The press answers in the brand's wash rather than a mere dim (owner,
       2026-08-05) — the row under a thumb visibly becomes the chosen one. */
   venueRowPressed: {
     backgroundColor: color.accentWash,
-    borderColor: color.accent,
   },
   venueDisc: {
     width: 44,
-    height: 44,
-    borderRadius: 22,
+    height: MIN_TOUCH,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  venueWords: { flex: 1, gap: 3 },
+  venueWords: { flex: 1, gap: spacing.tight },
   venueName: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 14,
+    fontSize: font.body,
     color: color.ink,
   },
-  venuePlace: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  venuePlace: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   venueCity: {
     fontFamily: fontFamily.body,
-    fontSize: 11,
+    fontSize: font.caption,
     color: color.inkMuted,
     flexShrink: 1,
   },
   kindChip: {
     borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   kindChipText: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 11,
+    fontSize: font.label,
   },
   chevron: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 18,
+    fontSize: font.heading,
     color: color.inkMuted,
-    paddingHorizontal: 2,
+    paddingHorizontal: spacing.tight,
   },
   /* intro — the Figma hero (1:7): a solid panel, 28 corners, 16 inside. */
   heroCard: {
     backgroundColor: color.surface,
-    borderRadius: 28,
+    borderRadius: radius.xl,
     padding: spacing.md,
     gap: spacing.md,
     ...elevation.card,
   },
   heroColumns: { flexDirection: 'row', gap: spacing.md },
-  heroWords: { flex: 1, gap: 10 },
+  heroWords: { flex: 1, gap: spacing.snug },
   heroTitle: {
     fontFamily: fontFamily.display,
-    fontSize: 22,
-    lineHeight: 22 * 1.2,
+    fontSize: font.title,
+    lineHeight: font.title * leading.tight,
+    letterSpacing: tracking.display,
     color: color.ink,
   },
   heroBody: {
     fontFamily: fontFamily.body,
-    fontSize: 13,
-    lineHeight: 13 * 1.5,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
   howTitle: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 14,
+    fontFamily: fontFamily.displaySemi,
+    fontSize: font.body,
     color: DEEP,
-    marginTop: 2,
+    marginTop: spacing.tight,
   },
   howRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   /** The 26 disc (1:14) on the how rows. */
   howDisc: {
     width: 26,
     height: 26,
-    borderRadius: 13,
+    borderRadius: radius.pill,
     backgroundColor: color.veil,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1149,13 +1159,13 @@ const styles = StyleSheet.create({
   howText: {
     flex: 1,
     fontFamily: fontFamily.body,
-    fontSize: 12.5,
+    fontSize: font.caption,
     color: color.ink,
   },
   /** The 150-wide photo column (1:25), stretched to the words beside it. */
   heroPhoto: {
     width: 150,
-    borderRadius: 20,
+    borderRadius: radius.lg,
     alignSelf: 'stretch',
     minHeight: 300,
   },
@@ -1168,14 +1178,14 @@ const styles = StyleSheet.create({
     backgroundColor: color.accent,
     overflow: 'hidden',
     borderRadius: radius.pill,
-    paddingVertical: 16,
+    paddingVertical: spacing.md,
     ...elevation.card,
     shadowColor: color.accent,
     shadowOpacity: 0.28,
   },
   findButtonLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 16,
+    fontSize: font.control,
     color: color.onAccent,
   },
   previewRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
@@ -1194,42 +1204,40 @@ const styles = StyleSheet.create({
   infoCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.snug,
     backgroundColor: color.surface,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderRadius: radius.xl,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
     ...elevation.card,
   },
   infoDisc: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radius.pill,
     backgroundColor: color.veil,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  infoWords: { flex: 1, gap: 4 },
+  infoWords: { flex: 1, gap: spacing.xs },
   infoTitle: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 15,
+    fontSize: font.body,
     color: color.ink,
   },
   infoBody: {
     fontFamily: fontFamily.body,
-    fontSize: 12,
-    lineHeight: 12 * 1.45,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
   /* active — the sheet's card (11:150), buttons (11:160-164), safety (11:166). */
   /** N-03 (153:111): the one card the active state is. */
   activeCard: {
     backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.rule,
-    borderRadius: 24,
-    padding: 18,
-    gap: 12,
+    borderRadius: radius.xl,
+    padding: spacing.wide,
+    gap: spacing.snug,
     ...elevation.card,
   },
   activePhoto: { width: '100%', height: 170 },
@@ -1240,203 +1248,231 @@ const styles = StyleSheet.create({
     right: 8,
     bottom: 6,
     fontFamily: fontFamily.body,
-    fontSize: 10,
+    fontSize: font.label,
     color: color.onPhoto,
   },
   activeBody: {
     flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 14,
+    gap: spacing.snug,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.snug,
+    paddingBottom: spacing.md,
     alignItems: 'flex-start',
   },
   /** The 48 square-ish disc beside the venue's name (11:153). */
   activeDisc: {
     width: 48,
     height: 48,
-    borderRadius: 14,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  activeWords: { flex: 1, gap: 5 },
+  activeWords: { flex: 1, gap: spacing.xs },
   activeName: {
     fontFamily: fontFamily.display,
-    fontSize: 24,
-    lineHeight: 30,
+    fontSize: font.title,
+    lineHeight: font.title * leading.tight,
+    letterSpacing: tracking.display,
     color: color.ink,
   },
   activeKindLine: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 10,
-    letterSpacing: 0.8,
+    fontSize: font.label,
+    letterSpacing: tracking.none,
     color: color.inkMuted,
   },
   livePill: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    gap: 6,
+    gap: spacing.cozy,
     borderRadius: radius.pill,
     backgroundColor: color.successSoft,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: spacing.cozy,
+    paddingHorizontal: spacing.snug,
   },
-  livePillDot: { fontFamily: fontFamily.bodySemi, fontSize: 9, color: color.successMark },
-  livePillText: { fontFamily: fontFamily.bodySemi, fontSize: 11, color: color.success },
+  livePillDot: { fontFamily: fontFamily.bodySemi, fontSize: font.label, color: color.successMark },
+  livePillText: { fontFamily: fontFamily.bodySemi, fontSize: font.label, color: color.success },
   remainRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    borderRadius: 14,
+    gap: spacing.sm,
+    borderRadius: radius.md,
     backgroundColor: color.accentWash,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingVertical: spacing.snug,
+    paddingHorizontal: spacing.md,
     alignSelf: 'stretch',
   },
-  remainText: { fontFamily: fontFamily.bodyMedium, fontSize: 13, lineHeight: 18, color: color.ink },
+  remainText: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
+    color: color.ink,
+  },
   checkOutRow: { minHeight: MIN_TOUCH, alignItems: 'center', justifyContent: 'center' },
-  checkOutText: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.danger },
+  checkOutText: { fontFamily: fontFamily.bodySemi, fontSize: font.control, color: color.danger },
   /** N-01 (152:75): the photo as a band, the claim on its scrim. */
-  heroBand: { borderRadius: 24, overflow: 'hidden' },
+  heroBand: { borderRadius: radius.xl, overflow: 'hidden' },
   heroBandPhoto: { width: '100%', height: 200, backgroundColor: color.veil },
-  heroBandText: { position: 'absolute', left: 18, right: 18, bottom: 14, gap: 4 },
+  heroBandText: { position: 'absolute', left: 18, right: 18, bottom: 14, gap: spacing.xs },
   heroBandTitle: {
     fontFamily: fontFamily.display,
-    fontSize: 22,
-    lineHeight: 27,
+    fontSize: font.title,
+    lineHeight: font.title * leading.tight,
+    letterSpacing: tracking.display,
     color: color.onPhoto,
   },
-  heroBandBody: { fontFamily: fontFamily.bodyMedium, fontSize: 12, lineHeight: 17, color: color.onPhoto },
+  heroBandBody: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
+    color: color.onPhoto,
+  },
+  /** Sentence case and ink (D-060): a heading, not a printed kicker. */
   kicker: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 12,
-    letterSpacing: 1.2,
-    color: color.inkMuted,
+    fontFamily: fontFamily.displaySemi,
+    fontSize: font.body,
+    letterSpacing: tracking.none,
+    color: color.ink,
   },
   /** N-01 (152:80): four facts, two by two. */
-  factsGrid: { gap: 10 },
-  factsRow: { flexDirection: 'row', gap: 10 },
+  factsGrid: { gap: spacing.snug },
+  factsRow: { flexDirection: 'row', gap: spacing.snug },
   factCell: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: color.rule,
-    backgroundColor: color.surface,
-    padding: 10,
+    gap: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: color.veil,
+    padding: spacing.snug,
   },
   factDisc: {
     width: 30,
     height: 30,
-    borderRadius: 15,
+    borderRadius: radius.pill,
     backgroundColor: color.accentWash,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  factText: { flex: 1, fontFamily: fontFamily.bodyMedium, fontSize: 11, lineHeight: 15, color: color.ink },
+  factText: {
+    flex: 1,
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
+    color: color.ink,
+  },
   /** N-01 (152:101): the privacy sentence in one row. */
   privacyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: color.rule,
-    backgroundColor: color.surface,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    gap: spacing.snug,
+    borderRadius: radius.lg,
+    backgroundColor: color.veil,
+    paddingVertical: spacing.snug,
+    paddingHorizontal: spacing.md,
   },
   privacyDisc: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radius.pill,
     backgroundColor: color.accentWash,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  privacyText: { flex: 1, fontFamily: fontFamily.body, fontSize: 12, lineHeight: 17, color: color.inkMuted },
+  privacyText: {
+    flex: 1,
+    fontFamily: fontFamily.body,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
+    color: color.inkMuted,
+  },
   /** N-04 (154:72): the ended check-in's own card. */
   expiredCard: {
     alignItems: 'center',
-    gap: 10,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: color.rule,
+    gap: spacing.snug,
+    borderRadius: radius.xl,
     backgroundColor: color.surface,
-    paddingVertical: 22,
-    paddingHorizontal: 18,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.wide,
+    ...elevation.card,
   },
   expiredDisc: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radius.pill,
     backgroundColor: color.accentWash,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  expiredTitle: { fontFamily: fontFamily.display, fontSize: 19, lineHeight: 25, color: color.ink },
+  expiredTitle: {
+    fontFamily: fontFamily.display,
+    fontSize: font.heading,
+    lineHeight: font.heading * leading.snug,
+    letterSpacing: tracking.display,
+    color: color.ink,
+  },
   expiredBody: {
     fontFamily: fontFamily.body,
-    fontSize: 12.5,
-    lineHeight: 18,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
     textAlign: 'center',
     maxWidth: 280,
   },
   expiredCta: {
     alignSelf: 'stretch',
+    minHeight: MIN_TOUCH,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.pill,
     backgroundColor: color.accent,
-    paddingVertical: 14,
+    paddingVertical: spacing.snug,
   },
   /** Rows inside a section stand 14 apart, like the screen's own rhythm. */
-  rowList: { gap: 14 },
+  rowList: { gap: spacing.md },
   /** N-02 (153:75): the standing-here anchor, first and in its wash. */
   hereCard: {
-    gap: 10,
-    borderRadius: 18,
+    gap: spacing.snug,
+    borderRadius: radius.lg,
     backgroundColor: color.accentWash,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
   },
   entitlementText: {
     fontFamily: fontFamily.body,
-    fontSize: 10,
-    lineHeight: 14,
+    fontSize: font.label,
+    lineHeight: font.label * leading.snug,
     color: color.inkMuted,
     textAlign: 'center',
   },
   hereLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 10,
-    letterSpacing: 1,
+    fontSize: font.label,
+    letterSpacing: tracking.none,
     color: color.inkMuted,
   },
   /** The neighbourhood's name, standing between the kicker and the deed. */
   hereName: {
     fontFamily: fontFamily.display,
-    fontSize: 20,
-    lineHeight: 26,
+    fontSize: font.heading,
+    lineHeight: font.heading * leading.snug,
+    letterSpacing: tracking.display,
     color: color.ink,
   },
   /** N-02: the kind as the tracked word under the name. */
   venueKind: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 9,
-    letterSpacing: 0.8,
+    fontSize: font.label,
+    letterSpacing: tracking.none,
     color: color.inkMuted,
   },
   googleMoreRow: { minHeight: MIN_TOUCH, alignItems: 'center', justifyContent: 'center' },
-  googleMoreText: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.ink },
-  untilRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  googleMoreText: { fontFamily: fontFamily.bodySemi, fontSize: font.control, color: color.ink },
+  untilRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.cozy },
   untilText: {
     fontFamily: fontFamily.body,
-    fontSize: 13,
+    fontSize: font.caption,
     color: color.inkMuted,
   },
   /** Flat coral, the same recipe the shared `Button`'s primary variant uses. */
@@ -1449,14 +1485,14 @@ const styles = StyleSheet.create({
     backgroundColor: color.accent,
     overflow: 'hidden',
     borderRadius: radius.pill,
-    paddingVertical: 14,
+    paddingVertical: spacing.snug,
     ...elevation.card,
     shadowColor: color.accent,
     shadowOpacity: 0.28,
   },
   bigFilledLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 15,
+    fontSize: font.control,
     color: color.onAccent,
   },
   /** White, 1.5 control edge — the shared `Button`'s secondary variant. */
@@ -1476,29 +1512,28 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: color.border,
     borderRadius: radius.pill,
-    paddingVertical: 12,
+    paddingVertical: spacing.snug,
   },
   bigOutlineLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 14,
+    fontSize: font.control,
     color: color.ink,
   },
   /** The sheet's safety card (11:166): a white card, 18 corners, the 44 veil disc. */
   safeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.snug,
     backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.rule,
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    ...elevation.card,
   },
   safeDisc: {
     width: 44,
-    height: 44,
-    borderRadius: 22,
+    height: MIN_TOUCH,
+    borderRadius: radius.pill,
     backgroundColor: color.veil,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1507,12 +1542,12 @@ const styles = StyleSheet.create({
   /** Small, quiet, and never omitted where Google's answer is drawn. */
   attribution: {
     fontFamily: fontFamily.body,
-    fontSize: 11,
+    fontSize: font.label,
     color: color.inkMuted,
   },
   safeTitle: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 14,
+    fontSize: font.body,
     color: color.ink,
   },
 });

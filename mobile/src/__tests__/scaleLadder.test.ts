@@ -30,7 +30,12 @@ const SRC = join(__dirname, '..');
  * Files whose measurements are on the ladder. Adding a name here is the last
  * step of converting a screen, and it is what stops the screen drifting back.
  */
-const CONVERTED = ['components/ui.tsx'];
+const CONVERTED = [
+  'components/ui.tsx',
+  'screens/CheckinScreen.tsx',
+  'screens/DiscoveryScreen.tsx',
+  'screens/EventsScreen.tsx',
+];
 
 /** Queued for the D-059 pass. Every name here is a screen still on its own eye. */
 const PENDING = [
@@ -64,10 +69,7 @@ const PENDING = [
   'onboarding/steps/ShowMeStep.tsx',
   'onboarding/steps/WelcomeStep.tsx',
   'screens/ChatScreen.tsx',
-  'screens/CheckinScreen.tsx',
-  'screens/DiscoveryScreen.tsx',
   'screens/EventDetailScreen.tsx',
-  'screens/EventsScreen.tsx',
   'screens/HotelDetailsScreen.tsx',
   'screens/HotelScreen.tsx',
   'screens/InboxScreen.tsx',
