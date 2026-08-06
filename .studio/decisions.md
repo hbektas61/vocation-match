@@ -208,3 +208,33 @@ swipe demonstrates match + chat.
 demo environment. Before any production offering: flip the flag off AND
 delete `app.demo_users` rows (cascade removes their placements). This joins
 the D-056 launch checklist.
+
+## D-059 — Measurements are a locked ladder, not judgement (2026-08-06)
+
+Owner instruction: spend one to two days on the app's general UX/UI. The audit
+that opened the pass found one cause under most of the individually-reported
+symptoms. D-058 locked the palette with a test; it left the measurements to
+judgement, and against a theme declaring 6 font sizes, 5 spacing steps and 6
+radii, the screens were rendering **22 font sizes, 22 spacing values, 28 radii,
+13 letter-spacings and 23 hand-typed line-heights**. The drift started inside
+`ui.tsx` itself (`fontSize: 19`, `font.caption + 1`, `font.label - 1`).
+
+**Decision.** `theme.ts` now declares the full ladder — `font` (six reading
+steps plus `control` and `moment`), `spacing` (nine even rungs), `radius`
+(seven), `leading` (three ratios) and `tracking` (four) — and a screen may not
+write a measurement. Nothing is set below 12pt: the 9, 10 and 11pt text the
+screens had grown went up, not down. `radius.xl` moved 28 → 24.
+
+**Enforcement.** `src/__tests__/scaleLadder.test.ts`, built on the same shape as
+`lightTheme.test.ts`. It fails on any bare numeric `fontSize` / `lineHeight` /
+`letterSpacing` / `borderRadius` / padding / margin / gap in a file on its
+`CONVERTED` list, checks the ladder's own properties (each reading step ≥ 1.18×
+the one below, every spacing rung even, nothing under 12pt, each ladder small
+enough to hold in your head), and asserts `CONVERTED ∪ PENDING` is exactly the
+set of files that draw — so a new screen cannot arrive in neither list.
+
+**Rollout.** One file per increment. `ui.tsx` converted first because everything
+inherits from it. The conversion table is `.studio/d059-scale-contract.md`.
+
+**Unchanged.** The palette (D-058), the information architecture (D-057), copy,
+room eligibility, provider behaviour, privacy thresholds, and the schema.

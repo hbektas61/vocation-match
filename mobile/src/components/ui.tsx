@@ -32,11 +32,13 @@ import {
   font,
   fontFamily,
   gradient,
+  leading,
   MIN_TOUCH,
   overlay,
   radius,
   roomTone,
   spacing,
+  tracking,
 } from '../theme';
 
 export function Screen({
@@ -1274,18 +1276,23 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   screen: { flex: 1, backgroundColor: color.background },
   screenSheet: { backgroundColor: color.surface },
-  /** The screen shell: 20 aside, 24 above, 16 below, 14 between. */
-  screenContent: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: spacing.md, gap: 14 },
+  /** The screen shell: 20 aside, 24 above, 16 below, 16 between. */
+  screenContent: {
+    paddingHorizontal: spacing.wide,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+    gap: spacing.md,
+  },
   buttonSpring: { transform: [{ scale: 0.97 }] },
   /** The breathing placeholders. */
-  skeletonBase: { backgroundColor: color.veil, borderRadius: 8 },
-  skeletonList: { gap: 14 },
-  skeletonRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  skeletonDisc: { width: 48, height: 48, borderRadius: 24 },
-  skeletonLines: { flex: 1, gap: 8 },
-  skeletonLineWide: { height: 14, borderRadius: 7, width: '72%' },
-  skeletonLineNarrow: { height: 11, borderRadius: 5.5, width: '44%' },
-  skeletonCard: { borderRadius: 24, width: '100%' },
+  skeletonBase: { backgroundColor: color.veil, borderRadius: radius.xs },
+  skeletonList: { gap: spacing.snug },
+  skeletonRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.snug },
+  skeletonDisc: { width: 48, height: 48, borderRadius: radius.pill },
+  skeletonLines: { flex: 1, gap: spacing.sm },
+  skeletonLineWide: { height: 12, borderRadius: radius.pill, width: '72%' },
+  skeletonLineNarrow: { height: 10, borderRadius: radius.pill, width: '44%' },
+  skeletonCard: { borderRadius: radius.xl, width: '100%' },
   skeletonFill: { flex: 1 },
   skeletonFillInner: { flex: 1, borderRadius: 0 },
   /** The shared waiting state: centred, with air around it. */
@@ -1297,24 +1304,24 @@ const styles = StyleSheet.create({
     backgroundColor: overlay.photo,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: spacing.lg,
   },
   toastCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.sm,
     maxWidth: 340,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     backgroundColor: color.surface,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.wide,
     ...elevation.raised,
   },
   toastText: {
     flex: 1,
     fontFamily: fontFamily.bodyMedium,
     fontSize: font.body,
-    lineHeight: font.body * 1.45,
+    lineHeight: font.body * leading.normal,
     color: color.ink,
   },
   dialogScrim: {
@@ -1322,27 +1329,27 @@ const styles = StyleSheet.create({
     backgroundColor: overlay.photo,
     alignItems: 'stretch',
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing.lg,
   },
   dialogCard: {
     backgroundColor: color.surface,
-    borderRadius: 20,
+    borderRadius: radius.lg,
     padding: spacing.lg,
     gap: spacing.sm,
   },
   dialogTitle: {
     fontFamily: fontFamily.display,
-    fontSize: 19,
-    lineHeight: 25,
+    fontSize: font.heading,
+    lineHeight: font.heading * leading.snug,
     color: color.ink,
   },
   dialogBody: {
     fontFamily: fontFamily.body,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
-  screenBleed: { paddingBottom: spacing.xl, gap: 14 },
+  screenBleed: { paddingBottom: spacing.xl, gap: spacing.md },
   /** `fill`: at least the height of the scroll view, never less than content. */
   screenFill: { flexGrow: 1 },
 
@@ -1357,8 +1364,9 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     fontFamily: fontFamily.display,
     fontWeight: '700',
-    fontSize: 32,
-    lineHeight: 32 * 1.2,
+    fontSize: font.display,
+    lineHeight: font.display * leading.tight,
+    letterSpacing: tracking.display,
     color: color.ink,
   },
 
@@ -1366,38 +1374,40 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.display,
     fontWeight: '700',
     fontSize: font.display,
-    lineHeight: font.display * 1.2,
+    lineHeight: font.display * leading.tight,
+    letterSpacing: tracking.display,
     color: color.ink,
   },
   title: {
     fontFamily: fontFamily.display,
     fontWeight: '700',
     fontSize: font.title,
-    lineHeight: font.title * 1.2,
+    lineHeight: font.title * leading.tight,
+    letterSpacing: tracking.display,
     color: color.ink,
   },
   heading: {
     fontFamily: fontFamily.displaySemi,
     fontSize: font.heading,
-    lineHeight: font.heading * 1.25,
+    lineHeight: font.heading * leading.snug,
     color: color.ink,
   },
   body: {
     fontFamily: fontFamily.body,
     fontSize: font.body,
-    lineHeight: font.body * 1.45,
+    lineHeight: font.body * leading.normal,
     color: color.inkMuted,
   },
   caption: {
     fontFamily: fontFamily.body,
     fontSize: font.caption,
-    lineHeight: font.caption * 1.4,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
   sectionLabel: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
-    letterSpacing: 1.4,
+    letterSpacing: tracking.label,
     color: color.inkMuted,
   },
 
@@ -1407,7 +1417,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
-    paddingVertical: 14,
+    paddingVertical: spacing.snug,
   },
   buttonInner: {
     flexDirection: 'row',
@@ -1454,10 +1464,10 @@ const styles = StyleSheet.create({
   buttonPressed: { backgroundColor: color.veil },
   buttonLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 15,
-    letterSpacing: 0.2,
+    fontSize: font.control,
+    letterSpacing: tracking.control,
   },
-  buttonLabelCompact: { fontSize: font.caption + 1, letterSpacing: 0 },
+  buttonLabelCompact: { fontSize: font.caption, letterSpacing: tracking.none },
   buttonLabelOnColor: { color: color.onAccent },
   buttonLabelSecondary: { color: color.ink },
   buttonLabelDanger: { color: color.onInverse },
@@ -1481,8 +1491,8 @@ const styles = StyleSheet.create({
     borderColor: color.accent,
   },
   actionGlyph: {
-    fontSize: 26,
-    lineHeight: 30,
+    fontSize: font.title,
+    lineHeight: font.title * leading.tight,
     color: color.inkMuted,
   },
   actionGlyphLike: { color: color.onAccent },
@@ -1498,7 +1508,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
-    letterSpacing: 1.2,
+    letterSpacing: tracking.label,
     color: color.inkMuted,
   },
   /**
@@ -1559,7 +1569,7 @@ const styles = StyleSheet.create({
     minHeight: MIN_TOUCH * 2,
     // A paragraph does want breathing room between lines; only the
     // single-line case cannot afford it.
-    lineHeight: font.body * 1.3,
+    lineHeight: font.body * leading.snug,
   },
 
   /**
@@ -1597,12 +1607,12 @@ const styles = StyleSheet.create({
   chipDisabled: { backgroundColor: color.veil, borderColor: color.rule },
   chipLabel: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: font.caption + 1,
+    fontSize: font.control,
     color: color.ink,
   },
   chipLabelSelected: { fontFamily: fontFamily.bodySemi, color: color.accentDeep },
   /** White on coral, under the same ≥15pt-semibold rule the buttons keep. */
-  chipLabelSolid: { fontFamily: fontFamily.bodySemi, fontSize: 15, color: color.onAccent },
+  chipLabelSolid: { fontFamily: fontFamily.bodySemi, fontSize: font.control, color: color.onAccent },
   chipLabelDisabled: { color: color.inkFaint },
 
   contextRibbon: {
@@ -1613,8 +1623,8 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
     borderRadius: radius.pill,
     backgroundColor: color.inverse,
-    paddingHorizontal: spacing.md - 2,
-    paddingVertical: spacing.sm + 1,
+    paddingHorizontal: spacing.snug,
+    paddingVertical: spacing.sm,
   },
   contextRibbonGlyph: { fontSize: font.caption, color: color.accent },
   contextRibbonText: {
@@ -1627,30 +1637,30 @@ const styles = StyleSheet.create({
   premiumBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs + 1,
+    gap: spacing.xs,
     alignSelf: 'flex-start',
     borderRadius: radius.pill,
     backgroundColor: color.premiumSoft,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: spacing.xs + 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   premiumBadgeGlyph: { fontSize: font.label, color: color.premium },
   premiumBadgeText: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: font.label - 1,
-    letterSpacing: 0.8,
+    fontSize: font.label,
+    letterSpacing: tracking.label,
     color: color.premium,
   },
 
   successBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs + 1,
+    gap: spacing.xs,
     alignSelf: 'flex-start',
     borderRadius: radius.pill,
     backgroundColor: color.successSoft,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: spacing.xs + 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   successBadgeGlyph: { fontSize: font.label, color: color.success },
   successBadgeText: {
@@ -1662,8 +1672,8 @@ const styles = StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
     borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.cozy,
   },
   keyCard: {
     borderRadius: radius.lg,
@@ -1673,7 +1683,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...elevation.card,
   },
-  keyStripe: { height: 14, marginTop: spacing.md },
+  keyStripe: { height: spacing.snug, marginTop: spacing.md },
   keyStripeOpen: { backgroundColor: color.accent },
   keyStripeClosed: {
     backgroundColor: 'transparent',
@@ -1685,22 +1695,22 @@ const styles = StyleSheet.create({
   stateChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: spacing.xs,
     alignSelf: 'flex-start',
   },
   stateChipText: {
-    fontSize: 11,
-    lineHeight: 14,
+    fontSize: font.label,
+    lineHeight: font.label * leading.snug,
   },
   stateChipTextOpen: { fontFamily: fontFamily.bodySemi, color: color.success },
   stateChipTextClosed: { fontFamily: fontFamily.bodyMedium, color: color.inkMuted },
-  stateDot: { width: 6, height: 6, borderRadius: radius.pill },
+  stateDot: { width: spacing.cozy, height: spacing.cozy, borderRadius: radius.pill },
   stateDotOpen: { backgroundColor: color.successMark },
   stateDotClosed: { backgroundColor: color.inkFaint },
   doorPlate: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
-    letterSpacing: 1.6,
+    letterSpacing: tracking.label,
     color: color.inkMuted,
   },
   checkboxRow: {
@@ -1710,9 +1720,9 @@ const styles = StyleSheet.create({
     minHeight: MIN_TOUCH,
   },
   checkboxBox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
+    width: spacing.lg,
+    height: spacing.lg,
+    borderRadius: radius.xs,
     borderWidth: 2,
     // A control has to look pressable while unchecked; the hairline tint is
     // too quiet for that job.
@@ -1721,7 +1731,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxBoxOn: { backgroundColor: color.accent, borderColor: color.accent },
-  checkboxMark: { color: color.onAccent, fontSize: 14, lineHeight: 16, fontWeight: '900' },
+  checkboxMark: { color: color.onAccent, fontSize: font.control, lineHeight: font.control, fontWeight: '900' },
   checkboxLabel: {
     flex: 1,
     fontFamily: fontFamily.body,
@@ -1732,7 +1742,7 @@ const styles = StyleSheet.create({
   badgeText: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
-    letterSpacing: 1,
+    letterSpacing: tracking.label,
   },
 
   displayOnPhoto: { color: color.onPhoto },
@@ -1743,8 +1753,8 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     maxWidth: '100%',
     borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm + 4,
-    paddingVertical: spacing.xs + 3,
+    paddingHorizontal: spacing.snug,
+    paddingVertical: spacing.cozy,
   },
   /** Inline and on a photo are the same deep plate, so the pair reads as one thing. */
   ribbonInline: { backgroundColor: color.inverse },
@@ -1764,7 +1774,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
-    letterSpacing: 1.3,
+    letterSpacing: tracking.label,
     color: color.onInverse,
   },
 
@@ -1808,14 +1818,14 @@ const styles = StyleSheet.create({
   emptyGlyph: {
     fontFamily: fontFamily.display,
     fontWeight: '700',
-    fontSize: 34,
-    lineHeight: 38,
+    fontSize: font.display,
+    lineHeight: font.display * leading.tight,
     color: color.ink,
   },
   emptyText: {
     fontFamily: fontFamily.body,
     fontSize: font.body,
-    lineHeight: font.body * 1.45,
+    lineHeight: font.body * leading.normal,
     color: color.inkMuted,
     textAlign: 'center',
   },
@@ -1833,12 +1843,12 @@ const styles = StyleSheet.create({
   noticeError: { backgroundColor: color.dangerSoft },
   noticeSuccess: { backgroundColor: color.successSoft },
   /** Seats the 16pt mark on the first line's centre. */
-  noticeMark: { marginTop: 2 },
+  noticeMark: { marginTop: spacing.tight },
   noticeText: {
     flex: 1,
     fontFamily: fontFamily.body,
     fontSize: font.body,
-    lineHeight: font.body * 1.45,
+    lineHeight: font.body * leading.normal,
     color: color.ink,
   },
   noticeErrorText: { color: color.danger },

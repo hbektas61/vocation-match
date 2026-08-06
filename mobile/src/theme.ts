@@ -262,10 +262,30 @@ export const roomTone = {
   UPCOMING: { fill: tokens.surface.primary, text: tokens.text.primary, solid: false },
 } as const;
 
+/**
+ * The spacing ladder (D-059).
+ *
+ * D-058 locked the palette and left the measurements loose, and the screens
+ * drifted the way loose things do: twenty-two distinct padding values across
+ * the app, most of them eyeballed one screen at a time. Two cards that do the
+ * same job ended up 2pt apart, which nobody can name and everybody can feel.
+ *
+ * Nine rungs, every one a multiple of two and every one earning its place —
+ * measured against what the screens actually needed rather than invented. A
+ * gap that is not on this ladder is a gap somebody guessed.
+ */
 export const spacing = {
+  /** A seam: two things that touch but must not merge. */
+  tight: 2,
   xs: 4,
+  /** Inside a row — a glyph and the word beside it. */
+  cozy: 6,
   sm: 8,
+  /** Between two stacked lines in a card: a title and its supporting line. */
+  snug: 12,
   md: 16,
+  /** A card's inner padding where 16 reads cramped. */
+  wide: 20,
   lg: 24,
   xl: 40,
 } as const;
@@ -288,24 +308,98 @@ export const fontFamily = {
   bodySemi: 'Inter_600SemiBold',
 } as const;
 
+/**
+ * The type ladder (D-059). Six reading steps and two declared exceptions.
+ *
+ * The app was rendering twenty-two distinct sizes, which is not a scale — it
+ * is twenty-two separate decisions taken on twenty-two different evenings.
+ * The screen title was 34 on Tatilim and 26 on Etkinlikler; a card's name was
+ * 17, 18 or 19 depending on which card. None of that is legible as a system.
+ *
+ * Each step is at least 1.18× the one below, so two adjacent sizes always read
+ * as *different* rather than as a mistake. Nothing here is smaller than 12:
+ * the 9, 10 and 11pt text that had crept in went up, not down.
+ */
 export const font = {
-  /** An onboarding question, or a name on a card. The first thing read. */
+  /** A tab's screen title, an onboarding question. The first thing read. */
   display: 32,
+  /** A sheet's title, a detail header. */
   title: 26,
+  /** A section heading, a person's name, a card's own title. */
   heading: 20,
+  /** Everything anybody reads: prose, a bio, an input's value, a notice. */
   body: 16,
+  /** The supporting line under something. */
   caption: 13,
-  /** Tracked and uppercase. Structure, never prose. */
+  /**
+   * Tracked and uppercase. Structure, never prose — which is why it is allowed
+   * to sit under the smallest reading size: nobody reads a section label, they
+   * find it. `scaleLadder.test.ts` names this exception rather than letting it
+   * be one more number.
+   */
   label: 12,
+
+  /**
+   * The label on a thing you press — a button, a chip, a tab.
+   *
+   * Deliberately one step off the ladder: set semibold, 15 sits optically
+   * level with 16 regular beside it, which is why every reference app in this
+   * category does the same. It is the only size allowed outside the six above,
+   * and only on something operable.
+   */
+  control: 15,
+  /**
+   * The match word, and nothing else. The product's one loud moment is allowed
+   * to be loud; declaring it here is what stops a second one appearing.
+   */
+  moment: 44,
 } as const;
 
+/**
+ * Leading, as ratios rather than as twenty-three hand-typed pixel values.
+ * Display type is set tight because it is looked at; prose is set open because
+ * it is read.
+ */
+export const leading = {
+  /** Display and title: 32/26/20 set close, the way large type wants. */
+  tight: 1.2,
+  /** A heading, or a two-line name that should still feel like one object. */
+  snug: 1.3,
+  /** Prose. */
+  normal: 1.45,
+} as const;
+
+/**
+ * Tracking. Thirteen values were in use; these are the four that had a reason.
+ * Large type closes up, small uppercase opens out — the rest is noise.
+ */
+export const tracking = {
+  /** Display type at 26 and above, which sets loose by default. */
+  display: -0.2,
+  none: 0,
+  /** A control's label: barely open, so a button reads as a button. */
+  control: 0.2,
+  /** Uppercase structure — a section label, a badge. */
+  label: 1.2,
+} as const;
+
+/**
+ * The corner ladder (D-059). Twenty-eight distinct radii were in the source;
+ * a 14 beside an 18 beside a 20 is three attempts at the same corner.
+ *
+ * A circle is still computed from its own size (`size / 2`) rather than picked
+ * from here — that is geometry, not a choice.
+ */
 export const radius = {
   xs: 8,
   sm: 12,
   md: 16,
   /** The card radius D-058 asks for: 18–22. */
   lg: 20,
-  xl: 28,
+  /** A large tile, a photo well, a sheet's top corners. */
+  xl: 24,
+  /** A hero surface: the deck card, a full-bleed photograph. */
+  xxl: 32,
   pill: 999,
 } as const;
 
