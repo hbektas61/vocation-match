@@ -155,14 +155,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: spacing.cozy,
     paddingHorizontal: spacing.md,
-    paddingVertical: 11,
+    paddingVertical: spacing.snug,
     borderRadius: radius.pill,
     borderWidth: 1,
     overflow: 'hidden',
   },
-  chipIcon: { marginRight: 2 },
+  chipIcon: { marginRight: spacing.tight },
   chipBadge: { position: 'absolute', right: spacing.sm + 2 },
   /**
    * One decision per line, sized like the reference's pills: tall enough to
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   chipPressed: { opacity: 0.85 },
   chipLabel: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: 14,
+    fontSize: font.control,
     color: color.ink,
   },
   /**

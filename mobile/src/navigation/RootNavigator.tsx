@@ -23,7 +23,7 @@ import { ReportBlockScreen } from '../screens/ReportBlockScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { UpcomingScreen } from '../screens/UpcomingScreen';
 import { useAppStore } from '../state/AppStore';
-import { color, fontFamily } from '../theme';
+import { color, font, fontFamily } from '../theme';
 import type { RootStackParamList, TabParamList } from './types';
 
 /**
@@ -41,7 +41,7 @@ const stackHeader = {
   headerStyle: { backgroundColor: color.surface },
   headerShadowVisible: true,
   headerTintColor: color.ink,
-  headerTitleStyle: { fontFamily: fontFamily.displaySemi, fontSize: 18 },
+  headerTitleStyle: { fontFamily: fontFamily.displaySemi, fontSize: font.heading },
 } as const;
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

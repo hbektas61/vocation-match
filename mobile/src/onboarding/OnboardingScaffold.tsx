@@ -29,7 +29,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Notice, useScreenChangeAnnouncement } from '../components/ui';
 import { COPY } from '../copy';
-import { color, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
+import {
+  color,
+  font,
+  fontFamily,
+  leading,
+  MIN_TOUCH,
+  radius,
+  spacing,
+  tracking,
+} from '../theme';
 
 export function OnboardingProgress({ step, total }: { step: number; total: number }) {
   const ratio = Math.max(0, Math.min(1, total > 0 ? step / total : 0));
@@ -202,36 +211,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  barGlyph: { fontSize: 22, lineHeight: 26, color: color.ink },
+  barGlyph: {
+    fontSize: font.title,
+    lineHeight: font.title * leading.tight,
+    color: color.ink,
+  },
   /** The sheet's Atla (9:89): 15, in the light pink. */
   barSkip: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 15,
+    fontSize: font.control,
     color: color.accentDeep,
   },
   /** The sheet's column (8:84): 20 aside, 14 between. */
   content: {
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.wide,
     paddingTop: spacing.sm,
     paddingBottom: spacing.lg,
-    gap: 14,
+    gap: spacing.md,
   },
   headline: {
     fontFamily: fontFamily.display,
-    fontSize: 28,
-    lineHeight: 28 * 1.2,
+    fontSize: font.display,
+    lineHeight: font.display * leading.tight,
+    letterSpacing: tracking.display,
     color: color.ink,
     textAlign: 'left',
   },
   body: {
     fontFamily: fontFamily.body,
-    fontSize: 13,
-    lineHeight: 13 * 1.5,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
   footer: {
     gap: spacing.sm,
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.wide,
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
   },
@@ -239,7 +253,7 @@ const styles = StyleSheet.create({
   cta: {
     alignSelf: 'stretch',
     minHeight: MIN_TOUCH,
-    paddingVertical: 14,
+    paddingVertical: spacing.snug,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -257,7 +271,7 @@ const styles = StyleSheet.create({
   ctaDisabled: { backgroundColor: color.accentSoft, shadowOpacity: 0, elevation: 0 },
   ctaLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 16,
+    fontSize: font.control,
     color: color.onAccent,
   },
   ctaLabelDisabled: { color: color.inkMuted },

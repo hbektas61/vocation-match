@@ -24,7 +24,16 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 
 import { COPY } from '../copy';
 import type { RoomKey } from '../data';
-import { color, fontFamily, MIN_TOUCH, overlay, radius, spacing } from '../theme';
+import {
+  color,
+  font,
+  fontFamily,
+  MIN_TOUCH,
+  overlay,
+  radius,
+  spacing,
+  tracking,
+} from '../theme';
 
 /** Below this, the control warns that the room is about to close. */
 export const EXPIRING_WITHIN_MS = 10 * 60 * 1000;
@@ -204,11 +213,11 @@ const styles = StyleSheet.create({
   closed: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm + 2,
+    gap: spacing.snug,
     minHeight: MIN_TOUCH,
     borderRadius: radius.md,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingVertical: spacing.snug,
+    paddingHorizontal: spacing.md,
     backgroundColor: color.surface,
     borderWidth: 1,
     borderColor: color.border,
@@ -217,19 +226,19 @@ const styles = StyleSheet.create({
   closedOff: { backgroundColor: color.veil, borderColor: color.rule },
   /** About to close: a heavier brand edge beside the minutes in the meta line. */
   closedExpiring: { borderWidth: 1.5, borderColor: color.accent },
-  closedText: { flex: 1, gap: 2 },
+  closedText: { flex: 1, gap: spacing.tight },
   closedLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 10,
-    letterSpacing: 0.5,
+    fontSize: font.label,
+    letterSpacing: tracking.none,
     color: color.ink,
   },
   closedMeta: {
     fontFamily: fontFamily.body,
-    fontSize: 12,
+    fontSize: font.caption,
     color: color.inkMuted,
   },
-  chevron: { fontFamily: fontFamily.bodySemi, fontSize: 12, color: color.ink },
+  chevron: { fontFamily: fontFamily.bodySemi, fontSize: font.caption, color: color.ink },
   mutedText: { color: color.inkMuted },
   pressed: { opacity: 0.82 },
 
@@ -242,14 +251,12 @@ const styles = StyleSheet.create({
   // `Screen tone="sheet"` draws everywhere else a modal appears.
   sheet: {
     backgroundColor: color.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderWidth: 1,
-    borderColor: color.rule,
-    paddingHorizontal: 18,
-    paddingTop: 12,
-    paddingBottom: 28,
-    gap: spacing.sm + 3,
+    borderTopLeftRadius: radius.xxl,
+    borderTopRightRadius: radius.xxl,
+    paddingHorizontal: spacing.wide,
+    paddingTop: spacing.snug,
+    paddingBottom: spacing.lg,
+    gap: spacing.snug,
     maxHeight: '82%',
   },
   grabber: {
@@ -263,10 +270,10 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontFamily: fontFamily.displaySemi,
-    fontSize: 18,
+    fontSize: font.heading,
     color: color.ink,
   },
-  sheetNote: { fontFamily: fontFamily.body, fontSize: 12, color: color.inkMuted },
+  sheetNote: { fontFamily: fontFamily.body, fontSize: font.caption, color: color.inkMuted },
   sheetList: { flexGrow: 0 },
   sheetListInner: { gap: spacing.sm },
   // A row nested inside the white sheet: the recessed `veil` fill a card
@@ -275,33 +282,37 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm + 2,
+    gap: spacing.snug,
     minHeight: MIN_TOUCH,
-    borderRadius: 14,
-    paddingVertical: 11,
-    paddingHorizontal: 12,
+    borderRadius: radius.md,
+    paddingVertical: spacing.snug,
+    paddingHorizontal: spacing.snug,
     backgroundColor: color.veil,
-    borderWidth: 1,
-    borderColor: color.rule,
   },
-  rowSelected: { backgroundColor: color.accentSoft, borderColor: color.accent },
+  rowSelected: { backgroundColor: color.accentSoft },
   rowOff: { opacity: 0.7 },
-  rowText: { flex: 1, gap: 2 },
+  rowText: { flex: 1, gap: spacing.tight },
   rowLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 10,
-    letterSpacing: 0.5,
+    fontSize: font.label,
+    letterSpacing: tracking.none,
     color: color.ink,
   },
-  rowMeta: { fontFamily: fontFamily.body, fontSize: 12, color: color.inkMuted },
+  rowMeta: { fontFamily: fontFamily.body, fontSize: font.caption, color: color.inkMuted },
   // Text, not a fill — the dark sibling is what the brand can carry at this
   // size. Same reasoning as every other small coral glyph in this theme.
-  check: { fontFamily: fontFamily.bodySemi, fontSize: 12, color: color.accentDeep, width: 10, textAlign: 'center' },
+  check: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.caption,
+    color: color.accentDeep,
+    width: 10,
+    textAlign: 'center',
+  },
   footNote: {
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    borderRadius: radius.sm,
+    paddingVertical: spacing.snug,
+    paddingHorizontal: spacing.snug,
     backgroundColor: color.infoSoft,
   },
-  footNoteText: { fontFamily: fontFamily.body, fontSize: 11, color: color.inkMuted },
+  footNoteText: { fontFamily: fontFamily.body, fontSize: font.label, color: color.inkMuted },
 });

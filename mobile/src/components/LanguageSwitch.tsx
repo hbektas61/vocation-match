@@ -14,7 +14,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { COPY, type Locale } from '../copy';
 import { useAppStore } from '../state/AppStore';
-import { color, fontFamily, radius, spacing } from '../theme';
+import { color, font, fontFamily, radius, spacing } from '../theme';
 
 const OPTIONS: { locale: Locale; label: string }[] = [
   { locale: 'en', label: 'English' },
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   pill: {
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: color.rule,
@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   pillSelected: { backgroundColor: color.accent, borderWidth: 0 },
   label: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 13,
+    fontSize: font.caption,
     color: color.ink,
   },
   labelSelected: { color: color.onAccent },

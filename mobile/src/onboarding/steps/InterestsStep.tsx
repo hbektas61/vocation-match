@@ -5,7 +5,7 @@ import { apiErrorMessage, COPY } from '../../copy';
 import { ApiError, MAX_INTERESTS } from '../../data';
 import { INTEREST_CHOICES } from '../../fixtures/interests';
 import { ChoiceChip, ChoiceGroup } from '../ChoiceChip';
-import { color, fontFamily } from '../../theme';
+import { color, font, fontFamily } from '../../theme';
 import { OnboardingScaffold } from '../OnboardingScaffold';
 import type { SavingStepProps } from './types';
 
@@ -96,7 +96,7 @@ export function InterestsStep({
 const styles = StyleSheet.create({
   selectedCount: {
     fontFamily: fontFamily.body,
-    fontSize: 13,
+    fontSize: font.caption,
     color: color.accentDeep,
     textAlign: 'center',
   },

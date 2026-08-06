@@ -50,7 +50,7 @@ import { HereNowScreen } from '../screens/HereNowScreen';
 import { InboxScreen } from '../screens/InboxScreen';
 import { MatchScreen } from '../screens/MatchScreen';
 import { AppStoreProvider, useAppStore } from '../state/AppStore';
-import { color, fontFamily } from '../theme';
+import { color, font, fontFamily, spacing } from '../theme';
 
 /**
  * One shape for every scene: whatever react-navigation hands a screen in a
@@ -724,10 +724,20 @@ export function VisualHarness() {
 
 const styles = StyleSheet.create({
   blank: { flex: 1, backgroundColor: color.background },
-  picker: { padding: 20, gap: 10, backgroundColor: color.background, minHeight: '100%' },
-  title: { fontFamily: fontFamily.display, fontSize: 18, color: color.ink },
-  note: { fontFamily: fontFamily.body, fontSize: 12, color: color.inkMuted, marginBottom: 8 },
-  row: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: color.rule },
-  rowKey: { fontFamily: fontFamily.bodySemi, fontSize: 14, color: color.accent },
-  rowLabel: { fontFamily: fontFamily.body, fontSize: 12, color: color.inkMuted },
+  picker: {
+    padding: spacing.wide,
+    gap: spacing.snug,
+    backgroundColor: color.background,
+    minHeight: '100%',
+  },
+  title: { fontFamily: fontFamily.display, fontSize: font.heading, color: color.ink },
+  note: {
+    fontFamily: fontFamily.body,
+    fontSize: font.caption,
+    color: color.inkMuted,
+    marginBottom: spacing.sm,
+  },
+  row: { paddingVertical: spacing.snug, borderBottomWidth: 1, borderBottomColor: color.rule },
+  rowKey: { fontFamily: fontFamily.bodySemi, fontSize: font.control, color: color.accent },
+  rowLabel: { fontFamily: fontFamily.body, fontSize: font.caption, color: color.inkMuted },
 });

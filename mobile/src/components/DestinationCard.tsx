@@ -16,7 +16,7 @@ import React from 'react';
 import { Image, ImageSourcePropType, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PhotoScrim } from './ui';
-import { color, fontFamily, overlay, radius, spacing } from '../theme';
+import { color, font, fontFamily, leading, overlay, radius, spacing } from '../theme';
 
 export function DestinationCard({
   name,
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: radius.pill,
     // A plate rather than a tinted glass circle — there is no translucent
     // white in this theme's token set, and a deep navy plate is exactly what
     // D-058 already uses for any control that has to sit on a photograph.
@@ -98,12 +98,12 @@ const styles = StyleSheet.create({
   chevronGlyph: {
     color: color.onPhoto,
     fontFamily: fontFamily.bodySemi,
-    fontSize: 18,
-    lineHeight: 20,
+    fontSize: font.heading,
+    lineHeight: font.heading * leading.snug,
   },
   name: {
     color: color.onPhoto,
     fontFamily: fontFamily.display,
-    fontSize: 18,
+    fontSize: font.heading,
   },
 });

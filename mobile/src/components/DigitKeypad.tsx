@@ -8,7 +8,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { COPY } from '../copy';
-import { color, font, fontFamily, radius, spacing } from '../theme';
+import { color, font, fontFamily, radius, spacing, tracking } from '../theme';
 
 const LETTERS: Record<string, string> = {
   '2': 'ABC',
@@ -95,8 +95,8 @@ const styles = StyleSheet.create({
   },
   keyLetters: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: 9,
-    letterSpacing: 1.4,
+    fontSize: font.label,
+    letterSpacing: tracking.none,
     color: color.inkMuted,
   },
 });

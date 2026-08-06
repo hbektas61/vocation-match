@@ -11,7 +11,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Button, PremiumBadge, StateChip } from './ui';
 import { COPY, roomPlate, upperCase } from '../copy';
 import type { RoomKey, RoomStatus } from '../data';
-import { color, elevation, fontFamily, radius } from '../theme';
+import { color, elevation, font, fontFamily, leading, radius, spacing, tracking } from '../theme';
 
 export function VacationFeatureCard({
   room,
@@ -105,9 +105,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: color.rule,
     borderRadius: radius.lg,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    gap: spacing.snug,
     ...elevation.card,
   },
   head: {
@@ -121,26 +121,26 @@ const styles = StyleSheet.create({
      colour without borrowing a hue that means something else on this screen. */
   plate: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 11,
-    letterSpacing: 1.6,
+    fontSize: font.label,
+    letterSpacing: tracking.label,
     color: color.accentDeep,
   },
   lead: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 15,
-    lineHeight: 15 * 1.35,
+    fontSize: font.body,
+    lineHeight: font.body * leading.snug,
     color: color.ink,
   },
   body: {
     fontFamily: fontFamily.body,
-    fontSize: 13,
-    lineHeight: 13 * 1.45,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
   note: {
     fontFamily: fontFamily.body,
-    fontSize: 12,
-    lineHeight: 12 * 1.45,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
 });

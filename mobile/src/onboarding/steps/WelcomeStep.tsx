@@ -5,7 +5,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LanguageSwitch } from '../../components/LanguageSwitch';
 import { COPY } from '../../copy';
 import { useAppStore } from '../../state/AppStore';
-import { color, fontFamily, MIN_TOUCH, radius } from '../../theme';
+import { color, font, fontFamily, leading, MIN_TOUCH, radius, spacing, tracking } from '../../theme';
 import type { StepProps } from './types';
 
 /**
@@ -75,10 +75,10 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.surface },
   /** The artwork is square and keeps its own ground; the corners are the
       icon's, so it reads as the app's mark rather than a photograph. */
-  mark: { width: 208, height: 208, borderRadius: 46 },
-  scroll: { flexGrow: 1, paddingHorizontal: 20, paddingBottom: 24 },
+  mark: { width: 208, height: 208, borderRadius: radius.xxl },
+  scroll: { flexGrow: 1, paddingHorizontal: spacing.wide, paddingBottom: spacing.lg },
   /** The mark and the name, centred in the room above the button. */
-  centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.snug },
   languageRow: {
     position: 'absolute',
     right: 16,
@@ -90,15 +90,16 @@ const styles = StyleSheet.create({
    */
   wordmark: {
     fontFamily: fontFamily.display,
-    fontSize: 24,
-    lineHeight: 30,
+    fontSize: font.title,
+    lineHeight: font.title * leading.tight,
+    letterSpacing: tracking.display,
     color: color.accent,
     textAlign: 'center',
   },
   cta: {
     alignSelf: 'stretch',
     minHeight: MIN_TOUCH,
-    paddingVertical: 14,
+    paddingVertical: spacing.snug,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -113,7 +114,7 @@ const styles = StyleSheet.create({
   ctaPressed: { opacity: 0.85 },
   ctaLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 15,
+    fontSize: font.control,
     color: color.onAccent,
   },
 });

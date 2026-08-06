@@ -30,7 +30,7 @@ import Ticket from 'lucide-react-native/icons/ticket';
 import { COPY_FOR } from '../copy';
 import { useAppStore } from '../state/AppStore';
 
-import { color, elevation, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
+import { color, elevation, font, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
 
 /**
  * One icon set, one grid (owner, 2026-08-04): Lucide replaces the hand-drawn
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     right: 2,
     width: 10,
     height: 10,
-    borderRadius: 5,
+    borderRadius: radius.pill,
     backgroundColor: color.accent,
     borderWidth: 2,
     borderColor: color.surface,
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     minHeight: MIN_TOUCH,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   /** The 38×24 seat (10:97); only the active one shows its fill. */
   iconSeat: {
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   iconSeatActive: { backgroundColor: color.accentWash },
   label: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: 10,
+    fontSize: font.label,
   },
   // The coral itself is 2.99:1 on white — too faint for a 10px label — so the
   // active tab reads in its dark sibling instead, same as every other small

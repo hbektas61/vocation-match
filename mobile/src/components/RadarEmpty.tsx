@@ -17,7 +17,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, StyleSheet, View } from 'react-native';
 
-import { color } from '../theme';
+import { color, radius } from '../theme';
 
 const SIZE = 280;
 
@@ -128,14 +128,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     backgroundColor: color.accentSoft,
     opacity: 0.85,
   },
   dot: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     backgroundColor: color.accentDeep,
   },
 });

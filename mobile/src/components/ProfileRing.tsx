@@ -24,7 +24,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { COPY, upperCase } from '../copy';
 import type { RootStackParamList } from '../navigation/types';
 import { useAppStore } from '../state/AppStore';
-import { color, fontFamily } from '../theme';
+import { color, font, fontFamily, radius } from '../theme';
 
 export function ProfileRing({
   /**
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   ring: {
     width: 46,
     height: 46,
-    borderRadius: 23,
+    borderRadius: radius.pill,
     borderWidth: 1.4,
     borderColor: color.rule,
     alignItems: 'center',
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   },
   initials: {
     fontFamily: fontFamily.displaySemi,
-    fontSize: 15,
+    fontSize: font.control,
     color: color.ink,
   },
   ringAlert: { borderWidth: 2, borderColor: color.accent },
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     right: -1,
     width: 10,
     height: 10,
-    borderRadius: 5,
+    borderRadius: radius.pill,
     backgroundColor: color.accent,
   },
   pressed: { opacity: 0.8 },

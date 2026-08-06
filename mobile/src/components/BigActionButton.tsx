@@ -10,7 +10,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { color, fontFamily, radius, spacing } from '../theme';
+import { color, font, fontFamily, leading, radius, spacing } from '../theme';
 
 export type BigActionIcon = 'door' | 'compass' | 'sparkle';
 
@@ -113,19 +113,19 @@ const styles = StyleSheet.create({
   iconSeat: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
   label: {
     flex: 1,
     textAlign: 'center',
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 18,
+    fontFamily: fontFamily.displaySemi,
+    fontSize: font.heading,
   },
   chevron: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 22,
-    lineHeight: 24,
+    fontSize: font.title,
+    lineHeight: font.title * leading.tight,
   },
 });

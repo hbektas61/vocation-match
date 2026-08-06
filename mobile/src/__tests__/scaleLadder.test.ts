@@ -27,26 +27,16 @@ import { font, leading, radius, spacing, tracking } from '../theme';
 const SRC = join(__dirname, '..');
 
 /**
- * Files whose measurements are on the ladder. Adding a name here is the last
- * step of converting a screen, and it is what stops the screen drifting back.
+ * Every file in the app that draws. The D-059 pass finished on 2026-08-06, so
+ * `PENDING` is empty and the union assertion below has become the stronger
+ * claim: this list *is* the set of drawing files, and each one is clean.
+ *
+ * A file leaves this list only by ceasing to draw at all — `RootNavigator`
+ * did, once its one hand-set size became a token and nothing else in it
+ * measured anything. If a literal ever reappears there it re-enters the scan,
+ * lands in neither list, and the union assertion fails.
  */
 const CONVERTED = [
-  'components/ui.tsx',
-  'screens/ChatScreen.tsx',
-  'screens/CheckinScreen.tsx',
-  'screens/DiscoveryScreen.tsx',
-  'screens/EventDetailScreen.tsx',
-  'screens/EventsScreen.tsx',
-  'screens/HotelDetailsScreen.tsx',
-  'screens/HotelScreen.tsx',
-  'screens/InboxScreen.tsx',
-  'screens/MatchScreen.tsx',
-  'screens/SettingsScreen.tsx',
-  'screens/UpcomingScreen.tsx',
-];
-
-/** Queued for the D-059 pass. Every name here is a screen still on its own eye. */
-const PENDING = [
   'components/BigActionButton.tsx',
   'components/CaptchaChallenge.tsx',
   'components/ContextSelector.tsx',
@@ -63,9 +53,9 @@ const PENDING = [
   'components/RoomIllustrations.tsx',
   'components/VacationFeatureCard.tsx',
   'components/VenuePicker.tsx',
+  'components/ui.tsx',
   'devtools/VisualHarness.tsx',
   'navigation/FloatingTabBar.tsx',
-  'navigation/RootNavigator.tsx',
   'onboarding/ChoiceChip.tsx',
   'onboarding/OnboardingFlow.tsx',
   'onboarding/OnboardingScaffold.tsx',
@@ -76,7 +66,26 @@ const PENDING = [
   'onboarding/steps/PromiseStep.tsx',
   'onboarding/steps/ShowMeStep.tsx',
   'onboarding/steps/WelcomeStep.tsx',
+  'screens/ChatScreen.tsx',
+  'screens/CheckinScreen.tsx',
+  'screens/DiscoveryScreen.tsx',
+  'screens/EventDetailScreen.tsx',
+  'screens/EventsScreen.tsx',
+  'screens/HotelDetailsScreen.tsx',
+  'screens/HotelScreen.tsx',
+  'screens/InboxScreen.tsx',
+  'screens/MatchScreen.tsx',
+  'screens/SettingsScreen.tsx',
+  'screens/UpcomingScreen.tsx',
 ];
+
+/**
+ * Queued for the D-059 pass. Empty, and meant to stay that way: a new screen
+ * is written on the ladder or it does not ship. The list survives so a future
+ * pass — a second theme, a new surface — has somewhere honest to put work in
+ * progress rather than quietly widening the exemption.
+ */
+const PENDING: string[] = [];
 
 /**
  * The properties a design system owns. Width and height are absent on purpose:
@@ -124,7 +133,8 @@ describe('the ladder covers the whole app', () => {
 
   it('accounts for every drawing file exactly once', () => {
     // A new screen lands in neither list, which fails here rather than sliding
-    // in with its own measurements and nobody noticing for a month.
+    // in with its own measurements and nobody noticing for a month. With
+    // `PENDING` empty this is also what proves the pass actually finished.
     expect([...CONVERTED, ...PENDING].sort()).toEqual(DRAWING_FILES);
   });
 });

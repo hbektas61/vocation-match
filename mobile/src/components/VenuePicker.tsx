@@ -25,7 +25,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Button, Caption, Chip, ConfirmDialog, EmptyState, Loading, Notice } from './ui';
-import { COPY, getLocale, upperCase } from '../copy';
+import { COPY, getLocale } from '../copy';
 import { ApiError, getApi, type GooglePlaceHit, type VenueSearchMode } from '../data';
 import {
   countryOptions,
@@ -33,7 +33,17 @@ import {
   suggestedCountries,
   type CountryOption,
 } from '../domain/countries';
-import { color, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
+import {
+  color,
+  elevation,
+  font,
+  fontFamily,
+  leading,
+  MIN_TOUCH,
+  radius,
+  spacing,
+  tracking,
+} from '../theme';
 
 /** The server's floor, mirrored so a request is never made below it. */
 export const VENUE_MIN_QUERY = 3;
@@ -410,7 +420,7 @@ export function VenuePicker({
           testID="country-search"
         />
         <Text style={styles.sectionLabel}>
-          {upperCase(countryQuery.trim() ? COPY.venue.countryResults : COPY.venue.countryPopular)}
+          {countryQuery.trim() ? COPY.venue.countryResults : COPY.venue.countryPopular}
         </Text>
         {countries.length === 0 ? (
           /* E-05. Free and local, and it says so — then the frequent list
@@ -423,7 +433,7 @@ export function VenuePicker({
               testID="country-no-results"
             />
             <Text style={styles.hint}>{COPY.venue.countryLocalNote}</Text>
-            <Text style={styles.sectionLabel}>{upperCase(COPY.venue.countryPopular)}</Text>
+            <Text style={styles.sectionLabel}>{COPY.venue.countryPopular}</Text>
             {suggestedCountries(locale).map((option) => (
               <Pressable
                 key={option.code}
@@ -660,7 +670,7 @@ export function VenuePicker({
               <Text style={styles.rowName}>{hit.name}</Text>
               {hit.detail ? <Text style={styles.rowDetail}>{hit.detail}</Text> : null}
               {kindBadge(hit.kind) ? (
-                <Text style={styles.rowKind}>{upperCase(kindBadge(hit.kind) ?? '')}</Text>
+                <Text style={styles.rowKind}>{kindBadge(hit.kind) ?? ''}</Text>
               ) : null}
             </Pressable>
           ))}
@@ -707,13 +717,14 @@ export function VenuePicker({
 const styles = StyleSheet.create({
   heading: {
     fontFamily: fontFamily.display,
-    fontSize: 24,
-    lineHeight: 30,
+    fontSize: font.title,
+    lineHeight: font.title * leading.tight,
+    letterSpacing: tracking.display,
     color: color.ink,
     marginBottom: spacing.sm,
   },
   /** W-02…W-04: the 44pt chevron beside the title, one row. */
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.snug },
   headerBack: {
     width: MIN_TOUCH,
     height: MIN_TOUCH,
@@ -722,8 +733,8 @@ const styles = StyleSheet.create({
   },
   headerChevron: {
     fontFamily: fontFamily.body,
-    fontSize: 24,
-    lineHeight: 34,
+    fontSize: font.title,
+    lineHeight: font.title * leading.snug,
     color: color.ink,
   },
   /** Inside the row the heading's own bottom margin would misalign the pair. */
@@ -736,15 +747,15 @@ const styles = StyleSheet.create({
   searchBox: {
     backgroundColor: color.surface,
     borderWidth: 1,
-    borderColor: color.rule,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
+    borderColor: color.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.snug,
     // Whatever follows — the mode chips, a result list — stands off the box
     // rather than touching its edge (owner screenshot, 2026-08-03).
     marginBottom: spacing.sm,
     fontFamily: fontFamily.body,
-    fontSize: 15,
+    fontSize: font.body,
     // No lineHeight on purpose: iOS sinks a TextInput's text to the bottom
     // of the line box, which cut the words in half (owner, 2026-08-03).
     textAlignVertical: 'center',
@@ -754,31 +765,31 @@ const styles = StyleSheet.create({
   /** W-03's note: one quiet line, not a titled card. */
   modeNote: {
     fontFamily: fontFamily.body,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
   /** The type badge under a result: 10pt tracked capitals in the brand ink. */
   rowKind: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 10,
-    lineHeight: 15,
-    letterSpacing: 0.8,
+    fontSize: font.label,
+    lineHeight: font.label * leading.snug,
+    letterSpacing: tracking.none,
     color: color.inkMuted,
-    marginTop: 3,
+    marginTop: spacing.xs,
   },
   /** The hairline, and the words under it. */
-  progressBar: { flexDirection: 'row', gap: 4 },
+  progressBar: { flexDirection: 'row', gap: spacing.xs },
   progressSegment: {
     flex: 1,
     height: 4,
-    borderRadius: 2,
+    borderRadius: radius.pill,
     backgroundColor: color.veil,
   },
   progressSegmentDone: { backgroundColor: color.accent },
   progressLabel: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: 11,
+    fontSize: font.label,
     color: color.inkMuted,
   },
   /** One line: where the search currently is, and the way to move it. */
@@ -788,13 +799,13 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     backgroundColor: color.accentWash,
     borderRadius: radius.pill,
-    paddingHorizontal: 14,
+    paddingHorizontal: spacing.md,
     minHeight: MIN_TOUCH,
   },
   scopeText: {
     flex: 1,
     fontFamily: fontFamily.bodyMedium,
-    fontSize: 13,
+    fontSize: font.caption,
     color: color.ink,
   },
   scopeAction: { minHeight: MIN_TOUCH, justifyContent: 'center' },
@@ -806,7 +817,7 @@ const styles = StyleSheet.create({
    * web quietly padded them. Found from a device screenshot.
    */
   progress: {
-    gap: 8,
+    gap: spacing.sm,
     marginBottom: spacing.md,
   },
   progressStep: {
@@ -830,7 +841,7 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontFamily: fontFamily.bodyMedium,
-    fontSize: 11,
+    fontSize: font.label,
     color: color.inkMuted,
   },
   progressTextSelected: {
@@ -839,16 +850,16 @@ const styles = StyleSheet.create({
   },
   hint: {
     fontFamily: fontFamily.body,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
     marginBottom: spacing.sm,
   },
   sectionLabel: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 11,
-    letterSpacing: 1,
-    color: color.inkMuted,
+    fontFamily: fontFamily.displaySemi,
+    fontSize: font.caption,
+    letterSpacing: tracking.none,
+    color: color.ink,
     marginTop: spacing.xs,
     marginBottom: spacing.xs,
   },
@@ -856,24 +867,23 @@ const styles = StyleSheet.create({
   stateBlock: { gap: spacing.sm },
   stateCard: {
     backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.rule,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
+    ...elevation.card,
     padding: spacing.md,
     gap: spacing.sm,
   },
   stateBody: {
     fontFamily: fontFamily.body,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.ink,
   },
   countryCode: {
     fontFamily: fontFamily.body,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
-    marginTop: 2,
+    marginTop: spacing.tight,
   },
   contextCard: {
     minHeight: MIN_TOUCH,
@@ -881,13 +891,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: color.rule,
+    borderRadius: radius.xl,
     backgroundColor: color.surface,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     marginBottom: spacing.sm,
+    ...elevation.card,
   },
   contextRow: {
     width: '100%',
@@ -912,14 +921,14 @@ const styles = StyleSheet.create({
   },
   contextLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: font.label,
+    lineHeight: font.label * leading.snug,
     color: color.inkMuted,
   },
   contextName: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 15,
-    lineHeight: 20,
+    fontFamily: fontFamily.displaySemi,
+    fontSize: font.body,
+    lineHeight: font.body * leading.snug,
     color: color.ink,
   },
   contextAction: {
@@ -936,7 +945,7 @@ const styles = StyleSheet.create({
    */
   changeText: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 13,
+    fontSize: font.control,
     color: color.ink,
   },
   chipRow: {
@@ -954,88 +963,87 @@ const styles = StyleSheet.create({
   },
   scopeTitle: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.ink,
   },
   scopeBody: {
     fontFamily: fontFamily.body,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
-    marginTop: 2,
+    marginTop: spacing.tight,
   },
   confirmCard: {
     backgroundColor: color.surface,
     borderWidth: 2,
     borderColor: color.accent,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     padding: spacing.md,
-    gap: 10,
+    gap: spacing.snug,
     marginBottom: spacing.xs,
   },
   confirmName: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 17,
-    lineHeight: 22,
+    fontFamily: fontFamily.displaySemi,
+    fontSize: font.heading,
+    lineHeight: font.heading * leading.snug,
     color: color.ink,
   },
   confirmDetail: {
     fontFamily: fontFamily.body,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
   /** The promise, in the wash — AYNI MEKÂN = AYNI ODA. */
   promiseBox: {
     backgroundColor: color.accentWash,
-    borderRadius: 14,
-    padding: 12,
-    gap: 6,
+    borderRadius: radius.md,
+    padding: spacing.snug,
+    gap: spacing.cozy,
   },
   promiseTitle: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 11,
-    lineHeight: 16,
-    letterSpacing: 0.8,
+    fontSize: font.label,
+    lineHeight: font.label * leading.snug,
+    letterSpacing: tracking.none,
     color: color.inkMuted,
   },
   promiseBody: {
     fontFamily: fontFamily.body,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
   confirmBody: {
     fontFamily: fontFamily.body,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
     marginTop: spacing.sm,
   },
   row: {
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: color.rule,
+    borderRadius: radius.lg,
     backgroundColor: color.surface,
-    paddingVertical: 13,
-    paddingHorizontal: 16,
-    marginBottom: spacing.xs,
+    paddingVertical: spacing.snug,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    ...elevation.card,
   },
   rowPressed: {
     opacity: 0.7,
   },
   rowName: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: 15,
-    lineHeight: 20,
+    fontFamily: fontFamily.displaySemi,
+    fontSize: font.body,
+    lineHeight: font.body * leading.snug,
     color: color.ink,
   },
   rowDetail: {
     fontFamily: fontFamily.body,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
-    marginTop: 2,
+    marginTop: spacing.tight,
   },
 });

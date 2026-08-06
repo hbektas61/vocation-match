@@ -15,7 +15,7 @@ import {
   toE164,
   toNationalDigits,
 } from '../../domain/phoneNumber';
-import { color, font, fontFamily, MIN_TOUCH, overlay, spacing } from '../../theme';
+import { color, font, fontFamily, MIN_TOUCH, overlay, radius, spacing } from '../../theme';
 import { OnboardingScaffold } from '../OnboardingScaffold';
 import { useCaptchaGate } from '../useCaptchaGate';
 import type { StepProps } from './types';
@@ -235,12 +235,15 @@ export function PhoneStep({ step, total, draft, patch, go, onBack }: StepProps) 
   );
 }
 
+/** The country sheet rides high, clear of the keyboard under the filter. */
+const SHEET_TOP = 96;
+
 const styles = StyleSheet.create({
   /** The dialling code, and the fact that it can be changed. */
   prefixButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: spacing.xs,
     minHeight: MIN_TOUCH,
     paddingRight: spacing.sm,
   },
@@ -253,19 +256,19 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     color: color.ink,
   },
-  prefixChevron: { fontFamily: fontFamily.bodySemi, fontSize: 11, color: color.accent },
+  prefixChevron: { fontFamily: fontFamily.bodySemi, fontSize: font.label, color: color.accent },
   sheetScrim: {
     flex: 1,
     backgroundColor: overlay.photo,
     justifyContent: 'flex-start',
-    paddingHorizontal: 20,
-    paddingTop: 96,
+    paddingHorizontal: spacing.wide,
+    paddingTop: SHEET_TOP,
   },
   sheetCard: {
     backgroundColor: color.surface,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     padding: spacing.lg,
-    gap: 12,
+    gap: spacing.snug,
     maxHeight: '78%',
   },
   sheetScroll: { flexGrow: 0 },
@@ -275,14 +278,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     minHeight: MIN_TOUCH,
-    borderRadius: 14,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: color.rule,
     backgroundColor: color.surface,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.snug,
   },
   countryRowPressed: { backgroundColor: color.accentWash, borderColor: color.accent },
-  countryName: { flex: 1, fontFamily: fontFamily.bodyMedium, fontSize: 14, color: color.ink },
-  countryDial: { fontFamily: fontFamily.bodySemi, fontSize: 13, color: color.inkMuted },
+  countryName: { flex: 1, fontFamily: fontFamily.bodyMedium, fontSize: font.body, color: color.ink },
+  countryDial: { fontFamily: fontFamily.bodySemi, fontSize: font.caption, color: color.inkMuted },
 });

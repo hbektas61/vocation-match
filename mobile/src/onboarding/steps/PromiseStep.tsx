@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { COPY } from '../../copy';
-import { color, fontFamily } from '../../theme';
+import { color, font, fontFamily, leading, radius, spacing } from '../../theme';
 import { OnboardingScaffold } from '../OnboardingScaffold';
 import type { StepProps } from './types';
 
@@ -45,24 +45,24 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface,
     borderWidth: 1,
     borderColor: color.rule,
-    borderRadius: 20,
-    padding: 16,
-    gap: 12,
+    borderRadius: radius.xl,
+    padding: spacing.md,
+    gap: spacing.snug,
   },
-  point: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  point: { flexDirection: 'row', gap: spacing.snug, alignItems: 'flex-start' },
   /** The brand coral, not its dark sibling: a dot carries no text (owner). */
   dot: {
     width: 7,
     height: 7,
-    borderRadius: 4,
+    borderRadius: radius.pill,
     backgroundColor: color.accent,
-    marginTop: 6,
+    marginTop: spacing.cozy,
   },
   pointText: {
     flex: 1,
     fontFamily: fontFamily.body,
-    fontSize: 13,
-    lineHeight: 13 * 1.45,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
     color: color.ink,
   },
 });

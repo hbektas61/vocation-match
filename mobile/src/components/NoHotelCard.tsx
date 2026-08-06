@@ -88,11 +88,11 @@ const styles = StyleSheet.create({
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: spacing.cozy,
     backgroundColor: color.accentWash,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm + 4,
-    paddingVertical: 7,
+    paddingVertical: spacing.cozy,
     marginTop: spacing.xs,
   },
   pillText: {

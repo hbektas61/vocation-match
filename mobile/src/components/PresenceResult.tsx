@@ -21,7 +21,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Body, Button, Card, Notice } from './ui';
 import { COPY } from '../copy';
-import { color, fontFamily, spacing } from '../theme';
+import { color, font, fontFamily, leading, spacing, tracking } from '../theme';
 
 export function PresenceResult({
   title,
@@ -79,13 +79,14 @@ const styles = StyleSheet.create({
   result: { gap: spacing.sm },
   title: {
     fontFamily: fontFamily.display,
-    fontSize: 22,
-    lineHeight: 22 * 1.25,
+    fontSize: font.title,
+    lineHeight: font.title * leading.tight,
+    letterSpacing: tracking.display,
     color: color.ink,
   },
   whatLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: 13,
+    fontSize: font.caption,
     color: color.ink,
   },
 });

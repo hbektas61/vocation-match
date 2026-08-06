@@ -35,7 +35,7 @@ import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, MAX_PHOTOS, type ProfilePhoto } from '../data';
 import { pickProfilePhoto } from '../data/imagePicker';
 import { usePhotoUrls } from '../state/usePhotoUrls';
-import { color, font, fontFamily, overlay, radius, spacing } from '../theme';
+import { color, font, fontFamily, leading, overlay, radius, spacing, tracking } from '../theme';
 
 const COLUMNS = 3;
 const ROWS = 3;
@@ -573,7 +573,11 @@ const styles = StyleSheet.create({
   },
   /** A slot that is only there to hold the grid's shape. */
   slotInert: { opacity: 0.45 },
-  plus: { fontSize: 28, lineHeight: 32, color: color.accentDeep },
+  plus: {
+    fontSize: font.display,
+    lineHeight: font.display * leading.tight,
+    color: color.accentDeep,
+  },
   image: { width: '100%', height: '100%' },
   imagePending: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   primaryBadge: {
@@ -581,14 +585,14 @@ const styles = StyleSheet.create({
     top: spacing.xs,
     left: spacing.xs,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: spacing.tight,
     borderRadius: radius.pill,
     backgroundColor: color.accent,
   },
   primaryBadgeText: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
-    letterSpacing: 0.6,
+    letterSpacing: tracking.none,
     // Navy on the coral fill — the fill cannot carry white here either.
     color: color.onAccent,
   },
