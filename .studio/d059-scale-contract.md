@@ -110,19 +110,29 @@ the text slides off centre.
 `display -0.2` (26pt and up, which sets loose) · `none 0` ·
 `control 0.2` (a button label) · `label 1.2` (uppercase structure).
 
-## Rollout
+## Rollout — finished 2026-08-06
 
 `scaleLadder.test.ts` holds two lists and asserts their union is exactly the set
-of files that draw anything — so a new screen cannot appear in neither.
+of files that draw anything, so a new screen cannot appear in neither.
 
-- `CONVERTED` — checked on every run. Adding a name is the **last** step of
-  converting a file, and it is what stops the file drifting back.
-- `PENDING` — queued. Not exempt, just not done.
+- `CONVERTED` — checked on every run. **All 38 drawing files.** Adding a name is
+  the last step of converting a file, and it is what stops it drifting back.
+- `PENDING` — **empty**, and meant to stay that way: a new screen is written on
+  the ladder or it does not ship. The list survives so a future pass has an
+  honest place for work in progress rather than a quietly widened exemption.
 
-Order of the pass: `ui.tsx` (done — everything inherits from it), then Keşfet,
-Etkinlikler, Çevremde (the three largest and most drifted), then Tatilim and
-venue details, Mesajlar and the chat, the match moment, Ayarlar and profile,
-and onboarding last.
+`RootNavigator.tsx` is on neither list, correctly: its one hand-set size became
+a token and nothing else in it measures anything, so it no longer draws. If a
+literal reappears there it re-enters the scan and the union assertion fails.
+
+**Bare measurements left in `mobile/src`: zero**, counted by the same regex the
+test uses.
+
+Two sizes that are not on the ladder are named constants rather than literals,
+because they are drawings rather than type: `PHOTOLESS_INITIAL` (128, the letter
+that fills a deck card with no photograph) and `FACELESS_INITIAL` (52, the same
+job inside a match ring). Two positional offsets are named the same way —
+`SHEET_TOP` (96) in both sheet pickers, holding the card clear of the keyboard.
 
 ## Unchanged
 

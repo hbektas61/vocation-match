@@ -285,3 +285,24 @@ while asserting nothing about the signal that now does all the work.
 **Deferred.** The four card *shapes* (hero, object row, status panel, choice
 tile) that replace the app's 35 hand-built card styles land per screen during
 the D-059 pass, not as separate work.
+
+### D-059 addendum — the pass finished (2026-08-06)
+
+All 38 drawing files are on the ladder and `PENDING` is empty, so
+`scaleLadder.test.ts`'s union assertion has become the stronger claim: the
+converted list *is* the set of files that draw, and every one of them is clean.
+Bare measurements left in `mobile/src`: **zero**.
+
+Four values are deliberately off-ladder and named rather than written inline —
+`PHOTOLESS_INITIAL` (128) and `FACELESS_INITIAL` (52), which are drawings sized
+to their container rather than type, and `SHEET_TOP` (96) in the two sheet
+pickers, a positional offset that holds the card clear of the keyboard.
+
+Three things the pass changed beyond measurement, all following D-060's rules
+rather than inventing new ones: every card lost its 1px edge and kept its lift
+(the only surviving borders are on operable things and on the one destructive
+confirm card); Çevremde's four fact cells went from white-with-an-edge to the
+inert `veil` fill, because four small shadows would have been noise and the
+border rule forbade the alternative; and every tracked-uppercase section head
+and kind badge became sentence case — including the venue kinds, which is what
+`nearbySearch.test.ts` caught and was updated for.
