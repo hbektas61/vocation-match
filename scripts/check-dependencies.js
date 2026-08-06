@@ -50,6 +50,21 @@ const ACCEPTED = [
       'build path. Remove this exception when Expo updates the supported range.',
   },
   {
+    package: 'js-yaml',
+    url: 'https://github.com/advisories/GHSA-5p4m-2wfm-xmqj',
+    severity: 'high',
+    why:
+      'Quadratic CPU on `!!omap` (CVE-2026-59870), with no backport to 3.x or ' +
+      '4.x — so there is nothing to upgrade to. Every path to it is developer ' +
+      'tooling reading files this repository owns: eslint -> @eslint/eslintrc ' +
+      '(our lint config), expo -> @expo/xcpretty (xcodebuild output), and ' +
+      'jest-expo -> babel-plugin-istanbul -> @istanbuljs/load-nyc-config ' +
+      '(.nycrc). The app parses no YAML at all, and `js-yaml` is absent from ' +
+      'the built web bundle — both checked on 2026-08-07. The attack needs a ' +
+      'hostile YAML document; nothing here reads one. Remove this exception if ' +
+      'a fix ships, or the moment any runtime code parses YAML.',
+  },
+  {
     package: 'uuid',
     url: 'https://github.com/advisories/GHSA-w5hq-g745-h8pq',
     severity: 'moderate',

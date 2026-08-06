@@ -11,9 +11,16 @@ import {
   View,
 } from 'react-native';
 
-import { Avatar, Button, EmptyState, Notice, Screen, SkeletonRows } from '../components/ui';
+import {
+  Avatar,
+  Button,
+  EmptyState,
+  Notice,
+  Screen,
+  ScreenHeader,
+  SkeletonRows,
+} from '../components/ui';
 import { EmptyInbox } from '../components/InboxIllustrations';
-import { ProfileRing } from '../components/ProfileRing';
 import { apiErrorMessage, COPY, COPY_FOR, roomPlate } from '../copy';
 import { ApiError, getApi, type MatchSummary } from '../data';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
@@ -104,11 +111,8 @@ export function InboxScreen() {
     // composition and should sit in the middle of the room it has, rather
     // than hanging off the head with the rest of the screen blank beneath it.
     <Screen safeTop fill={isEmpty} testID="screen-inbox">
-      {/* The sheet's head (12:167): the tab's name and the ring to yourself. */}
-      <View style={styles.headRow}>
-        <Text accessibilityRole="header" style={styles.headTitle}>{COPY.inbox.title}</Text>
-        <ProfileRing testID="inbox-profile-ring" />
-      </View>
+      {/* The sheet's head (12:167), now the ring alone — D-061. */}
+      <ScreenHeader title={COPY.inbox.title} ringTestID="inbox-profile-ring" />
       {/* The line under the tab's name belongs to the head, not to the empty
           composition below it — left inside that column it drifted down with
           it and left the title stranded. */}
@@ -360,19 +364,6 @@ const styles = StyleSheet.create({
   emptyArt: { alignItems: 'center', paddingVertical: spacing.sm },
   /** The two ways forward, full width inside the centred `<EmptyState>` card. */
   emptyActions: { alignSelf: 'stretch', gap: spacing.sm },
-  /** The sheet's head row (12:167). */
-  headRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headTitle: {
-    fontFamily: fontFamily.display,
-    fontSize: font.display,
-    lineHeight: font.display * leading.tight,
-    letterSpacing: tracking.display,
-    color: color.ink,
-  },
   /** The new-match strip (12:170): 14 between faces, 6 under each. */
   freshRow: { flexDirection: 'row', gap: spacing.md },
   freshItem: { alignItems: 'center', gap: spacing.cozy },

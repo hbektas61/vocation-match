@@ -22,7 +22,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import { Caption, EmptyState, Loading, Notice, PhotoScrim, Screen, SkeletonRows } from '../components/ui';
+import {
+  Caption,
+  EmptyState,
+  Loading,
+  Notice,
+  PhotoScrim,
+  Screen,
+  ScreenHeader,
+  SkeletonRows,
+} from '../components/ui';
 import { ProfileRing } from '../components/ProfileRing';
 import { useToast } from '../components/ToastHost';
 import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
@@ -577,7 +586,7 @@ export function CheckinScreen({
   if (checkin === undefined) {
     return (
       <Screen safeTop testID="screen-checkin">
-        <Text accessibilityRole="header" style={styles.title}>{COPY.tabs.nearbyTab}</Text>
+        <ScreenHeader title={COPY.tabs.nearbyTab} ringTestID="checkin-profile-ring" />
         <Loading testID="checkin-loading" />
       </Screen>
     );
@@ -641,10 +650,7 @@ export function CheckinScreen({
     const remainM = Math.floor((remainingMs % 3_600_000) / 60_000);
     return (
       <Screen safeTop testID="screen-checkin">
-        <View style={styles.headRow}>
-          <Text accessibilityRole="header" style={styles.titleSm}>{COPY.tabs.nearbyTab}</Text>
-          <ProfileRing testID="checkin-profile-ring" />
-        </View>
+        <ScreenHeader title={COPY.tabs.nearbyTab} ringTestID="checkin-profile-ring" />
         <Text style={styles.subtitleSm}>{COPY.checkin.activeSubtitle}</Text>
 
         {/* N-03 (153:111): the state is one card — the green line, the
@@ -726,8 +732,10 @@ export function CheckinScreen({
     const shownCount = liveShown.length + catalogueShown.length;
     return (
       <Screen safeTop testID="screen-checkin">
-        <View style={styles.headRow}>
-          <Text accessibilityRole="header" style={styles.titleSm}>{COPY.tabs.nearbyTab}</Text>
+        <ScreenHeader
+          title={COPY.tabs.nearbyTab}
+          right={
+          <>
           {/* The sheet's corner ring (11:76), still doing the useful job:
               another location read, for the list under it. */}
           {/* Two things belong in this corner here: another reading for the
@@ -746,7 +754,9 @@ export function CheckinScreen({
             </Pressable>
             <ProfileRing testID="checkin-list-profile-ring" />
           </View>
-        </View>
+          </>
+          }
+        />
         <Text style={styles.subtitleSm}>{COPY.checkin.listSubtitle}</Text>
 
         {/* A refusal belongs where the eye is (owner, 2026-08-05): at the foot
@@ -875,12 +885,9 @@ export function CheckinScreen({
   /* -------------------------------------------------------------- 2: intro */
   return (
     <Screen safeTop testID="screen-checkin">
-      <View style={styles.headRow}>
-        <Text accessibilityRole="header" style={styles.title}>{COPY.tabs.nearbyTab}</Text>
-        {/* D-057: this corner held a decorative pin, so Çevremde was the one
-            primary screen with no way to Settings at all. */}
-        <ProfileRing testID="checkin-profile-ring" />
-      </View>
+      {/* D-057: this corner held a decorative pin, so Çevremde was the one
+          primary screen with no way to Settings at all. */}
+      <ScreenHeader title={COPY.tabs.nearbyTab} ringTestID="checkin-profile-ring" />
       <Text style={styles.subtitle}>{COPY.checkin.idleSubtitle}</Text>
 
       {/* What just happened stands where the eye already is (owner,
@@ -996,26 +1003,6 @@ export function CheckinScreen({
 }
 
 const styles = StyleSheet.create({
-  headRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  /** D-063: one head across all three states — Lora 30 on a 42 line. */
-  title: {
-    fontFamily: fontFamily.display,
-    fontSize: font.display,
-    lineHeight: font.display * leading.tight,
-    letterSpacing: tracking.display,
-    color: color.ink,
-  },
-  titleSm: {
-    fontFamily: fontFamily.display,
-    fontSize: font.display,
-    lineHeight: font.display * leading.tight,
-    letterSpacing: tracking.display,
-    color: color.ink,
-  },
   /** The corner ring (11:76): the empty frame, an operable control's edge. */
   profileRing: {
     width: 46,

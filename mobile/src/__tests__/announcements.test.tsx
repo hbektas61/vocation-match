@@ -22,6 +22,7 @@ import { FakeApi, setApi } from '../data';
 import {
   authenticateWithPhone,
   onboardToSettings,
+  onboardWithHotel,
   requestPhoneCode,
 } from '../testSupport/onboarding';
 import { press, typeText } from '../testSupport/interact';
@@ -46,6 +47,25 @@ afterEach(() => {
 const spoken = () => announced.join(' | ');
 
 describe('what gets announced', () => {
+  it('says which primary screen you have arrived on', async () => {
+    // D-061 took the tab titles off the page. The word was doing two jobs, and
+    // only one of them was visual: it was also the screen's heading landmark,
+    // the thing a screen reader reads on arrival. Somebody who cannot see the
+    // tab bar would otherwise land on a nameless page, so the name is spoken
+    // instead of drawn — and that is exactly the sort of promise that rots
+    // silently, which is why it is asserted here rather than assumed.
+    await onboardWithHotel('Deniz');
+    announced.length = 0;
+
+    await press(await screen.findByTestId('tab-Inbox'));
+    expect(await screen.findByTestId('inbox-profile-ring')).toBeTruthy();
+    expect(spoken()).toContain(COPY.inbox.title);
+
+    announced.length = 0;
+    await press(await screen.findByTestId('tab-Nearby'));
+    expect(spoken()).toContain(COPY.tabs.nearbyTab);
+  });
+
   it('announces that the SMS code is expected', async () => {
     render(<App />);
     await requestPhoneCode('+905551110021');

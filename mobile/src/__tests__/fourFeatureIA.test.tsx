@@ -39,15 +39,19 @@ describe('D-057 bottom navigation', () => {
     expect(screen.queryByTestId('tab-Settings')).toBeNull();
   });
 
-  it('labels the fifth tab "Messages" while the screen keeps its own heading', async () => {
+  it('names the tab in the bar and nowhere else on the page', async () => {
+    // D-061 (owner, 2026-08-07): a tab does not name itself. The bar already
+    // says which of the five you are on, and repeating it in 32pt type was the
+    // largest thing on several screens. What the screen owes is a way to
+    // yourself and a spoken name — see `announcements.test.tsx` for the second.
     await onboardWithHotel('Deniz');
 
     const tab = await screen.findByTestId('tab-Inbox');
     expect(tab).toHaveTextContent(COPY.tabs.messages);
 
     await press(tab);
-    // The heading is the longer word; only the tab label was shortened.
-    expect(await screen.findByText(COPY.inbox.title)).toBeTruthy();
+    expect(await screen.findByTestId('inbox-profile-ring')).toBeTruthy();
+    expect(screen.queryByText(COPY.inbox.title)).toBeNull();
   });
 });
 

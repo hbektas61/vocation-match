@@ -148,11 +148,18 @@ export function Display({
 }
 
 /**
- * A primary screen's head: the title, and the ring to yourself on the right.
+ * A primary screen's head: the ring to yourself, and nothing else.
  *
  * D-057 made this a shape worth naming. Before it, three screens each drew the
  * pair by hand and two more drew only the title — which is how Etkinlikler and
  * Keşfet ended up with no route to Settings at all once the tab was removed.
+ *
+ * D-061 took the title out of it (owner, 2026-08-07). The tab bar already says
+ * which of the five you are on; a 32pt word repeating it was the largest thing
+ * on the screen and the first thing costing the content its room. `title` did
+ * not become decoration, though — it was also the screen's spoken name, so it
+ * is announced on arrival instead of drawn. Somebody who cannot see the tab
+ * bar still learns where they are; everybody else gets the space back.
  */
 export function ScreenHeader({
   title,
@@ -167,11 +174,17 @@ export function ScreenHeader({
   ringTestID?: string;
   testID?: string;
 }) {
+  // On focus rather than on mount: a tab stays mounted once visited, so a
+  // mount-time announcement would name the screen the first time you opened it
+  // and stay silent for every switch after — which is precisely the visit that
+  // needs naming. Focus is the event that actually means "you are here now".
+  useFocusEffect(
+    React.useCallback(() => {
+      AccessibilityInfo.announceForAccessibility(title);
+    }, [title]),
+  );
   return (
     <View style={styles.screenHeader} testID={testID}>
-      <Text accessibilityRole="header" style={styles.screenHeaderTitle} numberOfLines={1}>
-        {title}
-      </Text>
       {right ?? <ProfileRing testID={ringTestID} />}
     </View>
   );
@@ -1358,20 +1371,12 @@ const styles = StyleSheet.create({
   /** `fill`: at least the height of the scroll view, never less than content. */
   screenFill: { flexGrow: 1 },
 
-  /** The head: title left, 46 ring right, centred on it. */
+  /** The head: the 46 ring, alone in the corner it has always sat in. */
   screenHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     gap: spacing.sm,
-  },
-  screenHeaderTitle: {
-    flexShrink: 1,
-    fontFamily: fontFamily.display,
-    fontSize: font.display,
-    lineHeight: font.display * leading.tight,
-    letterSpacing: tracking.display,
-    color: color.ink,
   },
 
   display: {

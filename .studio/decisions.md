@@ -306,3 +306,46 @@ inert `veil` fill, because four small shadows would have been noise and the
 border rule forbade the alternative; and every tracked-uppercase section head
 and kind badge became sentence case — including the venue kinds, which is what
 `nearbySearch.test.ts` caught and was updated for.
+
+## D-061 — A tab does not name itself (2026-08-07)
+
+Owner: take the page titles off — "Çevremde", "Tatilim" and the rest. The tab
+bar already says which of the five primary screens you are on, and repeating it
+in 32pt display type made that word the largest thing on the screen and the
+first thing costing the content its room.
+
+**Removed:** the drawn title on Keşfet, Etkinlikler, Çevremde (all four states),
+Mesajlar and Tatilim. `ScreenHeader` now renders the profile ring alone, and
+Çevremde, Mesajlar and Tatilim were moved onto it instead of each drawing the
+pair by hand — so the corner routes to Settings from one place (D-057's reason
+for the component in the first place).
+
+**Kept:** a screen you *navigated into* still names itself — the hotel
+activation view, the upcoming-stay screen, the match moment. The rule is the
+distinction, not the deletion: a destination in the bar is named by the bar; a
+place you arrived at names itself.
+
+**What the title also was.** It carried `accessibilityRole="header"` — the
+screen's spoken name on arrival, and the target of "next heading". Deleting the
+word would have left somebody who cannot see the tab bar on a nameless page, so
+`ScreenHeader` announces the name instead of drawing it.
+
+That announcement had to be **on focus, not on mount**: tabs stay mounted once
+visited, so a mount-time announcement names the screen on the first visit and
+goes silent for every switch afterwards — precisely the visit that needs
+naming. Caught by writing the test before believing the change.
+
+**Enforcement.** `announcements.test.tsx` asserts arriving on a tab speaks its
+name; `fourFeatureIA.test.tsx` was rewritten from "the screen keeps its own
+heading" to the new truth — the name is in the bar and nowhere on the page, and
+the ring is still there.
+
+## Dependency exception — js-yaml (2026-08-07)
+
+`GHSA-5p4m-2wfm-xmqj` (CVE-2026-59870): quadratic CPU on `!!omap`, no backport
+to 3.x or 4.x, so there is nothing to upgrade to. Accepted in
+`scripts/check-dependencies.js` with the reason recorded there. Every path is
+developer tooling reading files this repository owns — eslint's config,
+xcpretty's build output, istanbul's `.nycrc`. The app parses no YAML, and
+`js-yaml` is absent from the built web bundle; both checked rather than assumed.
+Unrelated to the design work — the advisory was published overnight.

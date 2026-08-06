@@ -6,7 +6,15 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 
-import { Button, ConfirmDialog, Notice, PhotoScrim, Screen, SkeletonCard } from '../components/ui';
+import {
+  Button,
+  ConfirmDialog,
+  Notice,
+  PhotoScrim,
+  Screen,
+  ScreenHeader,
+  SkeletonCard,
+} from '../components/ui';
 import { nowMs } from '../clock';
 import { formatStayRangeLabel } from '../domain/dates';
 import { earliestRoomExpiry } from '../state/roomSchedule';
@@ -24,7 +32,6 @@ import {
 import { HotelBuilding } from '../components/HotelIllustrations';
 import { VenuePicker } from '../components/VenuePicker';
 import { VacationFeatureCard } from '../components/VacationFeatureCard';
-import { ProfileRing } from '../components/ProfileRing';
 import { useToast } from '../components/ToastHost';
 import { useAppStore } from '../state/AppStore';
 import { color, elevation, font, fontFamily, leading, radius, spacing, tracking } from '../theme';
@@ -359,16 +366,22 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
     // itself; as the choose-a-hotel gate it sits under a native modal header,
     // which already has. `onActivated` is exactly the difference between the two.
     <Screen safeTop={!onActivated} testID="screen-hotel">
-      <View style={styles.headerRow}>
-        <Text accessibilityRole="header" style={styles.headerTitle}>
-          {onActivated ? COPY.hotel.title : COPY.tabs.vacation}
-        </Text>
-        {onActivated ? null : (
-          // The Figma header's ring (10:74), now the only way to Settings
-          // (D-057) as well as to your own profile.
-          <ProfileRing testID="hotel-profile-ring" />
-        )}
-      </View>
+      {/*
+        D-061: a tab does not name itself — the tab bar already does, and the
+        word was the largest thing on the screen. A screen you *arrived* at
+        still names itself, which is why the activation view keeps its title.
+      */}
+      {onActivated ? (
+        <View style={styles.headerRow}>
+          <Text accessibilityRole="header" style={styles.headerTitle}>
+            {COPY.hotel.title}
+          </Text>
+        </View>
+      ) : (
+        // The Figma header's ring (10:74), now the only way to Settings
+        // (D-057) as well as to your own profile.
+        <ScreenHeader title={COPY.tabs.vacation} ringTestID="hotel-profile-ring" />
+      )}
       {!onActivated && !activeId && !picking ? (
         <Text style={styles.subtitle}>{COPY.vacation.subtitle}</Text>
       ) : null}
@@ -708,10 +721,10 @@ function mergeHotel(hotels: HotelCard[], hotel: HotelCard): HotelCard[] {
 
 const styles = StyleSheet.create({
   /** The Figma header row (10:72): the tab's name, and the ring to yourself. */
+  /** Only the activation view still draws a head of its own (D-061). */
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
   },
   headerTitle: {
     fontFamily: fontFamily.display,
