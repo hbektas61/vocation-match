@@ -842,6 +842,18 @@ export const en = {
     hereNowCardBody: 'Meet the people at the hotel right now.',
     discoverCta: 'Discover people',
     changeHotel: 'Change vacation place',
+    /** D-065: the head's subtitle, under the drawn title. */
+    headerSubtitle: 'Your vacation plans and matches',
+    /** D-065: the head's own switch action, distinct from `hotel.switchButton`
+     * below the cards — same destination, a shorter word for a smaller slot. */
+    switchVenueCta: 'Switch venue',
+    /** D-065: the section label over the active-venue card. */
+    hereSectionLabel: 'You are here now',
+    /** D-065: the active-venue card's own way in — same room `active-hotel-card`
+     * already opens, said as its own pill rather than only the whole card. */
+    enterRoomCta: 'Enter the room',
+    /** D-065: the empty state's one action, with a search glyph beside it. */
+    searchVenueCta: 'Search a place',
   },
 
   checkin: {

@@ -19,15 +19,15 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { COPY } from '../copy';
+import { COPY, upperCase } from '../copy';
 import { resolveOwnVenue, resolveOwnVenueLabel } from '../data/venueLabels';
 import type { TabParamList } from '../navigation/types';
 import { useAppStore } from '../state/AppStore';
-import { color, font, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
+import { color, font, fontFamily, MIN_TOUCH, radius, spacing, tracking } from '../theme';
 
 /** The mark, drawn rather than typeset, like every other glyph in the app. */
 const PinMark = () => (
-  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none">
+  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
     <Path
       d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"
       stroke={color.accentDeep}
@@ -91,14 +91,22 @@ export function VenueRibbon() {
     );
   }
 
-  const name =
+  const rawName =
     catalogueName ?? (googleName === false ? COPY.venue.nameUnavailable : googleName);
+  // The Figma frame draws "SPIAGGIA GRANDE, ALAÇATI" — the venue and the
+  // place it is in. This screen has no destination field to add safely for
+  // every venue (D-054 forbids storing or fetching one for a Google venue,
+  // and appending the wrong thing is worse than the plainer line), so only
+  // the name itself is uppercased here — through the locale-aware helper
+  // rather than CSS `textTransform`, which turns a Turkish "i" into "I"
+  // instead of "İ".
+  const name = rawName ? upperCase(rawName) : null;
 
   return (
     <Pressable
       accessibilityRole="button"
       // The name alone would read as a heading; this says what pressing does.
-      accessibilityLabel={`${COPY.tabs.vacation}: ${name ?? COPY.common.loading}`}
+      accessibilityLabel={`${COPY.tabs.vacation}: ${rawName ?? COPY.common.loading}`}
       onPress={goToVacation}
       style={({ pressed }) => [styles.ribbon, pressed && styles.pressed]}
       testID="venue-ribbon"
@@ -125,15 +133,20 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     backgroundColor: color.accentWash,
     paddingHorizontal: spacing.snug,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.cozy,
   },
   ribbonEmpty: { backgroundColor: color.veil },
   pressed: { opacity: 0.8 },
   venueName: {
     flexShrink: 1,
-    fontFamily: fontFamily.displaySemi,
-    fontSize: font.caption,
-    color: color.ink,
+    fontFamily: fontFamily.display,
+    fontSize: font.label,
+    letterSpacing: tracking.label,
+    // The Figma frame draws this line in the raw brand coral. That measures
+    // 2.99:1 on the wash behind it — under AA even for large text — so it
+    // stays on `brand.ink`, the coral's text-safe sibling (6.5:1 on white,
+    // 5.3:1 on this exact wash), same as every other coral word in the app.
+    color: color.accentDeep,
   },
   chooseText: {
     flexShrink: 1,

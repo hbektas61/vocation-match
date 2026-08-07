@@ -762,6 +762,18 @@ export const tr: Copy = {
     hereNowCardBody: 'Şu an otelde olanlarla tanış.',
     discoverCta: 'Kişileri keşfet',
     changeHotel: 'Tatil mekânını değiştir',
+    /** D-065: başlığın altındaki, artık çizilen alt metin. */
+    headerSubtitle: 'Tatil planların ve eşleşmelerin',
+    /** D-065: başlığın kendi değiştirme eylemi — aşağıdaki `hotel.switchButton`
+     * ile aynı yere gider, daha küçük bir alan için daha kısa bir sözcük. */
+    switchVenueCta: 'Mekân değiştir',
+    /** D-065: aktif mekân kartının üstündeki bölüm etiketi. */
+    hereSectionLabel: 'Şu an buradasın',
+    /** D-065: aktif mekân kartının kendi girişi — `active-hotel-card` zaten
+     * açtığı aynı oda, sadece kartın tamamı değil kendi hapı olarak da. */
+    enterRoomCta: 'Odaya gir',
+    /** D-065: boş durumun tek eylemi, yanında bir arama işaretiyle. */
+    searchVenueCta: 'Mekân ara',
   },
 
   checkin: {

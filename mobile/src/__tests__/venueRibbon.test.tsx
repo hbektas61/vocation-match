@@ -8,10 +8,8 @@
  * venue, and until now not one of them said which venue it was — you had to
  * open Tatilim and remember.
  *
- * Three promises, and all three are the kind that rot quietly:
+ * Two promises, and both are the kind that rot quietly:
  *
- *  - the venue is named on the screens it scopes, and *not* on Tatilim, where
- *    the venue is the subject rather than the context,
  *  - an account with no venue yet is offered the thing it actually needs
  *    rather than an empty pill,
  *  - and naming it costs the server at most one question per session, however
@@ -19,6 +17,12 @@
  *    calls for one answer that cannot change while you are looking at it —
  *    the same meter-attached-to-a-gesture this file's sibling `venueLabels`
  *    exists to prevent.
+ *
+ * D-065 revised the third promise the original three made: the chip used to
+ * be absent from Tatilim, on the theory that the venue was the whole screen
+ * there rather than its context. The redesign draws it on every primary tab
+ * including Tatilim, so that clause is now pinned the other way — see "appears
+ * on Tatilim too" below.
  */
 import { act, render, screen } from '@testing-library/react-native';
 import React from 'react';
@@ -58,12 +62,17 @@ describe('the venue in the head of every screen it scopes', () => {
     expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
   });
 
-  it('is absent from Tatilim, where the venue is the screen', async () => {
+  it('appears on Tatilim too (D-065), the same chip every other tab draws', async () => {
+    // D-061 left it off Tatilim on the theory that the venue was already the
+    // whole screen there. D-065's generated head draws it on every tab
+    // instead — the owner's read was that the chip is chrome, not a
+    // statement about what a screen is "about" — so this is the one clause
+    // of D-061 the redesign revises rather than keeps.
     await onboardWithHotel('Deniz');
 
     await press(await screen.findByTestId('tab-Vacation'));
     expect(await screen.findByTestId('screen-hotel')).toBeTruthy();
-    expect(screen.queryByTestId('venue-ribbon')).toBeNull();
+    expect(await screen.findByTestId('venue-ribbon')).toBeTruthy();
   });
 
   it('offers the way to choose one when no venue is set', async () => {

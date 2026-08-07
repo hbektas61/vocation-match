@@ -384,3 +384,30 @@ developer tooling reading files this repository owns — eslint's config,
 xcpretty's build output, istanbul's `.nycrc`. The app parses no YAML, and
 `js-yaml` is absent from the built web bundle; both checked rather than assumed.
 Unrelated to the design work — the advisory was published overnight.
+
+## D-065 — The Figma file is the screen contract (2026-08-07)
+
+The owner subscribed to ScreensDesign, generated a complete light redesign in
+its Create tool from six screenshots of the running app, and iterated with
+Claude until the set covered the product: 44 screens on the Figma page labeled
+"D-064 — New Screens" in file `wIc8HyZwV1rD2IY3csJa49`. (The page's label was
+minted by the generator; this register already spent D-064 on demo seeding, so
+the decision is D-065.) The owner's instruction is 1:1: layouts, hierarchy and
+copy come from the file, read through the Figma MCP, not eyeballed from
+exports.
+
+**What survives unchanged.** The generator styled itself from our references,
+so the D-058 palette, D-059 ladders and D-060 faces already match the file.
+This is a layout adoption, not a repaint. A dark-gradient first draft existed
+and was explicitly rejected — the owner: light theme, no dark mode.
+
+**What it changes.** Screen titles return, with the venue context chip sitting
+*above* the title rather than replacing it — D-061's ribbon survives as the
+chip, its "no visual title" clause does not. Ayarlar leaves the tab bar for a
+gear in the head; the five tabs are Tatilim, Çevremde, Etkinlikler, Keşfet,
+Mesajlar (D-056 intact). Premium copy stays out of every implemented screen
+until the billing phase opens.
+
+**Order of work.** Foundations delta → onboarding (auth 10, venue/permission
+7) → tabs → flows → profile/system. Each phase lands only through the full
+gate and is pushed as its own checkpoint.

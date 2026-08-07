@@ -149,35 +149,41 @@ export function Display({
 }
 
 /**
- * A primary screen's head: the ring to yourself, and nothing else.
+ * A primary screen's head: the venue, the ring, and now the screen's own name
+ * again.
  *
  * D-057 made this a shape worth naming. Before it, three screens each drew the
  * pair by hand and two more drew only the title — which is how Etkinlikler and
  * Keşfet ended up with no route to Settings at all once the tab was removed.
  *
- * D-061 took the title out of it (owner, 2026-08-07). The tab bar already says
- * which of the five you are on; a 32pt word repeating it was the largest thing
- * on the screen and the first thing costing the content its room. `title` did
- * not become decoration, though — it was also the screen's spoken name, so it
- * is announced on arrival instead of drawn. Somebody who cannot see the tab
- * bar still learns where they are; everybody else gets the space back.
+ * D-061 took the title out of it (owner, 2026-08-07): the tab bar already said
+ * which of the five you were on, so a 32pt word repeating it was the largest
+ * thing on the screen. What took its place was the fact it was standing on —
+ * the vacation venue this screen is scoped to.
  *
- * What took the word's place is the fact it was standing on: the vacation
- * venue this screen is scoped to. Four of the five tabs answer entirely in
- * terms of it and none of them was showing it. Tatilim passes `venue={false}`,
- * because there the venue is the screen rather than its context.
+ * D-065 puts the word back, under the venue rather than instead of it: the
+ * generated screens draw a title on every tab, and the owner's read of D-061
+ * was "the ribbon should survive, not that a screen may never say its own
+ * name." The announcement-on-focus stays exactly as it was — a screen that
+ * stays mounted needs naming again on every visit, sight or no sight — it is
+ * simply no longer the *only* way the name reaches anyone. A second row below
+ * the venue/ring row carries the title, an optional subtitle under it, and an
+ * optional action in the corner a title used to have nothing to share with.
  */
 export function ScreenHeader({
   title,
-  /** The right slot, for a screen whose corner does a more useful job. */
+  /** A line under the title — a sentence, not a second heading. */
+  subtitle,
+  /** The second row's right slot: a screen's one corner action, if it has one. */
   right,
-  /** Off for the one screen the venue is the subject of. */
+  /** Off for a screen with nothing to scope — every primary tab has one now. */
   venue = true,
   /** Names this screen's ring, so a test can press the one it is looking at. */
   ringTestID,
   testID,
 }: {
   title: string;
+  subtitle?: string;
   right?: React.ReactNode;
   venue?: boolean;
   ringTestID?: string;
@@ -193,9 +199,25 @@ export function ScreenHeader({
     }, [title]),
   );
   return (
-    <View style={styles.screenHeader} testID={testID}>
-      {venue ? <VenueRibbon /> : null}
-      {right ?? <ProfileRing testID={ringTestID} />}
+    <View style={styles.screenHead} testID={testID}>
+      <View style={styles.screenHeadTop}>
+        {venue ? <VenueRibbon /> : null}
+        <ProfileRing testID={ringTestID} />
+      </View>
+      <View style={styles.screenHeadBottom}>
+        <View style={styles.screenHeadTitleBlock}>
+          <Text accessibilityRole="header" style={styles.screenHeadTitle}>
+            {title}
+          </Text>
+          {subtitle ? (
+            // Sentence case in the copy file, tracked structure on screen —
+            // the same split `SectionLabel` draws, applied to a line whose job
+            // is also to be found rather than read.
+            <Text style={styles.screenHeadSubtitle}>{upperCase(subtitle)}</Text>
+          ) : null}
+        </View>
+        {right}
+      </View>
     </View>
   );
 }
@@ -246,18 +268,21 @@ export function Caption({
 }
 
 /**
- * Small and semibold, in the display face. The only job is to name what
- * follows — a section, a state — so it is deliberately not usable for prose.
- * Where a label appears, the structure it marks should be real.
+ * Tracked and uppercase. The only job is to name what follows — a section, a
+ * state — so it is deliberately not usable for prose. Where a label appears,
+ * the structure it marks should be real.
  *
- * D-060 took the capitals off. Uppercase set with a point and a half of
- * tracking is a print eyebrow, and a screen of them is a reference work rather
- * than an app. A section is now named the way somebody would say it.
+ * D-060 took the capitals off, on the theory that tracked uppercase over a
+ * block of content reads as a print eyebrow. D-064 puts them back for this
+ * component specifically (the generated screens draw every section this way,
+ * and the owner's read was that a label wants to be *found*, not read) — this
+ * one clause of D-060 is superseded; the rest of it, sentence case on prose
+ * and on button labels, is untouched.
  */
 export function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <Text accessibilityRole="header" style={styles.sectionLabel}>
-      {children}
+      {typeof children === 'string' ? upperCase(children) : children}
     </Text>
   );
 }
@@ -1381,12 +1406,44 @@ const styles = StyleSheet.create({
   /** `fill`: at least the height of the scroll view, never less than content. */
   screenFill: { flexGrow: 1 },
 
-  /** The head: the venue on the left, the 46 ring in its usual corner. */
-  screenHeader: {
+  /**
+   * The head (D-065): two rows, not one. `Screen`'s own content padding
+   * already insets this horizontally (`spacing.wide`) and separates it from
+   * whatever follows (its content-container `gap`); a second horizontal pad
+   * here would only misalign the head from the rest of the screen, so only
+   * what the parent does not already give — the room between the two rows,
+   * and a little extra air below the head before the first card — is drawn.
+   */
+  screenHead: {
+    gap: spacing.lg,
+    paddingBottom: spacing.lg,
+  },
+  /** Row 1: the venue on the left, the ring in its usual corner. */
+  screenHeadTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
+  },
+  /** Row 2: the screen's own name, under the venue rather than instead of it. */
+  screenHeadBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  screenHeadTitleBlock: { flex: 1, gap: spacing.xs },
+  screenHeadTitle: {
+    fontFamily: fontFamily.displayHeavy,
+    fontSize: font.display,
+    lineHeight: font.display * leading.tight,
+    letterSpacing: tracking.display,
+    color: color.ink,
+  },
+  screenHeadSubtitle: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: font.label,
+    letterSpacing: tracking.label,
+    color: color.inkFaint,
   },
 
   display: {
@@ -1421,16 +1478,12 @@ const styles = StyleSheet.create({
     lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
-  /**
-   * Sentence case (D-060). Tracked uppercase over a block of content is a
-   * newspaper's eyebrow — the convention that, with the serif, made the app
-   * read as a reference work. A section is named the way it would be said.
-   */
+  /** Tracked uppercase structure (D-064) — see the doc comment above. */
   sectionLabel: {
-    fontFamily: fontFamily.displaySemi,
-    fontSize: font.caption,
-    letterSpacing: tracking.none,
-    color: color.ink,
+    fontFamily: fontFamily.display,
+    fontSize: font.label,
+    letterSpacing: tracking.label,
+    color: color.inkFaint,
   },
 
   button: {

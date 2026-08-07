@@ -531,3 +531,23 @@ coordinate or provider type list.
 - Exact distance display.
 - Live user map.
 - Production deploy or store submission.
+
+## D-065 redesign backlog (2026-08-07)
+
+- [ ] D-065 slice 2 — remaining four tab heads (Keşfet, Çevremde, Etkinlikler,
+      Mesajlar) adopt the drawn title + subtitle head; per-screen bodies per
+      Figma `kesfet_view`, `cevremde_venues_view`, `etkinlikler_view`,
+      `mesajlar_view`.
+- [ ] D-065 slice 3 — onboarding restyle (auth 10 + venue/permission 7) per
+      Figma `auth_*`, `welcome`…`home_ready`.
+- [ ] D-065 slice 4 — flows (venue switch, Oteldeyim states, event join,
+      match, chat, profile detail).
+- [ ] D-065 slice 5 — profile edit, settings, report/block, system states.
+- [ ] BUG — Google venue's cached HotelCard carries literal "(google)" as
+      name/city; VenueRibbon's catalogueName check trusts it, so the chip can
+      print "(google)". Real fix touches DiscoveryScreen's out-of-cache
+      getActiveVenue/resolveGooglePlace calls (venueLabels cache unification).
+      Found during D-065 slice 1; deliberately not fixed in that slice.
+- [ ] Avatar stack on Tatilim venue card ("Burada olanlar" + count) needs a
+      member-preview data source that does not exist today; design element
+      omitted until an endpoint/decision exists (D-032 thresholds apply).

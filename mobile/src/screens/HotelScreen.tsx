@@ -13,6 +13,7 @@ import {
   PhotoScrim,
   Screen,
   ScreenHeader,
+  SectionLabel,
   SkeletonCard,
 } from '../components/ui';
 import { nowMs } from '../clock';
@@ -29,25 +30,28 @@ import {
   type UpcomingStay,
   type VenueSearchMode,
 } from '../data';
-import { HotelBuilding } from '../components/HotelIllustrations';
+import { SearchScene } from '../components/HotelIllustrations';
 import { VenuePicker } from '../components/VenuePicker';
 import { VacationFeatureCard } from '../components/VacationFeatureCard';
 import { useToast } from '../components/ToastHost';
 import { useAppStore } from '../state/AppStore';
-import { color, elevation, font, fontFamily, leading, radius, spacing, tracking } from '../theme';
+import { color, elevation, font, fontFamily, leading, MIN_TOUCH, radius, spacing, tracking } from '../theme';
+
+/**
+ * Figma tatilim_view (176:2730): the active-venue card's photo band. Not on
+ * the D-059 ladder — width and height are geometry, not a type or spacing
+ * decision, exactly like the ladder doc's own carve-outs for the deck's
+ * faceless initial and the sheet pickers' `SHEET_TOP`. Named rather than
+ * repeated because the photo `Image`, its no-photo fallback band, and the
+ * loading skeleton all have to agree on one number.
+ */
+const VENUE_CARD_PHOTO_HEIGHT = 194;
 
 
 /** "12–17 Ağustos" in the app's language — dates, never documents. */
 function formatStayRange(stay: UpcomingStay): string {
   return formatStayRangeLabel(stay.startDate, stay.endDate);
 }
-
-const InfoIcon = () => (
-  <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={color.accent} strokeWidth={2.2} strokeLinecap="round">
-    <Circle cx={12} cy={12} r={9} />
-    <Path d="M12 16v-4M12 8h.01" />
-  </Svg>
-);
 
 const PinSmallIcon = () => (
   <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={color.accent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -69,6 +73,23 @@ const BedIcon = () => (
     <Path d="M3 5v14" />
     <Path d="M3 15h18v4" />
     <Path d="M3 11h13a4 4 0 0 1 4 4" />
+  </Svg>
+);
+
+/** The head's switch pill (176:2730): a small refresh mark, not a full glyph
+    library entry, since this one slot is the only place it is drawn today. */
+const RefreshIcon = () => (
+  <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={color.onInverse} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5" />
+    <Path d="M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5" />
+  </Svg>
+);
+
+/** The empty state's one action: a magnifying glass, coral-pill sized. */
+const SearchGlyph = () => (
+  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={color.onAccent} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <Circle cx={10.5} cy={10.5} r={6.5} />
+    <Path d="M20 20l-4.35-4.35" />
   </Svg>
 );
 
@@ -378,13 +399,32 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           </Text>
         </View>
       ) : (
-        // The Figma header's ring (10:74), now the only way to Settings
-        // (D-057) as well as to your own profile.
-        <ScreenHeader title={COPY.tabs.vacation} venue={false} ringTestID="hotel-profile-ring" />
+        // D-065: the chip now appears here too (owner, 2026-08-07) — Tatilim
+        // used to leave it off because the venue *was* the screen, but the
+        // generated head draws it on every tab, and the ring's Settings route
+        // (D-057) still needs somewhere to sit beside it. The head's own
+        // switch action takes the corner a title used to leave empty; it goes
+        // to the same picker the cards below already open.
+        <ScreenHeader
+          title={COPY.tabs.vacation}
+          subtitle={COPY.vacation.headerSubtitle}
+          ringTestID="hotel-profile-ring"
+          right={
+            activeId && !picking ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={COPY.vacation.switchVenueCta}
+                onPress={() => setPicking(true)}
+                style={({ pressed }) => [styles.headerSwitchPill, pressed && styles.resultPressed]}
+                testID="hotel-header-switch-venue"
+              >
+                <RefreshIcon />
+                <Text style={styles.headerSwitchPillText}>{COPY.vacation.switchVenueCta}</Text>
+              </Pressable>
+            ) : undefined
+          }
+        />
       )}
-      {!onActivated && !activeId && !picking ? (
-        <Text style={styles.subtitle}>{COPY.vacation.subtitle}</Text>
-      ) : null}
       {/* D-054: the trip tab's search is the two-step Google picker. It stands
           where the one catalogue box used to, and it is the only way a
           vacation venue is chosen. */}
@@ -398,10 +438,13 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       ) : null}
       {picking ? null : loadingActive || (activeId && !activeHotel) ? (
         // Either the answer is on its way, or the id is known and its card
-        // is still being resolved. Neither is "no hotel chosen".
-        <SkeletonCard height={340} testID="hotel-loading" />
+        // is still being resolved. Neither is "no hotel chosen". Waits at
+        // roughly the active card's own height (176:2730's shorter photo
+        // band plus its footer) rather than the taller shape this replaced.
+        <SkeletonCard height={VENUE_CARD_PHOTO_HEIGHT + 72} testID="hotel-loading" />
       ) : activeHotel ? (
         <>
+        <SectionLabel>{COPY.vacation.hereSectionLabel}</SectionLabel>
         {stay ? (
           <View style={styles.stayPill} testID="active-stay-pill">
             <PinSmallIcon />
@@ -417,9 +460,12 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
             </Text>
           </View>
         ) : null}
-        {/* The Figma active card (10:117): the photo band, the name, one line
-            of place and dates, and the selected pill. The whole card is the
-            way to the hotel's details. */}
+        {/* Figma tatilim_view (176:2730): the photo band, and a footer row
+            below it rather than a plate floating on top — the name, the
+            place, and the way into the room. The whole card still opens the
+            same details screen (`HotelDetailsScreen` — "the room behind
+            'Otel detaylarını gör'"); the footer's own pill is a second,
+            more legible door to the identical place, not a second one. */}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`${activeName ?? activeHotel.name}. ${COPY.hotel.detailsCta}`}
@@ -438,8 +484,8 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
               />
             ) : googlePhoto ? (
               /* A Google venue's photo, resolved a moment ago beside its
-                 name and kept nowhere — the "Powered by Google" line on the
-                 plate below credits both (D-054). */
+                 name and kept nowhere — the "Powered by Google" line in the
+                 footer below credits both (D-054). */
               <Image
                 source={{ uri: googlePhoto }}
                 style={styles.hotelPhoto}
@@ -464,67 +510,80 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
                 </Text>
               </>
             ) : null}
+            {/*
+              The design's bottom-scrim slot over the photo carries an avatar
+              stack of "who's here right now" and a headcount badge. Nothing
+              on this screen fetches either today: the only headcount call
+              (`getRoomCounts`) is not made here, and no endpoint returns
+              per-member avatars for a room at all — inventing either fetch
+              to fill the slot is exactly what this pass was told not to do.
+              The scrim is left undrawn rather than drawn empty over nothing.
+            */}
           </View>
-          <View style={styles.heroPlate}>
-            {/* Active, said visually as well (owner, 2026-08-05): the same
-                green mark every live state in this product wears. */}
-            <View style={styles.plateBadgeRow}>
-              <View style={styles.activeDot} />
-              <Text style={styles.heroPlateLabel}>{COPY.hotel.activePlate}</Text>
+          <View style={styles.hotelCardFooter}>
+            <View style={styles.hotelCardFooterInfo}>
+              {/* D-054: for a Google venue this is a name resolved a moment
+                  ago and held in memory, never a stored one. */}
+              <Text style={styles.hotelCardName} testID="active-hotel-name">
+                {activeName ?? activeHotel.name}
+              </Text>
+              {/* A Google venue has no city or country of ours to print —
+                  they are Google's content — so the line under the name
+                  carries only what the user themselves declared, and is
+                  absent until they declare it. */}
+              {activeVenue?.provider !== 'google' || stay ? (
+                /* 131:83: "Alaçatı, İzmir · 12–17 Ağustos" — one quiet line,
+                   the dot as the only punctuation between facts. */
+                <Text style={styles.hotelCardMeta} numberOfLines={1} testID="active-hotel-dates">
+                  {activeVenue?.provider === 'google'
+                    ? formatStayRange(stay!)
+                    : [`${activeHotel.city}, ${activeHotel.country}`, stay ? formatStayRange(stay) : null]
+                        .filter(Boolean)
+                        .join(' · ')}
+                </Text>
+              ) : null}
+              {/* The attribution is a credit, not an address: its own quiet
+                  line, present whenever the name on this card came from
+                  Google. */}
+              {activeVenue?.provider === 'google' ? (
+                <Text style={styles.venueAttribution} testID="active-hotel-attribution">
+                  {COPY.venue.attribution}
+                </Text>
+              ) : null}
             </View>
-            {/* D-054: for a Google venue this is a name resolved a moment ago
-                and held in memory, never a stored one. */}
-            <Text style={styles.heroPlateName} testID="active-hotel-name">
-              {activeName ?? activeHotel.name}
-            </Text>
-            {/* A Google venue has no city or country of ours to print — they
-                are Google's content — so the line under the name carries only
-                what the user themselves declared, and is absent until they
-                declare it. It used to fall back to the attribution, which put
-                "Powered by Google" behind a location pin as though that were
-                where the place is. */}
-            {activeVenue?.provider !== 'google' || stay ? (
-              /* 131:83: "Alaçatı, İzmir · 12–17 Ağustos" — one quiet line,
-                 no pin, the dot as the only punctuation between facts. */
-              <Text style={styles.heroPlateMeta} numberOfLines={1} testID="active-hotel-dates">
-                {activeVenue?.provider === 'google'
-                  ? formatStayRange(stay!)
-                  : [`${activeHotel.city}, ${activeHotel.country}`, stay ? formatStayRange(stay) : null]
-                      .filter(Boolean)
-                      .join(' · ')}
-              </Text>
-            ) : null}
-            {/* The attribution is a credit, not an address: its own quiet line,
-                and present whenever the name on this card came from Google —
-                including once dates exist, when the old code dropped it. */}
-            {activeVenue?.provider === 'google' ? (
-              <Text style={styles.venueAttribution} testID="active-hotel-attribution">
-                {COPY.venue.attribution}
-              </Text>
-            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={COPY.vacation.enterRoomCta}
+              onPress={() => stackNavigation.navigate('HotelDetails', { hotelId: activeHotel.id })}
+              style={({ pressed }) => [styles.enterRoomPill, pressed && styles.resultPressed]}
+              testID="active-hotel-enter"
+            >
+              <Text style={styles.enterRoomPillText}>{COPY.vacation.enterRoomCta}</Text>
+            </Pressable>
           </View>
         </Pressable>
         </>
       ) : (
-        /* The Figma nothing-chosen card (10:79): the little hotel in its disc,
-           the invitation beside it, and the requirement worn as a quiet badge
-           rather than an error. */
-        <View style={styles.emptyCard} testID="hotel-empty-state">
-          {/* The 74 disc (10:80). D-058: this was a raster commissioned for the
-              night theme — a navy disc that read as a hole once the card went
-              white. The drawn version is the same subject in the light tokens,
-              and it scales instead of being squeezed into the circle. */}
-          <View style={styles.emptyDisc}>
-            <HotelBuilding size={44} />
-          </View>
-          <View style={styles.emptyText}>
-            <Text style={styles.emptyTitle}>{COPY.hotel.emptyTitle}</Text>
-            <Text style={styles.emptyBody}>{COPY.hotel.emptyBody}</Text>
-            <View style={styles.emptyBadge}>
-              <InfoIcon />
-              <Text style={styles.emptyBadgeText}>{COPY.hotel.emptyBadge}</Text>
-            </View>
-          </View>
+        /* Figma tatilim_view (176:2730): the search illustration already
+           drawn for this exact job (`SearchScene`, unused until now — this
+           slice is what it was waiting for), a centred heading and support
+           line, and the one action that matters here. */
+        <View style={styles.emptyState} testID="hotel-empty-state">
+          <SearchScene width={200} />
+          <Text accessibilityRole="header" style={styles.emptyStateTitle}>
+            {COPY.hotel.emptyTitle}
+          </Text>
+          <Text style={styles.emptyStateBody}>{COPY.hotel.emptyBody}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={COPY.vacation.searchVenueCta}
+            onPress={() => setPicking(true)}
+            style={({ pressed }) => [styles.emptyStateCta, pressed && styles.resultPressed]}
+            testID="hotel-empty-search-cta"
+          >
+            <SearchGlyph />
+            <Text style={styles.emptyStateCtaText}>{COPY.vacation.searchVenueCta}</Text>
+          </Pressable>
         </View>
       )}
 
@@ -699,7 +758,10 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           <VacationFeatureCard
             room="HERE_NOW"
             status={null}
-            tag={COPY.vacation.premiumTag}
+            // D-065: no premium copy on an implemented screen before the
+            // billing phase opens (`.studio/decisions.md`) — the closed
+            // state chip below already says the room is shut without naming
+            // an entitlement that does not exist yet.
             lead={COPY.rooms.hereNowLead}
             body={COPY.vacation.hereNowFeatureBody}
             buttonLabel={COPY.vacation.chooseFirst}
@@ -733,11 +795,25 @@ const styles = StyleSheet.create({
     letterSpacing: tracking.display,
     color: color.ink,
   },
-  subtitle: {
-    fontFamily: fontFamily.body,
-    fontSize: font.caption,
-    lineHeight: font.caption * leading.normal,
-    color: color.inkMuted,
+  /**
+   * The head's own switch action (176:2730): the deep navy pill, distinct
+   * from the coral of everything below it — the one place on this screen
+   * that is not the accent, because it sits over the venue chip's own wash
+   * rather than the white ground.
+   */
+  headerSwitchPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderRadius: radius.pill,
+    backgroundColor: color.inverse,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  headerSwitchPillText: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.label,
+    color: color.onInverse,
   },
   searchLabel: {
     fontFamily: fontFamily.bodySemi,
@@ -746,10 +822,10 @@ const styles = StyleSheet.create({
   },
   /** The Figma placeholder size (10:78). */
   searchInput: { fontSize: font.body },
-  /** The Figma card shell (10:117): white, the quiet hairline, the card radius. */
+  /** The active-venue card shell (176:2730): white, the D-059 hero radius. */
   hotelCard: {
     backgroundColor: color.surface,
-    borderRadius: radius.xl,
+    borderRadius: radius.xxl,
     overflow: 'hidden',
     ...elevation.card,
   },
@@ -825,43 +901,9 @@ const styles = StyleSheet.create({
   /** The quiet second action a live room earns. */
   teaserExtra: { minHeight: 32, justifyContent: 'center' },
   teaserExtraText: { fontFamily: fontFamily.bodySemi, fontSize: font.caption, color: color.ink },
-  /** T-01: the white plate floating on the hero's foot. */
-  heroPlate: {
-    position: 'absolute',
-    left: 14,
-    right: 14,
-    bottom: 12,
-    backgroundColor: color.surface,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.snug,
-    gap: spacing.xs,
-    ...elevation.card,
-  },
-  plateBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.cozy },
-  activeDot: { width: 8, height: 8, borderRadius: radius.pill, backgroundColor: color.successMark },
-  heroPlateLabel: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.label,
-    letterSpacing: tracking.none,
-    color: color.inkMuted,
-  },
-  heroPlateName: {
-    fontFamily: fontFamily.display,
-    fontSize: font.heading,
-    lineHeight: font.heading * leading.snug,
-    letterSpacing: tracking.display,
-    color: color.ink,
-  },
-  heroPlateMeta: {
-    fontFamily: fontFamily.body,
-    fontSize: font.caption,
-    lineHeight: font.caption * leading.normal,
-    color: color.inkMuted,
-  },
   /** The stand-in band for a hotel the catalogue holds no photo of. */
-  hotelCardBand: { height: 340, backgroundColor: color.veil },
-  hotelPhoto: { width: '100%', height: 340, backgroundColor: color.veil },
+  hotelCardBand: { height: VENUE_CARD_PHOTO_HEIGHT, backgroundColor: color.veil },
+  hotelPhoto: { width: '100%', height: VENUE_CARD_PHOTO_HEIGHT, backgroundColor: color.veil },
   /** The licence's half of the bargain, on the photo it pays for — the
       PhotoScrim above it is what keeps this legible on any image. */
   photoCredit: {
@@ -873,16 +915,26 @@ const styles = StyleSheet.create({
     color: color.onPhoto,
     maxWidth: '80%',
   },
-  hotelCardBody: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.snug,
-    paddingBottom: spacing.md,
-    gap: spacing.cozy,
+  /** The footer row (176:2730): name and place on the left, the room's own
+      door on the right — below the photo now, not floating over its foot. */
+  hotelCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
   },
-  hotelName: {
-    fontFamily: fontFamily.displaySemi,
-    fontSize: font.heading,
+  hotelCardFooterInfo: { flex: 1, gap: spacing.xs },
+  hotelCardName: {
+    fontFamily: fontFamily.display,
+    fontSize: font.body,
+    lineHeight: font.body * leading.snug,
     color: color.ink,
+  },
+  hotelCardMeta: {
+    fontFamily: fontFamily.body,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
+    color: color.inkMuted,
   },
   /** The provider credit: quiet, and never wearing a location pin. */
   venueAttribution: {
@@ -890,72 +942,60 @@ const styles = StyleSheet.create({
     fontSize: font.label,
     color: color.inkMuted,
   },
-  selectedPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.cozy,
-    alignSelf: 'flex-start',
-    backgroundColor: color.veil,
+  enterRoomPill: {
+    minHeight: MIN_TOUCH,
+    justifyContent: 'center',
     borderRadius: radius.pill,
-    paddingHorizontal: spacing.snug,
-    paddingVertical: spacing.cozy,
+    backgroundColor: color.accent,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.snug,
   },
-  selectedPillText: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: font.label,
-    color: color.accentDeep,
+  enterRoomPillText: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.control,
+    color: color.onAccent,
   },
-  /** The Figma empty card (10:79): 20 corners, 16 inside, 14 between. */
-  emptyCard: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    alignItems: 'center',
+  /** The nothing-chosen state (176:2730): centred, illustration first. */
+  emptyState: {
     backgroundColor: color.surface,
-    borderRadius: radius.xl,
-    padding: spacing.md,
+    borderRadius: radius.xxl,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.md,
+    alignItems: 'center',
+    gap: spacing.sm,
     ...elevation.card,
   },
-  /** The 74 disc (10:80): a circle over the pink-soft fill, the art inside. */
-  emptyDisc: {
-    width: 74,
-    height: 74,
-    borderRadius: radius.pill,
-    backgroundColor: color.veil,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyText: { flex: 1, gap: spacing.cozy },
-  emptyTitle: {
-    fontFamily: fontFamily.displaySemi,
-    fontSize: font.body,
+  emptyStateTitle: {
+    fontFamily: fontFamily.display,
+    fontSize: font.heading,
+    lineHeight: font.heading * leading.snug,
     color: color.ink,
+    textAlign: 'center',
   },
-  emptyBody: {
+  emptyStateBody: {
     fontFamily: fontFamily.body,
     fontSize: font.caption,
     lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
+    textAlign: 'center',
+    maxWidth: 240,
   },
-  emptyBadge: {
+  emptyStateCta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.cozy,
-    alignSelf: 'flex-start',
-    backgroundColor: color.veil,
+    gap: spacing.sm,
+    minHeight: MIN_TOUCH,
     borderRadius: radius.pill,
-    paddingHorizontal: spacing.snug,
-    paddingVertical: spacing.cozy,
+    backgroundColor: color.accent,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.snug,
+    marginTop: spacing.xs,
   },
-  emptyBadgeText: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: font.label,
-    color: color.accentDeep,
+  emptyStateCtaText: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.control,
+    color: color.onAccent,
   },
   idle: { gap: spacing.md },
-  resultBand: { height: 20, backgroundColor: color.accent },
-  resultPhoto: { width: '100%', height: 110, backgroundColor: color.veil },
-  resultBody: { padding: spacing.md, gap: spacing.xs },
-  hotelCardTitle: { gap: spacing.xs },
   resultPressed: { opacity: 0.8 },
 });

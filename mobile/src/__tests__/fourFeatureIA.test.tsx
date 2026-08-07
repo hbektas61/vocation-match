@@ -39,11 +39,14 @@ describe('D-057 bottom navigation', () => {
     expect(screen.queryByTestId('tab-Settings')).toBeNull();
   });
 
-  it('names the tab in the bar and nowhere else on the page', async () => {
-    // D-061 (owner, 2026-08-07): a tab does not name itself. The bar already
-    // says which of the five you are on, and repeating it in 32pt type was the
-    // largest thing on several screens. What the screen owes is a way to
-    // yourself and a spoken name — see `announcements.test.tsx` for the second.
+  it('names the tab in the bar, and again as the screen\'s own drawn title', async () => {
+    // D-061 (owner, 2026-08-07) took the title off the page: the bar already
+    // said which of the five you were on, and repeating it in 32pt type was
+    // the largest thing on several screens. D-065 (owner, 2026-08-07) draws it
+    // again, under the venue chip rather than instead of it — every generated
+    // screen carries one — while keeping the announcement-on-focus this test's
+    // sibling `announcements.test.tsx` still pins, for a screen reader user who
+    // cannot see either copy of the name.
     await onboardWithHotel('Deniz');
 
     const tab = await screen.findByTestId('tab-Inbox');
@@ -51,7 +54,7 @@ describe('D-057 bottom navigation', () => {
 
     await press(tab);
     expect(await screen.findByTestId('inbox-profile-ring')).toBeTruthy();
-    expect(screen.queryByText(COPY.inbox.title)).toBeNull();
+    expect(await screen.findByText(COPY.inbox.title)).toBeTruthy();
   });
 });
 
