@@ -23,9 +23,20 @@
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
 
-import { Button, Caption, Chip, ConfirmDialog, EmptyState, Loading, Notice } from './ui';
-import { COPY, getLocale } from '../copy';
+import {
+  BackButton,
+  Button,
+  Caption,
+  Chip,
+  ConfirmDialog,
+  EmptyState,
+  Loading,
+  Notice,
+  SectionLabel,
+} from './ui';
+import { COPY, getLocale, upperCase } from '../copy';
 import { ApiError, getApi, type GooglePlaceHit, type VenueSearchMode } from '../data';
 import {
   countryOptions,
@@ -34,6 +45,7 @@ import {
   type CountryOption,
 } from '../domain/countries';
 import {
+  ACTION_TOUCH,
   color,
   elevation,
   font,
@@ -152,6 +164,83 @@ let lastCountryCode: string | null = null;
 /** Enough characters to be a search rather than a letter. */
 export function longEnough(text: string): boolean {
   return text.trim().replace(/\s+/g, '').length >= VENUE_MIN_QUERY;
+}
+
+
+/**
+ * The search box the contract draws on both picker steps (176:2393): a tall
+ * white plate with the magnifier inside it, rather than a bordered field.
+ *
+ * The magnifier matters more than it looks. This box is not a form field
+ * somebody fills in and submits — it queries a paid provider as they type, and
+ * the glyph is what says "this searches" before the first keystroke pays for
+ * anything.
+ */
+function SearchBox({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  testID,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (next: string) => void;
+  placeholder: string;
+  testID: string;
+}) {
+  const active = value.trim() !== '';
+  return (
+    <View style={[styles.searchShell, active && styles.searchShellActive]}>
+      <Svg
+        width={20}
+        height={20}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke={active ? color.accentDeep : color.inkFaint}
+        strokeWidth={2}
+        strokeLinecap="round"
+      >
+        <Circle cx={11} cy={11} r={7} />
+        <Path d="m16.5 16.5 4 4" />
+      </Svg>
+      <TextInput
+        accessibilityLabel={label}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={color.inkFaint}
+        autoCorrect={false}
+        style={styles.searchInput}
+        testID={testID}
+      />
+    </View>
+  );
+}
+
+/** A country, as one of the contract's suggestion chips (176:2405). */
+function CountryPill({
+  option,
+  lastUsed,
+  onPress,
+}: {
+  option: CountryOption;
+  lastUsed: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={
+        lastUsed ? `${option.name}, ${option.code}, ${COPY.venue.lastUsedHere}` : `${option.name}, ${option.code}`
+      }
+      onPress={onPress}
+      style={({ pressed }) => [styles.pill, lastUsed && styles.pillLastUsed, pressed && styles.pillPressed]}
+      testID={`country-option-${option.code}`}
+    >
+      <Text style={[styles.pillText, lastUsed && styles.pillTextLastUsed]}>{option.name}</Text>
+    </Pressable>
+  );
 }
 
 export function VenuePicker({
@@ -391,37 +480,28 @@ export function VenuePicker({
   if (!country) {
     return (
       <View testID="venue-picker-country">
+        {/* The contract opens this flow at the destination (176:2380); the
+            country step is ours (D-059) and is drawn in the same language:
+            the round back button on its own line, the question under it, then
+            the search. */}
         <View style={styles.headerRow}>
-          {onClose ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={COPY.common.back}
-              onPress={onClose}
-              style={styles.headerBack}
-              testID="venue-picker-close"
-            >
-              <Text style={styles.headerChevron}>‹</Text>
-            </Pressable>
-          ) : null}
-          <Text accessibilityRole="header" style={[styles.heading, styles.headingInRow]}>
-            {COPY.venue.countryTitle}
-          </Text>
+          {onClose ? <BackButton onPress={onClose} testID="venue-picker-close" /> : null}
         </View>
+        <Text accessibilityRole="header" style={styles.heading}>
+          {COPY.venue.countryTitle}
+        </Text>
         <WizardProgress step="country" />
         <Text style={styles.hint}>{COPY.venue.countryHint}</Text>
-        <TextInput
-          accessibilityLabel={COPY.venue.countryLabel}
+        <SearchBox
+          label={COPY.venue.countryLabel}
           value={countryQuery}
           onChangeText={setCountryQuery}
           placeholder={COPY.venue.countryPlaceholder}
-          placeholderTextColor={color.inkMuted}
-          autoCorrect={false}
-          style={[styles.searchBox, countryQuery.trim() !== '' && styles.searchBoxActive]}
           testID="country-search"
         />
-        <Text style={styles.sectionLabel}>
+        <SectionLabel>
           {countryQuery.trim() ? COPY.venue.countryResults : COPY.venue.countryPopular}
-        </Text>
+        </SectionLabel>
         {countries.length === 0 ? (
           /* E-05. Free and local, and it says so — then the frequent list
              stays underneath, because "no match" must never mean "no way
@@ -433,39 +513,31 @@ export function VenuePicker({
               testID="country-no-results"
             />
             <Text style={styles.hint}>{COPY.venue.countryLocalNote}</Text>
-            <Text style={styles.sectionLabel}>{COPY.venue.countryPopular}</Text>
-            {suggestedCountries(locale).map((option) => (
-              <Pressable
-                key={option.code}
-                accessibilityRole="button"
-                accessibilityLabel={`${option.name}, ${option.code}`}
-                onPress={() => chooseCountry(option)}
-                style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-                testID={`country-option-${option.code}`}
-              >
-                <Text style={styles.rowName}>{option.name}</Text>
-                <Text style={styles.countryCode}>
-                  {option.code === lastCountryCode
-                    ? `${option.code} · ${COPY.venue.lastUsedHere}`
-                    : option.code}
-                </Text>
-              </Pressable>
-            ))}
+            <SectionLabel>{COPY.venue.countryPopular}</SectionLabel>
+            <View style={styles.suggestions}>
+              {suggestedCountries(locale).map((option) => (
+                <CountryPill
+                  key={option.code}
+                  option={option}
+                  lastUsed={option.code === lastCountryCode}
+                  onPress={() => chooseCountry(option)}
+                />
+              ))}
+            </View>
           </>
         ) : (
-          countries.map((option) => (
-            <Pressable
-              key={option.code}
-              accessibilityRole="button"
-              accessibilityLabel={`${option.name}, ${option.code}`}
-              onPress={() => chooseCountry(option)}
-              style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-              testID={`country-option-${option.code}`}
-            >
-              <Text style={styles.rowName}>{option.name}</Text>
-              <Text style={styles.countryCode}>{option.code}</Text>
-            </Pressable>
-          ))
+          /* The contract's suggestion chips (176:2404): a country is two
+             words, and two words do not need a row of their own. */
+          <View style={styles.suggestions}>
+            {countries.map((option) => (
+              <CountryPill
+                key={option.code}
+                option={option}
+                lastUsed={option.code === lastCountryCode}
+                onPress={() => chooseCountry(option)}
+              />
+            ))}
+          </View>
         )}
       </View>
     );
@@ -498,19 +570,17 @@ export function VenuePicker({
           title. The country step has no chevron (W-01) — there is no earlier
           step to walk to; leaving the picker stays the host screen's job. */}
       <View style={styles.headerRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={COPY.common.back}
+        <BackButton
           onPress={destination ? changeDestination : changeCountry}
-          style={styles.headerBack}
           testID="venue-picker-back"
-        >
-          <Text style={styles.headerChevron}>‹</Text>
-        </Pressable>
-        <Text accessibilityRole="header" style={[styles.heading, styles.headingInRow]}>
-          {heading}
-        </Text>
+        />
+        {/* The place the search is inside, as the coral eyebrow the contract
+            draws beside the arrow (176:2423). */}
+        {destination ? <Text style={styles.eyebrow}>{upperCase(destination.name)}</Text> : null}
       </View>
+      <Text accessibilityRole="header" style={styles.heading}>
+        {heading}
+      </Text>
       <WizardProgress step={step} />
       {/*
         Where you are, in one line.
@@ -538,16 +608,13 @@ export function VenuePicker({
         <Text style={styles.hint}>{COPY.venue.destinationHint(country.name)}</Text>
       )}
 
-      <TextInput
-        accessibilityLabel={destination ? COPY.venue.venueLabel : COPY.venue.destinationLabel}
+      <SearchBox
+        label={destination ? COPY.venue.venueLabel : COPY.venue.destinationLabel}
         value={query}
         onChangeText={changeQuery}
         placeholder={
           destination ? COPY.venue.venuePlaceholder : COPY.venue.destinationPlaceholder
         }
-        placeholderTextColor={color.inkMuted}
-        autoCorrect={false}
-        style={[styles.searchBox, query.trim() !== '' && styles.searchBoxActive]}
         testID={destination ? 'venue-search' : 'destination-search'}
       />
 
@@ -667,11 +734,31 @@ export function VenuePicker({
               style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
               testID={`${step}-option-${index}`}
             >
-              <Text style={styles.rowName}>{hit.name}</Text>
-              {hit.detail ? <Text style={styles.rowDetail}>{hit.detail}</Text> : null}
-              {kindBadge(hit.kind) ? (
-                <Text style={styles.rowKind}>{kindBadge(hit.kind) ?? ''}</Text>
-              ) : null}
+              {/* The contract's result card (176:2429) is a 64pt photograph,
+                  a name, a kind badge and a Choose pill. The photograph is
+                  the one part that cannot be built: D-054 allows nothing of
+                  Google's but the Place ID to be shown or stored, and a
+                  venue we have never met has no picture of our own. So the
+                  card is the same card without it. */}
+              <View style={styles.rowBody}>
+                <Text style={styles.rowName}>{hit.name}</Text>
+                {hit.detail ? <Text style={styles.rowDetail}>{hit.detail}</Text> : null}
+                {kindBadge(hit.kind) ? (
+                  <View style={styles.kindPill}>
+                    <Text style={styles.kindPillText}>{kindBadge(hit.kind) ?? ''}</Text>
+                  </View>
+                ) : null}
+              </View>
+              {/* The affordance, not a second target: the whole card is the
+                  button, so this is hidden from assistive tech rather than
+                  announced as something else to find. */}
+              <View
+                style={styles.rowAction}
+                accessibilityElementsHidden
+                importantForAccessibility="no"
+              >
+                <Text style={styles.rowActionText}>{COPY.venue.selectButton}</Text>
+              </View>
             </Pressable>
           ))}
           {/* Google's policies require the attribution wherever its data is
@@ -715,6 +802,7 @@ export function VenuePicker({
 }
 
 const styles = StyleSheet.create({
+  /** The question (176:2388), on its own line under the arrow. */
   heading: {
     fontFamily: fontFamily.display,
     fontSize: font.title,
@@ -723,45 +811,76 @@ const styles = StyleSheet.create({
     color: color.ink,
     marginBottom: spacing.sm,
   },
-  /** W-02…W-04: the 44pt chevron beside the title, one row. */
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.snug },
-  headerBack: {
-    width: MIN_TOUCH,
-    height: MIN_TOUCH,
+  /** The arrow's own row (176:2383), and the eyebrow that may stand beside it. */
+  headerRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.snug,
   },
-  headerChevron: {
-    fontFamily: fontFamily.body,
-    fontSize: font.title,
-    lineHeight: font.title * leading.snug,
-    color: color.ink,
+  /** Where the search is, in tracked coral capitals (176:2423). */
+  eyebrow: {
+    flexShrink: 1,
+    fontFamily: fontFamily.displaySemi,
+    fontSize: font.label,
+    letterSpacing: tracking.label,
+    color: color.accentDeep,
   },
-  /** Inside the row the heading's own bottom margin would misalign the pair. */
-  headingInRow: { flex: 1, marginBottom: 0 },
   /**
-   * The drawn search box: no label, no icon, a plain 14-radius field whose
-   * edge turns coral once something is typed — the border carries "this is
-   * the live search", the way the design draws it.
+   * The search plate (176:2393): tall, white, the magnifier inside it, no
+   * border at rest — it floats like every other object on the page, and the
+   * coral edge only appears once it is actually searching something.
    */
-  searchBox: {
+  searchShell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.snug,
+    minHeight: ACTION_TOUCH,
     backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
     borderRadius: radius.md,
+    borderWidth: 2,
+    borderColor: 'transparent',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.snug,
     // Whatever follows — the mode chips, a result list — stands off the box
     // rather than touching its edge (owner screenshot, 2026-08-03).
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
+    ...elevation.card,
+  },
+  searchShellActive: { borderColor: color.accent },
+  searchInput: {
+    flex: 1,
     fontFamily: fontFamily.body,
     fontSize: font.body,
     // No lineHeight on purpose: iOS sinks a TextInput's text to the bottom
     // of the line box, which cut the words in half (owner, 2026-08-03).
     textAlignVertical: 'center',
+    includeFontPadding: false,
+    paddingVertical: 0,
     color: color.ink,
   },
-  searchBoxActive: { borderWidth: 2, borderColor: color.accent },
+  /** The suggestion chips wrap; a country is two words, not a row. */
+  suggestions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.snug,
+    marginBottom: spacing.sm,
+  },
+  pill: {
+    minHeight: MIN_TOUCH,
+    justifyContent: 'center',
+    borderRadius: radius.pill,
+    backgroundColor: color.surface,
+    paddingHorizontal: spacing.lg,
+    ...elevation.card,
+  },
+  pillLastUsed: { backgroundColor: color.accentWash },
+  pillPressed: { opacity: 0.7 },
+  pillText: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: font.body,
+    color: color.ink,
+  },
+  pillTextLastUsed: { fontFamily: fontFamily.bodySemi, color: color.accentDeep },
   /** W-03's note: one quiet line, not a titled card. */
   modeNote: {
     fontFamily: fontFamily.body,
@@ -769,14 +888,20 @@ const styles = StyleSheet.create({
     lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
-  /** The type badge under a result: 10pt tracked capitals in the brand ink. */
-  rowKind: {
-    fontFamily: fontFamily.bodySemi,
+  /** The type badge under a result, as the contract's grey pill (176:2436). */
+  kindPill: {
+    alignSelf: 'flex-start',
+    borderRadius: radius.pill,
+    backgroundColor: color.veil,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.tight,
+    marginTop: spacing.xs,
+  },
+  kindPillText: {
+    fontFamily: fontFamily.bodyMedium,
     fontSize: font.label,
     lineHeight: font.label * leading.snug,
-    letterSpacing: tracking.none,
     color: color.inkMuted,
-    marginTop: spacing.xs,
   },
   /** The hairline, and the words under it. */
   progressBar: { flexDirection: 'row', gap: spacing.xs },
@@ -848,20 +973,13 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bodySemi,
     color: color.ink,
   },
+  /** The line under the question (176:2390): a sentence, so it reads at body. */
   hint: {
     fontFamily: fontFamily.body,
-    fontSize: font.caption,
-    lineHeight: font.caption * leading.normal,
+    fontSize: font.body,
+    lineHeight: font.body * leading.normal,
     color: color.inkMuted,
-    marginBottom: spacing.sm,
-  },
-  sectionLabel: {
-    fontFamily: fontFamily.displaySemi,
-    fontSize: font.caption,
-    letterSpacing: tracking.none,
-    color: color.ink,
-    marginTop: spacing.xs,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.md,
   },
   /** E-01…E-04: the card under the notice, holding the words and the way out. */
   stateBlock: { gap: spacing.sm },
@@ -877,13 +995,6 @@ const styles = StyleSheet.create({
     fontSize: font.caption,
     lineHeight: font.caption * leading.normal,
     color: color.ink,
-  },
-  countryCode: {
-    fontFamily: fontFamily.body,
-    fontSize: font.caption,
-    lineHeight: font.caption * leading.normal,
-    color: color.inkMuted,
-    marginTop: spacing.tight,
   },
   contextCard: {
     minHeight: MIN_TOUCH,
@@ -1022,13 +1133,29 @@ const styles = StyleSheet.create({
     color: color.inkMuted,
     marginTop: spacing.sm,
   },
+  /** The result card (176:2429): the name and its kind, the choice on the right. */
   row: {
-    borderRadius: radius.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.snug,
+    borderRadius: radius.xl,
     backgroundColor: color.surface,
-    paddingVertical: spacing.snug,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.snug,
     ...elevation.card,
+  },
+  rowBody: { flex: 1 },
+  rowAction: {
+    borderRadius: radius.pill,
+    backgroundColor: color.accent,
+    paddingHorizontal: spacing.wide,
+    paddingVertical: spacing.sm,
+  },
+  rowActionText: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.control,
+    color: color.onAccent,
   },
   rowPressed: {
     opacity: 0.7,

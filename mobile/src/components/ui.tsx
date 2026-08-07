@@ -222,6 +222,52 @@ export function ScreenHeader({
   );
 }
 
+/**
+ * The way back, as the D-065 contract draws it everywhere it appears
+ * (180:6460, 176:2384, 176:2419): a round white button that floats, with a
+ * stroked chevron in it.
+ *
+ * It replaces the bare "←" and "‹" characters the flows had grown. A glyph
+ * typed as text is a different weight, a different optical size and a
+ * different vertical seat in every font on every platform, and it has no
+ * target of its own — which is why the arrow on one screen looked nothing
+ * like the arrow on the next.
+ */
+export function BackButton({
+  onPress,
+  label,
+  testID,
+}: {
+  onPress: () => void;
+  /** Defaults to the shared "Back"; pass one when it undoes something named. */
+  label?: string;
+  testID?: string;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label ?? COPY.common.back}
+      onPress={onPress}
+      hitSlop={12}
+      style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
+      testID={testID}
+    >
+      <Svg
+        width={20}
+        height={20}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke={color.ink}
+        strokeWidth={2.4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <Path d="m15 5-7 7 7 7" />
+      </Svg>
+    </Pressable>
+  );
+}
+
 export function Title({ children }: { children: React.ReactNode }) {
   return (
     <Text accessibilityRole="header" style={styles.title}>
@@ -454,9 +500,15 @@ export function Field(
     prefix?: React.ReactNode;
     /** The search shape: a full-round white pill instead of the squared box. */
     pill?: boolean;
+    /**
+     * The onboarding shape (D-065, 180:6472): a box the height of the primary
+     * action with a softer corner, so the one thing being asked for on the
+     * screen is the size of the one thing offered at the bottom of it.
+     */
+    tall?: boolean;
   },
 ) {
-  const { label, hint, hideLabel, invalid, prefix, pill, style, onFocus, onBlur, ...inputProps } = props;
+  const { label, hint, hideLabel, invalid, prefix, pill, tall, style, onFocus, onBlur, ...inputProps } = props;
   const [focused, setFocused] = useState(false);
   const multiline = inputProps.multiline === true;
 
@@ -471,6 +523,7 @@ export function Field(
         style={[
           styles.inputShell,
           pill && styles.inputShellPill,
+          tall && styles.inputShellTall,
           multiline && styles.inputShellMultiline,
           focused && styles.inputShellFocused,
           invalid && styles.inputShellInvalid,
@@ -490,7 +543,7 @@ export function Field(
             setFocused(false);
             onBlur?.(event);
           }}
-          style={[styles.input, multiline && styles.inputMultiline, style]}
+          style={[styles.input, tall && styles.inputTall, multiline && styles.inputMultiline, style]}
           {...inputProps}
         />
       </View>
@@ -594,6 +647,53 @@ export function Checkbox({
         {checked ? <Text style={styles.checkboxMark}>✓</Text> : null}
       </View>
       <Text style={styles.checkboxLabel}>{label}</Text>
+    </Pressable>
+  );
+}
+
+/**
+ * A published-or-not decision, as the card the D-065 contract draws for it
+ * (180:6164 / 180:6361): the question on the left with its consequence
+ * underneath, a switch on the right, and the whole card the target.
+ *
+ * It is a switch rather than a checkbox because that is what it is: a thing
+ * about the profile that is on or off right now, not an item being ticked on
+ * the way to submitting a form. The role goes with it, so assistive tech says
+ * "on"/"off" rather than "checked"/"unchecked" — and the knob's *position*
+ * carries the state as well as the fill, because a pale-versus-coral track is
+ * not a state everybody can see.
+ */
+export function ToggleRow({
+  label,
+  caption,
+  value,
+  onChange,
+  testID,
+}: {
+  label: string;
+  /** The quiet line under the question: what turning it on actually does. */
+  caption?: string;
+  value: boolean;
+  onChange: (next: boolean) => void;
+  testID?: string;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value }}
+      accessibilityLabel={label}
+      accessibilityHint={caption}
+      onPress={() => onChange(!value)}
+      style={({ pressed }) => [styles.toggleRow, pressed && styles.togglePressed]}
+      testID={testID}
+    >
+      <View style={styles.toggleText}>
+        <Text style={styles.toggleLabel}>{label}</Text>
+        {caption ? <Text style={styles.toggleCaption}>{caption}</Text> : null}
+      </View>
+      <View style={[styles.toggleTrack, value && styles.toggleTrackOn]}>
+        <View style={[styles.toggleKnob, value && styles.toggleKnobOn]} />
+      </View>
     </Pressable>
   );
 }
@@ -1486,6 +1586,18 @@ const styles = StyleSheet.create({
     color: color.inkFaint,
   },
 
+  /** The round white button that floats (180:6460). */
+  backButton: {
+    width: MIN_TOUCH,
+    height: MIN_TOUCH,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: color.surface,
+    ...elevation.card,
+  },
+  backButtonPressed: { backgroundColor: color.veil },
+
   button: {
     minHeight: MIN_TOUCH,
     borderRadius: radius.pill,
@@ -1600,6 +1712,16 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     paddingHorizontal: spacing.md,
     backgroundColor: color.surface,
+  },
+  /** The onboarding shape (180:6472): the action's height, a softer corner. */
+  inputShellTall: {
+    minHeight: ACTION_TOUCH,
+    borderRadius: radius.md,
+  },
+  /** In a box that tall the value is the screen's subject, so it is set larger. */
+  inputTall: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.heading,
   },
   /** The search shape: a white pill on the cream ground. */
   inputShellPill: {
@@ -1815,6 +1937,50 @@ const styles = StyleSheet.create({
     fontSize: font.body,
     color: color.ink,
   },
+  /** The visibility card (180:6164): a floating white row, generous inside. */
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    minHeight: MIN_TOUCH,
+    borderRadius: radius.xxl,
+    backgroundColor: color.surface,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    ...elevation.card,
+  },
+  togglePressed: { backgroundColor: color.veil },
+  toggleText: { flex: 1, gap: spacing.tight },
+  toggleLabel: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.body,
+    color: color.ink,
+  },
+  toggleCaption: {
+    fontFamily: fontFamily.body,
+    fontSize: font.label,
+    color: color.inkFaint,
+  },
+  /** The track and its knob. Position says the state as loudly as the fill. */
+  toggleTrack: {
+    width: 48,
+    height: 28,
+    borderRadius: radius.pill,
+    backgroundColor: color.veil,
+    borderWidth: 1.5,
+    borderColor: color.border,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.tight,
+  },
+  toggleTrackOn: { backgroundColor: color.accent, borderColor: color.accent },
+  toggleKnob: {
+    width: 20,
+    height: 20,
+    borderRadius: radius.pill,
+    backgroundColor: color.surface,
+    alignSelf: 'flex-start',
+  },
+  toggleKnobOn: { alignSelf: 'flex-end' },
   badgeOpen: { borderWidth: 1.5, borderColor: color.border },
   badgeText: {
     fontFamily: fontFamily.bodySemi,

@@ -45,6 +45,8 @@ const CONVERTED = [
   'components/DigitKeypad.tsx',
   'components/LanguageSwitch.tsx',
   'components/NoHotelCard.tsx',
+  // D-065's permission primer, which stands wherever the app asks for one.
+  'components/PermissionPrimer.tsx',
   'components/PhotoGrid.tsx',
   'components/PresenceResult.tsx',
   'components/PrivacyShield.tsx',
@@ -63,6 +65,9 @@ const CONVERTED = [
   'onboarding/steps/GenderStep.tsx',
   'onboarding/steps/InterestsStep.tsx',
   'onboarding/steps/OrientationStep.tsx',
+  // Joined the scan under D-065: the code step draws its own six boxes now
+  // instead of borrowing `Field`, so it has a stylesheet of its own.
+  'onboarding/steps/OtpStep.tsx',
   'onboarding/steps/PhoneStep.tsx',
   'onboarding/steps/PromiseStep.tsx',
   'onboarding/steps/ShowMeStep.tsx',

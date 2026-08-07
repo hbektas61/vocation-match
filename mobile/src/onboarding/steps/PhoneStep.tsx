@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Field } from '../../components/ui';
 import { apiErrorMessage, COPY, getLocale } from '../../copy';
@@ -15,7 +15,7 @@ import {
   toE164,
   toNationalDigits,
 } from '../../domain/phoneNumber';
-import { color, font, fontFamily, MIN_TOUCH, overlay, radius, spacing } from '../../theme';
+import { ACTION_TOUCH, color, font, fontFamily, MIN_TOUCH, overlay, radius, spacing } from '../../theme';
 import { OnboardingScaffold } from '../OnboardingScaffold';
 import { useCaptchaGate } from '../useCaptchaGate';
 import type { StepProps } from './types';
@@ -146,40 +146,47 @@ export function PhoneStep({ step, total, draft, patch, go, onBack }: StepProps) 
       testID="screen-onboarding-phone"
       errorTestID="phone-error"
     >
-      <Field
-        // The box cannot speak the dialling code drawn next to it, so the
-        // accessible name carries the country instead.
-        label={COPY.phoneAuth.phoneAccessibleLabel}
-        hideLabel
-        invalid={visibleProblem !== null}
-        prefix={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={COPY.phoneAuth.changeCountry}
-            onPress={() => setPicking(true)}
-            disabled={busy}
-            hitSlop={6}
-            style={styles.prefixButton}
-            testID="phone-country"
-          >
-            <Text style={styles.prefix}>{`+${dialCode(country) ?? ''}`}</Text>
-            <Text style={styles.prefixChevron}>{'▾'}</Text>
-          </Pressable>
-        }
-        value={formatNational(digits, country)}
-        onChangeText={(text) => setDigits(toNationalDigits(text, country))}
-        onBlur={() => setTouched(true)}
-        placeholder={
-          country === 'TR' ? COPY.phoneAuth.phonePlaceholder : COPY.phoneAuth.phonePlaceholderAny
-        }
-        autoCapitalize="none"
-        autoCorrect={false}
-        keyboardType="phone-pad"
-        textContentType="telephoneNumber"
-        autoFocus
-        editable={!busy}
-        testID="auth-phone"
-      />
+      {/* The contract (180:6468) takes the dialling code out of the box and
+          stands it beside it as its own control: two boxes of the same height,
+          the country plainly pressable rather than a prefix somebody has to
+          discover. The value never enters the editable field either way, so a
+          number still cannot lose half its country code. */}
+      <View style={styles.numberRow}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={COPY.phoneAuth.changeCountry}
+          accessibilityState={{ disabled: busy }}
+          onPress={() => setPicking(true)}
+          disabled={busy}
+          style={({ pressed }) => [styles.countryBox, pressed && styles.countryBoxPressed]}
+          testID="phone-country"
+        >
+          <Text style={styles.countryText}>{`${country} +${dialCode(country) ?? ''}`}</Text>
+        </Pressable>
+        <View style={styles.numberBox}>
+          <Field
+            // The box cannot speak the dialling code drawn next to it, so the
+            // accessible name carries the country instead.
+            label={COPY.phoneAuth.phoneAccessibleLabel}
+            hideLabel
+            tall
+            invalid={visibleProblem !== null}
+            value={formatNational(digits, country)}
+            onChangeText={(text) => setDigits(toNationalDigits(text, country))}
+            onBlur={() => setTouched(true)}
+            placeholder={
+              country === 'TR' ? COPY.phoneAuth.phonePlaceholder : COPY.phoneAuth.phonePlaceholderAny
+            }
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="phone-pad"
+            textContentType="telephoneNumber"
+            autoFocus
+            editable={!busy}
+            testID="auth-phone"
+          />
+        </View>
+      </View>
 
       {/* The country list, over the page rather than under it — the same sheet
           the events area picker uses. */}
@@ -239,16 +246,22 @@ export function PhoneStep({ step, total, draft, patch, go, onBack }: StepProps) 
 const SHEET_TOP = 96;
 
 const styles = StyleSheet.create({
-  /** The dialling code, and the fact that it can be changed. */
-  prefixButton: {
-    flexDirection: 'row',
+  /** The pair (180:6468): the country box, then the number, on one line. */
+  numberRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.snug },
+  /** Wide enough for "TR +90" and for the longest dialling code we can send. */
+  countryBox: {
+    width: 96,
+    minHeight: ACTION_TOUCH,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: color.border,
+    backgroundColor: color.surface,
     alignItems: 'center',
-    gap: spacing.xs,
-    minHeight: MIN_TOUCH,
-    paddingRight: spacing.sm,
+    justifyContent: 'center',
   },
-  prefix: {
-    fontFamily: fontFamily.bodyMedium,
+  countryBoxPressed: { backgroundColor: color.veil },
+  countryText: {
+    fontFamily: fontFamily.bodySemi,
     fontSize: font.body,
     // The same text metrics as the input beside it — natural line box, no
     // Android font padding, same size in the same family. Different metrics
@@ -256,7 +269,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     color: color.ink,
   },
-  prefixChevron: { fontFamily: fontFamily.bodySemi, fontSize: font.label, color: color.accent },
+  numberBox: { flex: 1 },
   sheetScrim: {
     flex: 1,
     backgroundColor: overlay.photo,

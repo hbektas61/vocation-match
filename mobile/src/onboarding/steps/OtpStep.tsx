@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { Body, Button, Caption, Field, Notice } from '../../components/ui';
+import { Caption, Notice } from '../../components/ui';
 import { apiErrorMessage, COPY } from '../../copy';
 import {
   ApiError,
@@ -11,11 +11,84 @@ import {
   maskPhone,
 } from '../../data';
 import { useAppStore } from '../../state/AppStore';
+import {
+  ACTION_TOUCH,
+  color,
+  font,
+  fontFamily,
+  leading,
+  MIN_TOUCH,
+  radius,
+  spacing,
+} from '../../theme';
 import { OnboardingScaffold } from '../OnboardingScaffold';
 import { useCaptchaGate } from '../useCaptchaGate';
 import type { StepProps } from './types';
 
 const RESEND_COOLDOWN_SECONDS = 60;
+const CODE_LENGTH = 6;
+
+/**
+ * The code, as the six boxes the contract draws (180:5994).
+ *
+ * Six real inputs would be six things to manage, and every one of them a place
+ * for focus to get stuck — paste a code and you would be fighting the app. So
+ * this is the same trick `DateField` uses: one invisible `TextInput` lies over
+ * the whole row and owns the keyboard, the value, the SMS autofill and the
+ * accessible name, and the six boxes underneath are a drawing of its state.
+ * The box the next digit will land in wears the coral edge and a caret, which
+ * is the only part of the design that is doing work rather than decoration.
+ */
+function CodeBoxes({
+  value,
+  onChangeText,
+  editable,
+  testID,
+}: {
+  value: string;
+  onChangeText: (next: string) => void;
+  editable: boolean;
+  testID: string;
+}) {
+  const inputRef = useRef<TextInput>(null);
+  const [focused, setFocused] = useState(false);
+  const active = Math.min(value.length, CODE_LENGTH - 1);
+
+  return (
+    <Pressable accessible={false} onPress={() => inputRef.current?.focus()} style={styles.codeRow}>
+      {Array.from({ length: CODE_LENGTH }, (_, index) => {
+        const digit = value[index] ?? '';
+        const here = focused && editable && index === active;
+        return (
+          <View key={index} style={[styles.codeBox, here && styles.codeBoxActive]}>
+            {digit ? (
+              <Text style={styles.codeDigit}>{digit}</Text>
+            ) : here ? (
+              <View style={styles.codeCaret} />
+            ) : null}
+          </View>
+        );
+      })}
+      <TextInput
+        ref={inputRef}
+        accessibilityLabel={COPY.phoneAuth.codeLabel}
+        value={value}
+        onChangeText={onChangeText}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        keyboardType="number-pad"
+        textContentType={Platform.OS === 'ios' ? 'oneTimeCode' : undefined}
+        autoComplete={Platform.OS === 'android' ? 'sms-otp' : undefined}
+        autoFocus
+        editable={editable}
+        maxLength={CODE_LENGTH}
+        caretHidden
+        style={styles.hiddenInput}
+        testID={testID}
+      />
+    </Pressable>
+  );
+}
 
 export function OtpStep({ step, total, draft, patch, onBack }: StepProps) {
   const { challenge, solve } = useCaptchaGate();
@@ -126,41 +199,52 @@ export function OtpStep({ step, total, draft, patch, onBack }: StepProps) {
       testID="screen-onboarding-otp"
       errorTestID="otp-error"
     >
-      <Body>{COPY.phoneAuth.destination(maskPhone(draft.phone))}</Body>
+      {/* Which number is waiting for it. The contract puts this in the header
+          subtitle; here it stays a line of its own so the header can keep the
+          sentence a screen reader is announced on arrival. */}
+      <Text style={styles.destination}>{COPY.phoneAuth.destination(maskPhone(draft.phone))}</Text>
       {draft.otpRequestUncertain ? (
         <Notice message={COPY.phoneAuth.requestUncertain} tone="info" />
       ) : null}
-      <Field
-        label={COPY.phoneAuth.codeLabel}
-        hideLabel
+      <CodeBoxes
         value={code}
-        onChangeText={(value) => setCode(value.replace(/\D/g, '').slice(0, 6))}
-        placeholder={COPY.phoneAuth.codePlaceholder}
-        keyboardType="number-pad"
-        textContentType={Platform.OS === 'ios' ? 'oneTimeCode' : undefined}
-        autoComplete={Platform.OS === 'android' ? 'sms-otp' : undefined}
-        autoFocus
+        onChangeText={(value) => setCode(value.replace(/\D/g, '').slice(0, CODE_LENGTH))}
         editable={!busy}
-        maxLength={6}
         testID="auth-otp"
       />
       {resent ? (
         <Notice message={COPY.phoneAuth.resent} tone="success" testID="otp-resent" />
       ) : null}
-      <Button
-        label={
-          resending
+      {/* The contract's resend (180:6006): a coral word under the boxes, not a
+          second slab. The cooldown is inside the label, so the one control
+          says both what it does and when it will do it. */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={
+          resendAvailableIn > 0 ? COPY.phoneAuth.resendIn(resendAvailableIn) : COPY.phoneAuth.resend
+        }
+        accessibilityState={{
+          disabled: resending || busy || resendAvailableIn > 0,
+          busy: resending,
+        }}
+        disabled={resending || busy || resendAvailableIn > 0}
+        onPress={resend}
+        style={({ pressed }) => [styles.resend, pressed && styles.resendPressed]}
+        testID="otp-resend"
+      >
+        <Text
+          style={[
+            styles.resendLabel,
+            (resending || busy || resendAvailableIn > 0) && styles.resendLabelIdle,
+          ]}
+        >
+          {resending
             ? COPY.phoneAuth.sending
             : resendAvailableIn > 0
               ? COPY.phoneAuth.resendIn(resendAvailableIn)
-              : COPY.phoneAuth.resend
-        }
-        variant="secondary"
-        busy={resending}
-        disabled={resending || busy || resendAvailableIn > 0}
-        onPress={resend}
-        testID="otp-resend"
-      />
+              : COPY.phoneAuth.resend}
+        </Text>
+      </Pressable>
       {isFakeApiEnabled() ? (
         <Caption>{COPY.phoneAuth.previewCode(FAKE_PHONE_OTP)}</Caption>
       ) : null}
@@ -168,3 +252,50 @@ export function OtpStep({ step, total, draft, patch, onBack }: StepProps) {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  destination: {
+    fontFamily: fontFamily.body,
+    fontSize: font.body,
+    lineHeight: font.body * leading.normal,
+    color: color.inkMuted,
+  },
+  /** Six boxes across the column, spread to its full width (180:5994). */
+  codeRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  codeBox: {
+    width: 48,
+    height: ACTION_TOUCH,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: color.rule,
+    backgroundColor: color.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /** Where the next digit lands: the brand edge, drawn thicker as well. */
+  codeBoxActive: { borderColor: color.accent, borderWidth: 2.5 },
+  codeDigit: {
+    fontFamily: fontFamily.displayHeavy,
+    fontSize: font.title,
+    lineHeight: font.title * leading.tight,
+    color: color.ink,
+  },
+  codeCaret: { width: 2, height: 28, backgroundColor: color.accent },
+  /** Owns the touch, the keyboard, the autofill and the value; draws nothing. */
+  hiddenInput: { ...StyleSheet.absoluteFillObject, opacity: 0 },
+  resend: {
+    alignSelf: 'center',
+    minHeight: MIN_TOUCH,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  resendPressed: { opacity: 0.7 },
+  resendLabel: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.control,
+    color: color.accentDeep,
+    textAlign: 'center',
+  },
+  /** During the cooldown it is a countdown, not an offer — so it reads quiet. */
+  resendLabelIdle: { color: color.inkMuted },
+});

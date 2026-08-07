@@ -6,9 +6,9 @@ import Svg, { Path, Rect } from 'react-native-svg';
 
 import { Button, Field, Loading, Notice, Screen } from '../components/ui';
 import { todayIsoDate } from '../clock';
-import { apiErrorMessage, COPY } from '../copy';
+import { apiErrorMessage, COPY, upperCase } from '../copy';
 import { ApiError, getApi, type UpcomingStay } from '../data';
-import { formatLongDate } from '../domain/dates';
+import { formatDayMonthLong, formatWeekday } from '../domain/dates';
 import { validateStayDates } from '../domain/upcoming';
 import type { RootScreenProps } from '../navigation/types';
 import { color, elevation, font, fontFamily, leading, radius, spacing, tracking } from '../theme';
@@ -36,17 +36,29 @@ function fromIso(value: string): Date {
   return new Date(`${value}T12:00:00`);
 }
 
-/** "12 Ağustos 2026", the way the sheet prints a date (13:117). */
-function longDate(value: string): string {
-  return formatLongDate(value);
+/**
+ * "12 Ağustos", the way the contract's plate prints a date (176:2489).
+ *
+ * Shorter than the full date this used to print: two plates now stand side by
+ * side in half a column each, and the year is the one part of a holiday date
+ * nobody is uncertain about.
+ */
+function plateDate(value: string): string {
+  return formatDayMonthLong(value);
 }
 
 /**
- * One date, as the sheet's card (13:115): the tracked pink label over the
- * long date — with the platform's own picker behind it (owner, 2026-07-28:
- * nobody should type "2026" by hand). iOS shows its compact calendar control
- * in place; Android opens its dialog from the pressable value. The web
- * fallback keeps the typed field, since the community picker has no web half.
+ * One date, as the contract's plate (D-065, 176:2486): a small-capitals name
+ * over the date, with the weekday under it — the line that turns "17 Tem"
+ * into something somebody can check against their own plans.
+ *
+ * The platform's own picker stays behind it (owner, 2026-07-28: nobody should
+ * type "2026" by hand). The contract draws a hand-built month grid with the
+ * range shaded across it; that is the one part not adopted, because building
+ * one would replace a native control the owner chose with a calendar this app
+ * would then own forever. iOS shows its compact control in place; Android
+ * opens its dialog from the pressable value; the web fallback keeps the typed
+ * field, since the community picker has no web half.
  */
 function DateCard({
   label,
@@ -74,7 +86,7 @@ function DateCard({
 
   return (
     <View style={styles.dateCard}>
-      <Text style={styles.dateLabel}>{label}</Text>
+      <Text style={styles.dateLabel}>{upperCase(label)}</Text>
       {Platform.OS === 'web' ? (
         <Field
           label={label}
@@ -114,7 +126,7 @@ function DateCard({
           >
             <CalendarGlyph />
             <Text style={styles.valueText}>
-              {value ? longDate(value) : COPY.upcoming.pickDate}
+              {value ? plateDate(value) : COPY.upcoming.pickDate}
             </Text>
           </Pressable>
           {androidOpen ? (
@@ -128,6 +140,18 @@ function DateCard({
           ) : null}
         </>
       )}
+      {/* The weekday (176:2491). Hidden from assistive tech: the picker above
+          already announces the whole date, and hearing "Monday" as a separate
+          unlabelled item after it is noise rather than information. */}
+      {value ? (
+        <Text
+          style={styles.weekday}
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+        >
+          {formatWeekday(value)}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -236,22 +260,27 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
         <Loading testID="upcoming-loading" />
       ) : null}
 
-      <DateCard
-        label={COPY.upcoming.checkInLabel}
-        value={checkIn}
-        onChange={setCheckIn}
-        minimumDate={fromIso(todayIsoDate())}
-        editable={!busy}
-        testID="upcoming-check-in"
-      />
-      <DateCard
-        label={COPY.upcoming.checkOutLabel}
-        value={checkOut}
-        onChange={setCheckOut}
-        minimumDate={checkIn ? fromIso(checkIn) : fromIso(todayIsoDate())}
-        editable={!busy}
-        testID="upcoming-check-out"
-      />
+      {/* The contract's date panel (176:2484): the two plates side by side on
+          the brand wash, so the stay reads as one range rather than as two
+          unrelated questions stacked down the page. */}
+      <View style={styles.datePanel}>
+        <DateCard
+          label={COPY.upcoming.checkInLabel}
+          value={checkIn}
+          onChange={setCheckIn}
+          minimumDate={fromIso(todayIsoDate())}
+          editable={!busy}
+          testID="upcoming-check-in"
+        />
+        <DateCard
+          label={COPY.upcoming.checkOutLabel}
+          value={checkOut}
+          onChange={setCheckOut}
+          minimumDate={checkIn ? fromIso(checkIn) : fromIso(todayIsoDate())}
+          editable={!busy}
+          testID="upcoming-check-out"
+        />
+      </View>
 
       {/* The sheet's one privacy line (13:121), in place of the old card. */}
       <View style={styles.noteCard}>
@@ -289,54 +318,79 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
 
 const styles = StyleSheet.create({
   pressed: { opacity: 0.8 },
-  /** The sheet's head (13:113): 28, left, on the cream ground. */
+  /** The question (176:2480), at the size the other 176-series heads take. */
   title: {
     fontFamily: fontFamily.display,
-    fontSize: font.display,
-    lineHeight: font.display * leading.tight,
+    fontSize: font.title,
+    lineHeight: font.title * leading.tight,
     letterSpacing: tracking.display,
     color: color.ink,
   },
+  /** The line under it (176:2482): a sentence, so it reads at body size. */
   subtitle: {
     fontFamily: fontFamily.body,
-    fontSize: font.caption,
-    lineHeight: font.caption * leading.normal,
+    fontSize: font.body,
+    lineHeight: font.body * leading.normal,
     color: color.inkMuted,
   },
-  /** The date card (13:115): white, the card radius, 16 inside, 10 between. */
+  /** The panel the pair stands on (176:2484): the brand wash, softest corner. */
+  datePanel: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    backgroundColor: color.accentWash,
+    borderRadius: radius.xxl,
+    padding: spacing.wide,
+  },
+  /** The plate (176:2486): white, centred, its own name in small capitals. */
   dateCard: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
     backgroundColor: color.surface,
-    borderRadius: radius.xl,
-    padding: spacing.md,
-    gap: spacing.snug,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.snug,
+    paddingVertical: spacing.md,
+    gap: spacing.cozy,
     ...elevation.card,
   },
   dateLabel: {
     fontFamily: fontFamily.bodySemi,
-    fontSize: font.caption,
-    letterSpacing: tracking.none,
-    color: color.accentDeep,
+    fontSize: font.label,
+    letterSpacing: tracking.label,
+    color: color.inkFaint,
+    textAlign: 'center',
   },
   valueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    alignSelf: 'flex-start',
+    justifyContent: 'center',
+    gap: spacing.cozy,
+    alignSelf: 'stretch',
+    flexWrap: 'wrap',
   },
   valueText: {
     fontFamily: fontFamily.displaySemi,
-    fontSize: font.heading,
+    fontSize: font.body,
     color: color.ink,
+    textAlign: 'center',
   },
-  /** The privacy line's card (13:121): white with the quiet edge, deliberately
-      without the card shadow — a standing note rather than another surface
-      competing with the two date cards above it. */
+  /** The day the date falls on (176:2491). */
+  weekday: {
+    fontFamily: fontFamily.body,
+    fontSize: font.label,
+    color: color.inkFaint,
+    textAlign: 'center',
+  },
+  /** The standing note (176:2538): the neutral information plate rather than
+      the inert veil, so it reads as something told to you rather than as one
+      more disabled surface. Deliberately unlifted — a note, not a card. */
   noteCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: spacing.sm,
-    backgroundColor: color.veil,
-    borderRadius: radius.xl,
+    gap: spacing.snug,
+    backgroundColor: color.infoSoft,
+    borderRadius: radius.md,
     padding: spacing.md,
   },
   noteText: {

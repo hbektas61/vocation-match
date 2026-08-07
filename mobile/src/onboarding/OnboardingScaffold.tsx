@@ -6,6 +6,24 @@
  * bottom where a thumb already is. A step supplies a headline, a body, and a
  * control; it never supplies a layout.
  *
+ * D-065 redrew the chrome from the Figma contract's ten account screens
+ * (`auth_phone` 180:6454 and its nine siblings, which share one header,
+ * one scroll body and one footer):
+ *
+ * - The progress is a **full-bleed 4pt rail at the very top edge**, not a
+ *   rounded pill sharing a row with the back arrow. It reads as the screen's
+ *   own loading edge rather than as a control.
+ * - Back is a **round white button that floats**, on its own line under the
+ *   rail, with the question below it — so the question, not the chrome, is
+ *   the first thing at reading height.
+ * - The question is the display step in the heaviest cut, and the supporting
+ *   line went from caption to body: at 13pt it read as fine print under a
+ *   32pt question, which is not what a sentence explaining the question is.
+ * - The action is `ACTION_TOUCH` tall (the file draws 64) and carries the
+ *   coral glow. The 2026-08-05 owner note that made this the shared `Button`'s
+ *   size was aimed at the sheets' hundred-tall slab; 64 is the size the
+ *   contract draws and the same rung the like/pass pair already stands on.
+ *
  * Two things here are not decoration:
  *
  * - The action stays *visible* when it cannot be used, rather than vanishing.
@@ -27,9 +45,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Notice, useScreenChangeAnnouncement } from '../components/ui';
+import { BackButton, Notice, useScreenChangeAnnouncement } from '../components/ui';
 import { COPY } from '../copy';
 import {
+  ACTION_TOUCH,
   color,
   font,
   fontFamily,
@@ -40,6 +59,11 @@ import {
   tracking,
 } from '../theme';
 
+/**
+ * The rail (180:6457): the whole width, 4 tall, an inert well with a coral
+ * fill running left to right. Square rather than pilled — it is the edge of
+ * the screen, not an object sitting on it.
+ */
 export function OnboardingProgress({ step, total }: { step: number; total: number }) {
   const ratio = Math.max(0, Math.min(1, total > 0 ? step / total : 0));
   return (
@@ -106,63 +130,55 @@ export function OnboardingScaffold({
     // D-058 dropped the sunset ground: onboarding is the same cream ground
     // and white cards as every other screen now, not a full-bleed gradient.
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']} testID={testID}>
-      {/* The sheet's one head row (8:85): the arrow and the progress side
-          by side — and the skip, on the steps honest enough to offer one. */}
-      <View style={styles.bar}>
-        {onBack ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={COPY.common.back}
-            onPress={onBack}
-            hitSlop={12}
-            style={styles.barButton}
-            testID="onboarding-back"
-          >
-            <Text style={styles.barGlyph}>←</Text>
-          </Pressable>
-        ) : (
-          <View style={styles.barButton} />
-        )}
-        <View style={styles.progressSeat}>
-          <OnboardingProgress step={step} total={total} />
-        </View>
-        {onSkip ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={COPY.onboarding.skip}
-            onPress={onSkip}
-            hitSlop={12}
-            style={styles.barButton}
-            testID="onboarding-skip"
-          >
-            <Text style={styles.barSkip}>{COPY.onboarding.skip}</Text>
-          </Pressable>
-        ) : null}
-      </View>
+      {/* The rail runs edge to edge, so it sits outside the column's gutter. */}
+      <OnboardingProgress step={step} total={total} />
 
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+        <View style={styles.header}>
+          <View style={styles.bar}>
+            {onBack ? (
+              <BackButton onPress={onBack} testID="onboarding-back" />
+            ) : (
+              <View style={styles.backButtonGhost} />
+            )}
+            {onSkip ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={COPY.onboarding.skip}
+                onPress={onSkip}
+                hitSlop={12}
+                style={styles.skipButton}
+                testID="onboarding-skip"
+              >
+                <Text style={styles.barSkip}>{COPY.onboarding.skip}</Text>
+              </Pressable>
+            ) : null}
+          </View>
+
+          <Text accessibilityRole="header" style={styles.headline}>
+            {headline}
+          </Text>
+          {body ? <Text style={styles.body}>{body}</Text> : null}
+        </View>
+
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
-          <Text accessibilityRole="header" style={styles.headline}>
-            {headline}
-          </Text>
-          {body ? <Text style={styles.body}>{body}</Text> : null}
           {error ? <Notice message={error} tone="error" testID={errorTestID} /> : null}
           {children}
         </ScrollView>
 
         <View style={styles.footer}>
           {footer}
-          {/* The one way forward, at the shared `Button`'s size (owner,
-              2026-08-05) — the sheets' hundred-tall slab made onboarding the
-              only place with a button that big. Plainly there and plainly
-              inactive when the form is not ready — never vanishing. */}
+          {/* The one way forward, at the contract's size (180:6479): the pill
+              at `ACTION_TOUCH`, the label in the heaviest display cut, and a
+              coral glow under it. Plainly there and plainly inactive when the
+              form is not ready — never vanishing. */}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={actionLabel}
@@ -189,89 +205,88 @@ export function OnboardingScaffold({
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   screen: { flex: 1, backgroundColor: color.background },
-  /** The sheet's track (3:9): 6 tall over the inert well, a flat coral fill. */
+  /** The rail (180:6457): 4 tall, full bleed, square. */
   progressTrack: {
-    height: 6,
+    height: spacing.xs,
     backgroundColor: color.veil,
-    borderRadius: radius.pill,
     overflow: 'hidden',
   },
-  progressFill: { height: 6, borderRadius: radius.pill, backgroundColor: color.accent },
+  progressFill: { height: spacing.xs, backgroundColor: color.accent },
+  /** The head block (180:6459): the column's gutter, the question under the arrow. */
+  header: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    gap: spacing.sm,
+  },
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    paddingTop: spacing.sm,
+    justifyContent: 'space-between',
+    paddingBottom: spacing.md,
   },
-  progressSeat: { flex: 1 },
-  barButton: {
-    minWidth: MIN_TOUCH,
+  /** Holds the row's height on the steps with no way back. */
+  backButtonGhost: { width: MIN_TOUCH, height: MIN_TOUCH },
+  skipButton: {
     minHeight: MIN_TOUCH,
-    alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
   },
-  barGlyph: {
-    fontSize: font.title,
-    lineHeight: font.title * leading.tight,
-    color: color.ink,
-  },
-  /** The sheet's Atla (9:89): 15, in the light pink. */
   barSkip: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.control,
     color: color.accentDeep,
   },
-  /** The sheet's column (8:84): 20 aside, 14 between. */
-  content: {
-    paddingHorizontal: spacing.wide,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
-    gap: spacing.md,
-  },
+  /** The question (180:6464): the display step, heaviest cut, pulled tight. */
   headline: {
-    fontFamily: fontFamily.display,
+    fontFamily: fontFamily.displayHeavy,
     fontSize: font.display,
     lineHeight: font.display * leading.tight,
     letterSpacing: tracking.display,
     color: color.ink,
     textAlign: 'left',
   },
+  /** The line under it (180:6466): body, not caption — it is a sentence. */
   body: {
-    fontFamily: fontFamily.body,
-    fontSize: font.caption,
-    lineHeight: font.caption * leading.normal,
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: font.body,
+    lineHeight: font.body * leading.normal,
     color: color.inkMuted,
   },
-  footer: {
-    gap: spacing.sm,
-    paddingHorizontal: spacing.wide,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
+  /** The scroll body (180:6467): 40 of air under the question, 24 between. */
+  content: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+    gap: spacing.lg,
   },
-  /** The shared `Button` primary's seat: MIN_TOUCH, 14pt padding, the pill. */
+  footer: {
+    gap: spacing.snug,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
+  },
   cta: {
     alignSelf: 'stretch',
-    minHeight: MIN_TOUCH,
-    paddingVertical: spacing.snug,
+    minHeight: ACTION_TOUCH,
+    paddingVertical: spacing.md,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: color.accent,
     overflow: 'hidden',
     shadowColor: color.accent,
-    shadowOpacity: 0.28,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
   },
   ctaPressed: { opacity: 0.85 },
   /** A real state rather than a fade: flat fill, grey label — "the form,
       not you". The glow goes out with it. */
   ctaDisabled: { backgroundColor: color.accentSoft, shadowOpacity: 0, elevation: 0 },
   ctaLabel: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.control,
+    fontFamily: fontFamily.displayHeavy,
+    fontSize: font.body,
     color: color.onAccent,
   },
   ctaLabelDisabled: { color: color.inkMuted },

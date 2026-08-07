@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import Svg, { Circle, Path } from 'react-native-svg';
 
+import { PermissionPrimer } from '../components/PermissionPrimer';
 import { PresenceResult } from '../components/PresenceResult';
 import { Body, Button, Card, Caption, Gap, Notice, Screen } from '../components/ui';
+import { color } from '../theme';
 import { apiErrorMessage, COPY } from '../copy';
 import {
   ApiError,
@@ -15,6 +18,60 @@ import {
 import { getHotelById } from '../fixtures/hotels';
 import type { RootScreenProps } from '../navigation/types';
 import { useAppStore } from '../state/AppStore';
+
+/** The primer's crown mark (176:2554): the pin, at the tile's own scale. */
+function PinMark() {
+  return (
+    <Svg
+      width={48}
+      height={48}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color.accent}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <Path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" />
+      <Circle cx={12} cy={10} r={2.6} />
+    </Svg>
+  );
+}
+
+/** One mark per reason (176:2564/2575/2584). Decorative; the words carry it. */
+function ReasonMark({ kind }: { kind: 'privacy' | 'live' | 'battery' }) {
+  const common = {
+    width: 20,
+    height: 20,
+    viewBox: '0 0 24 24',
+    fill: 'none' as const,
+    strokeWidth: 2,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+  };
+  if (kind === 'privacy') {
+    // An eye, closed: the exact position is never looked at.
+    return (
+      <Svg {...common} stroke={color.success}>
+        <Path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6Z" />
+        <Path d="m4 4 16 16" />
+      </Svg>
+    );
+  }
+  if (kind === 'live') {
+    return (
+      <Svg {...common} stroke={color.accentDeep}>
+        <Circle cx={12} cy={8} r={3.2} />
+        <Path d="M5.5 19c0-3.2 2.9-5.2 6.5-5.2s6.5 2 6.5 5.2" />
+      </Svg>
+    );
+  }
+  return (
+    <Svg {...common} stroke={color.inkMuted}>
+      <Path d="M13 3 5 14h6l-1 7 8-11h-6l1-7Z" />
+    </Svg>
+  );
+}
 
 type CheckOutcome =
   | { kind: 'in-range' }
@@ -208,17 +265,48 @@ export function HereNowScreen({
 
   return (
     <Screen testID="screen-here-now">
-      <Body>{COPY.hereNow.explainer}</Body>
-      <Gap size="sm" />
-      <Card>
-        <Body>{COPY.hereNow.realCheckIntro}</Body>
-        <Button
-          label={checking ? COPY.hereNow.checking : COPY.hereNow.realCheckButton}
-          busy={checking}
-          onPress={() => runCheck(reader)}
-          testID="check-presence"
-        />
-      </Card>
+      {/*
+        D-065's location primer (176:2550), standing where the app actually
+        asks. It is not an onboarding step: the wizard's ten steps are a
+        counted sequence D-065 adopts without reordering, and proximity is
+        opt-in for the life of the account rather than a condition of getting
+        in. "Not now" simply leaves — the room stays closed and everything
+        else in the app still works, which is the whole reason the primer is
+        allowed to exist at all.
+      */}
+      <PermissionPrimer
+        icon={<PinMark />}
+        title={COPY.hereNow.primerTitle}
+        body={COPY.hereNow.explainer}
+        reasons={[
+          {
+            icon: <ReasonMark kind="privacy" />,
+            tint: color.successSoft,
+            title: COPY.hereNow.primerPrivacy,
+            body: COPY.trust.noExactLocation,
+          },
+          {
+            icon: <ReasonMark kind="live" />,
+            tint: color.accentWash,
+            title: COPY.hereNow.primerLive,
+            body: COPY.hereNow.primerLiveBody,
+          },
+          {
+            icon: <ReasonMark kind="battery" />,
+            tint: color.infoSoft,
+            title: COPY.hereNow.primerBattery,
+            body: COPY.hereNow.realCheckIntro,
+          },
+        ]}
+        actionLabel={checking ? COPY.hereNow.checking : COPY.hereNow.realCheckButton}
+        actionBusy={checking}
+        onAction={() => runCheck(reader)}
+        declineLabel={COPY.onboarding.skip}
+        onDecline={() => navigation.goBack()}
+        testID="here-now-primer"
+        actionTestID="check-presence"
+        declineTestID="here-now-not-now"
+      />
       {atHotel && farAway ? (
         <Card>
           <Caption>{`${COPY.hereNow.simulateIntroPrefix} ${hotel?.name ?? ''}.`}</Caption>

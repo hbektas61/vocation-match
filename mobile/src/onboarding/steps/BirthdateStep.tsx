@@ -81,6 +81,8 @@ export function BirthdateStep({
       error={error}
       testID="screen-onboarding-birthdate"
     >
+      {/* The contract's date plate (180:6050), as one field rather than three
+          — see `DateField`'s `tall` for why the count is not adopted. */}
       <DateField
         label={COPY.profileSetup.birthdateLabel}
         hint={COPY.profileSetup.birthdateHint}
@@ -90,6 +92,7 @@ export function BirthdateStep({
         autoFocus
         editable={!busy}
         softKeyboard={false}
+        tall
         testID="profile-birthdate"
       />
       {/* The designer's own keypad (D-044) instead of the system keyboard. */}

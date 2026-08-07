@@ -555,3 +555,13 @@ coordinate or provider type list.
       avatar grid + headcount need an endpoint that does not exist, and the
       design's post-join destination replaces the navigation
       fourFeatureIA.test.tsx pins. Its own slice, with the data decision.
+- [ ] D-065 — notification permission primer: PermissionPrimer.tsx is built
+      in the 176:2599 composition but unwired; the app asks silently inside
+      registerForPush at sign-in and no step-count-safe slot exists. Wire it
+      when the notification phase gets its screen.
+- [ ] D-065 — stepIcons.tsx: genderIcon/showMeIcon/CrowdIcon/interestIcon now
+      unreferenced; ProfileForm (slice 5/6) is their natural consumer —
+      decide reuse-or-delete there.
+- [ ] Welcome hero: Figma's generated beach photo (176:2373) was never
+      exported; assets/nearby-hero.jpg stands in at the contract geometry.
+      Replace only if the owner wants a dedicated shot.

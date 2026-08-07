@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Caption, Checkbox } from '../../components/ui';
+import { Caption, ToggleRow } from '../../components/ui';
 import { apiErrorMessage, COPY } from '../../copy';
 import { ApiError, MAX_ORIENTATIONS } from '../../data';
 import { ORIENTATIONS, orientationLabel } from '../../fixtures/identity';
 import { spacing } from '../../theme';
-import { ChoiceRow } from '../ChoiceChip';
+import { ChoiceChip } from '../ChoiceChip';
 import { OnboardingScaffold } from '../OnboardingScaffold';
 import type { SavingStepProps } from './types';
 
@@ -66,6 +66,10 @@ export function OrientationStep({
       step={step}
       total={total}
       headline={COPY.onboarding.orientation.headline}
+      // The contract (180:6342) puts the limit in the line under the question
+      // rather than in a caption over the chips — one place, said before the
+      // first tap instead of beside it.
+      body={COPY.onboarding.orientation.limit(MAX_ORIENTATIONS)}
       onBack={onBack}
       // Skipping means "no answer", so it must not carry a publish flag either.
       onSkip={() => save([], false)}
@@ -75,21 +79,15 @@ export function OrientationStep({
       onAction={() => save(chosen, show)}
       error={error}
       testID="screen-onboarding-orientation"
-      footer={
-        <Checkbox
-          label={COPY.onboarding.orientation.showOnProfile}
-          checked={show}
-          onChange={setShow}
-          testID="show-orientation"
-        />
-      }
     >
-      <Caption>{COPY.onboarding.orientation.limit(MAX_ORIENTATIONS)}</Caption>
+      {/* Wrapping pills (180:6344) rather than a column of rows. The list is
+          short enough to be seen whole, which is what lets somebody weigh
+          three answers against each other instead of scrolling past them. */}
       <View style={styles.list} testID="orientation-choices">
         {ORIENTATIONS.map((value) => {
           const selected = chosen.includes(value);
           return (
-            <ChoiceRow
+            <ChoiceChip
               key={value}
               label={orientationLabel(value)}
               selected={selected}
@@ -100,11 +98,19 @@ export function OrientationStep({
           );
         })}
       </View>
+
+      <ToggleRow
+        label={COPY.onboarding.orientation.showOnProfile}
+        value={show}
+        onChange={setShow}
+        testID="show-orientation"
+      />
+
       <Caption>{COPY.onboarding.orientation.notAFilter}</Caption>
     </OnboardingScaffold>
   );
 }
 
 const styles = StyleSheet.create({
-  list: { marginTop: spacing.xs },
+  list: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.snug },
 });

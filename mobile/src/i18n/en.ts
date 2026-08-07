@@ -447,6 +447,8 @@ export const en = {
     confirmPromiseBody:
       'Everyone who picks this place meets in the same vacation room. No booking, document or room number is asked for.',
     confirmButton: 'Set as my vacation place',
+    /** The affordance on a result card. The whole card is the target. */
+    selectButton: 'Choose',
     backToHotelSearch: 'Back to the search',
     minQuery: 'Type at least three letters.',
     /** The attribution Google's policies require wherever its data is drawn. */
@@ -509,6 +511,16 @@ export const en = {
       'At the Hotel opens after a one-time location check while the app is open. It only confirms you are at the place — your exact location is never shown or stored.',
     checkButton: 'Check place proximity',
     realCheckIntro: 'Use your current location for a one-time foreground check. Nothing runs in the background.',
+    /**
+     * The primer's three reasons (D-065, 176:2562). Each one is a statement
+     * about what the check does *not* do — which is the only kind of promise
+     * this product is allowed to make about somebody's location.
+     */
+    primerTitle: 'Location permission',
+    primerPrivacy: 'Privacy first',
+    primerLive: 'People who are there too',
+    primerLiveBody: 'You see the people who are at the same place at the same time as you, and only them.',
+    primerBattery: 'Only while you are looking',
     realCheckButton: 'Use my current location',
     /**
      * A disabled button with an unchanged label tells nobody that their press

@@ -564,10 +564,12 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
   },
+  /** The contract's empty tile (180:5943): a dashed 2pt outline on white. */
   slotEmpty: {
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderStyle: 'dashed',
-    borderColor: color.border,
+    borderColor: color.rule,
+    backgroundColor: color.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -576,42 +578,49 @@ const styles = StyleSheet.create({
   plus: {
     fontSize: font.display,
     lineHeight: font.display * leading.tight,
-    color: color.accentDeep,
+    color: color.inkFaint,
   },
   image: { width: '100%', height: '100%' },
   imagePending: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  /**
+   * "Main", on the deep plate every label over a photograph takes (180:5963).
+   * It used to be the coral pill, which put the brand fill next to the remove
+   * control's brand fill and made the two read as a pair of buttons.
+   */
   primaryBadge: {
     position: 'absolute',
-    top: spacing.xs,
-    left: spacing.xs,
+    top: spacing.sm,
+    left: spacing.sm,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.tight,
     borderRadius: radius.pill,
-    backgroundColor: color.accent,
+    backgroundColor: overlay.plate,
   },
   primaryBadgeText: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
-    letterSpacing: tracking.none,
-    // Navy on the coral fill — the fill cannot carry white here either.
-    color: color.onAccent,
+    letterSpacing: tracking.label,
+    color: color.onPhoto,
   },
-  /** Floats on the photo, so it takes the same deep-navy plate a ribbon does. */
+  /**
+   * The one control on the photo, coral and in the far corner (180:5960) —
+   * diagonally opposite the plate, so neither can be mistaken for the other.
+   */
   removeChip: {
     position: 'absolute',
-    top: spacing.xs,
-    right: spacing.xs,
-    width: 24,
-    height: 24,
+    bottom: spacing.sm,
+    right: spacing.sm,
+    width: 28,
+    height: 28,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: overlay.plate,
+    backgroundColor: color.accent,
   },
   removeGlyph: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.body,
     lineHeight: font.body + 2,
-    color: color.onPhoto,
+    color: color.onAccent,
   },
 });

@@ -226,6 +226,52 @@ export function interestIcon(choice: string, tone: string, size = 16): React.Rea
   }
 }
 
+/**
+ * The four marks beside the four promises (D-065, 180:6101).
+ *
+ * The contract draws each rule on a tinted rounded tile with a glyph in it.
+ * The glyphs are the file's own iconify set, which is a dependency this app
+ * does not have and does not want for four marks — so they are drawn here in
+ * the same stroked line as every other icon in this file. Decorative, as all
+ * of them are: the sentence beside each one carries the rule.
+ */
+export function pledgeIcon(index: number, tone: string, size = 24): React.ReactNode {
+  switch (index) {
+    // Be yourself.
+    case 0:
+      return (
+        <Svg {...stroke(tone, size)}>
+          <Circle cx={12} cy={8} r={4} />
+          <Path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" />
+        </Svg>
+      );
+    // Meet in public first, and tell someone where you are going.
+    case 1:
+      return (
+        <Svg {...stroke(tone, size)}>
+          <Path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" />
+          <Circle cx={12} cy={10} r={2.6} />
+        </Svg>
+      );
+    // Be decent.
+    case 2:
+      return (
+        <Svg {...stroke(tone, size)}>
+          <Path d="M20 12.5c0 3.6-3.6 6.5-8 6.5a9.7 9.7 0 0 1-2.6-.35L5 21l1-3.4A6.9 6.9 0 0 1 4 12.5C4 8.9 7.6 6 12 6s8 2.9 8 6.5Z" />
+          <Path d="M12 15c-2-1.4-3-2.4-3-3.6A1.6 1.6 0 0 1 12 10.5a1.6 1.6 0 0 1 3 .9c0 1.2-1 2.2-3 3.6Z" />
+        </Svg>
+      );
+    // Report anything that feels wrong.
+    default:
+      return (
+        <Svg {...stroke(tone, size)}>
+          <Circle cx={12} cy={12} r={8.5} />
+          <Path d="M12 7.5v5m0 3.5h.01" />
+        </Svg>
+      );
+  }
+}
+
 /** The check badge every selected answer wears in the mock. */
 export const CheckBadge = ({ size = 22 }: { size?: number }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24">

@@ -12,7 +12,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { color, font, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
+import { ACTION_TOUCH, color, elevation, font, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
 import { CheckBadge } from './stepIcons';
 
 export function ChoiceChip({
@@ -148,41 +148,50 @@ const styles = StyleSheet.create({
     fontSize: font.caption,
     color: color.inkMuted,
   },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  /** The sheet's chip (9:93): 16/11 inside, the light hairline at 1. */
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.snug },
+  /**
+   * The wrapping chip (D-065, 180:6345 / 180:6420): a white pill that floats,
+   * its label at reading size rather than at control size — on these screens a
+   * chip is the answer, not a filter above somebody else's list.
+   */
   chip: {
     minHeight: MIN_TOUCH,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.cozy,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.wide,
     paddingVertical: spacing.snug,
     borderRadius: radius.pill,
     borderWidth: 1,
     overflow: 'hidden',
   },
   chipIcon: { marginRight: spacing.tight },
-  chipBadge: { position: 'absolute', right: spacing.sm + 2 },
+  chipBadge: { position: 'absolute', right: spacing.wide },
   /**
-   * One decision per line, sized like the reference's pills: tall enough to
-   * feel like the main event on the screen rather than a tag that escaped the
-   * passions grid.
+   * One decision per line (180:6158): the action's own height, the softest
+   * corner on the ladder, and the answer read from the left rather than
+   * centred — a list of options is read down its leading edge.
+   *
+   * The contract leaves an unselected pill with no edge at all and lets the
+   * coral ring be the whole selection signal. That is one signal carried by
+   * colour, which is the thing D-058 forbids, so the quiet rule stays on the
+   * idle pill and the selected one keeps its wash and its badge as well as
+   * the ring.
    */
   chipWide: {
     alignSelf: 'stretch',
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     // Switching to row made justifyContent horizontal and left the vertical
     // axis to its default — which is why every label sat against the top of
     // its pill on a real phone.
     alignItems: 'center',
-    minHeight: 56,
-    borderWidth: 1.5,
-    // Idle takes the same quiet edge every chip does (`chipIdle`); only the
-    // size differs here. The border colour used to be brand-coloured on every
-    // wide pill regardless of state, which is what the contract's "unselected
-    // white + rule" rule is for.
+    minHeight: ACTION_TOUCH,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.xxl,
+    borderWidth: 2,
+    ...elevation.card,
   },
   /** Selected keeps the brand edge so the state is more than a fill. */
   chipWideSelected: {
@@ -227,8 +236,8 @@ const styles = StyleSheet.create({
   chipDisabled: { opacity: 0.45 },
   chipPressed: { opacity: 0.85 },
   chipLabel: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: font.control,
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.body,
     color: color.ink,
   },
   /**
@@ -236,6 +245,6 @@ const styles = StyleSheet.create({
    * black. Regular weight at body size is still an 18:1 read; the pill's
    * border and fill carry the structure, so the label can speak quietly.
    */
-  chipLabelWide: { fontFamily: fontFamily.body, fontSize: font.body },
+  chipLabelWide: { fontFamily: fontFamily.bodySemi, fontSize: font.body },
   chipLabelSelected: { fontFamily: fontFamily.bodySemi, color: color.accentDeep },
 });

@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Checkbox } from '../../components/ui';
+import { ToggleRow } from '../../components/ui';
 import { apiErrorMessage, COPY } from '../../copy';
 import { ApiError } from '../../data';
 import { genderLabel, MORE_GENDERS, PRIMARY_GENDERS } from '../../fixtures/identity';
 import { spacing } from '../../theme';
 import { ChoiceChip } from '../ChoiceChip';
-import { genderIcon } from '../stepIcons';
 import { OnboardingScaffold } from '../OnboardingScaffold';
 import type { SavingStepProps } from './types';
 
@@ -57,37 +56,42 @@ export function GenderStep({ step, total, draft, patch, go, onBack, saveProfile 
       onAction={save}
       error={error}
       testID="screen-onboarding-gender"
-      footer={
-        <Checkbox
-          label={COPY.onboarding.gender.showOnProfile}
-          checked={show}
-          onChange={setShow}
-          testID="show-gender"
-        />
-      }
     >
       <View style={styles.options}>
         {/* Every answer, stacked. There used to be a "More" expander hiding
             most of the list; the owner asked for the whole list, and the
             expander's implication — that the options behind it are a
-            different kind of answer — was never a good one. */}
+            different kind of answer — was never a good one.
+
+            No glyph beside the label any more (180:6158): the contract draws
+            these as plain pills, and D-058 had already emptied the per-answer
+            marks of the colour that made them mean anything. */}
         {[...PRIMARY_GENDERS, ...MORE_GENDERS].map((value) => (
           <ChoiceChip
             key={value}
             label={genderLabel(value)}
             selected={chosen === value}
-            icon={genderIcon(value)}
             wide
             onPress={() => setChosen(value)}
             testID={`gender-${value.toLowerCase().replace(/\s+/g, '-')}`}
           />
         ))}
       </View>
+
+      {/* The publish decision (180:6164) moved out of the footer and into the
+          answer it belongs to: a card under the options rather than a tick
+          floating above the button, which read as a condition of continuing. */}
+      <ToggleRow
+        label={COPY.onboarding.gender.showOnProfile}
+        value={show}
+        onChange={setShow}
+        testID="show-gender"
+      />
     </OnboardingScaffold>
   );
 }
 
 
 const styles = StyleSheet.create({
-  options: { gap: spacing.sm, marginTop: spacing.md },
+  options: { gap: spacing.md },
 });

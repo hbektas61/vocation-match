@@ -52,6 +52,16 @@ const LONG_MONTHS = {
   ],
 } as const;
 
+/**
+ * Weekday names, for the same reason the months are here: a runtime without
+ * ICU data answers in English whatever the locale says. Indexed Monday-first,
+ * because both languages read a week that way.
+ */
+const WEEKDAYS = {
+  tr: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'],
+  en: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+} as const;
+
 /** `YYYY-MM-DD` → its calendar parts, with no `Date` in between. */
 function parts(iso: string): { year: number; month: number; day: number } {
   const [year, month, day] = iso.split('-').map(Number);
@@ -80,6 +90,22 @@ export function formatDayMonthLong(iso: string): string {
   const { month, day } = parts(iso);
   const name = LONG_MONTHS[getLocale()][month - 1] ?? '';
   return getLocale() === 'tr' ? `${day} ${name}` : `${name} ${day}`;
+}
+
+/**
+ * "Pazartesi" / "Monday" — the line under a date plate (D-065, 176:2491).
+ *
+ * The one place in this file a `Date` is built, and it is built in **UTC**
+ * purely to do the day-of-week arithmetic: `Date.UTC` has no timezone to
+ * shift under it, so the answer is a property of the three numbers rather
+ * than of where the phone woke up. Nothing is read back out of it but the
+ * weekday index.
+ */
+export function formatWeekday(iso: string): string {
+  const { year, month, day } = parts(iso);
+  const sunday0 = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  // `getUTCDay` counts from Sunday; the tables above start on Monday.
+  return WEEKDAYS[getLocale()][(sunday0 + 6) % 7] ?? '';
 }
 
 /** "12 Ağustos 2026" / "August 12, 2026" — the sheet's full date. */
