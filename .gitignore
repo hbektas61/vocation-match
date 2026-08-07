@@ -6,3 +6,10 @@ dist/
 .claude/worktrees/
 .claude/ralph-loop.local.md
 supabase/.temp/
+
+# Third-party agent tooling installed into this checkout (ScreensDesign skill).
+# Research tooling, not product source — and the Studio loop commits with
+# `git add -A`, so without this it would ride into a product commit.
+.agents/
+.claude/skills/
+skills-lock.json
