@@ -380,7 +380,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       ) : (
         // The Figma header's ring (10:74), now the only way to Settings
         // (D-057) as well as to your own profile.
-        <ScreenHeader title={COPY.tabs.vacation} ringTestID="hotel-profile-ring" />
+        <ScreenHeader title={COPY.tabs.vacation} venue={false} ringTestID="hotel-profile-ring" />
       )}
       {!onActivated && !activeId && !picking ? (
         <Text style={styles.subtitle}>{COPY.vacation.subtitle}</Text>

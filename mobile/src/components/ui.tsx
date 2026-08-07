@@ -24,6 +24,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { COPY, upperCase } from '../copy';
 import { ProfileRing } from './ProfileRing';
+import { VenueRibbon } from './VenueRibbon';
 
 import {
   ACTION_TOUCH,
@@ -160,17 +161,25 @@ export function Display({
  * not become decoration, though — it was also the screen's spoken name, so it
  * is announced on arrival instead of drawn. Somebody who cannot see the tab
  * bar still learns where they are; everybody else gets the space back.
+ *
+ * What took the word's place is the fact it was standing on: the vacation
+ * venue this screen is scoped to. Four of the five tabs answer entirely in
+ * terms of it and none of them was showing it. Tatilim passes `venue={false}`,
+ * because there the venue is the screen rather than its context.
  */
 export function ScreenHeader({
   title,
   /** The right slot, for a screen whose corner does a more useful job. */
   right,
+  /** Off for the one screen the venue is the subject of. */
+  venue = true,
   /** Names this screen's ring, so a test can press the one it is looking at. */
   ringTestID,
   testID,
 }: {
   title: string;
   right?: React.ReactNode;
+  venue?: boolean;
   ringTestID?: string;
   testID?: string;
 }) {
@@ -185,6 +194,7 @@ export function ScreenHeader({
   );
   return (
     <View style={styles.screenHeader} testID={testID}>
+      {venue ? <VenueRibbon /> : null}
       {right ?? <ProfileRing testID={ringTestID} />}
     </View>
   );
@@ -1371,11 +1381,11 @@ const styles = StyleSheet.create({
   /** `fill`: at least the height of the scroll view, never less than content. */
   screenFill: { flexGrow: 1 },
 
-  /** The head: the 46 ring, alone in the corner it has always sat in. */
+  /** The head: the venue on the left, the 46 ring in its usual corner. */
   screenHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     gap: spacing.sm,
   },
 

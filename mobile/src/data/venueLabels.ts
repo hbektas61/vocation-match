@@ -25,6 +25,7 @@
  * component remounted would be exactly the cost this file exists to stop.
  */
 import { getApi } from './index';
+import type { ActiveVenue } from './contracts';
 
 /** At most this many distinct Google venues get a real name per deck session. */
 export const MAX_DECK_LABELS = 3;
@@ -47,6 +48,8 @@ function distinctResolved(): number {
  * a new session, and one person's resolved labels are not another's budget.
  */
 export function resetDeckLabels(): void {
+  ownVenue = null;
+  ownVenuePending = null;
   resolved.clear();
   pending.clear();
 }
@@ -83,6 +86,33 @@ export async function resolveOwnVenueLabel(placeId: string): Promise<string | nu
       });
     pending.set(placeId, attempt);
   }
+  return attempt;
+}
+
+/**
+ * The caller's own active venue — provider, and Place ID when it is Google.
+ *
+ * Every primary screen now draws the venue it is scoped to (D-061), and five
+ * tabs each asking the server the same question would be five calls for one
+ * answer that does not change while you look at it. So it is resolved once and
+ * shared, exactly like the names below it, and re-resolved only when the
+ * active venue itself changes — which is what the `hotelId` key detects.
+ */
+let ownVenue: { hotelId: string; venue: ActiveVenue | null } | null = null;
+let ownVenuePending: { hotelId: string; attempt: Promise<ActiveVenue | null> } | null = null;
+
+export async function resolveOwnVenue(hotelId: string): Promise<ActiveVenue | null> {
+  if (ownVenue?.hotelId === hotelId) return ownVenue.venue;
+  if (ownVenuePending?.hotelId === hotelId) return ownVenuePending.attempt;
+  const attempt = getApi()
+    .getActiveVenue()
+    .catch(() => null)
+    .then((venue) => {
+      ownVenue = { hotelId, venue };
+      if (ownVenuePending?.hotelId === hotelId) ownVenuePending = null;
+      return venue;
+    });
+  ownVenuePending = { hotelId, attempt };
   return attempt;
 }
 

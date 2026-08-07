@@ -340,6 +340,41 @@ name; `fourFeatureIA.test.tsx` was rewritten from "the screen keeps its own
 heading" to the new truth — the name is in the bar and nowhere on the page, and
 the ring is still there.
 
+### D-061 addendum — what went in the space (2026-08-07)
+
+Owner, on seeing the result: the top is empty now, what goes there. The answer
+was already written and unused — `ContextRibbon` had been built for exactly
+this and no screen ever mounted it.
+
+**`VenueRibbon`**, in the left of every primary head: the vacation venue this
+screen is scoped to. Keşfet, Etkinlikler, Çevremde and Mesajlar all answer
+entirely in terms of that venue and not one of them was showing it — you had to
+open Tatilim and remember. Pressing it goes to Tatilim. Tatilim itself passes
+`venue={false}`: there the venue is the subject, not the context.
+
+Two states and no third. A chosen venue is named; an account without one is
+offered `whereWillYouBe` rather than an empty pill, which is that account's
+actual next step.
+
+**Cost.** Five tabs each asking `getActiveVenue` would be five calls for one
+answer that cannot change while you look at it. `resolveOwnVenue` joins
+`venueLabels`' existing session cache — one question per session, keyed by the
+active hotel id so a venue switch re-resolves — and the Google name goes
+through `resolveOwnVenueLabel`, which was already shared. A catalogue venue
+costs nothing at all: its name is already in the store.
+
+**What it deliberately does not claim.** The mock showed a "Şu an burada" line
+under the name. Room eligibility is not in the store — only `HereNowScreen`
+fetches it, and it expires — so drawing it in every head would mean either a
+per-tab fetch or a status that is quietly stale. The ribbon says only what it
+can back. Recorded as an open option rather than shipped as a guess.
+
+**Enforcement.** `venueRibbon.test.tsx` pins all four: named where it scopes,
+absent on Tatilim, the choose affordance when there is no venue, and — asserted
+with exact call counts rather than an upper bound, so a ribbon that resolved
+nothing could not pass — one `getActiveVenue` and one `resolveGooglePlace`
+across five tab switches.
+
 ## Dependency exception — js-yaml (2026-08-07)
 
 `GHSA-5p4m-2wfm-xmqj` (CVE-2026-59870): quadratic CPU on `!!omap`, no backport
