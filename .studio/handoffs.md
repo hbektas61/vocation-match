@@ -3821,3 +3821,28 @@ aktif tatil mekânını header bağlamı olarak göstermesi) sektör pratiğiyle
 uyumlu; Happn konum-adı-header için doğrudan emsal. Ekran adlandırması tab
 bar'a bırakılmış durumda — bizim yapımızla aynı. Ek iş çıkmadı; karar
 değişikliği önerilmiyor.
+
+## 2026-08-07 — D-065 redesign: three of five slices landed, limit pause
+
+The Figma file `wIc8HyZwV1rD2IY3csJa49` page "D-064 — New Screens" is the
+screen contract (D-065). Landed and pushed: slice 1 head+Tatilim (6b6afc7),
+slice 2 four tabs (6bbd834), slice 3 onboarding seventeen (5347c2d). Every
+slice passed the full mobile gate before its commit; the tree is clean.
+
+Remaining, in order:
+
+- Slice 4 — flows: room_swipe 176:3871, match 176:3929, chat 176:3956,
+  profile_detail 176:4011, venue_switch 176:4078+176:4133 (the NEW part is
+  the switch-warning before replacing an active venue), HereNow states
+  176:4186/176:4237/177:4751/177:5259 (verify the TTL the code actually
+  has before echoing the design's "3 hours"), event_join 176:4274 (joined
+  avatar grid stays deferred), upcoming_stay 176:4324 (diff against slice
+  3's 176:2473 first — likely covered).
+- Slice 5 — edit_profile 176:4429, settings 176:4504, report 176:4579,
+  block 177:5283, system states 176:4628/177:5308/177:5348.
+
+The slice-4 agent died at spawn on the account's session limit (resets
+20:10 Europe/Istanbul). The dispatch brief pattern is in this session's
+task list; hex→token map and deviation doctrine are in the three landed
+commit messages and slice 3's report. Gate: `bash scripts/check.sh
+--mobile`, if-block on the real exit code, never a pipe.
