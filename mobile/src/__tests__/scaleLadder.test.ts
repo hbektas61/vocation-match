@@ -77,6 +77,9 @@ const CONVERTED = [
   'screens/DiscoveryScreen.tsx',
   'screens/EventDetailScreen.tsx',
   'screens/EventsScreen.tsx',
+  // Joined the scan under D-065: the checking and arrival states are drawn
+  // here now (177:4751, 176:4237), so the screen has a stylesheet of its own.
+  'screens/HereNowScreen.tsx',
   'screens/HotelDetailsScreen.tsx',
   'screens/HotelScreen.tsx',
   'screens/InboxScreen.tsx',

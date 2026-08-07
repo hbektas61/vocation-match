@@ -145,8 +145,10 @@ describe('what the coral is allowed to do on a light ground', () => {
     // The one full-colour screen. Display type is large text, so 3:1 — and the
     // brand coral would give 2.99, which is why the gradient starts deeper.
     expect(contrast('#FFFFFF', gradient.match[0])).toBeGreaterThanOrEqual(3);
-    // Its pale end carries the supporting sentence, in navy, at body contrast.
-    expect(contrast(color.ink, gradient.match[gradient.match.length - 1])).toBeGreaterThanOrEqual(4.5);
+    // D-065 (176:3929) turned the far end over. It used to fade to pale peach
+    // and carry navy; it now lands on the deep ink and carries the two button
+    // labels, which are white — so the question asked here changes with it.
+    expect(contrast(color.onPhoto, gradient.match[gradient.match.length - 1])).toBeGreaterThanOrEqual(4.5);
   });
 });
 

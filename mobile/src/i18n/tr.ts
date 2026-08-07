@@ -443,6 +443,8 @@ export const tr: Copy = {
   },
 
   upcoming: {
+    /** 176:4326 — tarihlerin hangi mekân için beyan edildiği. */
+    venueLabel: 'Seçili mekân',
     roomTitle: 'Tatilden Önce',
     statusBadge: 'Kendi beyanınla yaklaşan konaklama',
     explainer: 'Konaklama tarihlerini beyan et. Belge yok, kanıt yok — beyanın yeter.',
@@ -497,7 +499,19 @@ export const tr: Copy = {
     primerBattery: 'Yalnızca sen bakarken',
     realCheckButton: 'Mevcut konumumu kullan',
     checking: 'Kontrol ediliyor…',
+    /**
+     * 177:4751 — bekleme kendi ekranı; başlık ve tek cümle.
+     *
+     * Çizimin sözcüğü "doğrulanıyor" idi; bu ürün hiçbir şeyi doğrulamaz
+     * (D-001) ve `trustCopy` bunu bir iddia olarak yakalıyor. Ekranın geri
+     * kalanının zaten kullandığı sözcük burada da geçerli: kontrol.
+     */
+    checkingTitle: 'Konumun kontrol ediliyor…',
+    checkingBody: 'Lütfen bekle, mekâna yakın olup olmadığına bakıyoruz.',
     inRange: 'İçerdesin. Oteldeyim bu mekân için açık.',
+    /** 176:4243 — varışın başlığı. Süre yok: oda 30 dakika taze kalır. */
+    inRangeTitle: 'Mekândasın!',
+    refreshLocation: 'Konumu yenile',
     goToDiscovery: 'Keşfete git',
     stopSharingError:
       'Yakınlık bilgini kapatamadık. Tekrar dene — bu başarılana kadar Oteldeyim açık kalabilir.',
@@ -615,6 +629,12 @@ export const tr: Copy = {
     bodyEventHereNow: 'Konum kontrolü bilet değildir.',
     notAvailable: 'Bu eşleşme artık mevcut değil.',
     keepBrowsing: 'Bakmaya devam et',
+    /**
+     * 176:3929'un cümlesi mekânın adını ismin -de hâliyle çekimliyor; şablonun
+     * uyduramayacağı bir ek. Ad, rozetin kendi satırında duruyor — bu da
+     * rozetin okunan adı: mekân adı, asla mesafe.
+     */
+    venueContext: (name: string) => `Ortak mekânınız: ${name}`,
   },
 
   safety: {

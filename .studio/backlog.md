@@ -565,3 +565,11 @@ coordinate or provider type list.
 - [ ] Welcome hero: Figma's generated beach photo (176:2373) was never
       exported; assets/nearby-hero.jpg stands in at the contract geometry.
       Replace only if the owner wants a dedicated shot.
+- [ ] OWNER CALL — Figma profile_detail (176:4011) reintroduces the dossier
+      screen commit dae4ef3 deliberately removed, including the photo-count
+      pager D-026 bars. Slice 4 did not build it; the node's substantive
+      content (live badge, interest chips) landed on the deck card instead.
+      Building it back is a decision to record, not a restyle.
+- [ ] Slice 5 warning — the Figma file's own TR copy makes verification
+      claims ("doğrulanıyor") that trustCopy.test bars (D-001). Lift no
+      Turkish strings from the file without running them past that suite.

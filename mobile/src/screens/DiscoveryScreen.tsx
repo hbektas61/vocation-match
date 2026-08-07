@@ -26,7 +26,7 @@ import { RadarEmpty } from '../components/RadarEmpty';
 import { ContextSelector, CONTEXT_ORDER, type ContextRow } from '../components/ContextSelector';
 import { nowMs } from '../clock';
 import { formatStayRangeLabel } from '../domain/dates';
-import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation } from '../copy';
+import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation, upperCase } from '../copy';
 import { ApiError, getApi, type CandidateCard, type MyEvent, type RoomKey, type RoomStatus } from '../data';
 import { resolveDeckLabels, resolveOwnVenueLabel } from '../data/venueLabels';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
@@ -970,6 +970,22 @@ export function DiscoveryScreen() {
             pointerEvents="none"
           />
           <View style={styles.cardBottom} pointerEvents="box-none">
+            {/* 176:3878, and K-01's green-dot line (132:82) before it — said
+                only when it is live-true: these two rooms exist because a
+                location check passed minutes ago, and no other room may
+                borrow the dot. 176:3871 raises it above the name, where it
+                reads as a standing about the person rather than as a
+                footnote under their bio. */}
+            {room === 'HERE_NOW' || room === 'EVENT_HERE_NOW' ? (
+              <View style={styles.liveRow}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>
+                  {upperCase(
+                    room === 'HERE_NOW' ? COPY.discovery.liveAtVenue : COPY.discovery.liveAtEvent,
+                  )}
+                </Text>
+              </View>
+            ) : null}
             <Text style={styles.cardName}>
               {candidate.displayName}
               <Text style={styles.cardAge}>{`, ${candidate.age}`}</Text>
@@ -978,6 +994,24 @@ export function DiscoveryScreen() {
               <Text style={styles.cardBio} numberOfLines={1}>
                 {candidate.bio}
               </Text>
+            ) : null}
+            {/* 176:3885: what this person said they are into, in the pills the
+                file draws them in. The words have travelled with every card
+                since the feed was written and had nowhere to be printed until
+                now — no lookup is added to show them.
+
+                The file gives each pill a little glyph chosen for its subject.
+                An interest is free text, so there is no honest mapping from
+                one to an icon, and guessing would draw a cocktail beside a
+                word that is not about cocktails. The words stand alone. */}
+            {candidate.interests.length > 0 ? (
+              <View style={styles.interestRow}>
+                {candidate.interests.slice(0, MAX_CARD_INTERESTS).map((interest) => (
+                  <View key={interest} style={styles.interestChip}>
+                    <Text style={styles.interestText}>{interest}</Text>
+                  </View>
+                ))}
+              </View>
             ) : null}
             {/* The bond — same venue, or the neighbour's venue by name
                 (D-038): the label is what keeps the region pool honest. The
@@ -1007,17 +1041,6 @@ export function DiscoveryScreen() {
                 </Text>
               </View>
             )}
-            {/* K-01's green-dot line (132:82) — said only when it is
-                live-true: these two rooms exist because a location check
-                passed minutes ago, and no other room may borrow the dot. */}
-            {room === 'HERE_NOW' || room === 'EVENT_HERE_NOW' ? (
-              <View style={styles.liveRow}>
-                <View style={styles.liveDot} />
-                <Text style={styles.liveText}>
-                  {room === 'HERE_NOW' ? COPY.discovery.liveAtVenue : COPY.discovery.liveAtEvent}
-                </Text>
-              </View>
-            ) : null}
           </View>
         </Animated.View>
 
@@ -1108,6 +1131,14 @@ export function DiscoveryScreen() {
 
 /** The initial that stands in for a missing photograph, sized to the card. */
 const PHOTOLESS_INITIAL = 128;
+
+/**
+ * 176:3885 draws three. A card foot is a fixed strip and interests are free
+ * text, so the count is capped rather than left to whatever somebody typed.
+ */
+const MAX_CARD_INTERESTS = 3;
+/** 176:3879 — the live mark, at the size the collar needs to read. */
+const LIVE_DOT = 10;
 
 const styles = StyleSheet.create({
   /** Centered column, generous air — the reference's stage. */
@@ -1356,17 +1387,33 @@ const styles = StyleSheet.create({
     lineHeight: font.body * leading.normal,
     color: color.onPhoto,
   },
-  /** 132:82: the live line — a green mark and the words beside it. */
-  liveRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.cozy },
+  /** 176:3878: the live line — a collared green mark and tracked words. */
+  liveRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   liveDot: {
-    width: 8,
-    height: 8,
+    width: LIVE_DOT,
+    height: LIVE_DOT,
     borderRadius: radius.pill,
+    borderWidth: 2,
+    borderColor: color.onPhoto,
     backgroundColor: color.successMark,
   },
   liveText: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: font.caption,
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.label,
+    letterSpacing: tracking.label,
+    color: color.onPhoto,
+  },
+  /** 176:3885: the interests, wrapping rather than clipping at the edge. */
+  interestRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  interestChip: {
+    borderRadius: radius.pill,
+    backgroundColor: overlay.plate,
+    paddingHorizontal: spacing.snug,
+    paddingVertical: spacing.cozy,
+  },
+  interestText: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.label,
     color: color.onPhoto,
   },
   /** On the photo's head (owner, 2026-08-04) — the deck-app grammar. */

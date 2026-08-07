@@ -179,11 +179,15 @@ export const tokens = {
  *
  * `match` starts at the pressed coral rather than the brand coral on purpose:
  * white display type needs 3:1 and #FF5E62 gives 2.99, while #E94F54 gives
- * 3.7. The supporting sentence lower down sits on the pale end in navy.
+ * 3.7. D-065 (176:3929) turns the far end over: it used to fade to pale peach,
+ * which left the drawing's white secondary label sitting on a near-white
+ * ground — a contrast fault the old M-01 comment had to apologise for. The
+ * file ends the wash on the deep ink instead, so everything in the bottom
+ * third is white on navy and the apology is not needed.
  */
 export const gradient = {
-  /** M-01 (132:92): coral to pale peach, two stops, as drawn. */
-  match: ['#E94F52', '#FFC7BC'],
+  /** 176:3929: coral to deep ink, two stops, as drawn. */
+  match: ['#E94F52', palette.navy],
   /** A photograph's foot, so a name and a ribbon stay readable on any image. */
   photoScrim: ['rgba(16, 26, 58, 0)', 'rgba(16, 26, 58, 0.82)'],
 } as const;

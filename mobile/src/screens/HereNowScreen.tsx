@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { PermissionPrimer } from '../components/PermissionPrimer';
 import { PresenceResult } from '../components/PresenceResult';
 import { Body, Button, Card, Caption, Gap, Notice, Screen } from '../components/ui';
-import { color } from '../theme';
-import { apiErrorMessage, COPY } from '../copy';
+import { color, font, fontFamily, leading, radius, spacing, tracking } from '../theme';
+import { apiErrorMessage, COPY, upperCase } from '../copy';
 import {
   ApiError,
   deniedLocation,
@@ -69,6 +70,43 @@ function ReasonMark({ kind }: { kind: 'privacy' | 'live' | 'battery' }) {
   return (
     <Svg {...common} stroke={color.inkMuted}>
       <Path d="M13 3 5 14h6l-1 7 8-11h-6l1-7Z" />
+    </Svg>
+  );
+}
+
+/** The pin again, in white, for the filled discs the two states wear. */
+function PinMarkOnColor({ size }: { size: number }) {
+  return (
+    <Svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color.onAccent}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <Path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" />
+      <Circle cx={12} cy={10} r={2.6} />
+    </Svg>
+  );
+}
+
+/** 176:4263 — the green tick that closes the success mark. */
+function CheckMark() {
+  return (
+    <Svg
+      width={24}
+      height={24}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color.onAccent}
+      strokeWidth={3}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <Path d="m4 13 5 5L20 7" />
     </Svg>
   );
 }
@@ -263,6 +301,78 @@ export function HereNowScreen({
     ? fixedLocation(simulationSource.latitude, simulationSource.longitude)
     : null;
 
+  /*
+    177:4751 — the wait is a state, not a spinner inside a button. The check
+    can take a device several seconds to answer, and the drawing spends that
+    time saying what is being asked and what is not being kept, rather than
+    leaving the primer's three reasons on screen with one control greyed out.
+  */
+  if (checking) {
+    return (
+      <Screen testID="screen-here-now" scroll={false}>
+        <View style={styles.stage} testID="here-now-checking">
+          <View style={styles.checkingDisc}>
+            <PinMarkOnColor size={40} />
+          </View>
+          <Text accessibilityRole="header" style={styles.stageTitle}>
+            {COPY.hereNow.checkingTitle}
+          </Text>
+          <Text style={styles.stageBody}>{COPY.hereNow.checkingBody}</Text>
+        </View>
+        {/* 177:4757: the promise stands at the foot while the wait happens,
+            which is the moment it is actually worth reading. */}
+        <View style={styles.trustFoot}>
+          <Text style={styles.trustLabel}>{upperCase(COPY.hereNow.primerPrivacy)}</Text>
+          <Text style={styles.trustFine}>{COPY.trust.noExactLocation}</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  /*
+    176:4237 — arriving is the one good answer this screen has, and it used to
+    be a green banner with a button under it. The drawing gives it the mark,
+    the sentence and two ways on.
+
+    The file also stacks three faces and a "+42" beside them. Who is in a room,
+    and how many, is not something any endpoint hands this screen, so the stack
+    is not drawn rather than filled with invented people.
+  */
+  if (outcome?.kind === 'in-range') {
+    return (
+      <Screen testID="screen-here-now" scroll={false}>
+        <View style={styles.stage}>
+          <View style={styles.successWash}>
+            <View style={styles.successPlate}>
+              <PinMarkOnColor size={56} />
+            </View>
+            <View style={styles.successTick}>
+              <CheckMark />
+            </View>
+          </View>
+          <Text accessibilityRole="header" style={styles.stageTitle}>
+            {COPY.hereNow.inRangeTitle}
+          </Text>
+          {/* The banner keeps its `tone="success"`, which is what a screen
+              reader hears; the heading above is what a sighted person reads. */}
+          <Notice message={COPY.hereNow.inRange} tone="success" />
+        </View>
+        <Button
+          label={COPY.hereNow.goToDiscovery}
+          onPress={() => navigation.goBack()}
+          testID="here-now-done"
+        />
+        <Button
+          label={COPY.hereNow.refreshLocation}
+          variant="secondary"
+          onPress={() => runCheck(reader)}
+          testID="here-now-refresh"
+        />
+        <Caption>{COPY.trust.noExactLocation}</Caption>
+      </Screen>
+    );
+  }
+
   return (
     <Screen testID="screen-here-now">
       {/*
@@ -373,13 +483,94 @@ export function HereNowScreen({
           testID="here-now-too-far"
         />
       ) : null}
-      {outcome?.kind === 'in-range' ? (
-        <>
-          <Notice message={COPY.hereNow.inRange} tone="success" />
-          <Button label={COPY.hereNow.goToDiscovery} onPress={() => navigation.goBack()} testID="here-now-done" />
-        </>
-      ) : null}
       <Caption>{COPY.trust.noExactLocation}</Caption>
     </Screen>
   );
 }
+
+/** 176:4256 — the success mark's coral plate, and the wash it stands on. */
+const SUCCESS_PLATE = 128;
+const SUCCESS_WASH = 192;
+/** 176:4263 — the tick's disc, overhanging the plate's corner. */
+const SUCCESS_TICK = 48;
+/** 177:4754 — the waiting mark, a plain coral disc. */
+const CHECKING_DISC = 80;
+
+const styles = StyleSheet.create({
+  /** Both states are one centred column on an otherwise empty screen. */
+  stage: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  stageTitle: {
+    fontFamily: fontFamily.displayHeavy,
+    fontSize: font.title,
+    lineHeight: font.title * leading.tight,
+    letterSpacing: tracking.display,
+    color: color.ink,
+    textAlign: 'center',
+  },
+  stageBody: {
+    fontFamily: fontFamily.body,
+    fontSize: font.body,
+    lineHeight: font.body * leading.normal,
+    color: color.inkMuted,
+    textAlign: 'center',
+  },
+  checkingDisc: {
+    width: CHECKING_DISC,
+    height: CHECKING_DISC,
+    borderRadius: radius.pill,
+    backgroundColor: color.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  successWash: {
+    width: SUCCESS_WASH,
+    height: SUCCESS_WASH,
+    borderRadius: radius.pill,
+    backgroundColor: color.accentWash,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /** The plate is a squircle rather than a disc — the file's one soft square. */
+  successPlate: {
+    width: SUCCESS_PLATE,
+    height: SUCCESS_PLATE,
+    borderRadius: radius.xxl,
+    backgroundColor: color.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  successTick: {
+    position: 'absolute',
+    right: spacing.wide,
+    bottom: spacing.wide,
+    width: SUCCESS_TICK,
+    height: SUCCESS_TICK,
+    borderRadius: radius.pill,
+    borderWidth: 4,
+    borderColor: color.surface,
+    backgroundColor: color.successMark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /** 177:4757: the promise, in the structure voice rather than as prose. */
+  trustFoot: { alignItems: 'center', gap: spacing.sm, paddingBottom: spacing.lg },
+  trustLabel: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.label,
+    letterSpacing: tracking.label,
+    color: color.accentDeep,
+  },
+  trustFine: {
+    fontFamily: fontFamily.body,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
+    color: color.inkMuted,
+    textAlign: 'center',
+  },
+});

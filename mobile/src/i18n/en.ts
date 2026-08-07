@@ -463,6 +463,8 @@ export const en = {
   },
 
   upcoming: {
+    /** 176:4326 — which venue these dates are being declared for. */
+    venueLabel: 'Selected venue',
     roomTitle: 'Before the trip',
     statusBadge: 'Self-declared upcoming stay',
     explainer: 'Your stay dates are self-declared. No reservation, no documents, no ID — your word is enough.',
@@ -528,7 +530,18 @@ export const en = {
      * screen has to say what it is doing rather than just going quiet.
      */
     checking: 'Checking…',
+    /**
+     * 177:4751 — the wait is its own screen: a heading and one sentence. The
+     * drawing said "verifying"; nothing in this product verifies anything
+     * (D-001), so both languages say what actually happens — a check.
+     */
+    checkingTitle: 'Checking your location…',
+    checkingBody: 'Hold on while we see whether you are near the venue.',
     inRange: 'You are in. At the Hotel is open for this place.',
+    /** 176:4243 — arriving, as a heading. No duration: the room stays fresh
+        for thirty minutes, which is the server's number, not the drawing's. */
+    inRangeTitle: 'You are at the venue!',
+    refreshLocation: 'Refresh location',
     goToDiscovery: 'Go to discovery',
     stopSharingError:
       'We could not stop sharing your presence. Try again — until this succeeds, At the Hotel may stay open.',
@@ -668,6 +681,8 @@ export const en = {
     bodyEventHereNow: 'A location check is not a ticket check.',
     notAvailable: 'This match is no longer available.',
     keepBrowsing: 'Keep browsing',
+    /** The chip's spoken name (176:3929). A venue, never a distance. */
+    venueContext: (name: string) => `Your shared venue: ${name}`,
   },
 
   safety: {

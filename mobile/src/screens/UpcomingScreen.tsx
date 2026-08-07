@@ -11,6 +11,7 @@ import { ApiError, getApi, type UpcomingStay } from '../data';
 import { formatDayMonthLong, formatWeekday } from '../domain/dates';
 import { validateStayDates } from '../domain/upcoming';
 import type { RootScreenProps } from '../navigation/types';
+import { useAppStore } from '../state/AppStore';
 import { color, elevation, font, fontFamily, leading, radius, spacing, tracking } from '../theme';
 
 const CalendarGlyph = () => (
@@ -157,6 +158,10 @@ function DateCard({
 }
 
 export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
+  const { state } = useAppStore();
+  /** The active venue by name, from the cache. Absent until the card lands. */
+  const venueName =
+    state.hotels.find((h) => h.id === state.activeHotel?.hotelId)?.name ?? null;
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -253,6 +258,18 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
   // platform's — the iOS edge swipe and the Android back button.
   return (
     <Screen safeTop testID="screen-upcoming">
+      {/* 176:4326: the one thing 176:2473 left out. A stay is declared *at* a
+          venue, and the screen asked for dates without ever naming which — so
+          the venue stands above the question, read from what is already
+          cached rather than looked up to decorate a header. */}
+      {venueName ? (
+        <View style={styles.venueBanner} testID="upcoming-venue">
+          <Text style={styles.venueLabel}>{upperCase(COPY.upcoming.venueLabel)}</Text>
+          <Text style={styles.venueName} numberOfLines={1}>
+            {venueName}
+          </Text>
+        </View>
+      ) : null}
       <Text accessibilityRole="header" style={styles.title}>{COPY.upcoming.roomTitle}</Text>
       <Text style={styles.subtitle}>{COPY.upcoming.explainer}</Text>
 
@@ -319,6 +336,26 @@ export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
 const styles = StyleSheet.create({
   pressed: { opacity: 0.8 },
   /** The question (176:2480), at the size the other 176-series heads take. */
+  /** 176:4326: the venue this stay is being declared at, on the brand wash. */
+  venueBanner: {
+    gap: spacing.tight,
+    backgroundColor: color.accentWash,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.snug,
+    marginBottom: spacing.sm,
+  },
+  venueLabel: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.label,
+    letterSpacing: tracking.label,
+    color: color.accentDeep,
+  },
+  venueName: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.body,
+    color: color.ink,
+  },
   title: {
     fontFamily: fontFamily.display,
     fontSize: font.title,

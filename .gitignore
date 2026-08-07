@@ -13,3 +13,4 @@ supabase/.temp/
 .agents/
 .claude/skills/
 skills-lock.json
+.playwright-mcp/

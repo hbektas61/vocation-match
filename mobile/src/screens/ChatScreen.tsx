@@ -27,6 +27,7 @@ import {
   MIN_TOUCH,
   radius,
   spacing,
+  tracking,
 } from '../theme';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
@@ -348,11 +349,18 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
           {/* D-057: where the two of you met. The venue is appended only for
               the two hotel rooms — an event or a check-in match wearing the
               *currently active* hotel's name was naming a place neither of
-              you had been together. */}
+              you had been together.
+
+              176:4007 sets this line uppercase and tracked, which it now is.
+              It does not take the file's green: green is this app's live
+              mark, and the room a match *came from* is history rather than a
+              claim about where anybody is standing now. */}
           <Text style={styles.headBond} numberOfLines={1} testID="chat-room">
-            {hotel && (match.room === 'UPCOMING' || match.room === 'HERE_NOW')
-              ? `${roomPlate(match.room)} · ${hotel.name}`
-              : roomPlate(match.room)}
+            {upperCase(
+              hotel && (match.room === 'UPCOMING' || match.room === 'HERE_NOW')
+                ? `${roomPlate(match.room)} · ${hotel.name}`
+                : roomPlate(match.room),
+            )}
           </Text>
         </View>
         <Pressable
@@ -440,18 +448,48 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
               {/* A lone "today" would only say what the clock already says
                   (13:153 shows none); the label earns its line when the
                   thread spans more than one day. */}
-              {grouped.length > 1 ? <Text style={styles.daySeparator}>{group.label}</Text> : null}
+              {grouped.length > 1 ? (
+                /* 176:3960: the day rides in a small grey pill rather than
+                   floating as a bare centred line. */
+                <View style={styles.dayRow}>
+                  <Text style={styles.daySeparator}>{upperCase(group.label)}</Text>
+                </View>
+              ) : null}
               {group.items.map((message) => {
                 const mine = message.senderId === selfId;
                 return (
                   /*
-                   * The sheet's bubbles (13:163/13:167), D-058: mine is a
-                   * flat `accentSoft` wash rather than the old warm gradient
-                   * — coral cannot carry the reading text a bubble is full
-                   * of, only navy can, so the fill stays pale and the text
-                   * stays `color.ink` on both sides.
+                   * 176:3965/176:3968. The file gives each bubble a tail — the
+                   * one corner nearest its author squared off — and lifts the
+                   * received bubble onto white with a shadow instead of a grey
+                   * fill. Both are here.
+                   *
+                   * What is not here is the file's coral fill under white
+                   * message text. A bubble is prose, and the brand coral
+                   * carries white at 2.99:1; D-058's rule that only navy reads
+                   * on a coral fill is not suspended by a drawing. Mine
+                   * stays the pale `accentSoft` wash with `color.ink` on it,
+                   * which keeps the two voices as far apart as the drawing
+                   * does — one white and floating, one coral and flat — while
+                   * both remain readable.
                    */
                   <View key={message.id} style={mine ? styles.rowMine : styles.rowTheirs}>
+                    {!mine ? (
+                      /* 176:3964: the sender's face at the foot of the bubble.
+                         Decorative — the bubble already says who spoke. */
+                      theirPhoto ? (
+                        <Image
+                          source={{ uri: theirPhoto }}
+                          style={styles.bubbleAvatar}
+                          resizeMode="cover"
+                          accessibilityIgnoresInvertColors
+                          accessibilityElementsHidden
+                          importantForAccessibility="no"
+                        />
+                      ) : (
+                        <View style={[styles.bubbleAvatar, styles.bubbleAvatarEmpty]} />
+                      )
+                    ) : null}
                     <View
                       style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleTheirs]}
                       accessible
@@ -471,9 +509,21 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
       </ScrollView>
 
       {!closed ? (
-        /* The sheet's composer (13:174): one bordered pill holding the words
-           and the coral send disc together — the input rules the contract
-           gives every pill-shaped field. */
+        /*
+          176:3979: the coral disc steps out of the field and stands beside it,
+          and the field itself becomes a filled track on a hairline-topped
+          footer.
+
+          The field keeps a border the file does not draw. The drawing's grey
+          fill sits about 1.1:1 against the white under it, which does not meet
+          WCAG 1.4.11's 3:1 for the boundary of a control — that field is
+          identifiable only because a drawing has nothing else on the page.
+
+          The file's two extra controls are absent: a "+" attachment disc and a
+          camera inside the field. Messages in this product are text; there is
+          no attachment path to open, and a button that opens nothing is worse
+          than an honest gap.
+        */
         <View style={styles.composer}>
           <TextInput
             accessibilityLabel={`${COPY.chat.messageLabel} ${match.displayName}`}
@@ -506,6 +556,11 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   );
 }
 
+/** 176:4001 — the face in the head row. */
+const HEAD_AVATAR = 40;
+/** 176:3964 — the smaller face beside a received bubble. */
+const BUBBLE_AVATAR = 24;
+
 const styles = StyleSheet.create({
   menuQuestion: {
     fontFamily: fontFamily.bodySemi,
@@ -518,12 +573,18 @@ const styles = StyleSheet.create({
     lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
-  /** The sheet's head row (13:154): 12 between everything, one line. */
+  /**
+   * The head row (176:3995): 12 between everything, one line, and — new here —
+   * a hairline under it, so the thread scrolls beneath a fixed edge rather
+   * than up against nothing.
+   */
   headRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.snug,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.snug,
+    borderBottomWidth: 1,
+    borderBottomColor: color.rule,
   },
   /**
    * The discs holding the back and the dots. Drawn at 40 in D-057's Figma;
@@ -540,9 +601,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  /** 176:4001 — the face in the head, at the drawing's 40. */
   headAvatar: {
-    width: 48,
-    height: 48,
+    width: HEAD_AVATAR,
+    height: HEAD_AVATAR,
     borderRadius: radius.pill,
     backgroundColor: color.veil,
   },
@@ -550,14 +612,16 @@ const styles = StyleSheet.create({
   headInitial: { fontFamily: fontFamily.display, fontSize: font.heading, color: color.accentDeep },
   headWords: { flex: 1, gap: spacing.tight },
   headName: {
-    fontFamily: fontFamily.displaySemi,
+    fontFamily: fontFamily.displayHeavy,
     fontSize: font.body,
     color: color.ink,
   },
+  /** 176:4007: the bond as tracked structure rather than as a sentence. */
   headBond: {
-    fontFamily: fontFamily.body,
+    fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
-    color: color.inkMuted,
+    letterSpacing: tracking.label,
+    color: color.accentDeep,
   },
   pressed: { opacity: 0.8 },
   menu: {
@@ -570,16 +634,34 @@ const styles = StyleSheet.create({
   },
   thread: { paddingVertical: spacing.md, gap: spacing.snug, flexGrow: 1 },
   dayGroup: { gap: spacing.snug },
+  /** 176:3959: the pill is centred; the row is what centres it. */
+  dayRow: { alignItems: 'center', marginBottom: spacing.xs },
   daySeparator: {
-    fontFamily: fontFamily.body,
-    fontSize: font.caption,
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.label,
+    letterSpacing: tracking.label,
     color: color.inkMuted,
-    textAlign: 'center',
-    marginBottom: spacing.xs,
+    backgroundColor: color.veil,
+    overflow: 'hidden',
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.snug,
+    paddingVertical: spacing.xs,
   },
-  rowTheirs: { flexDirection: 'row' },
+  /** 176:3962: the face sits at the foot of the bubble, so the row bottoms out. */
+  rowTheirs: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
   rowMine: { flexDirection: 'row', justifyContent: 'flex-end' },
-  /** The sheet's bubble (13:163): 18 corners, 14/10 inside, clock within. */
+  /** 176:3964 — the small face beside a received bubble. */
+  bubbleAvatar: {
+    width: BUBBLE_AVATAR,
+    height: BUBBLE_AVATAR,
+    borderRadius: radius.pill,
+    backgroundColor: color.veil,
+  },
+  bubbleAvatarEmpty: { borderWidth: 1, borderColor: color.rule },
+  /**
+   * 176:3965: 20pt corners, 16/12 inside — with the corner nearest the author
+   * squared off, which is the tail the drawing gives each side.
+   */
   bubble: {
     maxWidth: 260,
     borderRadius: radius.lg,
@@ -587,9 +669,14 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.snug,
     gap: spacing.xs,
   },
-  /** No edge (D-060): the fill is what tells the two voices apart. */
+  /**
+   * 176:3965: white and lifted rather than filled — which is also what gives
+   * the two voices a difference that survives being read in greyscale.
+   */
   bubbleTheirs: {
-    backgroundColor: color.veil,
+    backgroundColor: color.surface,
+    borderBottomLeftRadius: 0,
+    ...elevation.card,
   },
   /**
    * The own bubble, D-058: a pale coral wash rather than a coral fill — the
@@ -597,7 +684,7 @@ const styles = StyleSheet.create({
    * `color.ink` can, and this is the "selected/highlighted surface" job
    * `accentSoft` is for.
    */
-  bubbleMine: { backgroundColor: color.accentSoft },
+  bubbleMine: { backgroundColor: color.accentSoft, borderBottomRightRadius: 0 },
   bubbleText: {
     color: color.ink,
     fontSize: font.body,
@@ -609,28 +696,30 @@ const styles = StyleSheet.create({
     fontSize: font.label,
     color: color.inkMuted,
   },
-  /** The sheet's composer pill (13:174): the input rules, pill-shaped. */
+  /** 176:3979: the footer row — a hairline, the field, and the disc beside it. */
   composer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.snug,
-    marginTop: spacing.sm,
-    backgroundColor: color.surface,
-    borderWidth: 1.5,
-    borderColor: color.border,
-    borderRadius: radius.pill,
-    paddingLeft: spacing.md,
-    paddingRight: spacing.snug,
-    paddingVertical: spacing.snug,
+    paddingTop: spacing.snug,
+    borderTopWidth: 1,
+    borderTopColor: color.rule,
   },
+  /** 176:3983: the words sit in their own filled pill now, not in the disc's. */
   composerInput: {
     flex: 1,
+    minHeight: MIN_TOUCH,
     fontFamily: fontFamily.body,
     fontSize: font.body,
     color: color.ink,
+    backgroundColor: color.veil,
+    borderWidth: 1.5,
+    borderColor: color.border,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
     paddingVertical: 0,
   },
-  /** The coral send disc (13:176): a flat fill, never a gradient. 44 for the same reason. */
+  /** The coral send disc (176:3991): a flat fill, never a gradient. */
   sendButton: {
     width: MIN_TOUCH,
     height: MIN_TOUCH,

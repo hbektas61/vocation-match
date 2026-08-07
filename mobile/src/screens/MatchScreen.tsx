@@ -1,18 +1,32 @@
 /**
- * The match moment, exactly as M-01 draws it (132:92): the outline heart and
- * the word at the top, the two faces in thick white collars with the coral
- * heart pinned between them, one sentence, and the two pills — a white
- * primary with the coral-ink label, and a white-bordered transparent
- * secondary. The owner asked for the drawing verbatim (2026-08-03), which is
- * why the secondary's label is white here despite sitting on the gradient's
- * pale reach; this is the one allowlisted full-colour moment (D-058).
+ * The match moment, as D-065 draws it (176:3929).
+ *
+ * The shape M-01 set is intact — the word, the pair of faces in thick white
+ * collars with the coral heart pinned between them, and two pills at the foot
+ * — and the file rearranges it into three groups spaced apart rather than a
+ * single column: the word and its sentence at the top, the faces in the
+ * middle, the two actions at the bottom. This is the one allowlisted
+ * full-colour moment (D-058), and the wash now ends on the deep ink, which is
+ * what finally lets the secondary's white label be white honestly.
+ *
+ * Two things the file draws are deliberately not here, and both for the same
+ * reason — there is nothing true to put in them:
+ *
+ * - **The photograph behind the wash.** The drawing beds the gradient on a
+ *   beach-club crowd shot. No endpoint hands this screen a venue photograph,
+ *   and D-054 forbids keeping Google's, so the wash stands on its own.
+ * - **The venue inside the sentence.** The file reads "Şu an ikiniz de
+ *   Spiaggia Grande'desiniz" — a Turkish locative suffix inflected for the
+ *   venue's own final vowel, which is not something a template can spell. The
+ *   venue keeps its context chip under the sentence instead, which is the
+ *   thing the drawing was actually saying: a name, never a distance.
  */
 import { Image as ExpoImage } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Button, Notice, Screen } from '../components/ui';
 import { COPY, upperCase, matchSource } from '../copy';
@@ -20,6 +34,7 @@ import type { RootScreenProps } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
 import {
+  ACTION_TOUCH,
   color,
   font,
   fontFamily,
@@ -31,19 +46,16 @@ import {
   tracking,
 } from '../theme';
 
-/** 132:96 — the outline heart over the title. */
-const HeartOutline = () => (
-  <Svg
-    width={40}
-    height={40}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={color.onPhoto}
-    strokeWidth={1.8}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <Path d="M12 21c-4.5-3.2-9-6.6-9-11a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 4.4-4.5 7.8-9 11z" />
+/** The venue chip's mark, at the small scale the chip is set in. */
+const PinMark = () => (
+  <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"
+      stroke={color.onPhoto}
+      strokeWidth={2}
+      strokeLinejoin="round"
+    />
+    <Circle cx={12} cy={10} r={2.4} fill={color.onPhoto} />
   </Svg>
 );
 
@@ -62,18 +74,21 @@ const CloseIcon = () => (
   </Svg>
 );
 
-/** One of the pair: 170 across, in the drawing's 6pt white collar. */
+/** One of the pair: 128 across, in the drawing's 4pt white collar. */
 function FaceCircle({
   url,
   name,
+  overlap = false,
   testID,
 }: {
   url: string | null;
   name: string;
+  /** The second of the pair slides back under the first, as 176:3943 does. */
+  overlap?: boolean;
   testID?: string;
 }) {
   return (
-    <View style={styles.face} testID={testID}>
+    <View style={[styles.face, overlap && styles.faceOverlap]} testID={testID}>
       {url ? (
         <ExpoImage
           source={{ uri: url }}
@@ -102,6 +117,18 @@ export function MatchScreen({ navigation, route }: RootScreenProps<'Match'>) {
   // D-057: the moment still says which room it came from — the drawing keeps
   // one sentence, so the room's own line stands quietly under it.
   const source = matchSource(match?.room ?? 'UPCOMING');
+  /*
+    176:3929 names the venue in the moment. Only the two vacation rooms are
+    scoped to the active venue, though — an event match or a Çevremde match
+    wearing the currently active hotel's name would be naming a place neither
+    of you was in together, which is the same trap `ChatScreen` sidesteps. And
+    the name is read from what is already cached: no lookup is bought to
+    decorate a screen.
+  */
+  const venueName =
+    match && (match.room === 'UPCOMING' || match.room === 'HERE_NOW')
+      ? state.hotels.find((h) => h.id === state.activeHotel?.hotelId)?.name ?? null
+      : null;
 
   // The moment lands in the hand as well as on the screen (owner, 2026-08-04).
   useEffect(() => {
@@ -145,15 +172,36 @@ export function MatchScreen({ navigation, route }: RootScreenProps<'Match'>) {
           <CloseIcon />
         </Pressable>
 
-        {/* 132:95: the outline heart, then the word. */}
+        {/* 176:3935: the word, its sentence, and the venue it happened in. */}
         <View style={styles.head}>
-          <HeartOutline />
           <Text accessibilityRole="header" style={styles.title}>
             {COPY.match.title}
           </Text>
+          <Text style={styles.body}>{COPY.match.likedEachOther(match.displayName)}</Text>
+          <Text style={styles.source} testID="match-source">
+            {source.title}
+          </Text>
+          {venueName ? (
+            /* The venue as context, never as proximity: a name and nothing
+               that could be read as a distance between the two of you. */
+            <View
+              style={styles.venueChip}
+              accessible
+              accessibilityLabel={COPY.match.venueContext(venueName)}
+              testID="match-venue"
+            >
+              <PinMark />
+              <Text style={styles.venueChipText} numberOfLines={1}>
+                {venueName}
+              </Text>
+            </View>
+          ) : null}
         </View>
 
-        {/* 132:98: the pair in white collars, the coral heart pinned between. */}
+        <View style={styles.spacer} />
+
+        {/* 176:3940: the pair in white collars, the second sliding under the
+            first, the coral heart pinned at the seam. */}
         <View
           style={styles.faces}
           accessible={false}
@@ -166,26 +214,19 @@ export function MatchScreen({ navigation, route }: RootScreenProps<'Match'>) {
           <FaceCircle
             url={match.photoPath ? photoUrls[match.photoPath] ?? null : null}
             name={match.displayName}
+            overlap
             testID="match-photo"
           />
           <View style={styles.heartBadge}>
-            <Svg width={26} height={26} viewBox="0 0 24 24" fill={color.onPhoto}>
+            <Svg width={18} height={18} viewBox="0 0 24 24" fill={color.onPhoto}>
               <Path d="M12 8c0-4.5-7.2-4.5-7.2 0 0 4 4.7 6.8 7.2 8.7 2.5-1.9 7.2-4.7 7.2-8.7 0-4.5-7.2-4.5-7.2 0z" />
             </Svg>
           </View>
         </View>
 
-        {/* 132:104: one sentence — and the room's own line under it (D-057). */}
-        <View style={styles.words}>
-          <Text style={styles.body}>{COPY.match.likedEachOther(match.displayName)}</Text>
-          <Text style={styles.source} testID="match-source">
-            {source.title}
-          </Text>
-        </View>
-
         <View style={styles.spacer} />
 
-        {/* 132:105: the two pills. */}
+        {/* 176:3950: the two pills, both the full width of the page. */}
         <View style={styles.actions}>
           <Pressable
             accessibilityRole="button"
@@ -211,10 +252,15 @@ export function MatchScreen({ navigation, route }: RootScreenProps<'Match'>) {
   );
 }
 
-const FACE = 170;
+/** 176:3941 — the pair's diameter. */
+const FACE = 128;
+/** 176:3943: the second slides a quarter of a face back under the first. */
+const FACE_OVERLAP = FACE / 4;
+/** 176:3946 — the heart's disc, pinned at the seam. */
+const HEART_BADGE = 40;
 
 /** The initial that stands in for a missing face, sized to the ring. */
-const FACELESS_INITIAL = 52;
+const FACELESS_INITIAL = 44;
 
 const styles = StyleSheet.create({
   /** Carries `gradient.match`, the one full-bleed layer this screen paints. */
@@ -227,8 +273,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /** 132:95: centred, the drawing's 18pt between heart and word. */
-  head: { alignItems: 'center', gap: spacing.wide, marginTop: spacing.xl },
+  /** 176:3935: the word and everything that explains it, as one centred block. */
+  head: { alignItems: 'center', gap: spacing.sm, marginTop: spacing.xl },
   title: {
     // The heaviest cut in the app, in the one place that has earned it.
     fontFamily: fontFamily.displayHeavy,
@@ -238,23 +284,22 @@ const styles = StyleSheet.create({
     color: color.onPhoto,
     textAlign: 'center',
   },
-  /** 132:98: nearly touching — the 2pt seam the drawing leaves. */
+  /** 176:3940: the pair overlapping, centred on the page. */
   faces: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: spacing.tight,
-    marginTop: spacing.xl,
   },
   face: {
     width: FACE,
     height: FACE,
     borderRadius: FACE / 2,
-    borderWidth: 6,
+    borderWidth: 4,
     borderColor: color.surface,
     overflow: 'hidden',
     backgroundColor: color.veil,
   },
+  faceOverlap: { marginLeft: -FACE_OVERLAP },
   facePhoto: { width: '100%', height: '100%' },
   faceEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   /** A drawing rather than type: the initial is sized to the face it fills. */
@@ -263,25 +308,43 @@ const styles = StyleSheet.create({
     fontSize: FACELESS_INITIAL,
     color: color.accentDeep,
   },
-  /** 132:101: the coral heart in its 5pt white collar, pinned at the seam. */
+  /** 176:3946: the coral heart in its 4pt white collar, pinned at the seam. */
   heartBadge: {
     position: 'absolute',
     alignSelf: 'center',
-    top: (FACE - 64) / 2,
-    width: 64,
-    height: 64,
+    bottom: 0,
+    width: HEART_BADGE,
+    height: HEART_BADGE,
     borderRadius: radius.pill,
-    borderWidth: 5,
+    borderWidth: 4,
     borderColor: color.surface,
     backgroundColor: color.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  words: {
+  /**
+   * 176:3929 prints the venue inside the sentence, inflected. This carries the
+   * same fact as a chip so no template has to guess a Turkish suffix — and a
+   * chip is also the shape that cannot accidentally grow a distance.
+   */
+  venueChip: {
+    flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.cozy,
-    marginTop: spacing.xl,
-    paddingHorizontal: spacing.wide,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.snug,
+    paddingVertical: spacing.cozy,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: color.surface,
+    maxWidth: '100%',
+  },
+  venueChipText: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.label,
+    letterSpacing: tracking.label,
+    color: color.onPhoto,
+    flexShrink: 1,
   },
   body: {
     fontFamily: fontFamily.bodyMedium,
@@ -299,10 +362,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   spacer: { flex: 1 },
-  actions: { gap: spacing.snug, paddingBottom: spacing.xl },
-  /** White pill, coral-ink label — the primary legible anywhere on it. */
+  actions: { gap: spacing.md, paddingBottom: spacing.xl },
+  /** 176:3951 — the white pill with the coral-ink label, at the action height. */
   ctaPrimary: {
-    minHeight: MIN_TOUCH,
+    minHeight: ACTION_TOUCH,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -310,12 +373,13 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface,
   },
   ctaPrimaryLabel: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.control,
+    fontFamily: fontFamily.displayHeavy,
+    fontSize: font.body,
     color: color.accentDeep,
   },
+  /** 176:3954 — the glass pill: a white edge over the wash, nothing filled. */
   ctaSecondary: {
-    minHeight: MIN_TOUCH,
+    minHeight: ACTION_TOUCH,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -324,8 +388,8 @@ const styles = StyleSheet.create({
     borderColor: color.surface,
   },
   ctaSecondaryLabel: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.control,
+    fontFamily: fontFamily.display,
+    fontSize: font.body,
     color: color.onPhoto,
   },
   ctaPressed: { opacity: 0.85 },
