@@ -38,6 +38,9 @@ async function matchAndReceive(): Promise<{ matchId: string }> {
   // A deck needs an open room. The presence check is the shortest way to one,
   // and it is the same simulated path `criticalFlow` uses.
   await press(await screen.findByTestId('tab-Vacation'));
+  // D-065: the trip tab draws one venue card; its "Odaya Gir" pill is the
+  // way into the two rooms.
+  await press(await screen.findByTestId('active-hotel-enter'));
   await press(await screen.findByTestId('open-here-now'));
   await press(await screen.findByTestId('simulate-near'));
   await press(await screen.findByTestId('here-now-done'));

@@ -37,7 +37,10 @@ async function settle(ms = 500): Promise<void> {
 async function openPicker(phone: string, countryCode = 'TR'): Promise<void> {
   await onboard('Deniz', phone);
   await press(await screen.findByTestId('tab-Vacation'));
-  await press(await screen.findByTestId('venue-open-picker'));
+  // D-065 (176:2769): the drawn empty state's own pill is the way in. The
+  // full-width bar under it was a second door to the same room and the file
+  // draws no such bar.
+  await press(await screen.findByTestId('hotel-empty-search-cta'));
   await press(await screen.findByTestId(`country-option-${countryCode}`));
   await screen.findByTestId('destination-search');
 }
@@ -523,14 +526,18 @@ describe('the trip tab before anything is chosen', () => {
     await onboard('Deniz', '+905551118060');
     await press(await screen.findByTestId('tab-Vacation'));
 
-    expect(await screen.findByTestId('venue-open-picker')).toBeTruthy();
+    expect(await screen.findByTestId('hotel-empty-search-cta')).toBeTruthy();
     expect(screen.queryByTestId('destination-search')).toBeNull();
     expect(screen.queryByTestId('venue-no-results')).toBeNull();
   });
 
   it('can be backed out of without choosing anything', async () => {
     await onboard('Deniz', '+905551118061');
-    await press(await screen.findByTestId('vacation-choose-for-upcoming'));
+    // The locked feature pair the old empty state carried is gone (176:2759
+    // draws an illustration, a heading, a sentence and one pill); the pill is
+    // what opens the picker now.
+    await press(await screen.findByTestId('tab-Vacation'));
+    await press(await screen.findByTestId('hotel-empty-search-cta'));
     await screen.findByTestId('venue-picker-country');
 
     // A screen you cannot leave without picking is how default selections get

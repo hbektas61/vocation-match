@@ -59,6 +59,8 @@ describe('the venue detail screen', () => {
     await press(screen.getByTestId('hotel-details-change-venue'));
 
     // The picker, reached through the route that already existed.
+    // Reached as the gate rather than as the tab, which is the one place the
+    // body still carries a way into the picker: the gate has no head action.
     expect(await screen.findByTestId('venue-open-picker')).toBeTruthy();
     // Detail was replaced rather than stacked under it, so nothing can hand
     // somebody back to the description of a venue they just left.

@@ -5,7 +5,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { PermissionPrimer } from '../components/PermissionPrimer';
 import { PresenceResult } from '../components/PresenceResult';
 import { Body, Button, Card, Caption, Gap, Notice, Screen } from '../components/ui';
-import { color, font, fontFamily, leading, radius, spacing, tracking } from '../theme';
+import { color, font, fontFamily, leading, radius, spacing, tileTone, tracking } from '../theme';
 import { apiErrorMessage, COPY, upperCase } from '../copy';
 import {
   ApiError,
@@ -357,9 +357,14 @@ export function HereNowScreen({
               reader hears; the heading above is what a sighted person reads. */}
           <Notice message={COPY.hereNow.inRange} tone="success" />
         </View>
+        {/* The check is finished, so this returns to the tabs rather than one
+            step back. It used to be the same thing: the room opened straight
+            off the trip tab. D-065 put the rooms behind the venue card's
+            "Odaya Gir", so a single `goBack` would now land on the venue
+            details screen — one press short of the deck this button names. */}
         <Button
           label={COPY.hereNow.goToDiscovery}
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation.popToTop()}
           testID="here-now-done"
         />
         <Button
@@ -391,19 +396,19 @@ export function HereNowScreen({
         reasons={[
           {
             icon: <ReasonMark kind="privacy" />,
-            tint: color.successSoft,
+            tint: tileTone.green,
             title: COPY.hereNow.primerPrivacy,
             body: COPY.trust.noExactLocation,
           },
           {
             icon: <ReasonMark kind="live" />,
-            tint: color.accentWash,
+            tint: tileTone.orange,
             title: COPY.hereNow.primerLive,
             body: COPY.hereNow.primerLiveBody,
           },
           {
             icon: <ReasonMark kind="battery" />,
-            tint: color.infoSoft,
+            tint: tileTone.blue,
             title: COPY.hereNow.primerBattery,
             body: COPY.hereNow.realCheckIntro,
           },

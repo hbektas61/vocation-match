@@ -41,6 +41,7 @@ import {
   radius,
   roomTone,
   spacing,
+  tileTone,
   tracking,
 } from '../theme';
 
@@ -176,6 +177,15 @@ export function ScreenHeader({
   title,
   /** A line under the title — a sentence, not a second heading. */
   subtitle,
+  /**
+   * How the file sets this screen's subtitle. D-065's contract is not uniform
+   * about it and the app was: `tatilim_view` (176:2792) draws two tracked
+   * uppercase lines, `kesfet_view` (176:2844) draws one sentence-case line in
+   * ordinary grey. A global `upperCase()` was the third of the three faults
+   * the owner rejected the redesign for, so the casing is now the caller's
+   * answer, screen by screen, and uppercase is merely the commoner default.
+   */
+  subtitleCase = 'upper',
   /** The second row's right slot: a screen's one corner action, if it has one. */
   right,
   /** Off for a screen with nothing to scope — every primary tab has one now. */
@@ -186,6 +196,7 @@ export function ScreenHeader({
 }: {
   title: string;
   subtitle?: string;
+  subtitleCase?: 'upper' | 'sentence';
   right?: React.ReactNode;
   venue?: boolean;
   ringTestID?: string;
@@ -212,10 +223,12 @@ export function ScreenHeader({
             {title}
           </Text>
           {subtitle ? (
-            // Sentence case in the copy file, tracked structure on screen —
-            // the same split `SectionLabel` draws, applied to a line whose job
-            // is also to be found rather than read.
-            <Text style={styles.screenHeadSubtitle}>{upperCase(subtitle)}</Text>
+            // Uppercase is tracked structure — a line to be found rather than
+            // read — and sentence case is a line to be read. Which one this
+            // screen wants is `subtitleCase`, and the file answers per screen.
+            <Text style={subtitleCase === 'upper' ? styles.screenHeadSubtitle : styles.screenHeadSubtitleSentence}>
+              {subtitleCase === 'upper' ? upperCase(subtitle) : subtitle}
+            </Text>
           ) : null}
         </View>
         {right}
@@ -1690,6 +1703,18 @@ const styles = StyleSheet.create({
     letterSpacing: tracking.label,
     color: color.inkFaint,
   },
+  /**
+   * The sentence-case variant (176:2844): a line somebody reads, so it takes
+   * the reading size, no tracking, and the ink prose is set in rather than the
+   * faint grey a found line can afford.
+   */
+  screenHeadSubtitleSentence: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
+    letterSpacing: tracking.none,
+    color: color.inkMuted,
+  },
 
   display: {
     fontFamily: fontFamily.display,
@@ -2206,19 +2231,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     gap: spacing.snug,
   },
+  /** 176:4638 — the empty state's own ground, not the brand wash it borrowed. */
   stateDisc: {
     width: STATE_DISC,
     height: STATE_DISC,
     borderRadius: radius.pill,
-    backgroundColor: color.accentWash,
+    backgroundColor: tileTone.coral,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  /** 176:4653 — the error disc. A ground under a glyph, never a danger signal. */
   stateDiscDanger: {
     width: STATE_DISC,
     height: STATE_DISC,
     borderRadius: radius.pill,
-    backgroundColor: color.dangerSoft,
+    backgroundColor: tileTone.danger,
     alignItems: 'center',
     justifyContent: 'center',
   },

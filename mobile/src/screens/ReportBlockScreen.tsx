@@ -148,7 +148,7 @@ export function ReportBlockScreen({ navigation, route }: RootScreenProps<'Report
        "Safety" sitting above a Turkish header. */
     <Screen testID="screen-report-block">
       {/* The question first (176:4584), then what answering it does. */}
-      <Title>{COPY_FOR.reportHeading(name)}</Title>
+      <Title>{COPY.safety.reportHeading}</Title>
       <Body>{COPY.safety.reportReasonLabel}</Body>
 
       <View style={styles.reasons} accessibilityRole="radiogroup">

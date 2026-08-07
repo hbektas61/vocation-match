@@ -96,6 +96,22 @@ export const palette = {
 
   /** A neutral notice: standing information, no alarm. */
   infoSoft: '#F1F4F9',
+
+  /**
+   * The D-065 contract's icon-tile grounds. Seven soft fills the file uses to
+   * tell one tiled row from the next — see `tokens.tileTone` for the rule that
+   * governs them. They are listed apart from the semantic hues above because
+   * none of them means anything: `tileGreen` is not success and `tileDanger`
+   * is not danger, they are the grounds the drawing puts under a privacy glyph
+   * and a warning glyph.
+   */
+  tileCoral: '#FFF5F5',
+  tileOrange: '#FFF7ED',
+  tilePink: '#FDF2F8',
+  tileBlue: '#EFF6FF',
+  tileGreen: '#F0FDF4',
+  tileNeutral: '#F9FAFB',
+  tileDanger: '#FEF2F2',
 } as const;
 
 /**
@@ -157,6 +173,30 @@ export const tokens = {
   success: { base: palette.green, ink: palette.greenInk, soft: palette.greenSoft },
   danger: { base: palette.red, ink: palette.red, soft: palette.redSoft },
   info: { soft: palette.infoSoft },
+  /**
+   * Decorative icon-tile grounds (D-065). The contract draws a row of tiled
+   * glyphs — Keşfet's three doors, the permission primer's three reasons, the
+   * settings groups — and tells them apart by hue rather than by shape. Before
+   * this group the app collapsed all of them onto `brand.wash`, which is the
+   * "decorative colour flattened" fault the owner rejected the redesign for.
+   *
+   * CONSTRAINT: a fill behind a drawn glyph, and nothing else. Never a text
+   * colour, never a control surface, never a state signal — none of these
+   * values carries a text contrast ratio, and `theme.test.ts` deliberately does
+   * not measure them because nothing readable is ever allowed to sit on one.
+   * The glyph over a tile is `brand.ink` or `text.primary`, which do carry one.
+   * This is the single exemption D-065's override 1 grants: text keeps AA, a
+   * decorative background may match the file exactly.
+   */
+  tileTone: {
+    coral: palette.tileCoral,
+    orange: palette.tileOrange,
+    pink: palette.tilePink,
+    blue: palette.tileBlue,
+    green: palette.tileGreen,
+    neutral: palette.tileNeutral,
+    danger: palette.tileDanger,
+  },
   overlay: {
     /** The fixed readability scrim under text on a photograph. */
     photo: 'rgba(16, 26, 58, 0.55)',
@@ -250,6 +290,12 @@ export const color = {
 
 /** Scrims, plates and backdrops. Named so no screen invents its own alpha. */
 export const overlay = tokens.overlay;
+
+/**
+ * The decorative tile grounds (D-065). Read `tokens.tileTone` before using
+ * one: these are fills for icon tiles only.
+ */
+export const tileTone = tokens.tileTone;
 
 /**
  * The two rooms are the one thing this product has that no other dating app

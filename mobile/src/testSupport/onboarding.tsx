@@ -149,7 +149,13 @@ export async function chooseGoogleVenue({
   chip?: 'all' | 'stay';
 } = {}): Promise<void> {
   await press('tab-Vacation');
-  await press('venue-open-picker');
+  // D-065 gave the two states of this tab two different doors into the picker,
+  // exactly as `tatilim_view` draws them: with nothing chosen it is the empty
+  // state's own "Mekân Ara" pill (176:2769), and with a venue active it is the
+  // head's "Mekân Değiştir" (176:2793). The full-width bar that used to serve
+  // both is not in the file.
+  const switchPill = screen.queryByTestId('hotel-header-switch-venue');
+  await press(switchPill ? 'hotel-header-switch-venue' : 'hotel-empty-search-cta');
   await press(`country-option-${countryCode}`);
   await type('destination-search', destinationQuery);
   await press(`destination-option-${destinationIndex}`);

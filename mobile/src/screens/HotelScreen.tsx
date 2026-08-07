@@ -1,10 +1,10 @@
 import React, { useCallback, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect, useNavigation, type NavigationProp } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 
-import type { RootStackParamList, TabParamList } from '../navigation/types';
+import type { RootStackParamList } from '../navigation/types';
 
 import {
   Button,
@@ -18,7 +18,6 @@ import {
 } from '../components/ui';
 import { nowMs } from '../clock';
 import { formatStayRangeLabel } from '../domain/dates';
-import { earliestRoomExpiry } from '../state/roomSchedule';
 import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
 import {
   ApiError,
@@ -26,13 +25,11 @@ import {
   readBackendConfig,
   type ActiveVenue,
   type HotelCard,
-  type RoomStatus,
   type UpcomingStay,
   type VenueSearchMode,
 } from '../data';
 import { SearchScene } from '../components/HotelIllustrations';
 import { VenuePicker } from '../components/VenuePicker';
-import { VacationFeatureCard } from '../components/VacationFeatureCard';
 import { useToast } from '../components/ToastHost';
 import { useAppStore } from '../state/AppStore';
 import { color, elevation, font, fontFamily, leading, MIN_TOUCH, radius, spacing, tracking } from '../theme';
@@ -53,29 +50,6 @@ function formatStayRange(stay: UpcomingStay): string {
   return formatStayRangeLabel(stay.startDate, stay.endDate);
 }
 
-const PinSmallIcon = () => (
-  <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={color.accent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <Path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-    <Circle cx={12} cy={10} r={3} />
-  </Svg>
-);
-
-/** 131:87 — the drawn stand-ins for the frame's suitcase and bed emojis. */
-const SuitcaseIcon = () => (
-  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color.accent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <Rect x={4} y={7} width={16} height={13} rx={2.5} />
-    <Path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M9 11v5M15 11v5" />
-  </Svg>
-);
-
-const BedIcon = () => (
-  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color.accent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <Path d="M3 5v14" />
-    <Path d="M3 15h18v4" />
-    <Path d="M3 11h13a4 4 0 0 1 4 4" />
-  </Svg>
-);
-
 /** The head's switch pill (176:2730): a small refresh mark, not a full glyph
     library entry, since this one slot is the only place it is drawn today. */
 const RefreshIcon = () => (
@@ -92,52 +66,6 @@ const SearchGlyph = () => (
     <Path d="M20 20l-4.35-4.35" />
   </Svg>
 );
-
-/** 131:86/92 — the drawn room teaser: a disc, a word, a sentence, an arrow. */
-function RoomTeaser({
-  icon,
-  title,
-  body,
-  open = false,
-  onPress,
-  testID,
-  extra,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  body: string;
-  /** The room is live: the card says so with the shared green mark. */
-  open?: boolean;
-  onPress: () => void;
-  testID: string;
-  extra?: React.ReactNode;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${title}. ${open ? `${COPY.vacation.cardOpen}. ` : ''}${body}`}
-      onPress={onPress}
-      style={({ pressed }) => [styles.teaser, pressed && styles.resultPressed]}
-      testID={testID}
-    >
-      <View style={styles.teaserDisc}>{icon}</View>
-      <Text style={styles.teaserTitle}>{title}</Text>
-      {open ? (
-        /* The declared stay reads back from the card itself — pressing in is
-           no longer the only proof the declaration landed. */
-        <View style={styles.teaserOpenRow}>
-          <View style={styles.teaserOpenDot} />
-          <Text style={styles.teaserOpenText}>{COPY.vacation.cardOpen}</Text>
-        </View>
-      ) : null}
-      <Text style={styles.teaserBody}>{body}</Text>
-      <Text style={styles.teaserArrow} accessibilityElementsHidden importantForAccessibility="no">
-        {'→'}
-      </Text>
-      {extra}
-    </Pressable>
-  );
-}
 
 /**
  * A photo served by our own hotel-photo function needs the platform's JWT
@@ -165,7 +93,6 @@ function photoSource(url: string) {
 export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) {
   const { state, dispatch } = useAppStore();
   const stackNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const tabNavigation = useNavigation<NavigationProp<TabParamList>>();
   /**
    * The picker is open when there is nothing chosen yet, or when somebody
    * asked to change it (D-054). It replaced a query-driven screen: the flow is
@@ -192,13 +119,8 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
   const [activating, setActivating] = useState(false);
   /** Activating is an action; its refusal is said by the shared host. */
   const toast = useToast();
-  /** For the state words on the two feature cards. */
-  const [roomStates, setRoomStates] = useState<RoomStatus[] | null>(null);
   /** The declared window, shown on the active card (D-040). */
   const [stay, setStay] = useState<UpcomingStay | null>(null);
-  /** The exit, on the tab itself (owner, 2026-08-03): it asks before it acts. */
-  const [confirmingLeave, setConfirmingLeave] = useState(false);
-  const [leaving, setLeaving] = useState(false);
 
   // The one question every branch of this screen asks — "is a hotel
   // chosen" — is answered by the id the store hydrated, never by whether
@@ -217,22 +139,6 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
   // claiming the room was closed.
   useFocusEffect(useCallback(() => {
     let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    // R-003 lives with the cards: a lapsed Here Now check stops looking
-    // open on its own, exactly as it did on the retired Rooms screen.
-    const watchRooms = async () => {
-      try {
-        const rooms = await getApi().getRooms();
-        if (cancelled) return;
-        setRoomStates(rooms);
-        const soonest = earliestRoomExpiry(rooms, nowMs());
-        if (soonest !== null) {
-          timer = setTimeout(watchRooms, soonest - nowMs());
-        }
-      } catch {
-        // The card simply keeps its last answer.
-      }
-    };
     (async () => {
       try {
         const api = getApi();
@@ -240,7 +146,6 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         if (cancelled) return;
         dispatch({ type: 'ACTIVE_HOTEL_LOADED', activeHotel: active });
         if (active) {
-          watchRooms();
           api
             .getUpcomingStay()
             .then((current) => {
@@ -284,7 +189,6 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
     })();
     return () => {
       cancelled = true;
-      if (timer) clearTimeout(timer);
     };
   }, [dispatch]));
 
@@ -325,12 +229,6 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           .then((identity) => setGooglePhoto(identity?.photoUri ?? null))
           .catch(() => undefined);
       }
-      // The feature cards' state words have to describe the venue just
-      // activated, not the one from screen-mount.
-      api
-        .getRooms()
-        .then(setRoomStates)
-        .catch(() => undefined);
       api
         .getUpcomingStay()
         .then(setStay)
@@ -376,11 +274,6 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       ? COPY.venue.nameUnavailable
       : (googleName ?? COPY.common.loading)
     : (activeHotel?.name ?? null);
-
-  const upcomingStatus = roomStates?.find((r) => r.room === 'UPCOMING') ?? null;
-  const upcomingOpen = upcomingStatus?.eligible === true;
-  const hereNowStatus = roomStates?.find((r) => r.room === 'HERE_NOW') ?? null;
-  const hereNowOpen = hereNowStatus?.eligible === true;
 
   return (
     // As a tab there is no header over this screen, so it takes the top inset
@@ -446,21 +339,6 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       ) : activeHotel ? (
         <>
         <SectionLabel>{COPY.vacation.hereSectionLabel}</SectionLabel>
-        {stay ? (
-          <View style={styles.stayPill} testID="active-stay-pill">
-            <PinSmallIcon />
-            <Text style={styles.stayPillText} numberOfLines={1}>
-              {/* A Google venue has no city of ours to print (D-054): the
-                  pill carries the dates alone rather than the stub. */}
-              {[
-                activeHotel.provider === 'google' ? null : activeHotel.city,
-                formatStayRange(stay),
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </Text>
-          </View>
-        ) : null}
         {/* Figma tatilim_view (176:2730): the photo band, and a footer row
             below it rather than a plate floating on top — the name, the
             place, and the way into the room. The whole card still opens the
@@ -609,73 +487,25 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
         cancelTestID="cancel-switch"
       />
 
-      {activeId && !picking && !onActivated ? (
-        /* D-040, in T-01's geometry: the drawn heading, then the two rooms
-           side by side. When Upcoming is live its button becomes the deck,
-           and updating the dates steps back to a quiet second action. */
-        <>
-          <Text style={styles.roomsHeading}>{COPY.vacation.whereWillYouBe}</Text>
-          {/* 131:85, exactly as drawn: two quiet teasers — a disc, a word, a
-              sentence, an arrow. The state chips, server notes and headcounts
-              this grid used to carry live on in the rooms themselves; the tab
-              only points. */}
-          <View style={styles.roomsGrid}>
-            <RoomTeaser
-              icon={<SuitcaseIcon />}
-              title={COPY.vacation.upcomingCardTitle}
-              body={COPY.vacation.upcomingCardBody}
-              open={upcomingOpen}
-              onPress={
-                upcomingOpen
-                  ? () => tabNavigation.navigate('Discovery', { source: 'UPCOMING' })
-                  : () => stackNavigation.navigate('Upcoming')
-              }
-              testID={upcomingOpen ? 'vacation-discover-upcoming' : 'open-upcoming'}
-              extra={
-                upcomingOpen ? (
-                  /* The dates stay editable once the room is live — the card's
-                     own press has become the deck, so updating steps down to
-                     this quiet line. */
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={COPY.upcoming.updateButton}
-                    onPress={() => stackNavigation.navigate('Upcoming')}
-                    style={({ pressed }) => [styles.teaserExtra, pressed && styles.resultPressed]}
-                    testID="open-upcoming"
-                  >
-                    <Text style={styles.teaserExtraText}>{COPY.upcoming.updateButton}</Text>
-                  </Pressable>
-                ) : null
-              }
-            />
-            <RoomTeaser
-              icon={<BedIcon />}
-              title={COPY.vacation.hereNowCardTitle}
-              body={COPY.vacation.hereNowCardBody}
-              open={hereNowOpen}
-              onPress={() => stackNavigation.navigate('HereNow')}
-              testID="open-here-now"
-              extra={
-                hereNowOpen ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={COPY.vacation.discoverCta}
-                    onPress={() => tabNavigation.navigate('Discovery', { source: 'HERE_NOW' })}
-                    style={({ pressed }) => [styles.teaserExtra, pressed && styles.resultPressed]}
-                    testID="vacation-discover-here-now"
-                  >
-                    <Text style={styles.teaserExtraText}>{COPY.vacation.discoverCta}</Text>
-                  </Pressable>
-                ) : null
-              }
-            />
-          </View>
-        </>
-      ) : null}
-      {/* The way into the picker, and the way back out of it. Choosing is a
-          step somebody takes deliberately, so it is a button rather than a
-          text box that is always live — which is also what keeps a stray
-          keystroke from reaching a metered provider (§6). */}
+      {/*
+        D-065 fidelity pass. Three blocks used to stand here that
+        `tatilim_view` (176:2730) does not draw, and the owner read the result
+        as a hybrid of two designs rather than the design:
+
+        - the two room teasers under a "Nerede olacaksın?" heading. They moved
+          behind the card's own "Odaya Gir" pill, into `HotelDetailsScreen` —
+          which is where that pill has always led. The declaration and the
+          location check are one press further in now, and reachable from
+          exactly one place instead of two.
+        - a full-width "Nereye gidiyorsun?" bar under the empty state. The
+          drawn empty state ends at its own "Mekân Ara" pill, and the head's
+          "Mekân Değiştir" is the switch once a venue exists.
+        - the pair of locked feature cards on the not-yet-chosen screen.
+
+        What survives is the gate: opened as `ChooseHotel` with a venue already
+        active, this screen has no head action of its own, so the way into the
+        picker has to stand in the body.
+      */}
       {picking ? (
         activeId ? (
           <Button
@@ -686,91 +516,12 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
             testID="venue-cancel"
           />
         ) : null
-      ) : loadingActive ? null : (
+      ) : onActivated && activeId && !loadingActive ? (
         <Button
-          label={activeId ? COPY.hotel.switchButton : COPY.hotel.chooseCta}
+          label={COPY.hotel.switchButton}
           onPress={() => setPicking(true)}
           testID="venue-open-picker"
         />
-      )}
-
-      {/* The exit lives where the choice does (owner, 2026-08-03): the tab
-          itself, not only the details screen behind the card. Same question,
-          same teardown — leaving is a switch that puts nothing in its place. */}
-      {activeId && !picking && !onActivated ? (
-        <>
-          {/* Owner, 2026-08-05: change is the loud act, leaving the quiet
-              one — the red lives in the confirmation, not on the shelf. */}
-          <Button
-            label={COPY.hotel.leaveCta}
-            variant="secondary"
-            onPress={() => setConfirmingLeave(true)}
-            testID="hotel-leave-home"
-          />
-          <ConfirmDialog
-            visible={confirmingLeave}
-            title={COPY.hotel.leaveConfirmTitle}
-            body={COPY.hotel.leaveConfirmBody}
-            confirmLabel={COPY.hotel.leaveYes}
-            cancelLabel={COPY.common.cancel}
-            busy={leaving}
-            onCancel={() => setConfirmingLeave(false)}
-            onConfirm={async () => {
-              setLeaving(true);
-              try {
-                await getApi().leaveActiveVenue();
-                dispatch({ type: 'ACTIVE_HOTEL_LOADED', activeHotel: null });
-                setConfirmingLeave(false);
-                setStay(null);
-                setRoomStates(null);
-                setActiveVenue(null);
-                setGoogleName(null);
-                setGooglePhoto(null);
-              } finally {
-                setLeaving(false);
-              }
-            }}
-            testID="hotel-leave-home-question"
-            confirmTestID="hotel-leave-home-confirm"
-            cancelTestID="hotel-leave-home-cancel"
-          />
-        </>
-      ) : null}
-
-      {/* Idle on the not-yet-chosen screen is one card (10:86): the feature
-          that exists before any venue does, honestly shut behind the one
-          thing it needs. */}
-      {!picking && !activeId && !onActivated && !loadingActive ? (
-        /* T-01: both features, both shut, both saying why. Only Tatilden Önce
-           was here, so somebody who had not yet chosen a place could not learn
-           Oteldeyim existed — the tab's whole job at that moment is to say
-           what choosing a place gets you. */
-        <View style={styles.idle} testID="hotel-search-prompt">
-          <VacationFeatureCard
-            room="UPCOMING"
-            status={null}
-            lead={COPY.rooms.upcomingLead}
-            body={COPY.vacation.upcomingFeatureBody}
-            buttonLabel={COPY.vacation.chooseFirst}
-            onOpen={() => setPicking(true)}
-            testID="room-upcoming-locked"
-            buttonTestID="vacation-choose-for-upcoming"
-          />
-          <VacationFeatureCard
-            room="HERE_NOW"
-            status={null}
-            // D-065: no premium copy on an implemented screen before the
-            // billing phase opens (`.studio/decisions.md`) — the closed
-            // state chip below already says the room is shut without naming
-            // an entitlement that does not exist yet.
-            lead={COPY.rooms.hereNowLead}
-            body={COPY.vacation.hereNowFeatureBody}
-            buttonLabel={COPY.vacation.chooseFirst}
-            onOpen={() => setPicking(true)}
-            testID="room-here-now-locked"
-            buttonTestID="vacation-choose-for-here-now"
-          />
-        </View>
       ) : null}
     </Screen>
   );
@@ -816,13 +567,6 @@ const styles = StyleSheet.create({
     fontSize: font.label,
     color: color.onInverse,
   },
-  searchLabel: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.label,
-    color: color.inkMuted,
-  },
-  /** The Figma placeholder size (10:78). */
-  searchInput: { fontSize: font.body },
   /** The active-venue card shell (176:2730): white, the D-059 hero radius. */
   hotelCard: {
     backgroundColor: color.surface,
@@ -830,78 +574,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...elevation.card,
   },
-  /** T-01: the pill naming the trip, above the hero. */
-  stayPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: color.surface,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.snug,
-    marginBottom: spacing.sm,
-    ...elevation.card,
-  },
-  stayPillText: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: font.caption,
-    color: color.ink,
-  },
-  /** T-01: the question over the two rooms. */
-  roomsHeading: {
-    fontFamily: fontFamily.display,
-    fontSize: font.heading,
-    lineHeight: font.heading * leading.snug,
-    letterSpacing: tracking.display,
-    color: color.ink,
-    marginTop: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  roomsGrid: { flexDirection: 'row', gap: spacing.snug, alignItems: 'stretch' },
-  /** 131:86: the teaser card itself. */
-  teaser: {
-    flex: 1,
-    backgroundColor: color.surface,
-    borderRadius: radius.xl,
-    ...elevation.card,
-    paddingTop: spacing.wide,
-    paddingBottom: spacing.md,
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-    alignItems: 'flex-start',
-  },
-  teaserDisc: {
-    width: 52,
-    height: 52,
-    borderRadius: radius.pill,
-    backgroundColor: color.accentWash,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  teaserTitle: {
-    fontFamily: fontFamily.displaySemi,
-    fontSize: font.body,
-    lineHeight: font.body * leading.snug,
-    color: color.ink,
-  },
-  teaserBody: {
-    fontFamily: fontFamily.body,
-    fontSize: font.caption,
-    lineHeight: font.caption * leading.normal,
-    color: color.inkMuted,
-  },
-  teaserOpenRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.cozy },
-  teaserOpenDot: { width: 7, height: 7, borderRadius: radius.pill, backgroundColor: color.successMark },
-  teaserOpenText: { fontFamily: fontFamily.bodySemi, fontSize: font.label, color: color.success },
-  teaserArrow: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.body,
-    lineHeight: font.body * leading.snug,
-    color: color.ink,
-  },
-  /** The quiet second action a live room earns. */
-  teaserExtra: { minHeight: 32, justifyContent: 'center' },
-  teaserExtraText: { fontFamily: fontFamily.bodySemi, fontSize: font.caption, color: color.ink },
   /** The stand-in band for a hotel the catalogue holds no photo of. */
   hotelCardBand: { height: VENUE_CARD_PHOTO_HEIGHT, backgroundColor: color.veil },
   hotelPhoto: { width: '100%', height: VENUE_CARD_PHOTO_HEIGHT, backgroundColor: color.veil },
@@ -997,6 +669,5 @@ const styles = StyleSheet.create({
     fontSize: font.control,
     color: color.onAccent,
   },
-  idle: { gap: spacing.md },
   resultPressed: { opacity: 0.8 },
 });

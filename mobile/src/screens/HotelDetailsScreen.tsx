@@ -6,17 +6,20 @@
  * the data comes from. No stars, no price, no amenities — inventing those
  * would be lying about a business.
  */
-import React, { useEffect, useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import { Body, Button, Caption, Card, ConfirmDialog, PhotoScrim, Screen, SuccessBadge, Title } from '../components/ui';
+import { Body, Button, Caption, Card, ConfirmDialog, PhotoScrim, Screen, SectionLabel, SuccessBadge, Title } from '../components/ui';
 import { HotelBuilding } from '../components/HotelIllustrations';
+import { nowMs } from '../clock';
+import { earliestRoomExpiry } from '../state/roomSchedule';
 import { COPY } from '../copy';
-import { getApi, readBackendConfig } from '../data';
+import { getApi, readBackendConfig, type RoomStatus } from '../data';
 import type { RootScreenProps } from '../navigation/types';
 import { useAppStore } from '../state/AppStore';
-import { color, font, fontFamily, radius, spacing, tracking } from '../theme';
+import { color, elevation, font, fontFamily, leading, radius, spacing, tracking } from '../theme';
 
 const PinIcon = () => (
   <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -24,6 +27,65 @@ const PinIcon = () => (
     <Circle cx={12} cy={10} r={3} />
   </Svg>
 );
+
+/** 131:87 — the drawn stand-ins for the frame's suitcase and bed emojis. */
+const SuitcaseIcon = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color.accent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Rect x={4} y={7} width={16} height={13} rx={2.5} />
+    <Path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M9 11v5M15 11v5" />
+  </Svg>
+);
+
+const BedIcon = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke={color.accent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M3 5v14" />
+    <Path d="M3 15h18v4" />
+    <Path d="M3 11h13a4 4 0 0 1 4 4" />
+  </Svg>
+);
+
+/** 131:86/92 — the drawn room teaser: a disc, a word, a sentence, an arrow. */
+function RoomTeaser({
+  icon,
+  title,
+  body,
+  open = false,
+  onPress,
+  testID,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  body: string;
+  /** The room is live: the card says so with the shared green mark. */
+  open?: boolean;
+  onPress: () => void;
+  testID: string;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${title}. ${open ? `${COPY.vacation.cardOpen}. ` : ''}${body}`}
+      onPress={onPress}
+      style={({ pressed }) => [styles.teaser, pressed && styles.teaserPressed]}
+      testID={testID}
+    >
+      <View style={styles.teaserDisc}>{icon}</View>
+      <Text style={styles.teaserTitle}>{title}</Text>
+      {open ? (
+        /* Named so R-003 stays provable: the mark appearing and vanishing on
+           its own, without a navigation, is how a lapsed check is seen. */
+        <View style={styles.teaserOpenRow} testID={`${testID}-live`}>
+          <View style={styles.teaserOpenDot} />
+          <Text style={styles.teaserOpenText}>{COPY.vacation.cardOpen}</Text>
+        </View>
+      ) : null}
+      <Text style={styles.teaserBody}>{body}</Text>
+      <Text style={styles.teaserArrow} accessibilityElementsHidden importantForAccessibility="no">
+        {'→'}
+      </Text>
+    </Pressable>
+  );
+}
 
 export function HotelDetailsScreen({ route, navigation }: RootScreenProps<'HotelDetails'>) {
   const { state, dispatch } = useAppStore();
@@ -53,6 +115,36 @@ export function HotelDetailsScreen({ route, navigation }: RootScreenProps<'Hotel
    * on Tatilim had none here (owner, 2026-08-06).
    */
   const [googlePhoto, setGooglePhoto] = useState<string | null>(null);
+  /**
+   * The two rooms' live state. D-065's `tatilim_view` (176:2730) does not draw
+   * the room teasers the trip tab used to carry; it draws one venue card whose
+   * own pill says "Odaya Gir", and this screen is what that pill has always
+   * opened. So the rooms live here now, and with them R-003's watcher: a
+   * lapsed Here Now check has to stop looking open on its own.
+   */
+  const [roomStates, setRoomStates] = useState<RoomStatus[] | null>(null);
+
+  useFocusEffect(useCallback(() => {
+    if (!isActive) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const watchRooms = async () => {
+      try {
+        const rooms = await getApi().getRooms();
+        if (cancelled) return;
+        setRoomStates(rooms);
+        const soonest = earliestRoomExpiry(rooms, nowMs());
+        if (soonest !== null) timer = setTimeout(watchRooms, soonest - nowMs());
+      } catch {
+        // The teasers simply keep their last answer.
+      }
+    };
+    void watchRooms();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [isActive]));
 
   useEffect(() => {
     if (!isGoogle) return;
@@ -148,6 +240,29 @@ export function HotelDetailsScreen({ route, navigation }: RootScreenProps<'Hotel
       */}
       {isActive ? (
         <>
+          {/* The two rooms, moved off the trip tab in the D-065 fidelity pass
+              and put behind the affordance the file itself draws for them.
+              Each one opens its own room screen — the declaration, and the
+              location check — which is where each flow actually begins. */}
+          <SectionLabel>{COPY.vacation.whereWillYouBe}</SectionLabel>
+          <View style={styles.roomsGrid}>
+            <RoomTeaser
+              icon={<SuitcaseIcon />}
+              title={COPY.vacation.upcomingCardTitle}
+              body={COPY.vacation.upcomingCardBody}
+              open={roomStates?.find((r) => r.room === 'UPCOMING')?.eligible === true}
+              onPress={() => navigation.navigate('Upcoming')}
+              testID="open-upcoming"
+            />
+            <RoomTeaser
+              icon={<BedIcon />}
+              title={COPY.vacation.hereNowCardTitle}
+              body={COPY.vacation.hereNowCardBody}
+              open={roomStates?.find((r) => r.room === 'HERE_NOW')?.eligible === true}
+              onPress={() => navigation.navigate('HereNow')}
+              testID="open-here-now"
+            />
+          </View>
           <Card testID="hotel-details-status">
             <View style={styles.statusHead}>
               <SuccessBadge label={COPY.hotel.activePlate} testID="hotel-details-active" />
@@ -233,6 +348,49 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   placeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.cozy },
+  /** 131:85: the two rooms side by side, the way the trip tab used to draw them. */
+  roomsGrid: { flexDirection: 'row', gap: spacing.snug, alignItems: 'stretch' },
+  teaser: {
+    flex: 1,
+    backgroundColor: color.surface,
+    borderRadius: radius.xl,
+    ...elevation.card,
+    paddingTop: spacing.wide,
+    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
+    alignItems: 'flex-start',
+  },
+  teaserPressed: { opacity: 0.8 },
+  teaserDisc: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.pill,
+    backgroundColor: color.accentWash,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  teaserTitle: {
+    fontFamily: fontFamily.displaySemi,
+    fontSize: font.body,
+    lineHeight: font.body * leading.snug,
+    color: color.ink,
+  },
+  teaserBody: {
+    fontFamily: fontFamily.body,
+    fontSize: font.caption,
+    lineHeight: font.caption * leading.normal,
+    color: color.inkMuted,
+  },
+  teaserOpenRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.cozy },
+  teaserOpenDot: { width: 7, height: 7, borderRadius: radius.pill, backgroundColor: color.successMark },
+  teaserOpenText: { fontFamily: fontFamily.bodySemi, fontSize: font.label, color: color.success },
+  teaserArrow: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.body,
+    lineHeight: font.body * leading.snug,
+    color: color.ink,
+  },
   /** The badge sits on its own row so it keeps its size beside nothing. */
   statusHead: { flexDirection: 'row' },
   block: { gap: spacing.xs, marginTop: spacing.sm },

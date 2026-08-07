@@ -345,7 +345,10 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
           </View>
         )}
         <View style={styles.headWords}>
-          <Text style={styles.headName} numberOfLines={1}>{`${match.displayName}, ${match.age}`}</Text>
+          {/* 176:4004 draws the name alone. The age belongs to the card you
+              swiped and to the profile, not to the person you are already
+              talking to. */}
+          <Text style={styles.headName} numberOfLines={1}>{match.displayName}</Text>
           {/* D-057: where the two of you met. The venue is appended only for
               the two hotel rooms — an event or a check-in match wearing the
               *currently active* hotel's name was naming a place neither of

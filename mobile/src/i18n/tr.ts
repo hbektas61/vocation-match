@@ -65,10 +65,10 @@ export const tr: Copy = {
     progressLabel: (step: number, total: number) => `Adım ${step}/${total}`,
 
     welcome: {
-      headline: 'Otelindeki insanlarla şimdi tanış.',
+      headline: 'Tatil mekânındaki insanlarla eşleş.',
       body:
-        'Şu an olduğun ya da gideceğin tatil mekânını seç; aynı tarihlerde orada olanlarla eşleş. Aynı anda tek mekân.',
-      continueWithPhone: 'Telefonla devam et',
+        'Gittiğin her beach club, otel veya etkinlikte seninle aynı yerde olan tatilcilerle tanış.',
+      continueWithPhone: 'Hadi başlayalım',
       trustTitle: 'Güvenli ve gizli',
       trustBody: 'Kimliğin gizli kalır. Rezervasyon, belge ya da kimlik istenmez.',
       howItWorks: 'Nasıl çalışır?',
@@ -156,7 +156,7 @@ export const tr: Copy = {
 
   common: {
     loading: 'Yükleniyor…',
-    retry: 'Tekrar dene',
+    retry: 'Tekrar Dene',
     back: 'Geri',
     cancel: 'Vazgeç',
     close: 'Kapat',
@@ -202,7 +202,7 @@ export const tr: Copy = {
     incompleteBirthdate: 'Bu tarih henüz bitmedi.',
     futureBirthdate: 'Bu tarih henüz gelmedi.',
     underAge: 'CheckMatches yalnız 18 yaş ve üzeri içindir.',
-    bioLabel: 'Tanıtım',
+    bioLabel: 'Hakkımda',
     bioPlaceholder: 'Kendin hakkında bir cümle',
     birthdateNote:
       'Doğum tarihin yalnız 18 yaş kontrolü ve yaşını göstermek için kullanılır. Tarihin kendisini başka kimse görmez.',
@@ -214,7 +214,7 @@ export const tr: Copy = {
   },
 
   editProfile: {
-    title: 'Profilini düzenle',
+    title: 'Profili Düzenle',
     intro: 'Başkalarının gördüğünü değiştir. Fotoğrafın ayrıca Ayarlar’da yönetilir.',
     openButton: 'Profili düzenle',
     saveButton: 'Değişiklikleri kaydet',
@@ -256,8 +256,7 @@ export const tr: Copy = {
     activeLabel: 'Aktif otel.',
     activePlate: 'Aktif otel',
     emptyTitle: 'Henüz bir tatil mekânı seçmedin',
-    emptyBody:
-      'Önce nereye gideceğini, sonra oradaki mekânı seç. Odalar seçtiğin mekâna göre açılır.',
+    emptyBody: 'Nereye gideceğini seç ve oradaki insanlarla hemen eşleşmeye başla.',
     emptyBadge: 'Tatil mekânı gerekli',
     quickOptions: 'Hızlı seçenekler',
     lastSearch: 'Son arama',
@@ -304,7 +303,7 @@ export const tr: Copy = {
     areaLabel: 'Etkinlik bölgesi',
     /** The pinned country over the city search, and its one-press change. */
     changeCountry: 'Ülkeyi değiştir',
-    changeArea: 'Konumu değiştir',
+    changeArea: 'Şehri Değiştir',
     /** The standing header's name for a here-kind area (2026-08-04). */
     hereArea: 'Konumunun çevresi',
     useMyLocation: 'Mevcut konumumu kullan',
@@ -368,7 +367,7 @@ export const tr: Copy = {
     pastEvent: 'Geçmiş etkinlik',
     noTicketClaim: 'Konum kontrolü bilet değildir ve kimseden bilet istenmez.',
     myEvents: 'Etkinliklerin',
-    emptyTitle: 'Henüz etkinlik yok',
+    emptyTitle: 'Şu an burada etkinlik yok',
     emptyBody: 'Önce nereye bakacağını seç, sonra bir etkinlik seçip gidenlerle tanış.',
   },
 
@@ -379,7 +378,7 @@ export const tr: Copy = {
     /** Görünen kısa biçim; erişilebilirlik cümlesi stepProgress'te kalır. */
     stepShort: (current: number, total: number) => `ADIM ${current}/${total}`,
     stepProgress: (current: number, total: number) => `${total} adımın ${current}. adımı`,
-    countryTitle: 'Ülkeni seç',
+    countryTitle: 'Nereye bakalım?',
     countryHint: 'Tatil mekânının bulunduğu ülke. Sonraki iki adım bu ülkenin içinde kalır.',
     countryLabel: 'Ülke ara',
     countryPlaceholder: 'Türkiye, İspanya, Yunanistan…',
@@ -449,14 +448,15 @@ export const tr: Copy = {
     venueLabel: 'Seçili mekân',
     roomTitle: 'Tatilden Önce',
     statusBadge: 'Kendi beyanınla yaklaşan konaklama',
-    explainer: 'Konaklama tarihlerini beyan et. Belge yok, kanıt yok — beyanın yeter.',
+    explainer:
+      'Belge ya da kimlik gerekmez. Sadece ne zaman orada olacağını beyan etmen yeterli.',
     formTitle: 'Bu mekânda ne zaman olacaksın?',
-    checkInLabel: 'Giriş tarihi',
-    checkOutLabel: 'Çıkış tarihi',
+    checkInLabel: 'Giriş',
+    checkOutLabel: 'Çıkış',
     dateHint: 'YYYY-AA-GG biçimini kullan, örneğin 2026-08-01.',
     checkInPlaceholder: '2026-08-01',
     checkOutPlaceholder: '2026-08-08',
-    saveButton: 'Tarihleri kaydet',
+    saveButton: 'Tarihleri onayla',
     updateButton: 'Tarihleri güncelle',
     privacyNote: 'Rezervasyon numarası veya kimlik bilgisi gerekmez, kimseyle paylaşılmaz.',
     datesPrivacy: 'Tarihlerini yalnız tarihleri çakışanlar bilir; kimseye belge gösterilmez.',
@@ -495,11 +495,11 @@ export const tr: Copy = {
     checkButton: 'Mekân yakınlığını kontrol et',
     realCheckIntro: 'Mevcut konumun tek seferlik, ön planda bir kontrol için kullanılır. Arka planda hiçbir şey çalışmaz.',
     primerTitle: 'Konum izni',
-    primerPrivacy: 'Önce gizlilik',
-    primerLive: 'Aynı anda orada olanlar',
+    primerPrivacy: 'Gizlilik önceliğimiz',
+    primerLive: 'Canlı eşleşme',
     primerLiveBody: 'Seninle aynı yerde, aynı anda bulunan kişileri görürsün; sadece onları.',
-    primerBattery: 'Yalnızca sen bakarken',
-    realCheckButton: 'Mevcut konumumu kullan',
+    primerBattery: 'Pil dostu',
+    realCheckButton: 'Devam et',
     checking: 'Kontrol ediliyor…',
     /**
      * 177:4751 — bekleme kendi ekranı; başlık ve tek cümle.
@@ -577,22 +577,21 @@ export const tr: Copy = {
     noHotelTitle: 'Keşfet için önce otel seç',
     noHotelBody: 'Bir otel seçtikten sonra sana uygun odalar ve kişiler burada görünecek.',
     /** D-065: kapıların kendi başlığının yerine geçen, başlık altı satır. */
-    headerSubtitle: 'Katıldığın ve sana açık odalar',
+    headerSubtitle: 'Katıldığın ve sana özel odaları gör',
     /**
      * Owner, 2026-08-05: bu ekran "otel seç" diye dayatıyordu, oysa Keşfet'i
      * açan üç ayrı yol var — tatil mekânı (2 oda), etkinlik (2 oda) ve
      * çevren (1 oda). Kapıları sayıp yan yana koymak, birini şart koşmaktan
      * hem daha doğru hem daha davetkâr.
      */
-    doorHotelTitle: 'Tatil mekânın',
+    doorHotelTitle: 'Tatil Mekânın',
     doorHotelMeta: '2 oda · Otele Gidecekler, Oteldeyim',
-    doorEventTitle: 'Bir etkinlik',
+    doorEventTitle: 'Katıldığın Etkinlikler',
     doorEventMeta: '2 oda · Etkinliğe Gidecekler, Etkinlikteyim',
-    doorNearbyTitle: 'Çevren',
+    doorNearbyTitle: 'Yakınındaki Mekânlar',
     doorNearbyMeta: '1 oda · Şu an aynı yerde olanlar',
-    howItWorks: 'Nasıl çalışır?',
-    howItWorksBody:
-      'Beş oda var. Tatil mekânında iki tane: tarihlerini beyan edersen Otele Gidecekler, mekândayken yapılan tek seferlik konum kontrolüyle Oteldeyim. Etkinlikte de iki tane: gideceğini söylersen Etkinliğe Gidecekler, etkinlik alanındayken Etkinlikteyim. Beşincisi Çevrende: check-in yaptığın yerde şu an bulunanlar. Hangi odadaysan oradaki kişiler burada, Keşfet\'te görünür.',
+    howItWorks: 'Nasıl Çalışır?',
+    howItWorksBody: 'Odalara katılarak aynı mekândaki insanları keşfedebilirsin.',
     /** D-057: tek destenin üstündeki paylaşılan bağlam seçici. */
     contextTitle: 'Hangi odayı keşfediyorsun?',
     contextHint: 'Açık odalarının listesini açar',
@@ -614,7 +613,7 @@ export const tr: Copy = {
     likedEachOther: (name: string) => `${name} ile birbirinizi beğendiniz.`,
     sayHelloCta: (name: string) => `${name} için merhaba de`,
     /** M-01 (132:106): the primary CTA's own word. */
-    sendMessageCta: 'Mesaj gönder',
+    sendMessageCta: 'Mesaj Gönder',
     selfFallback: 'Sen',
     title: 'Eşleştiniz!',
     /** D-057: eşleşme anı hangi odadan geldiğini söyler. */
@@ -630,7 +629,7 @@ export const tr: Copy = {
     bodyEventUpcoming: 'Kimseden bilet istenmedi.',
     bodyEventHereNow: 'Konum kontrolü bilet değildir.',
     notAvailable: 'Bu eşleşme artık mevcut değil.',
-    keepBrowsing: 'Bakmaya devam et',
+    keepBrowsing: 'Kaydırmaya Devam Et',
     /**
      * 176:3929'un cümlesi mekânın adını ismin -de hâliyle çekimliyor; şablonun
      * uyduramayacağı bir ek. Ad, rozetin kendi satırında duruyor — bu da
@@ -640,24 +639,27 @@ export const tr: Copy = {
   },
 
   safety: {
-    title: 'Güvenlik',
+    title: 'Şikayet Et',
     blockButton: 'Engelle',
-    reportButton: 'Bildir',
+    reportButton: 'Şikayeti Gönder',
     /** Adı gelmediğinde. Ekranda İngilizce bir "this person" duruyordu. */
     someone: 'bu kişi',
     /** D-065 (177:5293): engelleme onayının kendi başlığı. */
-    blockTitle: 'Bu kişiyi engelle',
+    blockTitle: 'Kullanıcıyı Engelle',
     blockConfirm: 'Bu kişi engellensin mi? Keşfetten, eşleşmelerinden ve gelen kutundan kaybolur.',
     reportIntro:
       'Bildirimler ekibimizce incelenir ve bu kişiyi aynı zamanda engeller; keşfetten, eşleşmelerinden ve gelen kutundan kaybolur.',
-    reportReasonLabel: 'Ne oldu?',
-    reportDetailsLabel: 'Ek ayrıntı (isteğe bağlı)',
-    reportDetailsPlaceholder: 'İncelememize yardımcı olacak her şeyi ekle',
+    /** D-065 (176:4584): ekranın kendi başlığı — kimseyi adıyla anmadan sorar. */
+    reportHeading: 'Neden şikayet ediyorsun?',
+    reportReasonLabel:
+      'Bu kişinin profili veya mesajları topluluk kurallarımızı ihlal mi ediyor?',
+    reportDetailsLabel: 'Ek detaylar (isteğe bağlı)',
+    reportDetailsPlaceholder: 'Neler olduğunu anlat…',
     reportThanks: 'Teşekkürler. Ekibimiz bu bildirimi inceleyecek.',
     reportError: 'Bildirim gönderilemedi. Tekrar dene.',
     blockError: 'Bu kişi engellenemedi. Tekrar dene.',
     reasons: {
-      HARASSMENT: 'Taciz veya kötü davranış',
+      HARASSMENT: 'Taciz veya zorbalık',
       SPAM: 'Spam veya dolandırıcılık',
       FAKE_PROFILE: 'Sahte profil',
       UNDERAGE: '18 yaşından küçük görünüyor',
@@ -667,7 +669,7 @@ export const tr: Copy = {
   },
 
   inbox: {
-    title: 'Gelen kutusu',
+    title: 'Mesajlar',
     newMatches: 'Yeni eşleşmeler',
     sayHello: 'Merhaba de',
     openChatHint: 'Sohbeti aç',
@@ -677,8 +679,8 @@ export const tr: Copy = {
     chats: 'Sohbetler',
     yesterday: 'Dün',
     emptyTitle: 'Henüz eşleşme yok',
-    emptyBody: 'Birbirinizi beğendiğinizde sohbetler burada başlayacak.',
-    startDiscovering: 'Keşfetmeye başla',
+    emptyBody: 'Tatiline devam et, elbet birileriyle yolların kesişecek!',
+    startDiscovering: 'Keşfetmeye Başla',
     viewRooms: 'Tatilimi ayarla',
     matchesAppearHere: 'Yeni eşleşmeler olduğunda burada görünür.',
     loadError: 'Eşleşmelerin yüklenemedi. Tekrar dene.',
@@ -718,7 +720,7 @@ export const tr: Copy = {
     locationNote:
       'CheckMatches seni asla arka planda takip etmez ve tam konumları asla paylaşmaz.',
     accountTitle: 'Hesap',
-    signOutButton: 'Çıkış yap',
+    signOutButton: 'Çıkış Yap',
     blockedTitle: 'Engellenenler',
     blockedEmpty: 'Kimseyi engellemedin.',
     /** D-053 §6: what Google's part actually is, in plain words. */
@@ -742,7 +744,7 @@ export const tr: Copy = {
   deleteAccount: {
     title: 'Hesabını sil',
     intro: 'Bu, hesabını CheckMatches’ten kaldırır. Geri alınamaz.',
-    startButton: 'Hesabımı sil',
+    startButton: 'Hesabı Sil',
     whatGoes:
       'Silinir: profilin ve fotoğrafın, otelin ve konaklaman, beğenilerin, eşleşmelerin ve konuşmaların. Konuşmaların karşı tarafın gelen kutusundan da kaybolur.',
     whatStays:
@@ -798,14 +800,14 @@ export const tr: Copy = {
     headerSubtitle: 'Tatil planların ve eşleşmelerin',
     /** D-065: başlığın kendi değiştirme eylemi — aşağıdaki `hotel.switchButton`
      * ile aynı yere gider, daha küçük bir alan için daha kısa bir sözcük. */
-    switchVenueCta: 'Mekân değiştir',
+    switchVenueCta: 'Mekân Değiştir',
     /** D-065: aktif mekân kartının üstündeki bölüm etiketi. */
     hereSectionLabel: 'Şu an buradasın',
     /** D-065: aktif mekân kartının kendi girişi — `active-hotel-card` zaten
      * açtığı aynı oda, sadece kartın tamamı değil kendi hapı olarak da. */
-    enterRoomCta: 'Odaya gir',
+    enterRoomCta: 'Odaya Gir',
     /** D-065: boş durumun tek eylemi, yanında bir arama işaretiyle. */
-    searchVenueCta: 'Mekân ara',
+    searchVenueCta: 'Mekân Ara',
   },
 
   checkin: {
@@ -904,7 +906,7 @@ export const tr: Copy = {
       'Bu ayki aramayla mekân bulma hakkın doldu. Çevrendeki listeden ya da bulunduğun yerden yine check-in yapabilirsin.',
     selectionStale: 'Bu seçim tazeliğini yitirdi. Listeye dönüp yeniden seç.',
     providerUnavailable: 'Etkinlik sağlayıcısına şu an ulaşılamıyor. Birazdan tekrar dene.',
-    network: 'Bağlantı yok. Tekrar dene.',
+    network: 'Bağlantını kontrol edip tekrar dener misin?',
     suspended: 'Hesabın askıya alındı. Engelleme, bildirme ve konuşmalarını okuma yine açık.',
     unknown: 'Bir şeyler ters gitti. Tekrar dene.',
     /** D-065 (176:4659): a standing failure's heading, above the sentence saying which one. */

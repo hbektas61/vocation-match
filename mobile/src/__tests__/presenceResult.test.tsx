@@ -30,6 +30,7 @@ beforeEach(() => {
 async function openPresenceCheck(): Promise<void> {
   await onboardWithHotel('Deniz');
   await press(await screen.findByTestId('tab-Vacation'));
+  await press(await screen.findByTestId('active-hotel-enter'));
   await press(await screen.findByTestId('open-here-now'));
   expect(await screen.findByTestId('check-presence')).toBeTruthy();
 }
@@ -133,6 +134,7 @@ describe('the proximity check, answer by answer', () => {
     // the way out from "open that room" into "go to it".
     await getApi().declareUpcomingStay('2026-08-10', '2026-08-18');
     await press(await screen.findByTestId('tab-Vacation'));
+    await press(await screen.findByTestId('active-hotel-enter'));
     await press(await screen.findByTestId('open-here-now'));
     await press(await screen.findByTestId('simulate-far'));
     await screen.findByTestId('here-now-too-far');

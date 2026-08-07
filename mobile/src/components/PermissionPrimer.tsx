@@ -18,7 +18,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { ACTION_TOUCH, color, font, fontFamily, leading, MIN_TOUCH, radius, spacing } from '../theme';
+import { ACTION_TOUCH, color, font, fontFamily, leading, MIN_TOUCH, radius, spacing, tileTone } from '../theme';
 
 export interface PrimerReason {
   /** A tinted tile and the mark inside it. Decorative — the words carry it. */
@@ -120,12 +120,12 @@ export function PermissionPrimer({
 const styles = StyleSheet.create({
   host: { gap: spacing.lg },
   crown: { alignItems: 'center', gap: spacing.md },
-  /** The 96pt tile (176:2553): the brand wash, the softest corner. */
+  /** The 96pt tile (176:2553): the file's own coral ground, softest corner. */
   mark: {
     width: 96,
     height: 96,
     borderRadius: radius.xxl,
-    backgroundColor: color.accentWash,
+    backgroundColor: tileTone.coral,
     alignItems: 'center',
     justifyContent: 'center',
   },

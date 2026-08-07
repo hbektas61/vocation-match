@@ -348,7 +348,6 @@ export function EventsScreen({
       <Screen safeTop testID="screen-events">
         <ScreenHeader
           title={COPY.events.title}
-          subtitle={COPY.events.subtitle}
           ringTestID="events-profile-ring"
         />
         <Notice message={COPY.events.disabled} testID="events-disabled" />
@@ -626,7 +625,6 @@ export function EventsScreen({
     <Screen safeTop testID="screen-events">
       <ScreenHeader
         title={COPY.events.title}
-        subtitle={COPY.events.subtitle}
         ringTestID="events-profile-ring"
       />
 

@@ -594,7 +594,6 @@ export function CheckinScreen({
       <Screen safeTop testID="screen-checkin">
         <ScreenHeader
           title={COPY.tabs.nearbyTab}
-          subtitle={COPY.checkin.headerSubtitle}
           ringTestID="checkin-profile-ring"
         />
         <Loading testID="checkin-loading" />
@@ -670,7 +669,6 @@ export function CheckinScreen({
       <Screen safeTop testID="screen-checkin">
         <ScreenHeader
           title={COPY.tabs.nearbyTab}
-          subtitle={COPY.checkin.headerSubtitle}
           ringTestID="checkin-profile-ring"
         />
         <Text style={styles.subtitleSm}>{COPY.checkin.activeSubtitle}</Text>
@@ -762,7 +760,6 @@ export function CheckinScreen({
         */}
         <ScreenHeader
           title={COPY.tabs.nearbyTab}
-          subtitle={COPY.checkin.headerSubtitle}
           ringTestID="checkin-list-profile-ring"
         />
 
@@ -911,7 +908,6 @@ export function CheckinScreen({
           primary screen with no way to Settings at all. */}
       <ScreenHeader
         title={COPY.tabs.nearbyTab}
-        subtitle={COPY.checkin.headerSubtitle}
         ringTestID="checkin-profile-ring"
       />
 

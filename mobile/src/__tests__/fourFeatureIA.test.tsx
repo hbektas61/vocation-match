@@ -23,6 +23,9 @@ beforeEach(() => {
 /** Opens Here Now and passes the simulated in-range check. */
 async function verifyAtHotel() {
   await press(await screen.findByTestId('tab-Vacation'));
+  // D-065: the trip tab draws one venue card; its "Odaya Gir" pill is the
+  // way into the two rooms.
+  await press(await screen.findByTestId('active-hotel-enter'));
   await press(await screen.findByTestId('open-here-now'));
   await press(await screen.findByTestId('simulate-near'));
   await press(await screen.findByTestId('here-now-done'));
@@ -54,7 +57,9 @@ describe('D-057 bottom navigation', () => {
 
     await press(tab);
     expect(await screen.findByTestId('inbox-profile-ring')).toBeTruthy();
-    expect(await screen.findByText(COPY.inbox.title)).toBeTruthy();
+    // 176:3773 titles this screen `Mesajlar`, the same word the bar carries,
+    // so the name is on screen twice by design rather than once.
+    expect((await screen.findAllByText(COPY.inbox.title)).length).toBeGreaterThan(0);
   });
 });
 
@@ -312,14 +317,21 @@ describe('the way into the deck (owner, 2026-08-05)', () => {
 
 describe('D-057 Tatilim (§7)', () => {
   it('shows both features, both shut, before a place is chosen (T-01)', async () => {
-    // A fresh account with no active venue: the tab's whole job here is to
-    // say what choosing a place gets you, so neither feature may be missing.
+    // A fresh account with no active venue. D-065's `tatilim_view` (176:2759)
+    // draws exactly four things here — an illustration, a heading, a support
+    // line and one pill — and no pair of locked feature cards. What the tab
+    // owes somebody at this moment is the way to choose a place, and that is
+    // what is pinned: the drawn empty state, and its one action.
     // `onboard` finishes the wizard without choosing a place — an active
     // venue is not part of finishing (D-040).
     await onboard('Deniz');
 
-    expect(await screen.findByTestId('room-upcoming-locked')).toBeTruthy();
-    expect(await screen.findByTestId('room-here-now-locked')).toBeTruthy();
+    expect(await screen.findByTestId('hotel-empty-state')).toBeTruthy();
+    expect(await screen.findByTestId('hotel-empty-search-cta')).toBeTruthy();
+    // And nothing of the hybrid the owner rejected survives beside it.
+    expect(screen.queryByTestId('room-upcoming-locked')).toBeNull();
+    expect(screen.queryByTestId('room-here-now-locked')).toBeNull();
+    expect(screen.queryByTestId('venue-open-picker')).toBeNull();
   });
 });
 
@@ -530,6 +542,7 @@ describe('the simulation controls are a preview-build affordance', () => {
   it('is there in the preview build', async () => {
     await onboardWithHotel('Deniz');
     await press(await screen.findByTestId('tab-Vacation'));
+    await press(await screen.findByTestId('active-hotel-enter'));
     await press(await screen.findByTestId('open-here-now'));
 
     expect(await screen.findByTestId('simulate-near')).toBeTruthy();
@@ -541,6 +554,7 @@ describe('the simulation controls are a preview-build affordance', () => {
     try {
       await onboardWithHotel('Deniz');
       await press(await screen.findByTestId('tab-Vacation'));
+      await press(await screen.findByTestId('active-hotel-enter'));
       await press(await screen.findByTestId('open-here-now'));
 
       expect(screen.queryByTestId('simulate-near')).toBeNull();
@@ -557,6 +571,7 @@ describe('the simulation controls are a preview-build affordance', () => {
   it('says a check is running rather than going quiet', async () => {
     await onboardWithHotel('Deniz');
     await press(await screen.findByTestId('tab-Vacation'));
+    await press(await screen.findByTestId('active-hotel-enter'));
     await press(await screen.findByTestId('open-here-now'));
 
     const button = await screen.findByTestId('check-presence');

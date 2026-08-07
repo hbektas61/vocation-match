@@ -58,10 +58,10 @@ export const en = {
     progressLabel: (step: number, total: number) => `Step ${step} of ${total}`,
 
     welcome: {
-      headline: 'Meet the people already at your hotel.',
+      headline: 'Match with the people at your vacation place.',
       body:
-        'Pick the place you are at — or the one you are going to — and match with the people there when you are. One place at a time.',
-      continueWithPhone: 'Continue with phone',
+        'At every beach club, hotel and event you go to, meet the holidaymakers who are there with you.',
+      continueWithPhone: "Let's get started",
       trustTitle: 'Safe and private',
       trustBody: 'Your identity stays private. No reservation, document, or ID is asked for.',
       howItWorks: 'How does it work?',
@@ -151,7 +151,7 @@ export const en = {
 
   common: {
     loading: 'Loading…',
-    retry: 'Try again',
+    retry: 'Try Again',
     back: 'Back',
     cancel: 'Cancel',
     close: 'Close',
@@ -200,7 +200,7 @@ export const en = {
     incompleteBirthdate: 'That date is not finished yet.',
     futureBirthdate: 'That date has not happened yet.',
     underAge: 'CheckMatches is 18+ only.',
-    bioLabel: 'Bio',
+    bioLabel: 'About me',
     bioPlaceholder: 'A sentence about you',
     birthdateNote:
       'Your date of birth is only used to check you are 18 or older and to show your age. Nobody else ever sees the date itself.',
@@ -212,7 +212,7 @@ export const en = {
   },
 
   editProfile: {
-    title: 'Edit your profile',
+    title: 'Edit Profile',
     intro: 'Change what other people see. Your photo is managed separately, in Settings.',
     openButton: 'Edit profile',
     saveButton: 'Save changes',
@@ -256,8 +256,7 @@ export const en = {
     activeLabel: 'Active hotel.',
     activePlate: 'Active hotel',
     emptyTitle: "You haven't chosen a vacation place yet",
-    emptyBody:
-      'Choose where you are going first, then the place inside it. The rooms open by the place you choose.',
+    emptyBody: 'Choose where you are going and start matching with the people there.',
     emptyBadge: 'A vacation place is required',
     quickOptions: 'Quick options',
     lastSearch: 'Last search',
@@ -311,7 +310,7 @@ export const en = {
     areaLabel: 'Event area',
     /** The pinned country over the city search, and its one-press change. */
     changeCountry: 'Change country',
-    changeArea: 'Change location',
+    changeArea: 'Change City',
     /** The standing header's name for a here-kind area (2026-08-04). */
     hereArea: 'Around your location',
     useMyLocation: 'Use my current location',
@@ -389,7 +388,7 @@ export const en = {
     /** D-007's rule, in the event room's own words. */
     noTicketClaim: 'A location check is not a ticket, and nobody is asked for one.',
     myEvents: 'Your events',
-    emptyTitle: 'No events yet',
+    emptyTitle: 'No events here right now',
     emptyBody: 'Choose where to look, then pick an event to meet the people going.',
   },
 
@@ -399,7 +398,7 @@ export const en = {
     stepVenue: 'Hotel',
     stepShort: (current: number, total: number) => `STEP ${current}/${total}`,
     stepProgress: (current: number, total: number) => `Step ${current} of ${total}`,
-    countryTitle: 'Choose a country',
+    countryTitle: 'Where shall we look?',
     countryHint: 'The country your vacation place is in. The next two steps stay inside it.',
     countryLabel: 'Search countries',
     countryPlaceholder: 'Türkiye, Spain, Greece…',
@@ -469,14 +468,15 @@ export const en = {
     venueLabel: 'Selected venue',
     roomTitle: 'Before the trip',
     statusBadge: 'Self-declared upcoming stay',
-    explainer: 'Your stay dates are self-declared. No reservation, no documents, no ID — your word is enough.',
+    explainer:
+      'No reservation document and no ID are needed. Your stay is self-declared — just say when you will be there.',
     formTitle: 'When will you be at this place?',
-    checkInLabel: 'Check-in date',
-    checkOutLabel: 'Check-out date',
+    checkInLabel: 'Check-in',
+    checkOutLabel: 'Check-out',
     dateHint: 'Use the format YYYY-MM-DD, for example 2026-08-01.',
     checkInPlaceholder: '2026-08-01',
     checkOutPlaceholder: '2026-08-08',
-    saveButton: 'Save stay dates',
+    saveButton: 'Confirm dates',
     /** The designer's screen furniture (2026-07-27). */
     privacyNote: 'No booking number or ID details are needed, and nothing is shared with anyone.',
     datesPrivacy: 'Only people whose dates overlap yours learn them; no documents are shown to anyone.',
@@ -521,11 +521,11 @@ export const en = {
      * this product is allowed to make about somebody's location.
      */
     primerTitle: 'Location permission',
-    primerPrivacy: 'Privacy first',
-    primerLive: 'People who are there too',
+    primerPrivacy: 'Privacy comes first',
+    primerLive: 'Live matching',
     primerLiveBody: 'You see the people who are at the same place at the same time as you, and only them.',
-    primerBattery: 'Only while you are looking',
-    realCheckButton: 'Use my current location',
+    primerBattery: 'Battery friendly',
+    realCheckButton: 'Continue',
     /**
      * A disabled button with an unchanged label tells nobody that their press
      * registered. This check can also wait on a permission prompt, so the
@@ -630,17 +630,16 @@ export const en = {
     noHotelTitle: 'Choose a hotel to discover',
     noHotelBody: 'Once you choose a hotel, the rooms and people open to you will show up here.',
     /** D-065: the head's subtitle, where the doors' own heading used to be. */
-    headerSubtitle: 'Rooms you joined, rooms open to you',
+    headerSubtitle: 'See the rooms you joined and the ones opened for you',
     /** Owner, 2026-08-05: three doors open Discovery, not one. */
-    doorHotelTitle: 'Your vacation place',
+    doorHotelTitle: 'Your Vacation Place',
     doorHotelMeta: '2 rooms · Going to the Hotel, At the Hotel',
-    doorEventTitle: 'An event',
+    doorEventTitle: 'Events You Joined',
     doorEventMeta: '2 rooms · Going to the Event, At the Event',
-    doorNearbyTitle: 'Around you',
+    doorNearbyTitle: 'Places Around You',
     doorNearbyMeta: '1 room · People in the same place right now',
-    howItWorks: 'How does it work?',
-    howItWorksBody:
-      'There are five rooms. Two at your vacation place: Going to the Hotel opens when you declare your dates, At the Hotel with a one-time location check made there. Two at an event, the same way. The fifth is Around You: whoever is at the place you checked into right now. Whichever room you are in, its people appear here, in Discovery.',
+    howItWorks: 'How Does It Work?',
+    howItWorksBody: 'Join a room and discover the people at the same place as you.',
     /** D-057: the shared context selector over the one deck. */
     contextTitle: 'Which room are you exploring?',
     contextHint: 'Opens the list of your open rooms',
@@ -662,7 +661,7 @@ export const en = {
     likedEachOther: (name: string) => `You and ${name} liked each other.`,
     sayHelloCta: (name: string) => `Say hello to ${name}`,
     /** M-01 (132:106): the primary CTA's own word. */
-    sendMessageCta: 'Send a message',
+    sendMessageCta: 'Send a Message',
     selfFallback: 'You',
     title: "It's a match!",
     /**
@@ -682,30 +681,32 @@ export const en = {
     bodyEventUpcoming: 'No ticket was asked of either of you.',
     bodyEventHereNow: 'A location check is not a ticket check.',
     notAvailable: 'This match is no longer available.',
-    keepBrowsing: 'Keep browsing',
+    keepBrowsing: 'Keep Swiping',
     /** The chip's spoken name (176:3929). A venue, never a distance. */
     venueContext: (name: string) => `Your shared venue: ${name}`,
   },
 
   safety: {
-    title: 'Safety',
+    title: 'Report',
     blockButton: 'Block',
-    reportButton: 'Report',
+    reportButton: 'Send Report',
     /** When the name did not arrive. A literal "this person" used to be typed into the screen. */
     someone: 'this person',
     /** D-065 (177:5293): the block confirmation's own title. */
-    blockTitle: 'Block this person',
+    blockTitle: 'Block User',
     blockConfirm: 'Block this person? They will disappear from your discovery, matches, and inbox.',
     reportIntro:
       'Reports are reviewed by our team and also block this person, so they disappear from your discovery, matches, and inbox.',
-    reportReasonLabel: 'What happened?',
+    reportHeading: 'Why are you reporting this?',
+    reportReasonLabel:
+      "Do this person's profile or messages break our community rules?",
     reportDetailsLabel: 'More details (optional)',
-    reportDetailsPlaceholder: 'Add anything that helps us review this',
+    reportDetailsPlaceholder: 'Tell us what happened…',
     reportThanks: 'Thanks. Our team will review this report.',
     reportError: 'Could not send that report. Try again.',
     blockError: 'Could not block that person. Try again.',
     reasons: {
-      HARASSMENT: 'Harassment or abuse',
+      HARASSMENT: 'Harassment or bullying',
       SPAM: 'Spam or scam',
       FAKE_PROFILE: 'Fake profile',
       UNDERAGE: 'Appears underage',
@@ -715,7 +716,7 @@ export const en = {
   },
 
   inbox: {
-    title: 'Inbox',
+    title: 'Messages',
     newMatches: 'New matches',
     sayHello: 'Say hello',
     openChatHint: 'Open chat',
@@ -725,8 +726,8 @@ export const en = {
     chats: 'Chats',
     yesterday: 'Yesterday',
     emptyTitle: 'No matches yet',
-    emptyBody: 'When you like each other, conversations will start here.',
-    startDiscovering: 'Start discovering',
+    emptyBody: 'Get on with your holiday — your paths will cross with somebody soon enough!',
+    startDiscovering: 'Start Discovering',
     viewRooms: 'Set up my trip',
     /**
      * "Show up here", not "you will be notified": there is no match push
@@ -781,7 +782,7 @@ export const en = {
     locationNote:
       'CheckMatches never tracks you in the background and never shares exact locations.',
     accountTitle: 'Account',
-    signOutButton: 'Sign out',
+    signOutButton: 'Sign Out',
     blockedTitle: 'Blocked people',
     blockedEmpty: 'You have not blocked anyone.',
     /** D-053 §6: what Google's part actually is, in plain words. */
@@ -806,7 +807,7 @@ export const en = {
   deleteAccount: {
     title: 'Delete your account',
     intro: 'This removes your account from CheckMatches. It cannot be undone.',
-    startButton: 'Delete my account',
+    startButton: 'Delete Account',
     // Said before the irreversible tap, not after. Both halves are here on
     // purpose: what disappears, and the one thing that does not.
     whatGoes:
@@ -879,14 +880,14 @@ export const en = {
     headerSubtitle: 'Your vacation plans and matches',
     /** D-065: the head's own switch action, distinct from `hotel.switchButton`
      * below the cards — same destination, a shorter word for a smaller slot. */
-    switchVenueCta: 'Switch venue',
+    switchVenueCta: 'Switch Venue',
     /** D-065: the section label over the active-venue card. */
     hereSectionLabel: 'You are here now',
     /** D-065: the active-venue card's own way in — same room `active-hotel-card`
      * already opens, said as its own pill rather than only the whole card. */
-    enterRoomCta: 'Enter the room',
+    enterRoomCta: 'Enter the Room',
     /** D-065: the empty state's one action, with a search glyph beside it. */
-    searchVenueCta: 'Search a place',
+    searchVenueCta: 'Search Venues',
   },
 
   checkin: {
@@ -995,7 +996,7 @@ export const en = {
       'You have used this month’s searched place finds. You can still check in from the list around you or from where you are.',
     selectionStale: 'That selection is no longer fresh. Go back to the list and pick again.',
     providerUnavailable: 'The event provider cannot be reached right now. Try again shortly.',
-    network: 'No connection. Try again.',
+    network: 'Could you check your connection and try again?',
     suspended: 'Your account is suspended. You can still block, report, and read your conversations.',
     unknown: 'Something went wrong. Try again.',
     /** D-065 (176:4659): a standing failure's heading, above the sentence saying which one. */

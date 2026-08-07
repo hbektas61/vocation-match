@@ -36,6 +36,9 @@ async function onboardAndActivateHotel() {
 /** From the Rooms tab, opens Here Now and simulates an in-range check. */
 async function checkInAtHotel() {
   await press(screen.getByTestId('tab-Vacation'));
+  // D-065: the trip tab draws one venue card; its "Odaya Gir" pill is the
+  // way into the two rooms.
+  await press(await screen.findByTestId('active-hotel-enter'));
   await press(await screen.findByTestId('open-here-now'));
   await press(await screen.findByTestId('simulate-near'));
   expect(await screen.findByText(/You are in/)).toBeTruthy();
@@ -111,26 +114,28 @@ describe('rooms and hotel switching', () => {
   it('keeps closed rooms pointing at their unlock steps (T-01)', async () => {
     await onboardAndActivateHotel();
 
-    // T-01 removed the state words from the tab: a closed room now reads as
-    // which door the card offers. Closed Upcoming presses into declaring
-    // dates, closed Here Now into the presence check — and neither card
-    // offers its deck, because there is no deck to offer.
+    // T-01 removed the state words: a closed room reads as which door the
+    // card offers. Closed Upcoming presses into declaring dates, closed Here
+    // Now into the presence check — and neither carries the live mark, because
+    // neither room is open. D-065 moved the pair behind the venue card's own
+    // "Odaya Gir" pill; the tab itself draws only the card.
     await press(screen.getByTestId('tab-Vacation'));
+    expect(screen.queryByTestId('open-upcoming')).toBeNull();
+    await press(await screen.findByTestId('active-hotel-enter'));
     expect(await screen.findByTestId('open-upcoming')).toBeTruthy();
     expect(await screen.findByTestId('open-here-now')).toBeTruthy();
-    expect(screen.queryByTestId('vacation-discover-upcoming')).toBeNull();
-    expect(screen.queryByTestId('vacation-discover-here-now')).toBeNull();
+    expect(screen.queryByTestId('open-upcoming-live')).toBeNull();
+    expect(screen.queryByTestId('open-here-now-live')).toBeNull();
   });
 
   it('leaving the venue needs no replacement, and asks first (owner, 2026-08-03)', async () => {
     await onboardAndActivateHotel();
 
-    // The exit is on the tab itself — not only behind the details card.
-    await press(await screen.findByTestId('hotel-leave-home'));
-    await press(await screen.findByTestId('hotel-leave-home-cancel'));
-    expect(await getApi().getActiveHotel()).not.toBeNull();
-
-    // The details screen carries the same door.
+    // D-065: `tatilim_view` draws no exit on the tab, so the one door is the
+    // details screen behind the card — which is also where the two rooms and
+    // the venue's own description now live.
+    await press(screen.getByTestId('tab-Vacation'));
+    expect(screen.queryByTestId('hotel-leave-home')).toBeNull();
     await press(await screen.findByTestId('active-hotel-card'));
     await press(await screen.findByTestId('hotel-leave'));
     await press(await screen.findByTestId('hotel-leave-cancel'));
@@ -147,10 +152,11 @@ describe('rooms and hotel switching', () => {
   it('switching hotels closes Here Now at the previous hotel (D-004)', async () => {
     await onboardAndActivateHotel();
     await checkInAtHotel();
-    // The open room's mark on the tab is the way into its deck (T-01).
-    expect(await screen.findByTestId('vacation-discover-here-now')).toBeTruthy();
-
+    // The open room says so with its live mark, behind the venue card.
     await press(screen.getByTestId('tab-Vacation'));
+    await press(await screen.findByTestId('active-hotel-enter'));
+    expect(await screen.findByTestId('open-here-now-live')).toBeTruthy();
+    await press(await screen.findByTestId('hotel-details-back-to-plan'));
     // D-054: switching means choosing again, destination first. Confirming is
     // still its own step, because the previous venue's discovery closes the
     // moment this lands (D-004).
@@ -161,17 +167,17 @@ describe('rooms and hotel switching', () => {
     });
     await press(await screen.findByTestId('confirm-switch'));
 
-    // Choosing lands on the rooms now, where the consequence of the switch
-    // is visible as the state itself: the new hotel's Here Now is closed, so
-    // its deck door is gone and the card presses into the check instead.
-    await waitFor(() => expect(screen.queryByTestId('vacation-discover-here-now')).toBeNull());
+    // The consequence of the switch is visible as the state itself: the new
+    // venue's Here Now is closed, so the live mark is gone and the teaser
+    // presses into the check instead.
+    await press(await screen.findByTestId('active-hotel-enter'));
+    await waitFor(() => expect(screen.queryByTestId('open-here-now-live')).toBeNull());
     expect(await screen.findByTestId('open-here-now')).toBeTruthy();
   });
 
   it('closes a Here Now room on its own once it expires, without a navigation (R-003)', async () => {
     await onboardAndActivateHotel();
     await checkInAtHotel();
-    expect(await screen.findByTestId('vacation-discover-here-now')).toBeTruthy();
 
     // Replace the next two `getRooms` answers with one that expires in
     // ~200 real ms, then the server's own closed answer — proving the
@@ -190,16 +196,16 @@ describe('rooms and hotel switching', () => {
         { room: 'HERE_NOW', eligible: false, reason: 'NO_RECENT_CHECK', validUntil: null },
       ]);
 
-    // Force a fresh focus-triggered fetch so the mocked sequence is consumed:
-    // hop to another tab and back.
-    await press(await screen.findByTestId('tab-Inbox'));
+    // Opening the rooms consumes the first mocked answer; the watcher moved
+    // to this screen with them.
     await press(screen.getByTestId('tab-Vacation'));
-    expect(await screen.findByTestId('vacation-discover-here-now')).toBeTruthy();
+    await press(await screen.findByTestId('active-hotel-enter'));
+    expect(await screen.findByTestId('open-here-now-live')).toBeTruthy();
 
-    // …and at `validUntil` the screen's own timer takes the deck door away,
-    // with nobody navigating: the card is back to offering the check.
+    // …and at `validUntil` the screen's own timer takes the live mark away,
+    // with nobody navigating: the teaser is back to offering the check.
     await waitFor(
-      () => expect(screen.queryByTestId('vacation-discover-here-now')).toBeNull(),
+      () => expect(screen.queryByTestId('open-here-now-live')).toBeNull(),
       { timeout: 5000 },
     );
     expect(await screen.findByTestId('open-here-now')).toBeTruthy();
@@ -377,6 +383,7 @@ describe('authentication and profile', () => {
     ).toBe(true);
 
     await press(screen.getByTestId('tab-Vacation'));
+    await press(await screen.findByTestId('active-hotel-enter'));
     await press(await screen.findByTestId('open-here-now'));
     await press(await screen.findByTestId('simulate-deny'));
 

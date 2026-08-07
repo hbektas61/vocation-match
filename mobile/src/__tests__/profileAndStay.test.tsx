@@ -137,6 +137,8 @@ describe('the stay you declared', () => {
   async function openUpcoming() {
     await onboardWithHotel();
     await press(await screen.findByTestId('tab-Vacation'));
+    // D-065: the two rooms live behind the venue card's own "Odaya Gir" pill.
+    await press(await screen.findByTestId('active-hotel-enter'));
     await press(await screen.findByTestId('open-upcoming'));
   }
 
@@ -171,6 +173,7 @@ async function pickDate(testID: string, iso: string): Promise<void> {
     await press(screen.getByTestId('save-upcoming'));
     await screen.findByTestId('open-upcoming');
 
+
     const deck = await getApi().getDiscoveryFeed('UPCOMING');
     const names = deck.map((c) => c.displayName);
     // Derya and Selin's windows cross the declared week; Nur is a December
@@ -179,11 +182,10 @@ async function pickDate(testID: string, iso: string): Promise<void> {
     expect(names).toContain('Selin');
     expect(names).not.toContain('Nur');
 
-    // And the hotel card must know: it refreshes on focus now, because the
-    // owner declared a stay elsewhere and came back to a card still offering
-    // the declare step. Open reads as the deck door existing (T-01).
-    await press(screen.getByTestId('tab-Vacation'));
-    expect(await screen.findByTestId('vacation-discover-upcoming')).toBeTruthy();
+    // And the room teaser must know: it refreshes on focus, because the owner
+    // declared a stay and came back to a card still offering the declare step.
+    // Open reads as the live mark being drawn.
+    expect(await screen.findByTestId('open-upcoming-live', {}, { timeout: 5000 })).toBeTruthy();
   });
 
   it('shows what you declared when you come back to it', async () => {
@@ -197,11 +199,10 @@ async function pickDate(testID: string, iso: string): Promise<void> {
     // never in isolation. Wait for the state the screen will read, not for a
     // longer timeout on the element it will eventually draw.
     await waitFor(async () => expect(await getApi().getUpcomingStay()).not.toBeNull());
-    // …and then for the card to have caught up. `vacation-discover-upcoming`
-    // only exists once the room reads as open, so it is the marker that the
-    // screen has settled. Pressing before it is what used to make this test
-    // land in Discovery: the CTA's action changed under the press.
-    await screen.findByTestId('vacation-discover-upcoming', {}, { timeout: 5000 });
+    // …and then for the teaser to have caught up. `open-upcoming-live` only
+    // exists once the room reads as open, so it is the marker that the screen
+    // has settled.
+    await screen.findByTestId('open-upcoming-live', {}, { timeout: 5000 });
 
     await press(await screen.findByTestId('open-upcoming'));
 
@@ -233,8 +234,8 @@ async function pickDate(testID: string, iso: string): Promise<void> {
     const rooms = await getApi().getRooms();
     expect(rooms.find((r) => r.room === 'UPCOMING')?.eligible).toBe(true);
 
-    // Same settle: press the update action, not the CTA mid-flip.
-    await screen.findByTestId('vacation-discover-upcoming', {}, { timeout: 5000 });
+    // Same settle: wait for the live mark before pressing back in.
+    await screen.findByTestId('open-upcoming-live', {}, { timeout: 5000 });
     await press(await screen.findByTestId('open-upcoming'));
     await press(await screen.findByTestId('upcoming-withdraw', {}, { timeout: 5000 }));
 
@@ -264,6 +265,7 @@ describe('a match that vanishes mid-conversation', () => {
   async function reachChat() {
     await onboardWithHotel();
     await press(await screen.findByTestId('tab-Vacation'));
+    await press(await screen.findByTestId('active-hotel-enter'));
     await press(await screen.findByTestId('open-here-now'));
     await press(await screen.findByTestId('simulate-near'));
     await press(await screen.findByTestId('here-now-done'));

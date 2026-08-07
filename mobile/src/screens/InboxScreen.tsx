@@ -115,9 +115,13 @@ export function InboxScreen() {
       {/* 176:3773: the head draws the title again (D-065), with the line that
           used to stand under it only on the empty state now carried as the
           head's own subtitle, on every state. */}
+      {/* 176:3771 is the one tab head in the contract with no venue chip on
+          it, and it is the right one to leave off: the inbox is the only tab
+          that is not scoped to the active venue — matches from a past venue,
+          an event and Çevremde all land in the same list. */}
       <ScreenHeader
         title={COPY.inbox.title}
-        subtitle={COPY.inbox.subtitle}
+        venue={false}
         ringTestID="inbox-profile-ring"
       />
       {error ? (

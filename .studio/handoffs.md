@@ -3863,3 +3863,42 @@ literals became i18n keys; no Turkish sentence was lifted from the file
 bundle + harness green. Remaining D-065 items live in backlog.md —
 notably the profile_detail owner call, the Etkinlikler joined state, the
 "(google)" ribbon bug and the unwired notification primer.
+
+## 2026-08-07 — D-065 node map (the page is reachable only by node id)
+
+# D-065 Figma node map — file wIc8HyZwV1rD2IY3csJa49
+
+176:2352  welcome
+176:2380  destination_picker
+176:2415  venue_picker
+176:2473  stay_declaration
+176:2550  location_permission
+176:2599  notification_permission
+176:2635  home_ready
+176:2730  tatilim_view
+176:2835  kesfet_view
+176:2948  cevremde_venues_view
+176:3667  etkinlikler_view
+176:3771  mesajlar_view
+176:3871  room_swipe_view
+176:3929  match_moment_view
+176:3956  chat_view
+176:4011  profile_detail_view
+176:4078  venue_switch_search
+176:4133  venue_switch_list
+176:4186  here_now_explainer
+176:4237  here_now_status
+176:4274  event_join_flow
+176:4324  upcoming_stay
+176:4429  edit_profile
+176:4504  settings_view
+176:4579  report_flow
+176:4628  system_states
+177:4681  etkinlikler_empty
+177:4751  oteldeyim_loading
+177:5259  oteldeyim_failure
+177:5283  block_confirmation
+177:5308  system_loading
+177:5348  system_offline
+177:5363  etkinlik_joined
+177:5409  country_city_picker

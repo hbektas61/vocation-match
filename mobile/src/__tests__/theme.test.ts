@@ -13,7 +13,7 @@
  * all (2.99:1), so the brand does its reading in a darker sibling and every
  * label on a coral fill is navy.
  */
-import { color, elevation, gradient, palette, radius, roomTone, tokens } from '../theme';
+import { color, elevation, gradient, palette, radius, roomTone, tileTone, tokens } from '../theme';
 
 /** WCAG 2.x relative luminance. */
 function luminance(hex: string): number {
@@ -224,5 +224,38 @@ describe('the two rooms', () => {
   it('keeps both labels readable on their own fill', () => {
     expect(contrast(roomTone.HERE_NOW.text, roomTone.HERE_NOW.fill)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(roomTone.UPCOMING.text, roomTone.UPCOMING.fill)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe('the decorative tile tones (D-065)', () => {
+  it('carries the file\'s own hues rather than one wash for everything', () => {
+    // The fault this group fixes: every tiled glyph in the app was drawn on
+    // `brand.wash`, so Keşfet's three doors — orange, pink and blue in the
+    // contract — read as one repeated card. Distinctness is the whole point,
+    // so it is asserted rather than described.
+    const hues = Object.values(tileTone);
+    expect(new Set(hues).size).toBe(hues.length);
+    expect(tileTone.orange).toBe('#FFF7ED');
+    expect(tileTone.pink).toBe('#FDF2F8');
+    expect(tileTone.blue).toBe('#EFF6FF');
+  });
+
+  it('is too pale for any of them to be text, which is the constraint', () => {
+    // A tile is a ground under a glyph and nothing else. None of these values
+    // can carry a readable word, and that is not a defect to be fixed by
+    // darkening them — it is why the rule exists. If somebody ever reaches for
+    // one as a text or control colour, this is the assertion that says no.
+    for (const [name, hue] of Object.entries(tileTone)) {
+      expect([name, contrast(hue, SURFACE) < 1.6]).toEqual([name, true]);
+    }
+  });
+
+  it('keeps the glyph that sits on a tile readable', () => {
+    // What the tiles are for: the drawn mark on top. Both inks the app puts on
+    // one clear AA against every hue in the group.
+    for (const hue of Object.values(tileTone)) {
+      expect(contrast(color.ink, hue)).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(color.accentDeep, hue)).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });

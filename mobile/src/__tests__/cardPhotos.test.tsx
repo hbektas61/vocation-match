@@ -49,6 +49,7 @@ async function openDeckWithPhotos(): Promise<void> {
       Object.fromEntries(paths.map((path) => [path, `file:///signed/${path}`])),
     );
   await press(screen.getByTestId('tab-Vacation'));
+  await press(await screen.findByTestId('active-hotel-enter'));
   await press(await screen.findByTestId('open-here-now'));
   await press(await screen.findByTestId('simulate-near'));
   await screen.findByText(/You are in/);
@@ -104,6 +105,7 @@ describe('the card photo set', () => {
         Object.fromEntries(paths.map((path) => [path, `file:///signed/${path}`])),
       );
     await press(screen.getByTestId('tab-Vacation'));
+    await press(await screen.findByTestId('active-hotel-enter'));
     await press(await screen.findByTestId('open-here-now'));
     await press(await screen.findByTestId('simulate-near'));
     await screen.findByText(/You are in/);
@@ -124,6 +126,7 @@ describe('the empty room (owner reference, 2026-07-26)', () => {
     const feedSpy = jest.spyOn(api, 'getDiscoveryFeed').mockResolvedValue([]);
 
     await press(screen.getByTestId('tab-Vacation'));
+    await press(await screen.findByTestId('active-hotel-enter'));
     await press(await screen.findByTestId('open-here-now'));
     await press(await screen.findByTestId('simulate-near'));
     await screen.findByText(/You are in/);

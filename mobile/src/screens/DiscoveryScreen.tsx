@@ -41,6 +41,7 @@ import {
   overlay,
   radius,
   spacing,
+  tileTone,
   tokens,
   tracking,
 } from '../theme';
@@ -597,6 +598,7 @@ export function DiscoveryScreen() {
         <ScreenHeader
           title={COPY.tabs.discovery}
           subtitle={COPY.discovery.headerSubtitle}
+          subtitleCase="sentence"
           ringTestID="discovery-profile-ring"
         />
         <Loading testID="discovery-loading" />
@@ -612,6 +614,7 @@ export function DiscoveryScreen() {
         <ScreenHeader
           title={COPY.tabs.discovery}
           subtitle={COPY.discovery.headerSubtitle}
+          subtitleCase="sentence"
           ringTestID="discovery-profile-ring"
         />
         {/*
@@ -632,6 +635,7 @@ export function DiscoveryScreen() {
                 key: 'hotel',
                 title: COPY.discovery.doorHotelTitle,
                 meta: COPY.discovery.doorHotelMeta,
+                tone: tileTone.orange,
                 icon: <SuitcaseIcon />,
                 onPress: () => navigation.navigate('ChooseHotel'),
                 testID: 'discovery-choose-hotel',
@@ -640,6 +644,7 @@ export function DiscoveryScreen() {
                 key: 'event',
                 title: COPY.discovery.doorEventTitle,
                 meta: COPY.discovery.doorEventMeta,
+                tone: tileTone.pink,
                 icon: <TicketIcon />,
                 onPress: () => tabNavigation.navigate('Events'),
                 testID: 'discovery-go-events',
@@ -648,6 +653,7 @@ export function DiscoveryScreen() {
                 key: 'nearby',
                 title: COPY.discovery.doorNearbyTitle,
                 meta: COPY.discovery.doorNearbyMeta,
+                tone: tileTone.blue,
                 icon: <PinDoorIcon />,
                 onPress: () => tabNavigation.navigate('Nearby'),
                 testID: 'discovery-go-nearby',
@@ -661,7 +667,7 @@ export function DiscoveryScreen() {
                 style={({ pressed }) => [styles.doorRow, pressed && styles.doorRowPressed]}
                 testID={door.testID}
               >
-                <View style={styles.doorDisc}>{door.icon}</View>
+                <View style={[styles.doorDisc, { backgroundColor: door.tone }]}>{door.icon}</View>
                 <View style={styles.doorWords}>
                   <Text style={styles.doorTitle}>{door.title}</Text>
                   <Text style={styles.doorMeta}>{door.meta}</Text>
@@ -704,6 +710,7 @@ export function DiscoveryScreen() {
         <ScreenHeader
           title={COPY.tabs.discovery}
           subtitle={COPY.discovery.headerSubtitle}
+          subtitleCase="sentence"
           ringTestID="discovery-profile-ring"
         />
         {/* D-057 (NAV-05): the selector is present but disabled here, so the
@@ -812,6 +819,7 @@ export function DiscoveryScreen() {
           <ScreenHeader
           title={COPY.tabs.discovery}
           subtitle={COPY.discovery.headerSubtitle}
+          subtitleCase="sentence"
           ringTestID="discovery-profile-ring"
         />
           <ContextSelector
@@ -1206,7 +1214,8 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: radius.md,
-    backgroundColor: color.accentWash,
+    /* The hue comes from `tileTone`, per door, exactly as the file draws it —
+       one wash for all three was the flattening the owner rejected. */
     alignItems: 'center',
     justifyContent: 'center',
   },

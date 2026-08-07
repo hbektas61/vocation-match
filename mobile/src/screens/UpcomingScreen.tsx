@@ -12,7 +12,7 @@ import { formatDayMonthLong, formatWeekday } from '../domain/dates';
 import { validateStayDates } from '../domain/upcoming';
 import type { RootScreenProps } from '../navigation/types';
 import { useAppStore } from '../state/AppStore';
-import { color, elevation, font, fontFamily, leading, radius, spacing, tracking } from '../theme';
+import { color, elevation, font, fontFamily, leading, radius, spacing, tileTone, tracking } from '../theme';
 
 const CalendarGlyph = () => (
   <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={color.accentDeep} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.snug,
-    backgroundColor: color.infoSoft,
+    backgroundColor: tileTone.blue,
     borderRadius: radius.md,
     padding: spacing.md,
   },

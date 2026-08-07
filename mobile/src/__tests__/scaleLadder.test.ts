@@ -56,7 +56,6 @@ const CONVERTED = [
   'components/ProfileRing.tsx',
   'components/RadarEmpty.tsx',
   'components/RoomIllustrations.tsx',
-  'components/VacationFeatureCard.tsx',
   'components/VenueRibbon.tsx',
   'components/VenuePicker.tsx',
   'components/ui.tsx',
