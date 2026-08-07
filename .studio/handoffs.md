@@ -3902,3 +3902,17 @@ notably the profile_detail owner call, the Etkinlikler joined state, the
 177:5348  system_offline
 177:5363  etkinlik_joined
 177:5409  country_city_picker
+
+## 2026-08-08 — device bug pass interrupted mid-write
+
+The owner's device photos surfaced five bugs (see backlog + this entry's
+sibling in the session): the "(google)" placeholder rendering as a venue
+name in three surfaces, the venue picker's clipped/doubled head, the deck
+dock clipped above the tab bar, an English month inside Turkish date
+plates, and the inbox ring falling to the left without its chip. A fix
+agent died on the account session limit (resets 01:40 Europe/Istanbul)
+leaving UNVERIFIED partial work in the tree: nine modified files plus a
+new `mobile/src/state/useActiveVenueName.ts`. No gate has run on it;
+nothing is committed. The next agent must first read the diff against
+1fe6cce, judge what the dead agent was mid-way through, and finish all
+five fixes to a green gate before anything lands.
