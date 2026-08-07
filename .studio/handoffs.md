@@ -3791,3 +3791,33 @@ the Google attribution. The app-facing rows contained no `location`,
 `latitude`, `longitude` or provider `types`. This incurred one destination
 Autocomplete and one Nearby request and changed only the normal metering/search
 session records those calls are designed to write.
+
+## 2026-08-07 — D-061 rakip kanıtı: başlıksız header sektör standardı
+
+ScreensDesign MCP bağlandı ancak veri uçları Pro aboneliği istiyor; sahip
+aboneliksiz devam kararı verdi. Araştırma resmî App Store / Google Play
+ekran görüntüleriyle yapıldı (pazarlama karesi olsalar da gerçek UI
+çerçeveleri içeriyorlar; kayıtlı replay kanıtı değiller — bu sınır not
+edildi).
+
+Dört önde gelen dating uygulamasında ana ekran üst çubuğu hiçbirinde ekran
+başlığı taşımıyor:
+
+- **Bumble** (People/swipe ekranı): solda "Bumble" wordmark, sağda filtre
+  ikonu; ekran adları yalnızca tab bar'da. Başlık yok.
+- **Hinge**: header alanı bağlam taşıyor — profil detayında ve sohbette
+  kişinin adı ("Jordan", "Melissa", "Zuri") ortada; ekran adı hiçbir resmî
+  karede görünmüyor.
+- **Feeld** (Discover): üst kenar başlık yerine filtre/bağlam şeridi
+  ("Desires ▾ / Location ▾ / Distance ▾"); onboarding'de ortada FEELD
+  wordmark + ilerleme yüzdesi.
+- **Happn** (crossed-paths harita ekranı): başlığın yerinde doğrudan konum
+  adı — "Notting Hill" — ve altta "Your exact position remains secret"
+  gizlilik satırı. Konum-bağlamı-başlık-yerine deseninin birebir emsali;
+  gizlilik dili bizim koordinat-sızdırmama kuralımızla aynı ruhta.
+
+Sonuç: D-061 (görsel sekme başlıklarının kaldırılması + VenueRibbon'un
+aktif tatil mekânını header bağlamı olarak göstermesi) sektör pratiğiyle
+uyumlu; Happn konum-adı-header için doğrudan emsal. Ekran adlandırması tab
+bar'a bırakılmış durumda — bizim yapımızla aynı. Ek iş çıkmadı; karar
+değişikliği önerilmiyor.
