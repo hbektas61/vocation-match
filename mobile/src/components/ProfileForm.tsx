@@ -8,9 +8,11 @@
  * 18+ message cannot drift between the two.
  */
 import React, { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Eye from 'lucide-react-native/icons/eye';
 
 import { DateField } from './DateField';
-import { Body, Button, Caption, Checkbox, Field, Gap, Notice } from './ui';
+import { Body, Button, Caption, Card, Field, Gap, Notice, SectionLabel, ToggleRow } from './ui';
 import { todayIsoDate } from '../clock';
 import { apiErrorMessage, birthdateMessage, COPY } from '../copy';
 import {
@@ -32,6 +34,11 @@ import {
 } from '../fixtures/identity';
 import { INTEREST_CHOICES } from '../fixtures/interests';
 import { ChoiceChip, ChoiceGroup, ChoiceRow } from '../onboarding/ChoiceChip';
+import { genderIcon, interestIcon, showMeIcon } from '../onboarding/stepIcons';
+import { color } from '../theme';
+
+/** The mark inside a `ToggleRow`'s leading tile (176:4488). */
+const TOGGLE_GLYPH = 20;
 
 export function ProfileForm({
   initial,
@@ -122,8 +129,14 @@ export function ProfileForm({
         testID={`${testIDPrefix}-birthdate`}
       />
       <Body>{COPY.profileSetup.birthdateNote}</Body>
+
+      {/* The contract's sections (176:4441/4455/4481): a tracked label above
+          the thing it names, rather than a sentence in front of it. The label
+          is found; the sentence under a field is read. */}
+      <SectionLabel>{COPY.profileSetup.bioLabel}</SectionLabel>
       <Field
         label={COPY.profileSetup.bioLabel}
+        hideLabel
         value={bio}
         onChangeText={setBio}
         placeholder={COPY.profileSetup.bioPlaceholder}
@@ -131,7 +144,7 @@ export function ProfileForm({
         editable={!submitting}
         testID={`${testIDPrefix}-bio`}
       />
-      <Caption>{COPY.onboarding.interests.headline}</Caption>
+      <SectionLabel>{COPY.onboarding.interests.headline}</SectionLabel>
       <ChoiceGroup
         hint={
           interests.length >= MAX_INTERESTS
@@ -146,6 +159,7 @@ export function ProfileForm({
             <ChoiceChip
               key={choice}
               label={choice}
+              icon={interestIcon(choice, selected ? color.accentDeep : color.inkMuted)}
               selected={selected}
               disabled={!selected && interests.length >= MAX_INTERESTS}
               onPress={() =>
@@ -165,26 +179,21 @@ export function ProfileForm({
           it decides whose cards this person is shown, so getting it wrong and
           having no way back would leave somebody with an empty deck and no
           explanation. */}
-      <Caption>{COPY.onboarding.gender.headline}</Caption>
+      <SectionLabel>{COPY.onboarding.gender.headline}</SectionLabel>
       <ChoiceGroup testID={`${testIDPrefix}-gender`}>
         {[...PRIMARY_GENDERS, ...MORE_GENDERS].map((value) => (
           <ChoiceChip
             key={value}
             label={genderLabel(value)}
+            icon={genderIcon(value)}
             selected={gender === value}
             onPress={() => setGender(value)}
             testID={`${testIDPrefix}-gender-${value.toLowerCase().replace(/\s+/g, '-')}`}
           />
         ))}
       </ChoiceGroup>
-      <Checkbox
-        label={COPY.onboarding.gender.showOnProfile}
-        checked={showGender}
-        onChange={setShowGender}
-        testID={`${testIDPrefix}-show-gender`}
-      />
 
-      <Caption>{COPY.onboarding.orientation.headline}</Caption>
+      <SectionLabel>{COPY.onboarding.orientation.headline}</SectionLabel>
       <ChoiceGroup
         hint={COPY.onboarding.orientation.limit(MAX_ORIENTATIONS)}
         testID={`${testIDPrefix}-orientations`}
@@ -207,26 +216,49 @@ export function ProfileForm({
           );
         })}
       </ChoiceGroup>
-      <Checkbox
-        label={COPY.onboarding.orientation.showOnProfile}
-        checked={showOrientation}
-        onChange={setShowOrientation}
-        testID={`${testIDPrefix}-show-orientation`}
-      />
       <Caption>{COPY.onboarding.orientation.notAFilter}</Caption>
 
-      <Caption>{COPY.onboarding.showMe.headline}</Caption>
+      <SectionLabel>{COPY.onboarding.showMe.headline}</SectionLabel>
       <ChoiceGroup hint={COPY.onboarding.showMe.body} testID={`${testIDPrefix}-show-me`}>
         {SHOW_ME_VALUES.map((value) => (
           <ChoiceChip
             key={value}
             label={COPY.identity.showMe[value] ?? value}
+            icon={showMeIcon(value, TOGGLE_GLYPH)}
             selected={showMe === value}
             onPress={() => setShowMe(value)}
             testID={`${testIDPrefix}-show-me-${value.toLowerCase()}`}
           />
         ))}
       </ChoiceGroup>
+
+      {/* The visibility card (176:4481–4503). The two answers about what other
+          people see used to be checkboxes sitting under the group each one was
+          about — a tick on the way to submitting a form. They are not that:
+          they are two things about the profile that are on or off right now,
+          which is what the contract draws and what a switch means. Gathering
+          them into one card is also the only way the question "who sees what"
+          gets answered in one place instead of twice, forty lines apart. */}
+      <SectionLabel>{COPY.profileSetup.visibilityTitle}</SectionLabel>
+      <Card>
+        <ToggleRow
+          label={COPY.onboarding.gender.showOnProfile}
+          glyph={<Eye size={TOGGLE_GLYPH} color={color.accentDeep} strokeWidth={2} />}
+          value={showGender}
+          onChange={setShowGender}
+          tone="flat"
+          testID={`${testIDPrefix}-show-gender`}
+        />
+        <View style={styles.visibilityRule} />
+        <ToggleRow
+          label={COPY.onboarding.orientation.showOnProfile}
+          glyph={<Eye size={TOGGLE_GLYPH} color={color.accentDeep} strokeWidth={2} />}
+          value={showOrientation}
+          onChange={setShowOrientation}
+          tone="flat"
+          testID={`${testIDPrefix}-show-orientation`}
+        />
+      </Card>
       {error ? <Notice message={error} tone="error" testID={`${testIDPrefix}-error`} /> : null}
       <Gap size="sm" />
       <Button
@@ -239,3 +271,8 @@ export function ProfileForm({
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  /** The hairline between two rows inside one card (176:4517). */
+  visibilityRule: { height: 1, backgroundColor: color.rule },
+});

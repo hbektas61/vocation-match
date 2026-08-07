@@ -3846,3 +3846,20 @@ The slice-4 agent died at spawn on the account's session limit (resets
 task list; hex→token map and deviation doctrine are in the three landed
 commit messages and slice 3's report. Gate: `bash scripts/check.sh
 --mobile`, if-block on the real exit code, never a pipe.
+
+## 2026-08-07 — D-065 complete: five slices, forty-four screens
+
+The whole Figma contract is implemented. Slice 4 (68fba2a) landed the
+flows — and refused profile_detail, which reintroduces the dossier
+dae4ef3 removed plus D-026's barred photo pager; that stays an owner
+call in the backlog. Slice 5 landed profile edit, settings, report and
+block (now a ConfirmDialog), and the system-state primitives: a real
+ErrorState with a working retry (new systemStates.test proves the retry
+re-runs the load), skeletons shaped like what they stand for, EmptyState
+per the drawing. system_offline stayed out — no connectivity source
+exists and none was invented. ReportBlockScreen's typed-in English
+literals became i18n keys; no Turkish sentence was lifted from the file
+(trustCopy). Final gate: 63 suites / 795 tests, tsc 0, eslint 0, web
+bundle + harness green. Remaining D-065 items live in backlog.md —
+notably the profile_detail owner call, the Etkinlikler joined state, the
+"(google)" ribbon bug and the unwired notification primer.

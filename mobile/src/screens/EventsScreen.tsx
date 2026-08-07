@@ -702,7 +702,9 @@ export function EventsScreen({
             <Text style={styles.busyText}>{COPY.events.refreshing}</Text>
           </View>
         ) : (
-          <SkeletonCard height={300} testID="events-loading" />
+          // The band this is standing in for, rather than a round number:
+          // `SkeletonCard` draws the body under it itself now (177:5316).
+          <SkeletonCard height={CARD_BAND_HEIGHT} testID="events-loading" />
         )
       ) : null}
 

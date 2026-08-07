@@ -559,9 +559,14 @@ coordinate or provider type list.
       in the 176:2599 composition but unwired; the app asks silently inside
       registerForPush at sign-in and no step-count-safe slot exists. Wire it
       when the notification phase gets its screen.
-- [ ] D-065 — stepIcons.tsx: genderIcon/showMeIcon/CrowdIcon/interestIcon now
+- [x] D-065 — stepIcons.tsx: genderIcon/showMeIcon/CrowdIcon/interestIcon now
       unreferenced; ProfileForm (slice 5/6) is their natural consumer —
-      decide reuse-or-delete there.
+      decide reuse-or-delete there. **Reused** (slice 5): `ProfileForm` passes
+      `interestIcon` to every interest chip, `genderIcon` to every gender chip
+      and `showMeIcon` to every show-me chip, through `ChoiceChip`'s existing
+      `icon` slot; `CrowdIcon` is live again as `showMeIcon`'s default branch.
+      Nothing was deleted — the file is drawn glyphs the edit form wanted and
+      the drawing (176:4466) puts a mark on a chip.
 - [ ] Welcome hero: Figma's generated beach photo (176:2373) was never
       exported; assets/nearby-hero.jpg stands in at the contract geometry.
       Replace only if the owner wants a dedicated shot.
@@ -570,6 +575,62 @@ coordinate or provider type list.
       pager D-026 bars. Slice 4 did not build it; the node's substantive
       content (live badge, interest chips) landed on the deck card instead.
       Building it back is a decision to record, not a restyle.
-- [ ] Slice 5 warning — the Figma file's own TR copy makes verification
+- [x] Slice 5 warning — the Figma file's own TR copy makes verification
       claims ("doğrulanıyor") that trustCopy.test bars (D-001). Lift no
       Turkish strings from the file without running them past that suite.
+      **Held**: no Turkish sentence was lifted from the file. The two claims
+      slice 5 met are recorded below.
+
+## D-065 slice 5 — what the contract drew and the app does not (2026-08-07)
+
+- [ ] The settings **navigation index** (176:4516/4551) is five rows with
+      chevrons — Bildirimler, Gizlilik & Konum, Engellenen Kullanıcılar,
+      Yardım Merkezi, Uygulamayı Puanla. Four of those five destinations are
+      screens that do not exist, and only "Engellenen Kullanıcılar" has real
+      content behind it. Slice 5 adopted the group *chrome* (the tracked label
+      standing above its card rather than inside it) and left the index alone:
+      building four empty destinations to make a drawing come out is the wrong
+      order of work. Revisit when notification settings and a help surface are
+      real features.
+- [ ] The settings **version stamp** (176:4578, "CHECKMATCHES V2.4.0") was
+      omitted. The product name is right — it is ours — but nothing in the app
+      can read its own version: `expo-constants` is not a dependency and
+      `resolveJsonModule` is off, so `app.json`'s version is not importable.
+      A hardcoded string would be wrong the first time app.json moved. Add the
+      stamp when a release phase gives it a source.
+- [ ] `system_offline` (177:5348) was **not built**: there is no NetInfo
+      dependency, no connectivity listener and no ErrorBoundary anywhere in
+      the app, so a global offline screen has no existing mount point and the
+      brief bars adding a listener for one. Its 280pt 3D illustration was also
+      never exported (same category as the welcome hero). What did land is the
+      *recoverable* half of it — `ErrorState`, the drawn error+retry from
+      176:4652 — which is what a screen that failed to load actually needs.
+      Build the global banner when a connectivity source exists.
+- [ ] edit_profile's header-right **"Kaydet"** (176:4438) stayed at the foot
+      of the form. The submit owns the form's busy state, its disabled state
+      and the error `Notice` beside it, all of which live inside `ProfileForm`;
+      hoisting the control into a `headerRight` would separate the button from
+      the validation feedback it belongs to. Revisit only if the form's state
+      is lifted for another reason.
+- [ ] report_flow's **pinned footer** (176:4617) was not built: `Screen` is a
+      scroll view, and pinning a footer means a second layout mode for one
+      screen. The submit sits at the end of the reason section instead.
+- [ ] The report notice's second sentence — "…ve 24 saat içinde yanıtlanır"
+      (176:4616) — was **not lifted**: the app has never promised an answer
+      within any window. The panel carries `safety.reportIntro`, which already
+      says the team reviews a report and that reporting also blocks.
+- [ ] block_confirmation's **warning disc and avatar preview** (177:5287,
+      177:5297) were not carried into `ConfirmDialog`. The dialog is shared
+      with four other confirmations; a per-caller illustration slot is new
+      shared surface built for one of them. The drawing's claim that blocking
+      **deletes existing conversations** was also not lifted — that is a
+      statement about server behaviour, and `safety.blockConfirm` already says
+      what the app knows to be true.
+- [ ] edit_profile's **"Gizli Mod"** toggle (176:4501) has no feature behind
+      it — there is no hidden mode in the product. The drawn GÖRÜNÜRLÜK card
+      carries the two visibility answers that *do* exist (show my gender, show
+      my orientation), promoted from checkboxes to switches.
+- [ ] edit_profile's **interest chips** (176:4466) show only the chosen ones
+      plus a dashed "Ekle" that opens a picker. The form still shows the whole
+      `INTEREST_CHOICES` set as toggleable chips; the selected-only shape needs
+      a picker sheet that does not exist. The drawn glyph on each chip landed.

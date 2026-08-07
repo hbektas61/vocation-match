@@ -207,6 +207,8 @@ export const en = {
     photoLater: 'You can add a photo from Settings once this is saved.',
     saveButton: 'Save profile',
     saving: 'Saving…',
+    /** D-065 (176:4483): the one section that answers "who sees what". */
+    visibilityTitle: 'Visibility',
   },
 
   editProfile: {
@@ -689,6 +691,10 @@ export const en = {
     title: 'Safety',
     blockButton: 'Block',
     reportButton: 'Report',
+    /** When the name did not arrive. A literal "this person" used to be typed into the screen. */
+    someone: 'this person',
+    /** D-065 (177:5293): the block confirmation's own title. */
+    blockTitle: 'Block this person',
     blockConfirm: 'Block this person? They will disappear from your discovery, matches, and inbox.',
     reportIntro:
       'Reports are reviewed by our team and also block this person, so they disappear from your discovery, matches, and inbox.',
@@ -992,11 +998,21 @@ export const en = {
     network: 'No connection. Try again.',
     suspended: 'Your account is suspended. You can still block, report, and read your conversations.',
     unknown: 'Something went wrong. Try again.',
+    /** D-065 (176:4659): a standing failure's heading, above the sentence saying which one. */
+    stateTitle: 'Something went wrong',
   },
 };
 
 /** Sentences that need a value dropped in. */
 export const enFor = {
+  /**
+   * The two safety headings. They were English string literals typed into the
+   * screen — "Report {name}", "Block {name}", "Yes, block {name}" — so a
+   * Turkish user reading a Turkish app was told to "Block Selin" in English.
+   */
+  reportHeading: (name: string) => `Report ${name}`,
+  blockHeading: (name: string) => `Block ${name}`,
+  blockConfirmAction: (name: string) => `Block ${name}`,
   roomsTitle: (hotelName: string | null) =>
     hotelName ? `Rooms at ${hotelName}` : 'Rooms at your hotel',
   discoveryTitle: (hotelName: string) => `Discovery at ${hotelName}`,

@@ -19,6 +19,8 @@ import {
   type ViewStyle,
 } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
+import Ghost from 'lucide-react-native/icons/ghost';
+import Unplug from 'lucide-react-native/icons/unplug';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -666,15 +668,25 @@ export function Checkbox({
 export function ToggleRow({
   label,
   caption,
+  glyph,
   value,
   onChange,
+  /** `flat` drops the lift for a row stacked inside a card that already floats. */
+  tone = 'raised',
   testID,
 }: {
   label: string;
   /** The quiet line under the question: what turning it on actually does. */
   caption?: string;
+  /**
+   * The contract's leading tile (176:4487): a 40pt rounded square with a 20pt
+   * mark in it. Decorative — the label is the question, and the switch is the
+   * answer; the tile is only there so a list of rows has a left edge.
+   */
+  glyph?: React.ReactNode;
   value: boolean;
   onChange: (next: boolean) => void;
+  tone?: 'raised' | 'flat';
   testID?: string;
 }) {
   return (
@@ -684,9 +696,18 @@ export function ToggleRow({
       accessibilityLabel={label}
       accessibilityHint={caption}
       onPress={() => onChange(!value)}
-      style={({ pressed }) => [styles.toggleRow, pressed && styles.togglePressed]}
+      style={({ pressed }) => [
+        styles.toggleRow,
+        tone === 'flat' && styles.toggleRowFlat,
+        pressed && styles.togglePressed,
+      ]}
       testID={testID}
     >
+      {glyph ? (
+        <View style={styles.toggleGlyph} accessibilityElementsHidden importantForAccessibility="no">
+          {glyph}
+        </View>
+      ) : null}
       <View style={styles.toggleText}>
         <Text style={styles.toggleLabel}>{label}</Text>
         {caption ? <Text style={styles.toggleCaption}>{caption}</Text> : null}
@@ -988,13 +1009,27 @@ function initialOf(name: string): string {
 }
 
 /**
- * Nothing here yet, said as a card rather than as a hole.
+ * The disc every system state stands on (D-065, 176:4638 / 176:4653): a large
+ * tinted circle with one line-drawn mark in it. Two tones, because the file
+ * draws exactly two — the brand wash for "there is nothing here", the danger
+ * wash for "this did not work" — and the mark is always decoration: the
+ * heading and the sentence under it carry the state.
+ */
+const STATE_DISC = 96;
+const STATE_GLYPH = 48;
+
+/**
+ * Nothing here yet, drawn as the contract draws it (176:4637).
  *
- * D-058's rule: an empty state keeps the same hierarchy a full one has — a
- * surface, a mark, a sentence — because a centred line of grey text in forty
- * points of dead space reads as a screen that failed to load.
+ * D-058 made this a card, on the rule that an empty state keeps the hierarchy
+ * a full one has rather than being a line of grey text in dead space. D-065
+ * keeps the hierarchy and drops the card: a 96pt wash disc, a heading, a
+ * sentence and — when there is one thing worth doing — the thing worth doing.
+ * A card was a second surface floating on a screen that had nothing on it.
  */
 export function EmptyState({
+  /** The state itself, in three or four words. Optional: some callers only have a sentence. */
+  title,
   message,
   /** The one thing worth doing from here, when there is one. */
   action,
@@ -1008,22 +1043,90 @@ export function EmptyState({
   mark = true,
   testID,
 }: {
+  title?: string;
   message: string;
   action?: React.ReactNode;
   mark?: boolean;
   testID?: string;
 }) {
   return (
-    <View style={styles.empty} accessibilityRole="text" testID={testID}>
+    <View style={styles.stateBlock} accessibilityRole="text" testID={testID}>
       {mark ? (
-        <View style={styles.emptyMark}>
-          <Text style={styles.emptyGlyph} accessibilityElementsHidden importantForAccessibility="no">
-            ·
-          </Text>
+        <View
+          style={styles.stateDisc}
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+        >
+          <Ghost size={STATE_GLYPH} color={color.accent} strokeWidth={1.6} />
         </View>
       ) : null}
-      <Text style={styles.emptyText}>{message}</Text>
+      {title ? (
+        <Text accessibilityRole="header" style={styles.stateTitle}>
+          {title}
+        </Text>
+      ) : null}
+      <Text style={styles.stateText}>{message}</Text>
       {action}
+    </View>
+  );
+}
+
+/**
+ * A standing failure with a way out of it (176:4652).
+ *
+ * The distinction `ToastHost` draws is the one that decides between this and a
+ * toast: news that has been read and should go is a toast, and what the page
+ * *is* while you look at it belongs on the page. A list that could not load is
+ * the second kind, and until D-065 the app said it with an error `Notice` and
+ * no way to try again — leaving the screen back is the only recovery a person
+ * had, on a failure that is usually a tunnel.
+ *
+ * The retry is deliberately the outlined button rather than the coral one: the
+ * loud button on a screen should be the thing you came to do, not the apology.
+ */
+export function ErrorState({
+  title,
+  message,
+  /** Runs the same load again. Omitted when the caller genuinely has no retry. */
+  onRetry,
+  retryLabel,
+  busy = false,
+  testID,
+}: {
+  title?: string;
+  message: string;
+  onRetry?: () => void;
+  retryLabel?: string;
+  busy?: boolean;
+  testID?: string;
+}) {
+  // Announced for the same reason `Notice`'s error tone is: on iOS nothing is
+  // spoken when a region appears, so a silent swap from a spinner to a failure
+  // is indistinguishable from a load that never finished.
+  useScreenChangeAnnouncement(message);
+  return (
+    <View
+      style={styles.stateBlock}
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite"
+      testID={testID}
+    >
+      <View style={styles.stateDiscDanger} accessibilityElementsHidden importantForAccessibility="no">
+        <Unplug size={STATE_GLYPH} color={color.danger} strokeWidth={1.6} />
+      </View>
+      <Text accessibilityRole="header" style={styles.stateTitle}>
+        {title ?? COPY.errors.stateTitle}
+      </Text>
+      <Text style={styles.stateText}>{message}</Text>
+      {onRetry ? (
+        <Button
+          label={retryLabel ?? COPY.common.retry}
+          variant="secondary"
+          busy={busy}
+          onPress={onRetry}
+          testID={testID ? `${testID}-retry` : undefined}
+        />
+      ) : null}
     </View>
   );
 }
@@ -1151,12 +1254,23 @@ export function SkeletonRows({
   );
 }
 
-/** A card-shaped wait — the hero that is about to be there. */
+/**
+ * A card-shaped wait — the hero that is about to be there.
+ *
+ * D-065 (177:5316) draws this as the card it is standing in for rather than as
+ * one grey rectangle the size of one: the picture band on top, then the title,
+ * the line under it, and the pill in the corner. `height` is the picture, not
+ * the card, because that is the part a caller actually knows the size of.
+ *
+ * `fill` stays a plain block: its one caller is the deck, whose card *is* a
+ * full-bleed photograph with nothing drawn beneath it.
+ */
 export function SkeletonCard({
   height = 300,
   fill = false,
   testID,
 }: {
+  /** The picture band's height. The body below it is the same on every card. */
   height?: number;
   /** Own the whole remaining screen, the way the deck's card does. */
   fill?: boolean;
@@ -1169,7 +1283,21 @@ export function SkeletonCard({
       style={fill ? styles.skeletonFill : undefined}
       testID={testID}
     >
-      <Skeleton style={fill ? styles.skeletonFillInner : [styles.skeletonCard, { height }]} />
+      {fill ? (
+        <Skeleton style={styles.skeletonFillInner} />
+      ) : (
+        <View style={styles.skeletonCard}>
+          <Skeleton style={[styles.skeletonMedia, { height }]} />
+          <View style={styles.skeletonCardBody}>
+            <Skeleton style={styles.skeletonLineTitle} />
+            <Skeleton style={styles.skeletonLineNarrow} />
+            <View style={styles.skeletonCardFoot}>
+              <Skeleton style={styles.skeletonLineFoot} />
+              <Skeleton style={styles.skeletonPill} />
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -1445,7 +1573,24 @@ const styles = StyleSheet.create({
   skeletonLines: { flex: 1, gap: spacing.sm },
   skeletonLineWide: { height: 12, borderRadius: radius.pill, width: '72%' },
   skeletonLineNarrow: { height: 10, borderRadius: radius.pill, width: '44%' },
-  skeletonCard: { borderRadius: radius.xl, width: '100%' },
+  /** The card the wait is standing in for (177:5316). */
+  skeletonCard: {
+    width: '100%',
+    borderRadius: radius.xxl,
+    overflow: 'hidden',
+    backgroundColor: color.surface,
+    ...elevation.card,
+  },
+  skeletonMedia: { width: '100%', borderRadius: 0 },
+  skeletonCardBody: { padding: spacing.wide, gap: spacing.snug },
+  skeletonLineTitle: { height: 20, borderRadius: radius.xs, width: '62%' },
+  skeletonCardFoot: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  skeletonLineFoot: { height: 14, borderRadius: radius.xs, width: '34%' },
+  skeletonPill: { height: 32, borderRadius: radius.pill, width: 80 },
   skeletonFill: { flex: 1 },
   skeletonFillInner: { flex: 1, borderRadius: 0 },
   /** The shared waiting state: centred, with air around it. */
@@ -1949,7 +2094,23 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     ...elevation.card,
   },
+  /** Stacked inside a card that already floats: no second shadow, no second corner. */
+  toggleRowFlat: {
+    ...elevation.none,
+    borderRadius: 0,
+    paddingHorizontal: 0,
+    paddingVertical: spacing.sm,
+  },
   togglePressed: { backgroundColor: color.veil },
+  /** The leading tile (176:4487). */
+  toggleGlyph: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm,
+    backgroundColor: color.accentWash,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   toggleText: { flex: 1, gap: spacing.tight },
   toggleLabel: {
     fontFamily: fontFamily.bodySemi,
@@ -2037,31 +2198,38 @@ const styles = StyleSheet.create({
     color: color.inkMuted,
   },
 
-  empty: {
-    backgroundColor: color.surface,
-    borderRadius: radius.xl,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.md,
+  /** The shared system-state composition (176:4637 / 176:4652). */
+  stateBlock: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-    ...elevation.card,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
+    gap: spacing.snug,
   },
-  emptyMark: {
-    width: 48,
-    height: 48,
+  stateDisc: {
+    width: STATE_DISC,
+    height: STATE_DISC,
     borderRadius: radius.pill,
     backgroundColor: color.accentWash,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyGlyph: {
-    fontFamily: fontFamily.display,
-    fontSize: font.display,
-    lineHeight: font.display * leading.tight,
-    color: color.ink,
+  stateDiscDanger: {
+    width: STATE_DISC,
+    height: STATE_DISC,
+    borderRadius: radius.pill,
+    backgroundColor: color.dangerSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  emptyText: {
+  stateTitle: {
+    fontFamily: fontFamily.displayHeavy,
+    fontSize: font.heading,
+    lineHeight: font.heading * leading.snug,
+    color: color.ink,
+    textAlign: 'center',
+  },
+  stateText: {
     fontFamily: fontFamily.body,
     fontSize: font.body,
     lineHeight: font.body * leading.normal,

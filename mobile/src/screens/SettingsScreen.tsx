@@ -1,21 +1,34 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { LanguageSwitch } from '../components/LanguageSwitch';
 import { unregisterPush } from '../notifications/push';
 import { PhotoGrid } from '../components/PhotoGrid';
 import Svg, { Path } from 'react-native-svg';
 
-import { Avatar, Body, Button, Caption, Card, EmptyState, Heading, Loading, Notice, Screen, SectionLabel } from '../components/ui';
+import {
+  Avatar,
+  Body,
+  Button,
+  Caption,
+  Card,
+  EmptyState,
+  ErrorState,
+  Heading,
+  Notice,
+  Screen,
+  SectionLabel,
+  SkeletonRows,
+} from '../components/ui';
 import { apiErrorMessage, COPY } from '../copy';
 import { ApiError, getApi, type BlockedUser, type ProfilePhoto } from '../data';
 import { resetDeckLabels } from '../data/venueLabels';
 import type { RootStackParamList } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
-import { color, radius, spacing } from '../theme';
+import { color, font, fontFamily, MIN_TOUCH, radius, spacing } from '../theme';
 
 /**
  * What the app is entitled to claim about a deletion that did not visibly work.
@@ -50,10 +63,36 @@ export function SettingsScreen() {
   const [photos, setPhotos] = useState<ProfilePhoto[]>([]);
   const profileUrls = usePhotoUrls([state.profile?.photoPath ?? null]);
 
+  /**
+   * Focus and the failure state's retry run the same load, so the two cannot
+   * drift. The guard is a ref rather than the effect's own `cancelled` flag
+   * because the retry is not an effect and has no cleanup to hang one on.
+   */
+  const mounted = useRef(true);
+  useEffect(
+    () => () => {
+      mounted.current = false;
+    },
+    [],
+  );
+
+  const loadBlocked = useCallback(async () => {
+    setBlocked(null);
+    setBlockedError(null);
+    try {
+      const fetched = await getApi().getBlockedUsers();
+      if (!mounted.current) return;
+      setBlocked(fetched);
+      dispatch({ type: 'BLOCKED_USERS_LOADED', blockedUsers: fetched });
+    } catch (err) {
+      if (!mounted.current) return;
+      setBlockedError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
+    }
+  }, [dispatch]);
+
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      setBlockedError(null);
       // The photo set, so the grid shows what is actually there rather than
       // filling in from a cached primary.
       getApi()
@@ -62,23 +101,11 @@ export function SettingsScreen() {
           if (!cancelled) setPhotos(existing);
         })
         .catch(() => undefined);
-      (async () => {
-        try {
-          const fetched = await getApi().getBlockedUsers();
-          if (!cancelled) {
-            setBlocked(fetched);
-            dispatch({ type: 'BLOCKED_USERS_LOADED', blockedUsers: fetched });
-          }
-        } catch (err) {
-          if (!cancelled) {
-            setBlockedError(err instanceof ApiError ? apiErrorMessage(err.code) : COPY.errors.unknown);
-          }
-        }
-      })();
+      void loadBlocked();
       return () => {
         cancelled = true;
       };
-    }, [dispatch]),
+    }, [loadBlocked]),
   );
 
   const signOut = async () => {
@@ -172,34 +199,29 @@ export function SettingsScreen() {
           />
         </Card>
       ) : null}
+      {/* D-065 (176:4514): the tracked label stands *above* the card it names
+          rather than inside it. A label is structure — it belongs to the seam
+          between two groups, not to the surface of one. */}
       {state.profile ? (
-        <Card testID="settings-photo">
+        <>
           <SectionLabel>{COPY.photo.title}</SectionLabel>
-          {/* The same grid as onboarding. Two photo components meant two photo
-              models, and the single-photo one deleted every object under the
-              prefix except the one it knew about — which, once a profile could
-              hold nine, meant changing your photo here silently destroyed the
-              other eight. One model, one code path. */}
-          <Caption>{COPY.photo.explainer}</Caption>
-          <PhotoGrid photos={photos} onChanged={setPhotos} testID="settings-photo-grid" />
-        </Card>
+          <Card testID="settings-photo">
+            {/* The same grid as onboarding. Two photo components meant two photo
+                models, and the single-photo one deleted every object under the
+                prefix except the one it knew about — which, once a profile could
+                hold nine, meant changing your photo here silently destroyed the
+                other eight. One model, one code path. */}
+            <Caption>{COPY.photo.explainer}</Caption>
+            <PhotoGrid photos={photos} onChanged={setPhotos} testID="settings-photo-grid" />
+          </Card>
+        </>
       ) : null}
+      <SectionLabel>{COPY.language.label}</SectionLabel>
       <Card>
-        <SectionLabel>{COPY.language.label}</SectionLabel>
         <LanguageSwitch testID="settings-language" />
       </Card>
+      <SectionLabel>{COPY.settings.locationTitle}</SectionLabel>
       <Card>
-        <SectionLabel>{COPY.settings.accountTitle}</SectionLabel>
-        <Button
-          label={COPY.settings.signOutButton}
-          variant="secondary"
-          onPress={signOut}
-          disabled={signingOut}
-          testID="sign-out"
-        />
-      </Card>
-      <Card>
-        <SectionLabel>{COPY.settings.locationTitle}</SectionLabel>
         <Body>{COPY.settings.locationNote}</Body>
         <Body>{COPY.trust.noExactLocation}</Body>
         <Body>{COPY.trust.oneHotel}</Body>
@@ -207,8 +229,8 @@ export function SettingsScreen() {
       {/* D-053 §6: the provider disclosure sits beside the location note,
           where somebody looking for it would look, and says what is actually
           stored rather than gesturing at a policy page we do not have yet. */}
+      <SectionLabel>{COPY.settings.providersTitle}</SectionLabel>
       <Card testID="settings-providers">
-        <SectionLabel>{COPY.settings.providersTitle}</SectionLabel>
         <Body>{COPY.settings.providersOpen}</Body>
         <Body>{COPY.settings.providersGoogle}</Body>
         <Body>{COPY.settings.providersGoogleStorage}</Body>
@@ -216,36 +238,77 @@ export function SettingsScreen() {
         <Body>{COPY.settings.providersRetention}</Body>
         <Body>{COPY.settings.providersTerms}</Body>
       </Card>
+      <SectionLabel>{COPY.settings.blockedTitle}</SectionLabel>
       <Card testID="settings-blocked">
-        <SectionLabel>{COPY.settings.blockedTitle}</SectionLabel>
-        {blockedError ? <Notice message={blockedError} tone="error" testID="blocked-error" /> : null}
-        {blocked === null ? (
-          <Loading testID="blocked-loading" />
-        ) : blocked.length === 0 ? (
-          <EmptyState message={COPY.settings.blockedEmpty} />
+        {blocked === null && blockedError ? (
+          // Nothing arrived at all: the list *is* the failure, so it takes the
+          // standing state and its retry rather than a banner above an
+          // otherwise blank card.
+          <ErrorState message={blockedError} onRetry={() => void loadBlocked()} testID="blocked-error" />
         ) : (
-          blocked.map((entry) => (
-            <Card key={entry.userId}>
-              <Body>{entry.displayName}</Body>
-              <Button
-                label={COPY.settings.unblockButton}
-                variant="secondary"
-                onPress={() => unblock(entry.userId)}
-                disabled={unblockingId === entry.userId}
-                testID={`unblock-${entry.userId}`}
-              />
-            </Card>
-          ))
+          <>
+            {blockedError ? (
+              <Notice message={blockedError} tone="error" testID="blocked-error" />
+            ) : null}
+            {blocked === null ? (
+              <SkeletonRows rows={2} testID="blocked-loading" />
+            ) : blocked.length === 0 ? (
+              <EmptyState message={COPY.settings.blockedEmpty} />
+            ) : (
+              blocked.map((entry) => (
+                <Card key={entry.userId}>
+                  <Body>{entry.displayName}</Body>
+                  <Button
+                    label={COPY.settings.unblockButton}
+                    variant="secondary"
+                    onPress={() => unblock(entry.userId)}
+                    disabled={unblockingId === entry.userId}
+                    testID={`unblock-${entry.userId}`}
+                  />
+                </Card>
+              ))
+            )}
+          </>
         )}
       </Card>
-      <Card testID="settings-delete-account">
-        <SectionLabel>{COPY.deleteAccount.title}</SectionLabel>
-        <Body>{COPY.deleteAccount.intro}</Body>
+
+      {/* The foot (176:4572): the two account actions, unlabelled and
+          unboxed, with the quiet one on top. Signing out is the ordinary way
+          to leave; deleting is not, so it is a red word rather than a red
+          button — the loudest control on a settings screen should not be the
+          irreversible one. */}
+      <View style={styles.actions}>
+        <Button
+          label={COPY.settings.signOutButton}
+          variant="secondary"
+          onPress={signOut}
+          disabled={signingOut}
+          testID="sign-out"
+        />
+      </View>
+
+      <View style={styles.actions} testID="settings-delete-account">
+        {confirmingDelete ? null : (
+          <>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={COPY.deleteAccount.startButton}
+              onPress={() => setConfirmingDelete(true)}
+              style={({ pressed }) => [styles.quietDanger, pressed && styles.quietDangerPressed]}
+              testID="delete-account"
+            >
+              <Text style={styles.quietDangerLabel}>{COPY.deleteAccount.startButton}</Text>
+            </Pressable>
+            {/* The red word alone would be an unexplained one. */}
+            <Caption>{COPY.deleteAccount.intro}</Caption>
+          </>
+        )}
         {deleteError ? (
           <Notice message={deleteError} tone="error" testID="delete-account-error" />
         ) : null}
         {confirmingDelete ? (
-          <>
+          <Card>
+            <SectionLabel>{COPY.deleteAccount.title}</SectionLabel>
             {/* Everything irreversible is said before the tap that does it,
                 not after. Two taps, and the second one is labelled with what
                 it actually does. */}
@@ -279,16 +342,9 @@ export function SettingsScreen() {
               }}
               testID="delete-account-cancel"
             />
-          </>
-        ) : (
-          <Button
-            label={COPY.deleteAccount.startButton}
-            variant="danger"
-            onPress={() => setConfirmingDelete(true)}
-            testID="delete-account"
-          />
-        )}
-      </Card>
+          </Card>
+        ) : null}
+      </View>
     </Screen>
   );
 }
@@ -311,4 +367,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   profileText: { flex: 1, gap: spacing.tight },
+  /** The unlabelled foot of the screen (176:4572). */
+  actions: { gap: spacing.sm, paddingTop: spacing.md },
+  /**
+   * Deleting the account, as the contract draws it (176:4575): a red word on
+   * the ground, not a filled red button. It still has a full target and a
+   * pressed state — quiet is about weight, not about being hard to hit — and
+   * the button it leads to is the loud one, because that is the tap that does
+   * something.
+   */
+  quietDanger: {
+    minHeight: MIN_TOUCH,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.snug,
+  },
+  quietDangerPressed: { backgroundColor: color.dangerSoft },
+  quietDangerLabel: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.control,
+    color: color.danger,
+  },
 });

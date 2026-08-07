@@ -438,10 +438,11 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
       ) : null}
       {picking ? null : loadingActive || (activeId && !activeHotel) ? (
         // Either the answer is on its way, or the id is known and its card
-        // is still being resolved. Neither is "no hotel chosen". Waits at
-        // roughly the active card's own height (176:2730's shorter photo
-        // band plus its footer) rather than the taller shape this replaced.
-        <SkeletonCard height={VENUE_CARD_PHOTO_HEIGHT + 72} testID="hotel-loading" />
+        // is still being resolved. Neither is "no hotel chosen". The band is
+        // the active card's own photo (176:2730); the footer under it is
+        // drawn by `SkeletonCard` itself now (177:5316), so the height passed
+        // here is the picture rather than the picture plus a guess at a body.
+        <SkeletonCard height={VENUE_CARD_PHOTO_HEIGHT} testID="hotel-loading" />
       ) : activeHotel ? (
         <>
         <SectionLabel>{COPY.vacation.hereSectionLabel}</SectionLabel>

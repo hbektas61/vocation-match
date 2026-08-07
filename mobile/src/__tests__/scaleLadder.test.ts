@@ -50,6 +50,9 @@ const CONVERTED = [
   'components/PhotoGrid.tsx',
   'components/PresenceResult.tsx',
   'components/PrivacyShield.tsx',
+  // Joined the scan under D-065 slice 5: the visibility card (176:4481) puts a
+  // hairline between two switches, so the form has a stylesheet of its own.
+  'components/ProfileForm.tsx',
   'components/ProfileRing.tsx',
   'components/RadarEmpty.tsx',
   'components/RoomIllustrations.tsx',
@@ -84,6 +87,9 @@ const CONVERTED = [
   'screens/HotelScreen.tsx',
   'screens/InboxScreen.tsx',
   'screens/MatchScreen.tsx',
+  // Joined the scan under D-065 slice 5: the reason list is drawn here now
+  // (176:4588) instead of being six borrowed buttons.
+  'screens/ReportBlockScreen.tsx',
   'screens/SettingsScreen.tsx',
   'screens/UpcomingScreen.tsx',
 ];

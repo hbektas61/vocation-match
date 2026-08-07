@@ -209,6 +209,8 @@ export const tr: Copy = {
     photoLater: 'Kaydettikten sonra Ayarlar’dan fotoğraf ekleyebilirsin.',
     saveButton: 'Profili kaydet',
     saving: 'Kaydediliyor…',
+    /** D-065 (176:4483): profilinde neyin göründüğünü tek yerde toplayan bölüm. */
+    visibilityTitle: 'Görünürlük',
   },
 
   editProfile: {
@@ -641,6 +643,10 @@ export const tr: Copy = {
     title: 'Güvenlik',
     blockButton: 'Engelle',
     reportButton: 'Bildir',
+    /** Adı gelmediğinde. Ekranda İngilizce bir "this person" duruyordu. */
+    someone: 'bu kişi',
+    /** D-065 (177:5293): engelleme onayının kendi başlığı. */
+    blockTitle: 'Bu kişiyi engelle',
     blockConfirm: 'Bu kişi engellensin mi? Keşfetten, eşleşmelerinden ve gelen kutundan kaybolur.',
     reportIntro:
       'Bildirimler ekibimizce incelenir ve bu kişiyi aynı zamanda engeller; keşfetten, eşleşmelerinden ve gelen kutundan kaybolur.',
@@ -901,10 +907,16 @@ export const tr: Copy = {
     network: 'Bağlantı yok. Tekrar dene.',
     suspended: 'Hesabın askıya alındı. Engelleme, bildirme ve konuşmalarını okuma yine açık.',
     unknown: 'Bir şeyler ters gitti. Tekrar dene.',
+    /** D-065 (176:4659): a standing failure's heading, above the sentence saying which one. */
+    stateTitle: 'Bir şeyler ters gitti',
   },
 };
 
 export const trFor: CopyFor = {
+  /** Ekrana İngilizce gömülü duran iki başlık ve onay etiketi. */
+  reportHeading: (name: string) => `${name} hakkında bildirim`,
+  blockHeading: (name: string) => `${name} kişisini engelle`,
+  blockConfirmAction: (name: string) => `Evet, ${name} kişisini engelle`,
   roomsTitle: (hotelName: string | null) =>
     hotelName ? `${hotelName} odaları` : 'Otelinin odaları',
   discoveryTitle: (hotelName: string) => `${hotelName} keşfi`,
