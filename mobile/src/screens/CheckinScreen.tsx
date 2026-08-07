@@ -32,7 +32,6 @@ import {
   ScreenHeader,
   SkeletonRows,
 } from '../components/ui';
-import { ProfileRing } from '../components/ProfileRing';
 import { useToast } from '../components/ToastHost';
 import { apiErrorMessage, COPY, COPY_FOR } from '../copy';
 import {
@@ -100,6 +99,13 @@ const stroke = (tone: string, size = 22) => ({
   strokeLinecap: 'round' as const,
   strokeLinejoin: 'round' as const,
 });
+
+/**
+ * 176:3008 — the mark inside the 96 thumbnail well. Sized here rather than in
+ * the stylesheet because it is the glyph's own geometry, and the well and the
+ * mark have to agree on one number.
+ */
+const VENUE_THUMB_GLYPH = 36;
 
 const PinIcon = ({ tone = DEEP, size = 22 }: { tone?: string; size?: number }) => (
   <Svg {...stroke(tone, size)}>
@@ -586,7 +592,11 @@ export function CheckinScreen({
   if (checkin === undefined) {
     return (
       <Screen safeTop testID="screen-checkin">
-        <ScreenHeader title={COPY.tabs.nearbyTab} ringTestID="checkin-profile-ring" />
+        <ScreenHeader
+          title={COPY.tabs.nearbyTab}
+          subtitle={COPY.checkin.headerSubtitle}
+          ringTestID="checkin-profile-ring"
+        />
         <Loading testID="checkin-loading" />
       </Screen>
     );
@@ -608,14 +618,18 @@ export function CheckinScreen({
         style={({ pressed }) => [styles.venueRow, pressed && styles.venueRowPressed]}
         testID={`checkin-venue-${venue.id}`}
       >
-        {/* N-02 (153:85): the name, and the kind as its tracked word under
+        {/* 176:2969: the thumbnail well, the name, and "kind · place" under
             it. The address stays in the accessible label, where two same-name
             places still need telling apart. */}
+        <View style={styles.venueThumb}>
+          <PinIcon tone={meta.tone} size={VENUE_THUMB_GLYPH} />
+        </View>
         <View style={styles.venueWords}>
           <Text style={styles.venueName} numberOfLines={1}>{venue.name}</Text>
-          <Text style={styles.venueKind}>{meta.label()}</Text>
+          <Text style={styles.venueKind} numberOfLines={1}>
+            {[meta.label(), venue.city].filter(Boolean).join(' · ')}
+          </Text>
         </View>
-        <Text style={styles.chevron}>›</Text>
       </Pressable>
     );
   };
@@ -632,11 +646,15 @@ export function CheckinScreen({
         style={({ pressed }) => [styles.venueRow, pressed && styles.venueRowPressed]}
         testID={`checkin-google-${place.selectionToken}`}
       >
+        <View style={styles.venueThumb}>
+          <PinIcon tone={meta.tone} size={VENUE_THUMB_GLYPH} />
+        </View>
         <View style={styles.venueWords}>
           <Text style={styles.venueName} numberOfLines={1}>{place.name}</Text>
-          <Text style={styles.venueKind}>{meta.label()}</Text>
+          <Text style={styles.venueKind} numberOfLines={1}>
+            {[meta.label(), place.detail].filter(Boolean).join(' · ')}
+          </Text>
         </View>
-        <Text style={styles.chevron}>›</Text>
       </Pressable>
     );
   };
@@ -650,7 +668,11 @@ export function CheckinScreen({
     const remainM = Math.floor((remainingMs % 3_600_000) / 60_000);
     return (
       <Screen safeTop testID="screen-checkin">
-        <ScreenHeader title={COPY.tabs.nearbyTab} ringTestID="checkin-profile-ring" />
+        <ScreenHeader
+          title={COPY.tabs.nearbyTab}
+          subtitle={COPY.checkin.headerSubtitle}
+          ringTestID="checkin-profile-ring"
+        />
         <Text style={styles.subtitleSm}>{COPY.checkin.activeSubtitle}</Text>
 
         {/* N-03 (153:111): the state is one card — the green line, the
@@ -732,32 +754,33 @@ export function CheckinScreen({
     const shownCount = liveShown.length + catalogueShown.length;
     return (
       <Screen safeTop testID="screen-checkin">
+        {/*
+          176:2950 — the head is the title, the venue chip and the ring; the
+          location re-read that used to live in this corner as a bare pin has
+          moved to the labelled coral button at the foot of the list, where
+          the design puts it and where it can say what it does.
+        */}
         <ScreenHeader
           title={COPY.tabs.nearbyTab}
-          right={
-          <>
-          {/* The sheet's corner ring (11:76), still doing the useful job:
-              another location read, for the list under it. */}
-          {/* Two things belong in this corner here: another reading for the
-              list under it, and the same route to Settings the other four
-              primary screens have. */}
-          <View style={styles.cornerPair}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={COPY.checkin.findVenues}
-              onPress={() => lookAround(reader)}
-              disabled={busy}
-              style={({ pressed }) => [styles.profileRing, styles.ringCentered, pressed && styles.pressed]}
-              testID="checkin-look-again"
-            >
-              <LocateIcon />
-            </Pressable>
-            <ProfileRing testID="checkin-list-profile-ring" />
-          </View>
-          </>
-          }
+          subtitle={COPY.checkin.headerSubtitle}
+          ringTestID="checkin-list-profile-ring"
         />
-        <Text style={styles.subtitleSm}>{COPY.checkin.listSubtitle}</Text>
+
+        {/* 176:2962 — the search sits directly under the head, over
+            everything it filters, rather than below the anchor card. */}
+        <View style={[styles.searchPill, searchFocused && styles.searchPillFocused]}>
+          <MagnifierIcon />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder={COPY.checkin.searchPlaceholder}
+            placeholderTextColor={color.inkMuted}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
+            style={styles.searchInput}
+            testID="checkin-search"
+          />
+        </View>
 
         {/* A refusal belongs where the eye is (owner, 2026-08-05): at the foot
             of a list this long nobody ever saw it, so a refused pick looked
@@ -786,22 +809,6 @@ export function CheckinScreen({
           >
             <Text style={styles.bigFilledLabel}>{COPY.checkin.hereCta}</Text>
           </Pressable>
-        </View>
-
-        {/* The written search stands over the list it filters (owner,
-            2026-08-03) — at the foot of a long list it was unfindable. */}
-        <View style={[styles.searchPill, searchFocused && styles.searchPillFocused]}>
-          <MagnifierIcon />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder={COPY.checkin.searchPlaceholder}
-            placeholderTextColor={color.inkMuted}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-            style={styles.searchInput}
-            testID="checkin-search"
-          />
         </View>
 
         <Text style={styles.kicker}>{COPY.checkin.aroundYou}</Text>
@@ -874,6 +881,21 @@ export function CheckinScreen({
           </Text>
         ) : null}
 
+        {/* 176:3020 — the design's one full-width action, at the foot of the
+            list. It is the same re-read the head's bare pin used to do, and
+            it keeps that control's id: one control, said in words. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={COPY.checkin.findVenues}
+          onPress={() => lookAround(reader)}
+          disabled={busy}
+          style={({ pressed }) => [styles.findButton, pressed && styles.pressed]}
+          testID="checkin-look-again"
+        >
+          <LocateIcon tone={color.onAccent} />
+          <Text style={styles.findButtonLabel}>{COPY.checkin.findVenues}</Text>
+        </Pressable>
+
         {/* ODbL. The catalogue under this list is OpenStreetMap/Overture data
             and had no credit on screen at all — only Google's answers did,
             which is the wrong way round given whose data is shown by default. */}
@@ -887,8 +909,11 @@ export function CheckinScreen({
     <Screen safeTop testID="screen-checkin">
       {/* D-057: this corner held a decorative pin, so Çevremde was the one
           primary screen with no way to Settings at all. */}
-      <ScreenHeader title={COPY.tabs.nearbyTab} ringTestID="checkin-profile-ring" />
-      <Text style={styles.subtitle}>{COPY.checkin.idleSubtitle}</Text>
+      <ScreenHeader
+        title={COPY.tabs.nearbyTab}
+        subtitle={COPY.checkin.headerSubtitle}
+        ringTestID="checkin-profile-ring"
+      />
 
       {/* What just happened stands where the eye already is (owner,
           2026-08-05) — tacked under the privacy row it read as page litter. */}
@@ -1003,23 +1028,6 @@ export function CheckinScreen({
 }
 
 const styles = StyleSheet.create({
-  /** The corner ring (11:76): the empty frame, an operable control's edge. */
-  profileRing: {
-    width: 46,
-    height: 46,
-    borderRadius: radius.pill,
-    borderWidth: 1.4,
-    borderColor: color.border,
-  },
-  ringCentered: { alignItems: 'center', justifyContent: 'center' },
-  cornerPair: { flexDirection: 'row', alignItems: 'center', gap: spacing.snug },
-  /** The Figma line under the head (1:6): 15, muted. */
-  subtitle: {
-    fontFamily: fontFamily.body,
-    fontSize: font.body,
-    lineHeight: font.body * leading.normal,
-    color: color.inkMuted,
-  },
   /** The line under the list/active heads (11:77/11:149): 13, muted. */
   subtitleSm: {
     fontFamily: fontFamily.body,
@@ -1030,12 +1038,17 @@ const styles = StyleSheet.create({
   /** The corner badge (1:5): the panel disc with the 1.5 control edge. */
   pressed: { opacity: 0.8 },
 
-  /* list — the sheet's search pill (11:78) and venue rows (11:80). */
+  /**
+   * 176:2962 — the search pill, now a filled one. The design carries the fill
+   * alone and no edge; a filled input on white still needs a 3:1 boundary
+   * (WCAG 1.4.11) and `veil` on white is nowhere near it, so the control edge
+   * D-060 kept for operable things stays under the fill.
+   */
   searchPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: color.surface,
+    backgroundColor: color.veil,
     borderWidth: 1.5,
     borderColor: color.border,
     borderRadius: radius.pill,
@@ -1053,15 +1066,18 @@ const styles = StyleSheet.create({
     color: color.ink,
     paddingVertical: spacing.snug,
   },
-  /** 153:80: the row is the name and its kind — 16 corners, 13/14 seat. */
+  /**
+   * 176:2969 — the row became a card: the big 32 corner, a 96 thumbnail well
+   * and the words beside it, top-aligned so a two-line name does not drag the
+   * kind line off the thumbnail's centre.
+   */
   venueRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.snug,
+    alignItems: 'flex-start',
+    gap: spacing.md,
     backgroundColor: color.surface,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.snug,
-    paddingHorizontal: spacing.md,
+    borderRadius: radius.xxl,
+    padding: spacing.md,
     ...elevation.card,
   },
   /** The press answers in the brand's wash rather than a mere dim (owner,
@@ -1069,17 +1085,26 @@ const styles = StyleSheet.create({
   venueRowPressed: {
     backgroundColor: color.accentWash,
   },
-  venueDisc: {
-    width: 44,
-    height: MIN_TOUCH,
-    borderRadius: radius.pill,
+  /**
+   * 176:2971 — the design fills this square with a photograph of the place.
+   * Nothing in Çevremde has one: the catalogue rows carry no image and a
+   * Google place's photo is Google's content, which D-054 forbids storing and
+   * this screen never fetches. So the well holds the kind's own mark, tinted
+   * by `kindMeta`, which is the design's own treatment for its third card.
+   */
+  venueThumb: {
+    width: 96,
+    height: 96,
+    borderRadius: radius.md,
+    backgroundColor: color.veil,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  venueWords: { flex: 1, gap: spacing.tight },
+  venueWords: { flex: 1, gap: spacing.xs, paddingTop: spacing.xs },
   venueName: {
-    fontFamily: fontFamily.bodySemi,
+    fontFamily: fontFamily.display,
     fontSize: font.body,
+    lineHeight: font.body * leading.snug,
     color: color.ink,
   },
   venuePlace: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
@@ -1097,12 +1122,6 @@ const styles = StyleSheet.create({
   kindChipText: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
-  },
-  chevron: {
-    fontFamily: fontFamily.bodySemi,
-    fontSize: font.heading,
-    color: color.inkMuted,
-    paddingHorizontal: spacing.tight,
   },
   /* intro — the Figma hero (1:7): a solid panel, 28 corners, 16 inside. */
   heroCard: {
@@ -1447,12 +1466,13 @@ const styles = StyleSheet.create({
     letterSpacing: tracking.display,
     color: color.ink,
   },
-  /** N-02: the kind as the tracked word under the name. */
+  /** 176:2980: "kind · place", one quiet line under the name. */
   venueKind: {
-    fontFamily: fontFamily.bodySemi,
+    fontFamily: fontFamily.body,
     fontSize: font.label,
+    lineHeight: font.label * leading.normal,
     letterSpacing: tracking.none,
-    color: color.inkMuted,
+    color: color.inkFaint,
   },
   googleMoreRow: { minHeight: MIN_TOUCH, alignItems: 'center', justifyContent: 'center' },
   googleMoreText: { fontFamily: fontFamily.bodySemi, fontSize: font.control, color: color.ink },

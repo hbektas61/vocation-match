@@ -65,6 +65,16 @@ export function formatDayMonth(iso: string): string {
   return getLocale() === 'tr' ? `${day} ${name}` : `${name} ${day}`;
 }
 
+/**
+ * The date plate on an event card (Figma 176:3696): the short month over the
+ * day, as two strings rather than one line, because the card sets them at two
+ * different sizes stacked.
+ */
+export function dayMonthPlate(iso: string): { day: string; month: string } {
+  const { month, day } = parts(iso);
+  return { day: String(day), month: SHORT_MONTHS[getLocale()][month - 1] ?? '' };
+}
+
 /** "19 Ağustos" / "August 19" — the month said in full, as the event cards say it. */
 export function formatDayMonthLong(iso: string): string {
   const { month, day } = parts(iso);

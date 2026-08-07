@@ -17,7 +17,7 @@ import X from 'lucide-react-native/icons/x';
 import { Image as ExpoImage } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { Button, Loading, Notice, Screen, ScreenHeader, SkeletonCard } from '../components/ui';
 import { ProfileRing } from '../components/ProfileRing';
@@ -46,7 +46,6 @@ import {
 } from '../theme';
 import { earliestRoomExpiry } from '../state/roomSchedule';
 import { usePhotoUrls } from '../state/usePhotoUrls';
-import { RadarScene } from '../components/RoomIllustrations';
 import { useAppStore } from '../state/AppStore';
 
 /** The owner's own 3D door render (2026-07-28), bundled — not a redrawing. */
@@ -89,10 +88,14 @@ const DoorIcon = () => (
   </Svg>
 );
 
-/** The three doors into the deck, in the product's own line (2026-08-05). */
+/**
+ * The three doors into the deck, in the product's own line (2026-08-05).
+ * Figma kesfet_view (176:2835) seats each one in a 56pt tinted tile, so the
+ * glyph grew from 20 to the 24 the tile is drawn around.
+ */
 const doorStroke = {
-  width: 20,
-  height: 20,
+  width: 24,
+  height: 24,
   viewBox: '0 0 24 24',
   fill: 'none' as const,
   stroke: color.accent,
@@ -119,6 +122,30 @@ const PinDoorIcon = () => (
   <Svg {...doorStroke}>
     <Path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
     <Path d="M12 10h.01" />
+  </Svg>
+);
+
+/**
+ * 176:2863 — the row's chevron. It was a "›" set in the body face, which is a
+ * punctuation mark standing in for a mark; the design draws an actual one, and
+ * the rest of this screen's glyphs are already drawn rather than typed.
+ */
+const ChevronIcon = () => (
+  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={color.inkFaint} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M9 6l6 6-6 6" />
+  </Svg>
+);
+
+/**
+ * 176:2905 — the mark bleeding off the navy banner's bottom-right corner. It
+ * is decoration and nothing else: `tokens.border.inverse` is the one alpha the
+ * theme has for a line on a deep surface, which is exactly what this is.
+ */
+const HOW_GLYPH = 96;
+const HowGlyph = () => (
+  <Svg width={HOW_GLYPH} height={HOW_GLYPH} viewBox="0 0 24 24" fill="none" stroke={tokens.border.inverse} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+    <Circle cx={12} cy={12} r={10} />
+    <Path d="M12 16v-5M12 8h.01" />
   </Svg>
 );
 
@@ -203,8 +230,6 @@ export function DiscoveryScreen() {
   /** Place ID → name, for this deck session only. Never written down. */
   const [venueLabels, setVenueLabels] = useState<Map<string, string>>(new Map());
   const lastDeckRoom = useRef<RoomKey | null>(null);
-  /** The no-hotel screen's "how does it work?" reveal. */
-  const [howOpen, setHowOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   /** A swipe's refusal is news about that swipe, so it goes to the host. */
   const toast = useToast();
@@ -569,7 +594,11 @@ export function DiscoveryScreen() {
   if (rooms === null || (!hasHotel && state.accountLoadStatus === 'loading')) {
     return (
       <Screen safeTop testID="screen-discovery">
-        <ScreenHeader title={COPY.tabs.discovery} ringTestID="discovery-profile-ring" />
+        <ScreenHeader
+          title={COPY.tabs.discovery}
+          subtitle={COPY.discovery.headerSubtitle}
+          ringTestID="discovery-profile-ring"
+        />
         <Loading testID="discovery-loading" />
       </Screen>
     );
@@ -580,24 +609,23 @@ export function DiscoveryScreen() {
   if (!hasHotel && !nearbyOpen) {
     return (
       <Screen safeTop testID="screen-discovery">
-        <ScreenHeader title={COPY.tabs.discovery} ringTestID="discovery-profile-ring" />
+        <ScreenHeader
+          title={COPY.tabs.discovery}
+          subtitle={COPY.discovery.headerSubtitle}
+          ringTestID="discovery-profile-ring"
+        />
         {/*
           Three doors, not one demand (owner, 2026-08-05). The old state said
           "choose a hotel first", which is not even true: the deck also opens
           from an event and from a check-in, five rooms between them. Each door
-          says what it opens and how many rooms that is, and the radar above
-          them moves, because the promise of this screen is that somebody may
-          appear at any moment.
+          says what it opens and how many rooms that is.
+
+          Figma kesfet_view (176:2835) makes the doors the whole screen: the
+          radar drawing, the centred heading and its supporting line are gone,
+          because the head's own subtitle now says the same thing one line
+          higher and the three cards say the rest themselves.
         */}
         <View style={styles.doors}>
-          <RadarScene size={132} />
-          <View style={styles.emptyWords}>
-            <Text accessibilityRole="header" style={styles.noHotelTitle}>
-              {COPY.discovery.doorsTitle}
-            </Text>
-            <Text style={styles.noHotelBody}>{COPY.discovery.doorsBody}</Text>
-          </View>
-
           <View style={styles.doorList}>
             {[
               {
@@ -638,24 +666,31 @@ export function DiscoveryScreen() {
                   <Text style={styles.doorTitle}>{door.title}</Text>
                   <Text style={styles.doorMeta}>{door.meta}</Text>
                 </View>
-                <Text style={styles.doorChevron}>›</Text>
+                <ChevronIcon />
               </Pressable>
             ))}
           </View>
 
-          <Text style={styles.oneHotelPillText}>{COPY.trust.oneHotel}</Text>
+          {/*
+            176:2903 — the five rooms explained on a navy card at the foot of
+            the list rather than behind a "How does it work?" button nobody
+            pressed. The words are the same ones the toggle used to reveal;
+            they are simply no longer hidden, so `discovery-how-body` is now
+            always on screen and `discovery-how` names the card that carries
+            it. The banner is not pressable: there is nothing left to open.
+          */}
+          <View style={styles.howBanner} testID="discovery-how">
+            <View style={styles.howGlyph} pointerEvents="none">
+              <HowGlyph />
+            </View>
+            <Text accessibilityRole="header" style={styles.howTitle}>
+              {COPY.discovery.howItWorks}
+            </Text>
+            <Text style={styles.howBody} testID="discovery-how-body">
+              {COPY.discovery.howItWorksBody}
+            </Text>
+          </View>
         </View>
-        <Button
-          label={COPY.discovery.howItWorks}
-          variant="secondary"
-          onPress={() => setHowOpen((open) => !open)}
-          testID="discovery-how"
-        />
-        {howOpen ? (
-          <Text style={styles.howBody} testID="discovery-how-body">
-            {COPY.discovery.howItWorksBody}
-          </Text>
-        ) : null}
       </Screen>
     );
   }
@@ -666,7 +701,11 @@ export function DiscoveryScreen() {
        rooms, or a proximity check straight from here. */
     return (
       <Screen safeTop testID="screen-discovery">
-        <ScreenHeader title={COPY.tabs.discovery} ringTestID="discovery-profile-ring" />
+        <ScreenHeader
+          title={COPY.tabs.discovery}
+          subtitle={COPY.discovery.headerSubtitle}
+          ringTestID="discovery-profile-ring"
+        />
         {/* D-057 (NAV-05): the selector is present but disabled here, so the
             control that answers "which room am I in" does not vanish at the
             one moment somebody is asking it. It opens nothing. */}
@@ -770,7 +809,11 @@ export function DiscoveryScreen() {
           than inferred — including when the answer is "none of them yet". */}
       {candidate ? null : (
         <View style={styles.deckHead}>
-          <ScreenHeader title={COPY.tabs.discovery} ringTestID="discovery-profile-ring" />
+          <ScreenHeader
+          title={COPY.tabs.discovery}
+          subtitle={COPY.discovery.headerSubtitle}
+          ringTestID="discovery-profile-ring"
+        />
           <ContextSelector
             rows={contextRows}
             current={room}
@@ -1105,75 +1148,76 @@ const styles = StyleSheet.create({
   quietAction: { minHeight: MIN_TOUCH, justifyContent: 'center' },
   quietActionText: { fontFamily: fontFamily.bodySemi, fontSize: font.control, color: color.ink },
   quietDivider: { width: 1, height: 16, backgroundColor: color.rule },
-  /** The three-door state: the radar, the claim, the doors, the promise. */
-  doors: { alignItems: 'center', gap: spacing.md, paddingTop: spacing.sm },
-  doorList: { alignSelf: 'stretch', gap: spacing.snug },
+  /** 176:2845 — the three doors and the banner, one 16pt column. */
+  doors: { gap: spacing.md },
+  doorList: { alignSelf: 'stretch', gap: spacing.md },
+  /**
+   * 176:2846 — a wide card with the big 32 corner, not the 20 a small tile
+   * takes. Its 21pt padding is the ladder's 20.
+   */
   doorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.snug,
+    gap: spacing.md,
     backgroundColor: color.surface,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
+    borderRadius: radius.xxl,
+    padding: spacing.wide,
     ...elevation.card,
   },
   doorRowPressed: { backgroundColor: color.accentWash },
+  /**
+   * 176:2848 — the 56pt glyph tile. The design tints the three differently
+   * (peach, pink, blue); D-058 has one accent and no second or third hue to
+   * spend on decoration, so all three take the brand wash and the glyph
+   * inside is what tells them apart.
+   */
   doorDisc: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.pill,
+    width: 56,
+    height: 56,
+    borderRadius: radius.md,
     backgroundColor: color.accentWash,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  doorWords: { flex: 1, gap: spacing.tight },
-  doorTitle: { fontFamily: fontFamily.bodySemi, fontSize: font.control, color: color.ink },
+  doorWords: { flex: 1, gap: spacing.xs },
+  doorTitle: { fontFamily: fontFamily.display, fontSize: font.body, color: color.ink },
+  /**
+   * 176:2862 — set at 10pt in the design, which is under the floor D-059 put
+   * on this app: `font.label` is the smallest anything may be.
+   */
   doorMeta: {
-    fontFamily: fontFamily.body,
-    fontSize: font.caption,
-    lineHeight: font.caption * leading.normal,
-    color: color.inkMuted,
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.label,
+    lineHeight: font.label * leading.normal,
+    color: color.inkFaint,
   },
-  doorChevron: { fontFamily: fontFamily.bodySemi, fontSize: font.heading, color: color.inkMuted },
-  noHotelCard: {
-    backgroundColor: color.surface,
-    borderRadius: radius.xl,
-    padding: spacing.md,
-    alignItems: 'center',
-    gap: spacing.sm,
+  /** 176:2903 — the five rooms, explained on the one deep surface. */
+  howBanner: {
+    backgroundColor: color.inverse,
+    borderRadius: radius.xxl,
+    padding: spacing.lg,
+    gap: spacing.xs,
+    overflow: 'hidden',
   },
-  noHotelTitle: {
+  /** 176:2904: the mark hangs off the corner rather than sitting inside it. */
+  howGlyph: { position: 'absolute', right: -spacing.md, bottom: -spacing.md },
+  howTitle: {
     fontFamily: fontFamily.display,
     fontSize: font.heading,
-    color: color.ink,
-    textAlign: 'center',
+    lineHeight: font.heading * leading.tight,
+    color: color.onInverse,
   },
-  noHotelBody: {
-    fontFamily: fontFamily.body,
-    fontSize: font.body,
-    lineHeight: font.body * leading.normal,
-    color: color.inkMuted,
-    textAlign: 'center',
-  },
-  oneHotelPill: {
-    backgroundColor: color.accentWash,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.cozy,
-  },
-  oneHotelPillText: {
-    fontFamily: fontFamily.bodyMedium,
-    fontSize: font.caption,
-    color: color.inkMuted,
-    textAlign: 'center',
-  },
+  /**
+   * The design sets this at 60% white. `onInverse` is the theme's one
+   * readable value on navy (15.7:1) and this is a paragraph somebody is meant
+   * to read to the end, so it keeps the full value rather than the design's
+   * alpha.
+   */
   howBody: {
     fontFamily: fontFamily.body,
     fontSize: font.caption,
     lineHeight: font.caption * leading.normal,
-    color: color.inkMuted,
-    paddingHorizontal: spacing.xs,
+    color: color.onInverse,
   },
   noRoom: {
     flex: 1,

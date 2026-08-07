@@ -28,9 +28,8 @@ import {
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -45,7 +44,8 @@ import {
   SkeletonCard,
   Spinner,
 } from '../components/ui';
-import { COPY, COPY_FOR, getLocale } from '../copy';
+import { CalendarIllustration } from '../components/RoomIllustrations';
+import { COPY, COPY_FOR, getLocale, upperCase } from '../copy';
 import {
   deviceLocation,
   getApi,
@@ -64,7 +64,7 @@ import {
   type CountryOption,
 } from '../domain/countries';
 import { nowMs } from '../clock';
-import { formatDayMonthLong } from '../domain/dates';
+import { dayMonthPlate, formatDayMonthLong } from '../domain/dates';
 import type { RootStackParamList } from '../navigation/types';
 import {
   color,
@@ -110,20 +110,6 @@ const PinIcon = ({ tone = color.ink, size = 16 }: { tone?: string; size?: number
   </Svg>
 );
 
-const CalendarIcon = () => (
-  <Svg {...iconStroke(color.inkMuted, 14)}>
-    <Rect x={3} y={5} width={18} height={16} rx={2} />
-    <Path d="M8 3v4m8-4v4M3 10h18" />
-  </Svg>
-);
-
-const ClockIcon = () => (
-  <Svg {...iconStroke(color.inkMuted, 14)}>
-    <Circle cx={12} cy={12} r={9} />
-    <Path d="M12 7v5l3 2" />
-  </Svg>
-);
-
 /** The saveable heart in the card's corner — outline until it is pressed. */
 const HeartIcon = ({ filled }: { filled: boolean }) => (
   <Svg
@@ -152,8 +138,8 @@ const InfoIcon = () => (
 );
 
 /** ED-01's empty-state mark: a pennant — an event, not a hotel, not a pin. */
-const PennantIcon = () => (
-  <Svg {...iconStroke(color.accent, 26)}>
+const PennantIcon = ({ size = 26 }: { size?: number } = {}) => (
+  <Svg {...iconStroke(color.accent, size)}>
     <Path d="M6 21V3" />
     <Path d="M6 4h11l-2.5 3.5L17 11H6" />
   </Svg>
@@ -218,11 +204,6 @@ export function EventsScreen({
   /** The one unasked location attempt (owner, 2026-08-04) — never repeated. */
   const autoTried = useRef(false);
   const [busy, setBusy] = useState(false);
-  /** E-01 (131:132): which card the carousel rests on. */
-  const [pageIndex, setPageIndex] = useState(0);
-  // One card fills the view between the Screen's 20pt gutters.
-  const { width } = useWindowDimensions();
-  const cardWidth = width - 40;
   /** Provider image URLs that failed to load — a lease can lapse mid-list. */
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
   /**
@@ -365,7 +346,11 @@ export function EventsScreen({
   if (enabled === false) {
     return (
       <Screen safeTop testID="screen-events">
-        <ScreenHeader title={COPY.events.title} ringTestID="events-profile-ring" />
+        <ScreenHeader
+          title={COPY.events.title}
+          subtitle={COPY.events.subtitle}
+          ringTestID="events-profile-ring"
+        />
         <Notice message={COPY.events.disabled} testID="events-disabled" />
       </Screen>
     );
@@ -416,6 +401,8 @@ export function EventsScreen({
       event.dateTbd || !event.localDate ? COPY.events.dateTbd : formatDayMonthLong(event.localDate);
     const time = event.localTime ? event.localTime.slice(0, 5) : null;
     const saved = savedEvents.has(event.selectionToken);
+    /** 176:3696: the plate exists only when there is a date to put on it. */
+    const plate = event.dateTbd || !event.localDate ? null : dayMonthPlate(event.localDate);
     return (
       <Pressable
         key={event.selectionToken}
@@ -426,74 +413,92 @@ export function EventsScreen({
         style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
         testID={testID}
       >
-        {/* The owner's sheet (2026-08-05): the artwork is a square held on
-            the left, and the facts stand beside it in their own column —
-            not a full-bleed photograph with the words on a scrim. */}
-        {showImage ? (
-          <Image
-            source={{ uri: event.imageUrl as string }}
-            style={[styles.cardThumb, bad && styles.dimmed]}
-            resizeMode="cover"
-            accessibilityIgnoresInvertColors
-            onError={() =>
-              setFailedImages((current) => new Set(current).add(event.imageUrl as string))
-            }
-          />
-        ) : (
-          /* E-20: no artwork is a first-class layout, not a hole. */
-          <View style={[styles.cardThumb, styles.cardThumbEmpty]}>
-            <PennantIcon />
-          </View>
-        )}
-
-        <View style={styles.cardColumn}>
-          <View style={styles.cardTopRow}>
-            <StatusBadge label={badge} bad={bad} />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={event.name ?? COPY.events.pastEvent}
-              accessibilityState={{ selected: saved }}
-              hitSlop={8}
-              onPress={() =>
-                setSavedEvents((current) => {
-                  const next = new Set(current);
-                  if (next.has(event.selectionToken)) next.delete(event.selectionToken);
-                  else next.add(event.selectionToken);
-                  return next;
-                })
+        {/* Figma etkinlikler_view (176:3693): the artwork is a band across the
+            card's head with the date on it, and the facts stand under it —
+            the square-thumbnail-on-the-left card this replaces was the
+            owner's earlier sheet (2026-08-05). */}
+        <View style={styles.cardBand}>
+          {showImage ? (
+            <Image
+              source={{ uri: event.imageUrl as string }}
+              style={[styles.cardBandPhoto, bad && styles.dimmed]}
+              resizeMode="cover"
+              accessibilityIgnoresInvertColors
+              onError={() =>
+                setFailedImages((current) => new Set(current).add(event.imageUrl as string))
               }
-              style={styles.heartSeat}
-              testID={`${testID}-save`}
-            >
-              <HeartIcon filled={saved} />
-            </Pressable>
-          </View>
+            />
+          ) : (
+            /* E-20 / 176:3717: no artwork is a first-class layout, not a hole.
+               The design fills the band with one large mark on the inert
+               ground, which is what this draws. */
+            <View style={[styles.cardBandPhoto, styles.cardBandEmpty]}>
+              <PennantIcon size={CARD_BAND_GLYPH} />
+            </View>
+          )}
+          {/* 176:3696: the date on a near-white plate over the artwork's
+              top-left. Absent when the provider has not fixed a date — the
+              status badge below already says so in words, and a plate reading
+              "date to be confirmed" is not a date. */}
+          {plate ? (
+            <View style={styles.datePlate}>
+              <Text style={styles.datePlateMonth}>{upperCase(plate.month)}</Text>
+              <Text style={styles.datePlateDay}>{plate.day}</Text>
+            </View>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={event.name ?? COPY.events.pastEvent}
+            accessibilityState={{ selected: saved }}
+            hitSlop={8}
+            onPress={() =>
+              setSavedEvents((current) => {
+                const next = new Set(current);
+                if (next.has(event.selectionToken)) next.delete(event.selectionToken);
+                else next.add(event.selectionToken);
+                return next;
+              })
+            }
+            style={styles.heartSeat}
+            testID={`${testID}-save`}
+          >
+            <HeartIcon filled={saved} />
+          </Pressable>
+        </View>
+
+        <View style={styles.cardBody}>
+          {/* E-18: cancelled, postponed and date-unconfirmed are said in words
+              with a glyph. It moved off the artwork and into the body, where
+              the plate above now sits. */}
+          <StatusBadge label={badge} bad={bad} />
 
           <Text style={styles.cardName} numberOfLines={2}>
             {event.name}
           </Text>
 
-          <View style={styles.factRow}>
-            <CalendarIcon />
-            <Text style={styles.factText} numberOfLines={1}>
+          {/* 176:3705: the place and the hour on one line. The design sets it
+              in capitals; the venue is the provider's own proper noun and
+              Turkish capitalisation of a leased name is a change to leased
+              content, so the words stand as they were given. */}
+          <Text style={styles.cardWhere} numberOfLines={2}>
+            {[place, time].filter(Boolean).join(' · ')}
+          </Text>
+          {plate ? null : (
+            <Text style={styles.cardWhere} numberOfLines={1}>
               {day}
             </Text>
-            {time ? (
-              <>
-                <Text style={styles.factDot}>·</Text>
-                <ClockIcon />
-                <Text style={styles.factText}>{time}</Text>
-              </>
-            ) : null}
-          </View>
-          <View style={styles.factRow}>
-            <PinIcon tone={color.inkMuted} size={14} />
-            <Text style={styles.factText} numberOfLines={2}>
-              {place}
-            </Text>
-          </View>
+          )}
 
-          <Text style={styles.cardAttribution}>{COPY.events.attribution}</Text>
+          <View style={styles.cardFoot}>
+            <Text style={styles.cardAttribution}>{COPY.events.attribution}</Text>
+            {/* 176:3714's navy pill. The design labels it "join the room";
+                this one opens the event, because joining is a declaration and
+                E-22 requires its explainer to stand beside the button that
+                makes it — which is on the screen this opens, not here. */}
+            <View style={styles.openPill}>
+              <Text style={styles.openPillText}>{COPY.events.seeWhoIsGoing}</Text>
+            </View>
+          </View>
         </View>
       </Pressable>
     );
@@ -502,42 +507,17 @@ export function EventsScreen({
   const section = (heading: string, result: EventSearchResult | null, testID: string) => {
     if (result === null) return null;
     if (result.kind === 'ok') {
-      // E-01 (131:127/132): one card at a time, swiped sideways, with the
-      // dots underneath — never a column of cards stacked down the screen.
+      // 176:3691: a column of cards down the screen. It was a sideways
+      // carousel with page dots (E-01, 131:127/132); the generated screen
+      // stacks them, which shows two events at once instead of one and does
+      // not hide the rest behind a gesture.
       return (
         <View testID={testID} style={styles.section}>
           <View style={styles.sectionHead}>
             <Text style={styles.sectionTitle}>{heading}</Text>
             <Text style={styles.sectionCount}>{COPY_FOR.eventCount(result.events.length)}</Text>
           </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            decelerationRate="fast"
-            snapToInterval={cardWidth + 12}
-            snapToAlignment="start"
-            disableIntervalMomentum
-            onMomentumScrollEnd={(e) => {
-              setPageIndex(Math.round(e.nativeEvent.contentOffset.x / (cardWidth + 12)));
-            }}
-            contentContainerStyle={styles.carousel}
-          >
-            {result.events.map((event, index) => (
-              <View key={event.selectionToken} style={{ width: cardWidth }}>
-                {card(event, `${testID}-option-${index}`)}
-              </View>
-            ))}
-          </ScrollView>
-          {result.events.length > 1 ? (
-            <View style={styles.dots} testID={`${testID}-dots`}>
-              {result.events.map((event, index) => (
-                <View
-                  key={event.selectionToken}
-                  style={[styles.dot, index === pageIndex && styles.dotActive]}
-                />
-              ))}
-            </View>
-          ) : null}
+          {result.events.map((event, index) => card(event, `${testID}-option-${index}`))}
         </View>
       );
     }
@@ -550,13 +530,39 @@ export function EventsScreen({
           : result.kind === 'offline'
             ? COPY.events.offline
             : COPY.events.providerUnavailable;
-    // Six different "no"s, and the tone separates the two that are ours (a
+    if (result.kind === 'empty') {
+      /* Figma etkinlikler_empty (177:4705): "nothing here" is the one refusal
+         with an obvious next move, so it gets the whole centred state and the
+         outlined action rather than a one-line notice. The other five are
+         still notices: a ceiling or an outage is not fixed by changing city,
+         and offering that would send somebody on an errand. */
+      return (
+        <View testID={testID} style={styles.section}>
+          <View style={styles.emptyWrap} testID={`${testID}-empty`}>
+            <CalendarIllustration size={EMPTY_ILLUSTRATION} />
+            <Text accessibilityRole="header" style={styles.emptyTitle}>
+              {COPY.events.noResults}
+            </Text>
+            <Text style={styles.emptyBody}>{COPY.events.emptyBody}</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={COPY.events.changeArea}
+              onPress={() => setChoosingArea(true)}
+              style={({ pressed }) => [styles.emptyCta, pressed && styles.cardPressed]}
+              testID="events-empty-change-area"
+            >
+              <Text style={styles.emptyCtaText}>{COPY.events.changeArea}</Text>
+            </Pressable>
+          </View>
+        </View>
+      );
+    }
+    // Five more "no"s, and the tone separates the ones that are ours (a
     // ceiling, a switch) from the ones that are the provider's or the world's.
-    const tone = result.kind === 'empty' ? 'info' : 'error';
     return (
       <View testID={testID} style={styles.section}>
         <Text style={styles.sectionTitle}>{heading}</Text>
-        <Notice message={message} tone={tone} testID={`${testID}-empty`} />
+        <Notice message={message} tone="error" testID={`${testID}-empty`} />
       </View>
     );
   };
@@ -618,7 +624,11 @@ export function EventsScreen({
 
   return (
     <Screen safeTop testID="screen-events">
-      <ScreenHeader title={COPY.events.title} ringTestID="events-profile-ring" />
+      <ScreenHeader
+        title={COPY.events.title}
+        subtitle={COPY.events.subtitle}
+        ringTestID="events-profile-ring"
+      />
 
       {area === null ? (
         /* ED-01's vertical rhythm: the pill, the button, each standing
@@ -771,11 +781,17 @@ export function EventsScreen({
         ) : area ? null : (
           /* ED-01: the empty state as its own drawing — a pennant in the warm
              disc, the fact as a heading, and the way forward as one sentence. */
-          <View style={styles.emptyWrap} accessibilityRole="text" testID="events-empty">
-            <View style={styles.emptyDisc}>
-              <PennantIcon />
-            </View>
-            <Text style={styles.emptyTitle}>{COPY.events.emptyTitle}</Text>
+          /* Figma etkinlikler_empty (177:4706): the drawing centred at 200,
+             the fact as a heading, the sentence under it. The design's
+             "change city" button is absent here on purpose — this is the
+             first open, where no city has been chosen yet and the picker is
+             already standing directly above. It *is* drawn on the other
+             empty, below, where a city has been chosen and found nothing. */
+          <View style={styles.emptyWrap} testID="events-empty">
+            <CalendarIllustration size={EMPTY_ILLUSTRATION} />
+            <Text accessibilityRole="header" style={styles.emptyTitle}>
+              {COPY.events.emptyTitle}
+            </Text>
             <Text style={styles.emptyBody}>{COPY.events.emptyBody}</Text>
           </View>
         );
@@ -862,6 +878,17 @@ export function EventsScreen({
 
 /** The change sheet rides high, so the keyboard under the city input never covers it. */
 const SHEET_TOP = 96;
+
+/**
+ * Figma etkinlikler_view (176:3695): the card's artwork band, and the mark
+ * that fills it when there is no artwork (176:3718). Geometry rather than a
+ * rung, like the ladder's other width/height carve-outs — named because the
+ * photo, its no-photo fallback and the plate over both must agree.
+ */
+const CARD_BAND_HEIGHT = 192;
+const CARD_BAND_GLYPH = 60;
+/** 177:4707: the empty state's drawing, at the width the design gives it. */
+const EMPTY_ILLUSTRATION = 200;
 
 const styles = StyleSheet.create({
   title: {
@@ -976,11 +1003,6 @@ const styles = StyleSheet.create({
   },
   sheetScroll: { flexGrow: 0 },
   sheetScrollBody: { gap: spacing.xs },
-  carousel: { gap: spacing.snug },
-  /** 131:132: the page dots — the resting one stretched into a coral pill. */
-  dots: { flexDirection: 'row', alignItems: 'center', gap: spacing.cozy, marginBottom: spacing.xs },
-  dot: { width: 6, height: 6, borderRadius: radius.pill, backgroundColor: color.rule },
-  dotActive: { width: 18, backgroundColor: color.accent },
   sectionHead: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1013,28 +1035,63 @@ const styles = StyleSheet.create({
   badgeGlyph: { fontFamily: fontFamily.bodySemi, fontSize: font.label, color: color.onInverse },
   badgeText: { fontFamily: fontFamily.bodySemi, fontSize: font.label, color: color.onInverse },
   badgeTextBad: { color: color.danger },
-  /** Top-left, as ED-02 draws it — the bottom corner belongs to the words. */
-  badgeOnImage: { position: 'absolute', left: 11, top: 11 },
   /** A cancelled or postponed event is dimmed as well as labelled. */
   dimmed: { opacity: 0.45 },
   chipStrip: { flexGrow: 0, marginBottom: spacing.sm },
   chipRow: { flexDirection: 'row', gap: spacing.xs },
-  /** The owner's card (2026-08-05): square artwork left, facts right. */
+  /** 176:3693: artwork across the head, facts underneath, the 32 corner. */
   card: {
-    flexDirection: 'row',
-    gap: spacing.snug,
-    borderRadius: radius.xl,
+    borderRadius: radius.xxl,
     backgroundColor: color.surface,
-    marginBottom: spacing.sm,
-    padding: spacing.snug,
+    overflow: 'hidden',
+    marginBottom: spacing.md,
     ...elevation.card,
   },
   cardPressed: { opacity: 0.7 },
-  cardThumb: { width: 118, height: 118, borderRadius: radius.md, backgroundColor: color.veil },
-  cardThumbEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: color.accentWash },
-  cardColumn: { flex: 1, gap: spacing.xs },
-  cardTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  heartSeat: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
+  cardBand: { width: '100%', height: CARD_BAND_HEIGHT },
+  cardBandPhoto: { width: '100%', height: CARD_BAND_HEIGHT, backgroundColor: color.veil },
+  cardBandEmpty: { alignItems: 'center', justifyContent: 'center' },
+  /**
+   * 176:3696 — the date on its own plate over the artwork's corner. The
+   * design blurs the plate; a translucent white over an arbitrary photograph
+   * cannot promise 4.5:1 behind navy digits, so the plate is opaque.
+   */
+  datePlate: {
+    position: 'absolute',
+    left: spacing.md,
+    top: spacing.md,
+    alignItems: 'center',
+    borderRadius: radius.md,
+    backgroundColor: color.surface,
+    paddingHorizontal: spacing.snug,
+    paddingVertical: spacing.cozy,
+  },
+  datePlateMonth: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.label,
+    letterSpacing: tracking.label,
+    color: color.inkMuted,
+  },
+  datePlateDay: {
+    fontFamily: fontFamily.displayHeavy,
+    fontSize: font.heading,
+    lineHeight: font.heading * leading.tight,
+    color: color.ink,
+  },
+  /** The save heart keeps its own corner, on the glass the deck's controls use. */
+  heartSeat: {
+    position: 'absolute',
+    right: spacing.md,
+    top: spacing.md,
+    width: 36,
+    height: 36,
+    borderRadius: radius.pill,
+    backgroundColor: overlay.glass,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /** 176:3701: 20 inside, the lines 4 apart. */
+  cardBody: { padding: spacing.wide, gap: spacing.xs },
   cardName: {
     fontFamily: fontFamily.display,
     fontSize: font.heading,
@@ -1042,22 +1099,39 @@ const styles = StyleSheet.create({
     letterSpacing: tracking.display,
     color: color.ink,
   },
-  /** A fact is its mark and its words, on one line. */
-  factRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.cozy },
-  factText: {
-    flexShrink: 1,
-    fontFamily: fontFamily.body,
-    fontSize: font.caption,
-    lineHeight: font.caption * leading.normal,
-    color: color.inkMuted,
+  /** 176:3705: the place and the hour, one quiet line under the name. */
+  cardWhere: {
+    fontFamily: fontFamily.bodyMedium,
+    fontSize: font.label,
+    lineHeight: font.label * leading.normal,
+    color: color.inkFaint,
   },
-  factDot: { fontFamily: fontFamily.body, fontSize: font.caption, color: color.inkMuted },
+  /** 176:3706: the credit on the left, the way in on the right. */
+  cardFoot: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    paddingTop: spacing.snug,
+  },
   /** Required wherever the provider's answer is on screen. */
   cardAttribution: {
+    flexShrink: 1,
     fontFamily: fontFamily.body,
     fontSize: font.label,
     color: color.inkFaint,
-    marginTop: spacing.tight,
+  },
+  /** 176:3714: the navy pill. Not its own control — see the card's comment. */
+  openPill: {
+    borderRadius: radius.pill,
+    backgroundColor: color.inverse,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  openPillText: {
+    fontFamily: fontFamily.bodySemi,
+    fontSize: font.label,
+    color: color.onInverse,
   },
   /** "Etkinliklerin": the disc, the coral line, the name, the state. */
   mineRow: {
@@ -1112,16 +1186,20 @@ const styles = StyleSheet.create({
     lineHeight: font.caption * leading.normal,
     color: color.inkMuted,
   },
-  /** ED-01's empty state. */
-  emptyWrap: { alignItems: 'center', gap: spacing.snug, paddingTop: spacing.xl },
-  emptyDisc: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.pill,
-    backgroundColor: color.accentWash,
+  /** 177:4705: the drawing, the fact, the sentence, the one way on. */
+  emptyWrap: { alignItems: 'center', gap: spacing.md, paddingTop: spacing.xl },
+  /** 177:4713: outlined rather than filled — this is a way out, not the deed. */
+  emptyCta: {
+    minHeight: MIN_TOUCH,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 2,
+    borderColor: color.ink,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.snug,
   },
+  emptyCtaText: { fontFamily: fontFamily.bodySemi, fontSize: font.control, color: color.ink },
   emptyTitle: {
     fontFamily: fontFamily.display,
     fontSize: font.heading,
@@ -1131,10 +1209,10 @@ const styles = StyleSheet.create({
   },
   emptyBody: {
     fontFamily: fontFamily.body,
-    fontSize: font.caption,
-    lineHeight: font.caption * leading.normal,
+    fontSize: font.body,
+    lineHeight: font.body * leading.normal,
     color: color.inkMuted,
     textAlign: 'center',
-    maxWidth: 270,
+    maxWidth: 280,
   },
 });

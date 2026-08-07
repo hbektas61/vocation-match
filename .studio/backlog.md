@@ -551,3 +551,7 @@ coordinate or provider type list.
 - [ ] Avatar stack on Tatilim venue card ("Burada olanlar" + count) needs a
       member-preview data source that does not exist today; design element
       omitted until an endpoint/decision exists (D-032 thresholds apply).
+- [ ] D-065 — Etkinlikler "joined" state (Figma 177:5363): participants
+      avatar grid + headcount need an endpoint that does not exist, and the
+      design's post-join destination replaces the navigation
+      fourFeatureIA.test.tsx pins. Its own slice, with the data decision.

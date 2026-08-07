@@ -18,6 +18,7 @@ import {
   Notice,
   Screen,
   ScreenHeader,
+  SectionLabel,
   SkeletonRows,
 } from '../components/ui';
 import { EmptyInbox } from '../components/InboxIllustrations';
@@ -26,7 +27,7 @@ import { ApiError, getApi, type MatchSummary } from '../data';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
 import { useAppStore } from '../state/AppStore';
-import { color, elevation, font, fontFamily, leading, radius, spacing, tracking } from '../theme';
+import { color, font, fontFamily, leading, radius, spacing, tracking } from '../theme';
 
 /** The owner's own 3D lobby render (2026-07-28), bundled — not a redrawing. */
 
@@ -111,12 +112,14 @@ export function InboxScreen() {
     // composition and should sit in the middle of the room it has, rather
     // than hanging off the head with the rest of the screen blank beneath it.
     <Screen safeTop fill={isEmpty} testID="screen-inbox">
-      {/* The sheet's head (12:167), now the ring alone — D-061. */}
-      <ScreenHeader title={COPY.inbox.title} ringTestID="inbox-profile-ring" />
-      {/* The line under the tab's name belongs to the head, not to the empty
-          composition below it — left inside that column it drifted down with
-          it and left the title stranded. */}
-      {isEmpty ? <Text style={styles.subtitle}>{COPY.inbox.subtitle}</Text> : null}
+      {/* 176:3773: the head draws the title again (D-065), with the line that
+          used to stand under it only on the empty state now carried as the
+          head's own subtitle, on every state. */}
+      <ScreenHeader
+        title={COPY.inbox.title}
+        subtitle={COPY.inbox.subtitle}
+        ringTestID="inbox-profile-ring"
+      />
       {error ? (
         <Notice message={error} tone="error" testID="inbox-error" />
       ) : matches === null ? (
@@ -179,8 +182,11 @@ export function InboxScreen() {
       ) : (
         <>
           {fresh.length > 0 ? (
-            /* The sheet's new-match strip (12:170): the warm ring around the
-               face, the first name under it — no heading over it. */
+            /* 176:3788: the strip keeps its ringed faces and gains the heading
+               the design puts over it — the two groups below are different
+               kinds of thing and the screen never said so. */
+            <>
+            <SectionLabel>{COPY.inbox.newMatches}</SectionLabel>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.freshRow}>
                 {fresh.map((match) => (
@@ -208,7 +214,10 @@ export function InboxScreen() {
                 ))}
               </View>
             </ScrollView>
+            </>
           ) : null}
+
+          {talking.length > 0 ? <SectionLabel>{COPY.inbox.chats}</SectionLabel> : null}
 
           {talking.map((match) => (
             <Pressable
@@ -221,10 +230,12 @@ export function InboxScreen() {
               onPress={() => navigation.navigate('Chat', { matchId: match.matchId })}
               testID={`inbox-${match.matchId}`}
             >
-              {/* The sheet's row (12:183): the 46 face, the name over the
-                  last words, the clock on the right. */}
+              {/* 176:3812: the 56 face, and beside it a column ruled off from
+                  the next row by a hairline — the white card with its own lift
+                  is gone, because a list of them was a stack of objects where
+                  the design has one list. */}
               <View
-                style={[styles.chatCard, match.unmatchedAt !== null && styles.rowClosed]}
+                style={[styles.chatRow, match.unmatchedAt !== null && styles.rowClosed]}
               >
                 <RowFace
                   url={match.photoPath ? photoUrls[match.photoPath] ?? null : null}
@@ -232,11 +243,23 @@ export function InboxScreen() {
                   testID={`inbox-photo-${match.matchId}`}
                 />
                 <View style={styles.rowText}>
-                  <Text style={styles.rowName} numberOfLines={1}>{match.displayName}</Text>
+                  {/* 176:3816: the name and the clock share the top line. */}
+                  <View style={styles.rowTopLine}>
+                    <Text style={styles.rowName} numberOfLines={1}>{match.displayName}</Text>
+                    {match.lastMessageAt !== null ? (
+                      <Text style={styles.rowWhen}>{formatWhen(match.lastMessageAt)}</Text>
+                    ) : null}
+                  </View>
                   {match.unmatchedAt !== null ? (
                     <Text style={styles.rowPreview}>{COPY.inbox.closedLabel}</Text>
                   ) : null}
-                  <Text style={styles.rowPreview} numberOfLines={1}>
+                  {/* 176:3822: an unread preview is drawn in the brand. The
+                      design's coral is 2.99:1 on white; a coral word takes the
+                      darker sibling `accentDeep` (6.5:1), per D-058. */}
+                  <Text
+                    style={[styles.rowPreview, match.unreadCount > 0 && styles.rowPreviewUnread]}
+                    numberOfLines={1}
+                  >
                     {match.lastMessageBody ?? COPY.inbox.sayHelloPreview}
                   </Text>
                   {/* Where the two of you met. Never a venue you were not at,
@@ -250,9 +273,6 @@ export function InboxScreen() {
                   </Text>
                 </View>
                 <View style={styles.rowRight}>
-                  {match.lastMessageAt !== null ? (
-                    <Text style={styles.rowWhen}>{formatWhen(match.lastMessageAt)}</Text>
-                  ) : null}
                   {match.unreadCount > 0 ? (
                     /* Here the number is worth showing: the row has the space,
                        and "three waiting" is different from "one". The count is
@@ -278,8 +298,10 @@ export function InboxScreen() {
 }
 
 /**
- * The row's 46 face (12:184) — the shared Avatar is 56, and the sheet is
- * specific. Falls back to the initial the same way.
+ * The row's face. 176:3813 draws it at 56 — the same size the shared `Avatar`
+ * calls `md` — where the previous sheet (12:184) had it at 46. It stays its
+ * own component rather than becoming `Avatar` because it falls back to the
+ * initial on a *failed load*, which `Avatar` does not do.
  */
 function RowFace({ url, name, testID }: { url: string | null; name: string; testID?: string }) {
   const [failed, setFailed] = useState(false);
@@ -339,12 +361,6 @@ const styles = StyleSheet.create({
    * things pushed against the title with the screen empty below them.
    */
   empty: { alignSelf: 'stretch', flex: 1, justifyContent: 'center', gap: spacing.snug },
-  subtitle: {
-    fontFamily: fontFamily.body,
-    fontSize: font.caption,
-    lineHeight: font.caption * leading.normal,
-    color: color.inkMuted,
-  },
   emptyTitle: {
     fontFamily: fontFamily.display,
     fontSize: font.title,
@@ -367,32 +383,50 @@ const styles = StyleSheet.create({
   /** The new-match strip (12:170): 14 between faces, 6 under each. */
   freshRow: { flexDirection: 'row', gap: spacing.md },
   freshItem: { alignItems: 'center', gap: spacing.cozy },
-  /** The 64 collar (12:172): 4 of solid coral around the 56 face. */
+  /**
+   * 176:3793: the 64 collar is a 2pt coral *ring* with air inside it, not a
+   * solid coral disc — the face reads as circled rather than as mounted.
+   */
   freshRing: {
     padding: spacing.xs,
     borderRadius: radius.pill,
-    backgroundColor: color.accent,
+    borderWidth: 2,
+    borderColor: color.accent,
   },
   freshName: {
     fontFamily: fontFamily.bodyMedium,
     fontSize: font.label,
     color: color.ink,
   },
-  /** The sheet's conversation row (12:183): white, 18 corners, 12 inside. */
-  chatCard: {
+  /**
+   * 176:3812: a row on the ground, ruled off from the next one. The white
+   * card with its own lift is gone; `rule` is the divider token D-060 leaves
+   * for exactly this, and the hairline hangs off the words rather than the
+   * face, so the faces read as one column.
+   */
+  chatRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.snug,
-    backgroundColor: color.surface,
-    borderRadius: radius.lg,
-    padding: spacing.snug,
-    ...elevation.card,
+    gap: spacing.md,
   },
   /** Readable, dimmed: a closed conversation is history, not a mistake. */
   rowClosed: { opacity: 0.55 },
-  rowText: { flex: 1, gap: spacing.tight },
+  rowText: {
+    flex: 1,
+    gap: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: color.rule,
+    paddingBottom: spacing.md,
+  },
+  rowTopLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
   rowName: {
-    fontFamily: fontFamily.bodySemi,
+    flexShrink: 1,
+    fontFamily: fontFamily.display,
     fontSize: font.body,
     color: color.ink,
   },
@@ -408,6 +442,7 @@ const styles = StyleSheet.create({
     fontSize: font.caption,
     color: color.inkMuted,
   },
+  rowPreviewUnread: { fontFamily: fontFamily.bodySemi, color: color.accentDeep },
   rowRight: { alignItems: 'flex-end', gap: spacing.xs },
   /** The count, in the brand fill with navy on it — the same pairing every
       other coral surface uses. */
@@ -431,15 +466,15 @@ const styles = StyleSheet.create({
     color: color.inkMuted,
   },
   rowFace: {
-    width: 46,
-    height: 46,
+    width: 56,
+    height: 56,
     borderRadius: radius.pill,
     backgroundColor: color.veil,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rowFaceImage: { width: 46, height: 46 },
+  rowFaceImage: { width: 56, height: 56 },
   rowFaceInitial: {
     fontFamily: fontFamily.display,
     fontSize: font.heading,

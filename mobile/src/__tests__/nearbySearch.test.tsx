@@ -102,8 +102,12 @@ describe('the location-bound nearby list', () => {
     // index entry. The address stays in the row's accessible label, so that is
     // where it is asserted.
     expect(screen.getAllByText('Lunchbox')).toHaveLength(1);
-    expect(screen.getByText('Restaurant')).toBeTruthy();
-    expect(screen.queryByText('Hotel')).toBeNull();
+    // D-065 (176:2980) joined the kind and the place into one line —
+    // "Restaurant · Forum İstanbul" — so the kind is matched at the head of
+    // that line rather than as the whole of it. The claim is unchanged and
+    // still exact about which word appears: Restaurant is drawn, Hotel is not.
+    expect(screen.getByText(/^Restaurant\b/)).toBeTruthy();
+    expect(screen.queryByText(/^Hotel\b/)).toBeNull();
     expect(screen.getAllByLabelText(/Forum İstanbul, Bayrampaşa/)).toHaveLength(2);
 
     await act(async () => {

@@ -602,9 +602,9 @@ export const en = {
     /** Discovery before any door is open — the orbit screen's words. */
     noHotelTitle: 'Choose a hotel to discover',
     noHotelBody: 'Once you choose a hotel, the rooms and people open to you will show up here.',
+    /** D-065: the head's subtitle, where the doors' own heading used to be. */
+    headerSubtitle: 'Rooms you joined, rooms open to you',
     /** Owner, 2026-08-05: three doors open Discovery, not one. */
-    doorsTitle: 'Discovery shows the room you are in',
-    doorsBody: 'There are five rooms; opening one is enough. The people you came for show up here.',
     doorHotelTitle: 'Your vacation place',
     doorHotelMeta: '2 rooms · Going to the Hotel, At the Hotel',
     doorEventTitle: 'An event',
@@ -894,8 +894,8 @@ export const en = {
     /** ODbL: the catalogue list is OpenStreetMap/Overture data, and says so. */
     catalogAttribution: 'Place data © OpenStreetMap contributors',
     searchPlaceholder: 'Search a place or neighbourhood',
-    listSubtitle: 'Discover the places near you and meet the people who are there.',
-    idleSubtitle: 'Meet the holidaymakers near you — an instant bond at the same place.',
+    /** D-065: the head's subtitle, on every state of this tab. */
+    headerSubtitle: 'The places and people near you',
     introTitle: 'Same place, no searching.',
     /** N-01: the hero's one line on the photo — introBody said in a breath. */
     introShort: 'Pick one place, check in, see who is around.',
