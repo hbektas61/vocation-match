@@ -20,6 +20,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { Button, Loading, Notice, Screen, ScreenHeader, SkeletonCard } from '../components/ui';
+import type { RibbonContext } from '../components/VenueRibbon';
 import { ProfileRing } from '../components/ProfileRing';
 import { useToast } from '../components/ToastHost';
 import { RadarEmpty } from '../components/RadarEmpty';
@@ -460,6 +461,43 @@ export function DiscoveryScreen() {
     });
   }, [rooms, hotelName, stayRange, checkinName, eventName]);
   /**
+   * What the chip in the head names, when it is not the vacation venue.
+   *
+   * Keşfet is the one screen whose scope the person chooses, and the head was
+   * ignoring the choice: the selector said "Demet Akalın" while the chip a
+   * finger's width above it said the hotel (owner photo, 2026-08-08). Slice 4
+   * settled the same argument on the match screen — a name belonging to a
+   * place this room is not about is worse than no name — and this is that rule
+   * on the head that raises it.
+   *
+   * The three names are the ones already on the screen for the selector's own
+   * rows; nothing new is fetched. `null` means "the vacation venue", which is
+   * the chip's ordinary behaviour and covers the two hotel rooms, no room
+   * chosen yet, and the room list still loading.
+   */
+  const headContext: RibbonContext | null = useMemo(() => {
+    if (room === 'EVENT_UPCOMING' || room === 'EVENT_HERE_NOW') {
+      // The lease is the only place an event's name may come from, and once it
+      // lapses the app's own label is what is left (D-056). Never the hotel:
+      // an event room is not scoped to it even when the name is gone.
+      return {
+        name: eventName ?? COPY.events.pastEvent,
+        tab: 'Events',
+        spokenAs: COPY.events.tab,
+      };
+    }
+    if (room === 'NEARBY') {
+      // A check-in can be placeless, and "Yakınında" is the honest whole of
+      // what is known then — the same word the bond chip on the card uses.
+      return {
+        name: checkinName ?? COPY.discovery.nearYou,
+        tab: 'Nearby',
+        spokenAs: COPY.tabs.nearbyTab,
+      };
+    }
+    return null;
+  }, [room, eventName, checkinName]);
+  /**
    * Switching context is a viewing choice, and for the two event rooms the
    * server has to be told which event is being viewed — `discovery_feed`
    * refuses an event deck with no focus. It moves the focus and nothing else:
@@ -596,6 +634,7 @@ export function DiscoveryScreen() {
           title={COPY.tabs.discovery}
           subtitle={COPY.discovery.headerSubtitle}
           subtitleCase="sentence"
+          venueContext={headContext}
           ringTestID="discovery-profile-ring"
         />
         <Loading testID="discovery-loading" />
@@ -612,6 +651,7 @@ export function DiscoveryScreen() {
           title={COPY.tabs.discovery}
           subtitle={COPY.discovery.headerSubtitle}
           subtitleCase="sentence"
+          venueContext={headContext}
           ringTestID="discovery-profile-ring"
         />
         {/*
@@ -708,6 +748,7 @@ export function DiscoveryScreen() {
           title={COPY.tabs.discovery}
           subtitle={COPY.discovery.headerSubtitle}
           subtitleCase="sentence"
+          venueContext={headContext}
           ringTestID="discovery-profile-ring"
         />
         {/* D-057 (NAV-05): the selector is present but disabled here, so the
@@ -814,11 +855,12 @@ export function DiscoveryScreen() {
       {candidate ? null : (
         <View style={styles.deckHead}>
           <ScreenHeader
-          title={COPY.tabs.discovery}
-          subtitle={COPY.discovery.headerSubtitle}
-          subtitleCase="sentence"
-          ringTestID="discovery-profile-ring"
-        />
+            title={COPY.tabs.discovery}
+            subtitle={COPY.discovery.headerSubtitle}
+            subtitleCase="sentence"
+            venueContext={headContext}
+            ringTestID="discovery-profile-ring"
+          />
           <ContextSelector
             rows={contextRows}
             current={room}

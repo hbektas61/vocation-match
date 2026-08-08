@@ -26,7 +26,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { COPY, upperCase } from '../copy';
 import { ProfileRing } from './ProfileRing';
-import { VenueRibbon } from './VenueRibbon';
+import { VenueRibbon, type RibbonContext } from './VenueRibbon';
 
 import {
   ACTION_TOUCH,
@@ -190,6 +190,12 @@ export function ScreenHeader({
   right,
   /** Off for a screen with nothing to scope — every primary tab has one now. */
   venue = true,
+  /**
+   * What this screen is scoped to, when the answer is not the vacation venue.
+   * Only Keşfet passes one — its room is the person's own choice, and the chip
+   * has to say the room's place rather than the hotel's.
+   */
+  venueContext,
   /** Names this screen's ring, so a test can press the one it is looking at. */
   ringTestID,
   testID,
@@ -199,6 +205,7 @@ export function ScreenHeader({
   subtitleCase?: 'upper' | 'sentence';
   right?: React.ReactNode;
   venue?: boolean;
+  venueContext?: RibbonContext | null;
   ringTestID?: string;
   testID?: string;
 }) {
@@ -219,7 +226,7 @@ export function ScreenHeader({
           slid to the left while every other tab's stayed in the corner (owner
           photo, 2026-08-07). The row keeps the ring's corner either way. */}
       <View style={[styles.screenHeadTop, !venue && styles.screenHeadTopRingOnly]}>
-        {venue ? <VenueRibbon /> : null}
+        {venue ? <VenueRibbon context={venueContext} /> : null}
         <ProfileRing testID={ringTestID} />
       </View>
       <View style={styles.screenHeadBottom}>
