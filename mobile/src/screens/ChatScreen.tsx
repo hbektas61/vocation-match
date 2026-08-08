@@ -30,6 +30,7 @@ import {
   tracking,
 } from '../theme';
 import { usePhotoUrls } from '../state/usePhotoUrls';
+import { useActiveVenueName } from '../state/useActiveVenueName';
 import { useAppStore } from '../state/AppStore';
 
 const BackIcon = () => (
@@ -82,6 +83,11 @@ function newToken(): string {
 
 export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   const { state, dispatch } = useAppStore();
+  /**
+   * The venue the head's bond line names, from the app's one shared answer:
+   * the cached card holds the `(google)` marker rather than a name (D-054).
+   */
+  const { name: venueName } = useActiveVenueName();
   const { matchId } = route.params;
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<ChatMessage[] | null>(null);
@@ -256,7 +262,6 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
   }
 
   const closed = match.unmatchedAt != null;
-  const hotel = state.hotels.find((h) => h.id === state.activeHotel?.hotelId) ?? null;
   const theirPhoto = match.photoPath ? photoUrls[match.photoPath] ?? null : null;
 
   const send = async () => {
@@ -360,8 +365,8 @@ export function ChatScreen({ navigation, route }: RootScreenProps<'Chat'>) {
               claim about where anybody is standing now. */}
           <Text style={styles.headBond} numberOfLines={1} testID="chat-room">
             {upperCase(
-              hotel && (match.room === 'UPCOMING' || match.room === 'HERE_NOW')
-                ? `${roomPlate(match.room)} · ${hotel.name}`
+              venueName && (match.room === 'UPCOMING' || match.room === 'HERE_NOW')
+                ? `${roomPlate(match.room)} · ${venueName}`
                 : roomPlate(match.room),
             )}
           </Text>

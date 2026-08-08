@@ -213,7 +213,12 @@ export function ScreenHeader({
   );
   return (
     <View style={styles.screenHead} testID={testID}>
-      <View style={styles.screenHeadTop}>
+      {/* `space-between` puts the chip and the ring at opposite edges — and
+          with no chip it has one child to distribute, which it lays out at the
+          start. Mesajlar is the one head with no chip (176:3771), so its ring
+          slid to the left while every other tab's stayed in the corner (owner
+          photo, 2026-08-07). The row keeps the ring's corner either way. */}
+      <View style={[styles.screenHeadTop, !venue && styles.screenHeadTopRingOnly]}>
         {venue ? <VenueRibbon /> : null}
         <ProfileRing testID={ringTestID} />
       </View>
@@ -1683,6 +1688,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
+  /** The same row with nothing on its left: the ring still owns the corner. */
+  screenHeadTopRingOnly: { justifyContent: 'flex-end' },
   /** Row 2: the screen's own name, under the venue rather than instead of it. */
   screenHeadBottom: {
     flexDirection: 'row',

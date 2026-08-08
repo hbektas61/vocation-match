@@ -8,10 +8,10 @@ import { Button, Field, Loading, Notice, Screen } from '../components/ui';
 import { todayIsoDate } from '../clock';
 import { apiErrorMessage, COPY, upperCase } from '../copy';
 import { ApiError, getApi, type UpcomingStay } from '../data';
-import { formatDayMonthLong, formatWeekday } from '../domain/dates';
+import { formatDayMonthLong, formatWeekday, languageTag } from '../domain/dates';
 import { validateStayDates } from '../domain/upcoming';
 import type { RootScreenProps } from '../navigation/types';
-import { useAppStore } from '../state/AppStore';
+import { useActiveVenueName } from '../state/useActiveVenueName';
 import { color, elevation, font, fontFamily, leading, radius, spacing, tileTone, tracking } from '../theme';
 
 const CalendarGlyph = () => (
@@ -104,10 +104,19 @@ function DateCard({
       ) : Platform.OS === 'ios' ? (
         <View style={styles.valueRow}>
           <CalendarGlyph />
+          {/* The one date in the app the app does not print itself: the
+              compact control draws its own value, and left alone it draws it
+              in the device's language — an English month over a Turkish
+              weekday (owner photo, 2026-08-07). `languageTag` is the same
+              table `plateDate` reads its months from, so the two lines of one
+              plate cannot end up in two languages again. iOS only, by the
+              component's contract; Android's value beside its dialog is
+              `plateDate`, which is already the app's own words. */}
           <DateTimePicker
             value={date}
             mode="date"
             display="compact"
+            locale={languageTag()}
             minimumDate={minimumDate}
             disabled={!editable}
             onChange={picked}
@@ -158,10 +167,12 @@ function DateCard({
 }
 
 export function UpcomingScreen({ navigation }: RootScreenProps<'Upcoming'>) {
-  const { state } = useAppStore();
-  /** The active venue by name, from the cache. Absent until the card lands. */
-  const venueName =
-    state.hotels.find((h) => h.id === state.activeHotel?.hotelId)?.name ?? null;
+  /**
+   * The active venue by name. A Google venue keeps no stored name (D-054), so
+   * this comes from the app's one shared answer rather than from the cached
+   * card — reading the card printed the `(google)` marker over the dates.
+   */
+  const { name: venueName } = useActiveVenueName();
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [submitting, setSubmitting] = useState(false);

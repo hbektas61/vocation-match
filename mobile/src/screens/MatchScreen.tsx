@@ -32,6 +32,7 @@ import { Button, Notice, Screen } from '../components/ui';
 import { COPY, upperCase, matchSource } from '../copy';
 import type { RootScreenProps } from '../navigation/types';
 import { usePhotoUrls } from '../state/usePhotoUrls';
+import { useActiveVenueName } from '../state/useActiveVenueName';
 import { useAppStore } from '../state/AppStore';
 import {
   ACTION_TOUCH,
@@ -121,14 +122,14 @@ export function MatchScreen({ navigation, route }: RootScreenProps<'Match'>) {
     176:3929 names the venue in the moment. Only the two vacation rooms are
     scoped to the active venue, though — an event match or a Çevremde match
     wearing the currently active hotel's name would be naming a place neither
-    of you was in together, which is the same trap `ChatScreen` sidesteps. And
-    the name is read from what is already cached: no lookup is bought to
-    decorate a screen.
+    of you was in together, which is the same trap `ChatScreen` sidesteps. The
+    name is the app's one shared answer, resolved once per session: the cached
+    card cannot supply it for a Google venue (D-054), and reading it anyway put
+    the `(google)` marker on the moment two people matched.
   */
+  const { name: activeVenueName } = useActiveVenueName();
   const venueName =
-    match && (match.room === 'UPCOMING' || match.room === 'HERE_NOW')
-      ? state.hotels.find((h) => h.id === state.activeHotel?.hotelId)?.name ?? null
-      : null;
+    match && (match.room === 'UPCOMING' || match.room === 'HERE_NOW') ? activeVenueName : null;
 
   // The moment lands in the hand as well as on the screen (owner, 2026-08-04).
   useEffect(() => {

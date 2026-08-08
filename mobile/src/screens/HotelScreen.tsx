@@ -281,11 +281,18 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
     // which already has. `onActivated` is exactly the difference between the two.
     <Screen safeTop={!onActivated} testID="screen-hotel">
       {/*
+        The picker owns the whole head while it is open (owner's device photo,
+        2026-08-07). It draws its own — the round back button, the destination
+        eyebrow, the question and the three-step bar (176:2415) — and the tab's
+        head standing above that put two titles and two back routes on one
+        screen, with "Tatilim" clipped under the status bar as soon as the list
+        was scrolled. The Figma venue_picker frame has no tab head at all.
+
         D-061: a tab does not name itself — the tab bar already does, and the
         word was the largest thing on the screen. A screen you *arrived* at
         still names itself, which is why the activation view keeps its title.
       */}
-      {onActivated ? (
+      {picking ? null : onActivated ? (
         <View style={styles.headerRow}>
           <Text accessibilityRole="header" style={styles.headerTitle}>
             {COPY.hotel.title}
@@ -303,7 +310,7 @@ export function HotelScreen({ onActivated }: { onActivated?: () => void } = {}) 
           subtitle={COPY.vacation.headerSubtitle}
           ringTestID="hotel-profile-ring"
           right={
-            activeId && !picking ? (
+            activeId ? (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={COPY.vacation.switchVenueCta}

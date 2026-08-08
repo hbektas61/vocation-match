@@ -28,7 +28,7 @@ import { nowMs } from '../clock';
 import { formatStayRangeLabel } from '../domain/dates';
 import { apiErrorMessage, COPY, COPY_FOR, roomStatusExplanation, upperCase } from '../copy';
 import { ApiError, getApi, type CandidateCard, type MyEvent, type RoomKey, type RoomStatus } from '../data';
-import { resolveDeckLabels, resolveOwnVenueLabel } from '../data/venueLabels';
+import { resolveDeckLabels, resolveOwnVenue } from '../data/venueLabels';
 import type { RootStackParamList, TabParamList } from '../navigation/types';
 import {
   color,
@@ -47,6 +47,7 @@ import {
 } from '../theme';
 import { earliestRoomExpiry } from '../state/roomSchedule';
 import { usePhotoUrls } from '../state/usePhotoUrls';
+import { useActiveVenueName } from '../state/useActiveVenueName';
 import { useAppStore } from '../state/AppStore';
 
 /** The owner's own 3D door render (2026-07-28), bundled — not a redrawing. */
@@ -237,32 +238,19 @@ export function DiscoveryScreen() {
   /** Which of the candidate's photos is showing; reset per candidate. */
   const [photoIndex, setPhotoIndex] = useState(0);
 
-  // Same as Rooms: whether there is an active hotel comes from the server, and
-  // the cached card only ever supplies its name.
-  const hotel = state.hotels.find((h) => h.id === state.activeHotel?.hotelId) ?? null;
+  // Same as Rooms: whether there is an active hotel comes from the server. A
+  // Google venue's stored name is the `(google)` marker (D-054), so the name
+  // is the app's one shared answer — asked once per session, not once per
+  // screen — and until it lands the deck says nothing rather than the marker.
+  const { name: hotelName } = useActiveVenueName();
+  const activeHotelId = state.activeHotel?.hotelId ?? null;
   /**
-   * A Google venue's stored name is the '(google)' stub (D-054): the real
-   * one is resolved live, from the same session cache the deck labels use,
-   * and until it lands the screen says nothing rather than the stub.
+   * The same id, readable from inside an effect that must not re-run when it
+   * changes: reloading the deck because the venue moved is a different
+   * decision from labelling the cards already in it.
    */
-  const [ownVenueName, setOwnVenueName] = useState<string | null>(null);
-  useEffect(() => {
-    if (hotel?.provider !== 'google') {
-      setOwnVenueName(null);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      const venue = await getApi().getActiveVenue().catch(() => null);
-      if (cancelled || !venue?.googlePlaceId) return;
-      const name = await resolveOwnVenueLabel(venue.googlePlaceId);
-      if (!cancelled) setOwnVenueName(name);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [hotel?.provider, hotel?.id]);
-  const hotelName = hotel?.provider === 'google' ? ownVenueName : hotel?.name ?? null;
+  const activeHotelIdRef = useRef(activeHotelId);
+  activeHotelIdRef.current = activeHotelId;
   const hasHotel = state.activeHotel !== null;
 
   // Room eligibility can change from another tab, so refresh it on focus,
@@ -398,7 +386,11 @@ export function DiscoveryScreen() {
         // never for the viewer's own venue, and never in a way a card waits
         // on — the deck is already drawn by the time this resolves, and the
         // rest stay on the generic "nearby" label.
-        const own = await getApi().getActiveVenue().catch(() => null);
+        // Through the same session cache the labels below use: "which venue am
+        // I in" is one question per session, and the head above this deck has
+        // usually asked it already.
+        const ownId = activeHotelIdRef.current;
+        const own = ownId ? await resolveOwnVenue(ownId) : null;
         const wanted = new Set(
           feed
             .map((candidate) => candidate.venuePlaceId)
@@ -507,6 +499,11 @@ export function DiscoveryScreen() {
   useEffect(() => setPhotoIndex(0), [candidate?.userId]);
   const shownPath = cardPaths[Math.min(photoIndex, Math.max(cardPaths.length - 1, 0))] ?? null;
   const photoUrls = usePhotoUrls(photoPaths);
+  /**
+   * Whether this card actually has a picture behind its words. The scrim, and
+   * the white type that only exists because of the scrim, both hang on it.
+   */
+  const hasPhoto = Boolean(shownPath && photoUrls[shownPath]);
   // Owner report (2026-08-04): tapping through a card's photos dragged,
   // because each one was first fetched at the moment it was shown. The card's
   // whole set warms the image cache the moment its URLs are signed, so a tap
@@ -838,10 +835,21 @@ export function DiscoveryScreen() {
         <SkeletonCard fill testID="deck-loading" />
       ) : candidate ? (
         /* The whole person is one screen (owner decision): a full-bleed photo
-           card with the name on it, the one fact this app can print — the
-           room · hotel bond — as its only tag, and the three actions floating
-           at its foot. No sections to scroll; the decision is made here. */
+           card with the name on it, and the one fact this app can print — the
+           room · hotel bond — as its only tag. No sections to scroll; the
+           decision is made here.
+
+           The card and the controls under it are a column, not a card with
+           three circles floating over its foot. The floating version measured
+           its dock from the bottom of a container whose height depends on the
+           safe-area inset and the tab bar, and on a real iPhone that put the
+           flag button half into the white strip below the card (owner photo,
+           2026-08-07) while the web preview looked right. Figma
+           room_swipe_view draws it as a column too: a 620pt card band and a
+           128pt action band under it (176:3873/176:3916). The card takes the
+           room that is left, so the dock cannot be pushed anywhere. */
         <>
+        <View style={styles.deckStage} testID="deck-stage">
         {/* The stack (owner, 2026-08-04): the next person waits a breath
             behind, growing to full size as the card in hand travels. */}
         {nextCandidate ? (
@@ -971,12 +979,22 @@ export function DiscoveryScreen() {
               the bio, and the hotel worn as a pill. `gradient.photoScrim` is
               the fixed readability scrim D-058 asks every photo carry — a
               photo can be any brightness, so the darkness is drawn rather
-              than hoped for. */}
-          <LinearGradient
-            colors={[...gradient.photoScrim]}
-            style={styles.cardScrim}
-            pointerEvents="none"
-          />
+              than hoped for.
+
+              Only over a photograph, though. A card with no picture is the
+              cream well and a big initial, and darkening the bottom of it
+              produced a grey smear across a flat colour that read as a
+              rendering fault (owner photo, 2026-08-07). With no scrim there is
+              no dark ground either, so the words below take their ink
+              colours. */}
+          {hasPhoto ? (
+            <LinearGradient
+              colors={[...gradient.photoScrim]}
+              style={styles.cardScrim}
+              pointerEvents="none"
+              testID="card-photo-scrim"
+            />
+          ) : null}
           <View style={styles.cardBottom} pointerEvents="box-none">
             {/* 176:3878, and K-01's green-dot line (132:82) before it — said
                 only when it is live-true: these two rooms exist because a
@@ -986,20 +1004,20 @@ export function DiscoveryScreen() {
                 footnote under their bio. */}
             {room === 'HERE_NOW' || room === 'EVENT_HERE_NOW' ? (
               <View style={styles.liveRow}>
-                <View style={styles.liveDot} />
-                <Text style={styles.liveText}>
+                <View style={[styles.liveDot, !hasPhoto && styles.liveDotOnGround]} />
+                <Text style={[styles.liveText, !hasPhoto && styles.wordsOnGround]}>
                   {upperCase(
                     room === 'HERE_NOW' ? COPY.discovery.liveAtVenue : COPY.discovery.liveAtEvent,
                   )}
                 </Text>
               </View>
             ) : null}
-            <Text style={styles.cardName}>
+            <Text style={[styles.cardName, !hasPhoto && styles.wordsOnGround]}>
               {candidate.displayName}
-              <Text style={styles.cardAge}>{`, ${candidate.age}`}</Text>
+              <Text style={[styles.cardAge, !hasPhoto && styles.wordsOnGround]}>{`, ${candidate.age}`}</Text>
             </Text>
             {candidate.bio ? (
-              <Text style={styles.cardBio} numberOfLines={1}>
+              <Text style={[styles.cardBio, !hasPhoto && styles.quietWordsOnGround]} numberOfLines={1}>
                 {candidate.bio}
               </Text>
             ) : null}
@@ -1051,6 +1069,7 @@ export function DiscoveryScreen() {
             )}
           </View>
         </Animated.View>
+        </View>
 
         {/* The room selector stands in the quiet strip over the actions
             (owner, 2026-08-04) — off the person's photo, still one press
@@ -1070,7 +1089,7 @@ export function DiscoveryScreen() {
             sized exactly as the reference sizes them. The reference gives
             the third slot to chat; chat does not exist before a match, and
             report/block must be reachable from the deck (D-008). */}
-        <View style={styles.cardActions}>
+        <View style={styles.cardActions} testID="deck-actions">
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={COPY.discovery.passButton}
@@ -1279,6 +1298,13 @@ const styles = StyleSheet.create({
     gap: spacing.snug,
   },
   /**
+   * The room the card is allowed to take: whatever is left once the controls
+   * under it have theirs. The card and the one waiting behind it both live in
+   * here, so a swipe animates inside a box with a settled height rather than
+   * against the screen's own edge.
+   */
+  deckStage: { flex: 1 },
+  /**
    * The card is the screen: everything else stands on the photograph. Lifted
    * with the shared `elevation.raised` rather than a hand-rolled shadow, since
    * this is the one floating surface on the whole screen.
@@ -1365,16 +1391,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: spacing.md,
     right: spacing.md,
-    // Above the selector dock, which is above the action circles.
-    bottom: 156,
+    // The card's own foot: the selector and the actions have left the
+    // photograph and stand in the column below it.
+    bottom: spacing.md,
     gap: spacing.sm,
   },
-  /** The selector's own strip between the words and the actions. */
+  /** The selector's own strip between the card and the actions. */
   selectorDock: {
-    position: 'absolute',
-    left: spacing.md,
-    right: spacing.md,
-    bottom: 92,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.snug,
   },
   /** 132:78: "Deniz, 28" — one voice, name and age together. */
   cardName: {
@@ -1396,6 +1421,14 @@ const styles = StyleSheet.create({
     lineHeight: font.body * leading.normal,
     color: color.onPhoto,
   },
+  /**
+   * The same words on a card with no picture. `onPhoto` is white, which only
+   * survives because the scrim is under it; with no photograph there is no
+   * scrim, and white on the cream well is unreadable. Navy on that well is
+   * the app's ordinary body contrast (13.9:1).
+   */
+  wordsOnGround: { color: color.ink },
+  quietWordsOnGround: { color: color.inkMuted },
   /** 176:3878: the live line — a collared green mark and tracked words. */
   liveRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   liveDot: {
@@ -1406,6 +1439,9 @@ const styles = StyleSheet.create({
     borderColor: color.onPhoto,
     backgroundColor: color.successMark,
   },
+  /** The mark's collar is there to lift it off a photograph; on the cream
+      well the well itself is the collar. */
+  liveDotOnGround: { borderColor: color.veil },
   liveText: {
     fontFamily: fontFamily.bodySemi,
     fontSize: font.label,
@@ -1441,17 +1477,24 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.border.inverse,
   },
   segmentActive: { backgroundColor: color.onPhoto },
-  /** Three circles on the ground: 64 · 84 · 64, the heart carrying the size. */
-  /** K-01: the circles float on the photo, not on a strip under it. */
+  /**
+   * Three circles on the ground: pass, the heart, and safety.
+   *
+   * A row in the column rather than three absolutely-placed circles over the
+   * card's foot. Absolute placement measured from the bottom of a container
+   * whose height is the screen's minus the safe-area inset minus the tab bar,
+   * and on a real device that arithmetic put the flag half under the card's
+   * edge (176:3916 draws its own band under the card for the same reason).
+   */
   cardActions: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.lg,
+    // The band's own air. Without it the circles sit on the card's edge above
+    // and on the safe-area's edge below, which is the crowding the absolute
+    // placement was hiding rather than solving.
+    paddingVertical: spacing.snug,
   },
   /** Pass and the safety flag: white, with the quiet card edge. */
   actionCircle: {

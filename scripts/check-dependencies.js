@@ -76,6 +76,37 @@ const ACCEPTED = [
       'would change an API xcode is written against, to fix a path that does ' +
       'not run in the app — a worse trade than writing this down.',
   },
+  {
+    package: 'image-size',
+    url: 'https://github.com/advisories/GHSA-w3rx-r6r6-pgpr',
+    severity: 'high',
+    why:
+      'ICNS parser infinite loop. image-size reaches us only through metro — ' +
+      'the bundler, on a developer machine, sizing assets this repository ' +
+      'owns. It is never bundled and no runtime path feeds it a user image. ' +
+      'Remove this exception when Expo SDK 54 moves metro past the patch.',
+  },
+  {
+    package: 'image-size',
+    url: 'https://github.com/advisories/GHSA-5p2g-fcmc-qvqq',
+    severity: 'high',
+    why:
+      'JXL/HEIF parser infinite loops — the same metro-only, dev-machine-only ' +
+      'path as GHSA-w3rx-r6r6-pgpr above, accepted for the same reason and ' +
+      'with the same removal condition.',
+  },
+  {
+    package: 'nanoid',
+    url: 'https://github.com/advisories/GHSA-2v37-7h3g-55p8',
+    severity: 'high',
+    why:
+      'Custom generators can loop forever when asked for size zero. nanoid ' +
+      'does ship, via @react-navigation/routers — but every call site there ' +
+      'imports nanoid/non-secure and calls bare nanoid() with no size and no ' +
+      'custom generator, so the precondition never occurs (checked ' +
+      '2026-08-08). Remove this exception when react-navigation moves past ' +
+      'the patched version, or if any code starts passing a size.',
+  },
 ];
 
 function audit() {

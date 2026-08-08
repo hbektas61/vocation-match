@@ -137,6 +137,33 @@ export interface ProfileInput {
   showMe?: ShowMe;
 }
 
+/**
+ * What a Google venue's stored name, city and country actually say (D-054).
+ *
+ * The database writes this literal (`20260730001300_google_venue_identity.sql`)
+ * because the column is `not null` and Google's display name is not ours to
+ * keep. It is a marker, never a word anybody may read: a screen that prints it
+ * has printed "(google)" where a hotel's name belongs, which is exactly the bug
+ * this constant exists to make impossible to write by accident.
+ */
+export const GOOGLE_NAME_PLACEHOLDER = '(google)';
+
+/**
+ * The name a screen is allowed to print from a cached card, or null.
+ *
+ * Null means "this card cannot name the venue" — a Google venue, whose real
+ * name is resolved live from its Place ID. Every caller that reads a card's
+ * name for display goes through here rather than reading `.name`, because the
+ * placeholder is a perfectly ordinary-looking string and a `?? null` on it
+ * silently wins over the live resolution.
+ */
+export function catalogueVenueName(card: HotelCard | null | undefined): string | null {
+  if (!card) return null;
+  if (card.provider === 'google') return null;
+  if (card.name === GOOGLE_NAME_PLACEHOLDER || card.name.trim() === '') return null;
+  return card.name;
+}
+
 /** A hotel as the client may see it. Coordinates are deliberately absent. */
 export interface HotelCard {
   id: string;

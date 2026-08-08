@@ -411,3 +411,15 @@ until the billing phase opens.
 **Order of work.** Foundations delta → onboarding (auth 10, venue/permission
 7) → tabs → flows → profile/system. Each phase lands only through the full
 gate and is pushed as its own checkpoint.
+
+## Dependency exceptions — image-size ×2, nanoid (2026-08-08)
+
+Three high advisories published overnight on an untouched dependency set,
+caught by the gate during the device bug pass. `image-size`
+(GHSA-w3rx-r6r6-pgpr, GHSA-5p2g-fcmc-qvqq): parser infinite loops,
+reachable only through metro on a developer machine, never bundled.
+`nanoid` (GHSA-2v37-7h3g-55p8): ships via @react-navigation/routers, but
+every call site imports nanoid/non-secure and calls bare nanoid() — the
+advisory's precondition (a size argument, a custom generator) never
+occurs; checked rather than assumed. All three accepted in
+`scripts/check-dependencies.js` with their removal conditions written in.

@@ -18,6 +18,7 @@ import {
 } from '../data';
 import { getHotelById } from '../fixtures/hotels';
 import type { RootScreenProps } from '../navigation/types';
+import { useActiveVenueName } from '../state/useActiveVenueName';
 import { useAppStore } from '../state/AppStore';
 
 /** The primer's crown mark (176:2554): the pin, at the tile's own scale. */
@@ -162,7 +163,9 @@ export function HereNowScreen({
     };
   }, [dispatch]);
 
-  const hotel = state.hotels.find((h) => h.id === state.activeHotel?.hotelId) ?? null;
+  // The venue by name, from the app's one shared answer — a Google venue's
+  // cached card holds the `(google)` marker instead of a name (D-054).
+  const { name: venueName } = useActiveVenueName();
   // The fixture catalog only knows the fake's hotels; on a real project it
   // knows nothing, and requiring it here told people with a real active
   // hotel that they had none. It now gates only the simulation card, which
@@ -424,7 +427,7 @@ export function HereNowScreen({
       />
       {atHotel && farAway ? (
         <Card>
-          <Caption>{`${COPY.hereNow.simulateIntroPrefix} ${hotel?.name ?? ''}.`}</Caption>
+          <Caption>{`${COPY.hereNow.simulateIntroPrefix} ${venueName ?? ''}.`}</Caption>
           <Button
             label={COPY.hereNow.simulateAtHotel}
             onPress={() => runCheck(atHotel)}

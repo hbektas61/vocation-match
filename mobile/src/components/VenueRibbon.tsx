@@ -15,13 +15,13 @@
  * Tatilim does not draw this. There the venue *is* the screen.
  */
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { COPY, upperCase } from '../copy';
-import { resolveOwnVenue, resolveOwnVenueLabel } from '../data/venueLabels';
 import type { TabParamList } from '../navigation/types';
+import { useActiveVenueName } from '../state/useActiveVenueName';
 import { useAppStore } from '../state/AppStore';
 import { color, font, fontFamily, MIN_TOUCH, radius, spacing, tracking } from '../theme';
 
@@ -45,32 +45,9 @@ export function VenueRibbon() {
   // venue chosen" — the cached card may simply not have arrived yet, and
   // reading that as "no venue" is the bug `activeHotelSingleSource` pins.
   const activeId = state.activeHotel?.hotelId ?? null;
-  const catalogueName = state.hotels.find((h) => h.id === activeId)?.name ?? null;
-  const [googleName, setGoogleName] = useState<string | null | false>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!activeId || catalogueName) {
-      setGoogleName(null);
-      return () => {
-        cancelled = true;
-      };
-    }
-    void (async () => {
-      const venue = await resolveOwnVenue(activeId);
-      if (cancelled) return;
-      if (venue?.provider !== 'google' || !venue.googlePlaceId) {
-        setGoogleName(false);
-        return;
-      }
-      // D-054: resolved live, held in memory, never written down.
-      const name = await resolveOwnVenueLabel(venue.googlePlaceId);
-      if (!cancelled) setGoogleName(name ?? false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [activeId, catalogueName]);
+  // The name itself is one shared question for the whole app (D-054), asked
+  // once per session — not once per screen that happens to draw this chip.
+  const { name: resolvedName, unavailable } = useActiveVenueName();
 
   const goToVacation = () => navigation.navigate('Vacation');
 
@@ -91,8 +68,7 @@ export function VenueRibbon() {
     );
   }
 
-  const rawName =
-    catalogueName ?? (googleName === false ? COPY.venue.nameUnavailable : googleName);
+  const rawName = resolvedName ?? (unavailable ? COPY.venue.nameUnavailable : null);
   // The Figma frame draws "SPIAGGIA GRANDE, ALAÇATI" — the venue and the
   // place it is in. This screen has no destination field to add safely for
   // every venue (D-054 forbids storing or fetching one for a Google venue,

@@ -62,6 +62,26 @@ const WEEKDAYS = {
   en: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
 } as const;
 
+/**
+ * The language tag for a *platform control* that prints its own date.
+ *
+ * Everything above is printed by this file precisely so no runtime has to be
+ * trusted with it. One date in the app is not: iOS's compact date picker draws
+ * its value itself, and it drew it in whatever language the *device* is set to
+ * — which is how "7 Aug 2026" came to stand over a Turkish "Cuma" on the
+ * owner's phone (2026-08-07). The control cannot be told twelve month names,
+ * so it is told the one thing it does understand.
+ *
+ * A fourth table rather than a `${locale}-${locale.toUpperCase()}` trick: the
+ * region half of a tag is not derivable from the language half, and this file's
+ * whole argument is that language data is written down rather than computed.
+ */
+const LANGUAGE_TAGS = { tr: 'tr-TR', en: 'en-US' } as const;
+
+export function languageTag(): string {
+  return LANGUAGE_TAGS[getLocale()];
+}
+
 /** `YYYY-MM-DD` → its calendar parts, with no `Date` in between. */
 function parts(iso: string): { year: number; month: number; day: number } {
   const [year, month, day] = iso.split('-').map(Number);
